@@ -1,0 +1,90 @@
+classDiagram
+    class Conjunto {
+        +UUID id
+        +String nombre
+        +List~Etapa~ etapas
+    }
+    class Etapa {
+        +UUID id
+        +String nombre
+        +List~Casa~ casas
+    }
+    class Casa {
+        +UUID id
+        +String direccionInterna
+    }
+    class Propietario {
+        +UUID id
+        +String nombre
+        +String telefono
+        +String email
+    }
+    class Tenencia {
+        +UUID id
+        +Date fechaInicio
+        +Date fechaFin
+    }
+    class Usuario {
+        +UUID id
+        +String username
+        +String passwordHash
+        +Rol rol
+    }
+    class AsignacionEtapa {
+        +UUID cobradorId
+        +UUID etapaId
+    }
+    class Tarifa {
+        +UUID id
+        +Frecuencia frecuencia
+        +Money monto
+        +Date fechaVigencia
+    }
+    class Cuota {
+        +UUID id
+        +UUID propietarioId
+        +Money monto
+        +Date fechaGeneracion
+        +Date fechaVencimiento
+        +EstadoCuota estado
+        +Boolean notificacionEnviada
+        +pagar(Pago)
+        +marcarVencida()
+    }
+    class Pago {
+        +UUID id
+        +UUID clientPaymentId
+        +UUID cuotaId
+        +Money monto
+        +Date fechaPago
+        +UUID cobradorId
+        +Date fechaRegistro
+        +Date fechaSync
+        +SyncStatus syncStatus
+    }
+    class MontoPagoPredefinido {
+        +UUID id
+        +Money monto
+        +String descripcion
+        +Boolean activo
+        +Int orden
+    }
+    class Notificacion {
+        +UUID id
+        +UUID cuotaId
+        +Date fechaEnvio
+        +Intentos intentos
+        +EstadoNotif estado
+    }
+
+    Conjunto "1" --> "*" Etapa
+    Etapa "1" --> "*" Casa
+    Propietario "1" --> "*" Tenencia
+    Tenencia "*" --> "1" Casa
+    Usuario "1" --> "0..1" Propietario
+    Usuario "1" --> "*" AsignacionEtapa
+    AsignacionEtapa "*" --> "1" Etapa
+    Propietario "1" --> "*" Cuota
+    Cuota "1" --> "0..*" Pago
+    Cuota "1" --> "0..*" Notificacion
+    Tarifa ..> Cuota : genera monto

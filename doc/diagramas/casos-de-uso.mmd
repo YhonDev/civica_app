@@ -1,0 +1,49 @@
+flowchart LR
+    subgraph Actores
+        Admin(("👤 Admin"))
+        Cobrador(("👤 Cobrador"))
+        Propietario(("👤 Propietario"))
+        Sistema(("⚙️ Sistema (cron/jobs)"))
+    end
+
+    subgraph SistemaUC["App de Control de Pagos"]
+        UC1[/Configurar Conjunto, Etapas, Casas/]
+        UC2[/Configurar Tarifas/]
+        UC3[/Gestionar Usuarios y Roles/]
+        UC4[/Registrar Propietario/]
+        UC5[/Asignar Etapas a Cobrador/]
+        UC6[/Registrar Pago/]
+        UC7[/Buscar Propietario/]
+        UC8[/Generar Cuotas Automáticas/]
+        UC9[/Marcar Cuotas Vencidas/]
+        UC10[/Enviar Notificación Correo/]
+        UC11[/Visualizar Cartera Propia/]
+        UC12[/Visualizar Cartera Consolidada/]
+        UC13[/Generar Reporte de Recaudo/]
+        UC14[/Sincronizar Pagos Offline/]
+    end
+
+    Admin --> UC1
+    Admin --> UC2
+    Admin --> UC3
+    Admin --> UC4
+    Admin --> UC5
+    Admin --> UC6
+    Admin --> UC13
+
+    Cobrador --> UC4
+    Cobrador --> UC6
+    Cobrador --> UC7
+    Cobrador --> UC12
+
+    Propietario --> UC11
+
+    Sistema --> UC8
+    Sistema --> UC9
+    Sistema --> UC10
+    Sistema --> UC14
+
+    UC6 -.include.-> UC7
+    UC6 -.include.-> UC14
+    UC9 -.include.-> UC10
+    UC12 ..extend.-> UC5

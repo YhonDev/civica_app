@@ -1,0 +1,47 @@
+flowchart TB
+    subgraph App["AppControlPagos (NestJS)"]
+        subgraph Shared["🔧 shared/"]
+            AUTH[AuthModule]
+            TENANT[TenantModule]
+            EVENT[EventBusModule]
+            COMMON[CommonModule Money, Clock, IdGen]
+        end
+
+        subgraph Community["🏘️ community/"]
+            COMM_C[Controllers]
+            COMM_UC[UseCases]
+            COMM_DOM[Domain Entities, VOs]
+            COMM_INF[Infrastructure PostgresRepo]
+        end
+
+        subgraph Iam["🔐 iam/"]
+            IAM_C[Controllers]
+            IAM_UC[UseCases]
+            IAM_DOM[Domain]
+            IAM_INF[Infrastructure]
+        end
+
+        subgraph Ledger["💰 ledger/"]
+            LED_C[Controllers]
+            LED_UC[UseCases]
+            LED_DOM[Domain CuentaDeCartera, Cuota, Pago]
+            LED_INF[Infrastructure]
+        end
+
+        subgraph Notifications["📣 notifications/"]
+            NOT_C[Jobs/Controllers]
+            NOT_UC[UseCases]
+            NOT_DOM[Domain]
+            NOT_INF[Infrastructure EmailAdapter]
+        end
+    end
+
+    COMM_C --> COMM_UC --> COMM_DOM
+    COMM_UC --> COMM_INF
+    LED_C --> LED_UC --> LED_DOM
+    LED_UC --> LED_INF
+    LED_DOM -.eventos.-> NOT_DOM
+
+    AUTH --> TENANT
+    TENANT --> LED_C
+    TENANT --> COMM_C

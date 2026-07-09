@@ -1,0 +1,51 @@
+# ─── Secrets ───────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+*.pem
+**/signing_keys.json
+
+# ─── Dependencies ──────────────────────────────────────
+node_modules/
+.pnp
+.pnp.js
+
+# ─── Build ─────────────────────────────────────────────
+dist/
+build/
+*.tsbuildinfo
+
+# ─── Supabase (generated / temp) ───────────────────────
+supabase/.temp/
+supabase/.branches/
+*.out
+
+# ─── Flutter ───────────────────────────────────────────
+*.iml
+.gradle/
+/.packages
+/.pub/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+*.lock
+
+# ─── IDE / Editor ──────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ─── Logs ──────────────────────────────────────────────
+*.log
+npm-debug.log*
+yarn-debug.log*
+lerna-debug.log*
+
+# ─── OS ────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.swp

@@ -1,0 +1,26 @@
+flowchart LR
+    subgraph Emisores
+        E1[CuentaDeCartera]
+        E2[Usuario]
+    end
+    subgraph Eventos
+        EV1((PagoRegistrado))
+        EV2((CuotaVencida))
+        EV3((PropietarioCreado))
+        EV4((UsuarioCreado))
+    end
+    subgraph Handlers
+        H1[NotificacionHandler genera notificación]
+        H2[CacheInvalidator refresca vistas]
+        H3[AuditLogHandler registra auditoría]
+    end
+
+    E1 --> EV1
+    E1 --> EV2
+    E2 --> EV3
+    E2 --> EV4
+
+    EV2 --> H1
+    EV1 --> H2
+    EV1 --> H3
+    EV3 --> H3
