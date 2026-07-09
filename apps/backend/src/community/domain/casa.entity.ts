@@ -1,3 +1,4 @@
+import { Exclude } from 'class-transformer';
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -21,6 +22,7 @@ export class Casa {
 
   @ManyToOne(() => Etapa, (etapa) => etapa.casas, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'etapa_id' })
+  @Exclude()
   etapa: Etapa;
 
   @CreateDateColumn({ name: 'created_at' })

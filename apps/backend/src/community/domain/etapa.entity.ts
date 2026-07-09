@@ -1,3 +1,4 @@
+import { Exclude } from 'class-transformer';
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -23,6 +24,7 @@ export class Etapa {
 
   @ManyToOne(() => Conjunto, (conjunto) => conjunto.etapas, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'conjunto_id' })
+  @Exclude()
   conjunto: Conjunto;
 
   @OneToMany(() => Casa, (casa) => casa.etapa, { cascade: true })

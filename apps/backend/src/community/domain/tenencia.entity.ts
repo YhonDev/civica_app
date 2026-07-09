@@ -1,3 +1,4 @@
+import { Exclude } from 'class-transformer';
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -29,6 +30,7 @@ export class Tenencia {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'propietario_id' })
+  @Exclude()
   propietario: Propietario;
 
   @CreateDateColumn({ name: 'created_at' })
