@@ -1,6 +1,8 @@
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 
 export function databaseConfig(): TypeOrmModuleOptions {
+  const sslMode = process.env.DATABASE_SSL;
+
   return {
     type: 'postgres',
     host: process.env.DATABASE_HOST || '127.0.0.1',
@@ -11,5 +13,10 @@ export function databaseConfig(): TypeOrmModuleOptions {
     autoLoadEntities: true,
     synchronize: process.env.NODE_ENV !== 'production',
     logging: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
+    ...(sslMode && {
+      ssl: {
+        rejectUnauthorized: sslMode === 'require' ? false : true,
+      },
+    }),
   };
 }

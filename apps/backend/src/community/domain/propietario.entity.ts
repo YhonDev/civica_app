@@ -20,7 +20,7 @@ export class Propietario {
   telefono: string;
 
   @Column({ name: 'email', type: 'varchar', length: 255, nullable: true })
-  email: string;
+  email: string | null;
 
   @Column({ name: 'tenant_id', type: 'uuid' })
   tenantId: string;
