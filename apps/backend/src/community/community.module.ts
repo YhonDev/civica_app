@@ -14,10 +14,14 @@ import { RegistrarPropietarioUseCase } from './application/use-cases/registrar-p
 import { AgregarTenenciaUseCase } from './application/use-cases/agregar-tenencia.use-case';
 import { ConjuntosController } from './infrastructure/controllers/conjuntos.controller';
 import { PropietariosController } from './infrastructure/controllers/propietarios.controller';
+import { NotificationsModule } from '../notifications/notifications.module';
+import { ActividadInterceptor } from '../shared/common/decorators/registrar-actividad.decorator';
+import { Reflector } from '@nestjs/core';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Conjunto, Etapa, Casa, Propietario, Tenencia]),
+    NotificationsModule,
   ],
   controllers: [ConjuntosController, PropietariosController],
   providers: [
@@ -30,6 +34,9 @@ import { PropietariosController } from './infrastructure/controllers/propietario
     RegistrarCasaUseCase,
     RegistrarPropietarioUseCase,
     AgregarTenenciaUseCase,
+    // Interceptors
+    Reflector,
+    ActividadInterceptor,
   ],
   exports: [TypeOrmModule, ConjuntoRepository, PropietarioRepository],
 })

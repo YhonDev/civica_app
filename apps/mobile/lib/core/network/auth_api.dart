@@ -52,6 +52,7 @@ class AuthApi {
       result.accessToken,
       result.refreshToken,
     );
+    await _client.tokenStorage.saveUser(result.usuario);
 
     return result;
   }

@@ -172,6 +172,56 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                       ),
+                      const SizedBox(height: 24),
+                      const Divider(),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Usuarios de prueba (Autocompletar)',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.outline,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        alignment: WrapAlignment.center,
+                        children: [
+                          ActionChip(
+                            avatar: const Icon(Icons.admin_panel_settings_outlined, size: 16),
+                            label: const Text('Admin'),
+                            onPressed: () {
+                              _emailCtrl.text = 'admin@civica.test';
+                              _passwordCtrl.text = 'admin123';
+                            },
+                          ),
+                          ActionChip(
+                            avatar: const Icon(Icons.engineering_outlined, size: 16),
+                            label: const Text('Cobrador'),
+                            onPressed: () {
+                              _emailCtrl.text = 'cobrador@civica.test';
+                              _passwordCtrl.text = 'cobrador123';
+                            },
+                          ),
+                          ActionChip(
+                            avatar: const Icon(Icons.home_outlined, size: 16),
+                            label: const Text('Propietario'),
+                            onPressed: () {
+                              _emailCtrl.text = 'propietario@civica.test';
+                              _passwordCtrl.text = 'propietario123';
+                            },
+                          ),
+                          ActionChip(
+                            avatar: const Icon(Icons.home_outlined, size: 16),
+                            label: const Text('Propietario (Alt)'),
+                            onPressed: () {
+                              _emailCtrl.text = 'propetario@civica.test';
+                              _passwordCtrl.text = 'propetario123';
+                            },
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),

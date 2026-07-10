@@ -68,6 +68,72 @@ export class DireccionInterna {
 
 export type Frecuencia = 'SEMANAL' | 'QUINCENAL' | 'MENSUAL';
 
+/** Valor inicial para seeds — en runtime siempre consultar tarifas vigentes en BD. */
+export const CUOTA_MENSUAL_CIVICA_DEFAULT_PESOS = 40_000;
+export const CUOTA_MENSUAL_CIVICA_DEFAULT_CENTAVOS =
+  CUOTA_MENSUAL_CIVICA_DEFAULT_PESOS * 100;
+
+/** @deprecated Usar CUOTA_MENSUAL_CIVICA_DEFAULT_PESOS (solo seeds). */
+export const CUOTA_MENSUAL_CIVICA_PESOS = CUOTA_MENSUAL_CIVICA_DEFAULT_PESOS;
+
+/** @deprecated Usar CUOTA_MENSUAL_CIVICA_DEFAULT_CENTAVOS (solo seeds). */
+export const CUOTA_MENSUAL_CIVICA_CENTAVOS = CUOTA_MENSUAL_CIVICA_DEFAULT_CENTAVOS;
+
+/** Pagos por mes según la modalidad de pago del propietario. */
+export function pagosPorMes(frecuencia: Frecuencia): number {
+  switch (frecuencia) {
+    case 'SEMANAL':
+      return 4;
+    case 'QUINCENAL':
+      return 2;
+    case 'MENSUAL':
+      return 1;
+  }
+}
+
+/**
+ * Convierte un monto de cualquier frecuencia al equivalente mensual.
+ * Ej: $10.000 semanal → $40.000 mensual.
+ */
+export function montoMensualDesde(
+  frecuencia: Frecuencia,
+  montoCentavos: number,
+): number {
+  return montoCentavos * pagosPorMes(frecuencia);
+}
+
+/**
+ * Calcula los montos de tarifa para las 3 modalidades a partir de la cuota mensual.
+ * La cuota cívica mensual se divide: /4 semanal, /2 quincenal, /1 mensual.
+ */
+export function tarifasDerivadas(montoMensualCentavos: number): Record<Frecuencia, number> {
+  return {
+    MENSUAL: montoMensualCentavos,
+    QUINCENAL: Math.round(montoMensualCentavos / 2),
+    SEMANAL: Math.round(montoMensualCentavos / 4),
+  };
+}
+
+/**
+ * Monto de cada abono parcial según la frecuencia de pago.
+ * La cuota mensual completa se divide en 4, 2 o 1 pagos.
+ */
+export function calcularMontoParcial(
+  montoMensualCentavos: number,
+  frecuencia: Frecuencia,
+): Money {
+  const divisor = pagosPorMes(frecuencia);
+  return Money.ofCOP(Math.round(montoMensualCentavos / divisor));
+}
+
+/** @deprecated Usar calcularMontoParcial — la cuota almacena el monto mensual completo. */
+export function calcularMontoCuota(
+  montoMensualCentavos: number,
+  frecuencia: Frecuencia,
+): Money {
+  return calcularMontoParcial(montoMensualCentavos, frecuencia);
+}
+
 export class Money {
   constructor(
     public readonly amount: number,    // en centavos (integer)
@@ -119,6 +185,29 @@ export type EstadoCuota = 'PENDIENTE' | 'PARCIAL' | 'PAGADA' | 'VENCIDA';
 
 export type SyncStatus = 'PENDIENTE_SYNC' | 'SYNC_OK' | 'CONFLICTO';
 
+/** Margen en días para alinear vencimiento al sábado más cercano a la quincena. */
+const MARGEN_QUINCENA_DIAS = 4;
+
+function toLocalDate(year: number, month: number, day: number): Date {
+  return new Date(year, month, day);
+}
+
+function parseLocalDate(dateStr: string): Date {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return toLocalDate(y, m - 1, d);
+}
+
+function formatDate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function normalizeDate(d: Date): Date {
+  return toLocalDate(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
 export class Periodo {
   constructor(
     public readonly inicio: Date,
@@ -126,26 +215,192 @@ export class Periodo {
     public readonly vencimiento: Date,
   ) {}
 
+  get inicioStr(): string {
+    return formatDate(this.inicio);
+  }
+
+  get finStr(): string {
+    return formatDate(this.fin);
+  }
+
+  get vencimientoStr(): string {
+    return formatDate(this.vencimiento);
+  }
+
+  /**
+   * Encuentra el sábado más cercano a una fecha ancla dentro del margen permitido.
+   * Se usa para alinear cobros con la quincena del propietario.
+   */
+  static sabadoCercano(ancla: Date, margen = MARGEN_QUINCENA_DIAS): Date {
+    let mejor: Date | null = null;
+    let menorDistancia = Infinity;
+
+    for (let offset = -margen; offset <= margen; offset++) {
+      const candidato = new Date(ancla);
+      candidato.setDate(candidato.getDate() + offset);
+      if (candidato.getDay() === 6) {
+        const distancia = Math.abs(offset);
+        if (distancia < menorDistancia) {
+          menorDistancia = distancia;
+          mejor = candidato;
+        }
+      }
+    }
+
+    if (mejor) return normalizeDate(mejor);
+
+    const fallback = new Date(ancla);
+    while (fallback.getDay() !== 6) {
+      fallback.setDate(fallback.getDate() + 1);
+    }
+    return normalizeDate(fallback);
+  }
+
+  /**
+   * Período de la cuota mensual (siempre del día 1 al 1 del mes siguiente).
+   * Un solo registro por mes; los abonos parciales se acumulan en montoPagado.
+   */
+  static calcularCuotaMensual(desde: Date): Periodo {
+    return Periodo.calcularMensual(normalizeDate(desde));
+  }
+
+  /**
+   * Fechas sugeridas de cobro parcial dentro del mes.
+   * SEMANAL: cada sábado | QUINCENAL: cerca del 15 y fin de mes | MENSUAL: fin de mes.
+   */
+  static fechasCobroParciales(
+    frecuencia: Frecuencia,
+    year: number,
+    month: number,
+  ): string[] {
+    switch (frecuencia) {
+      case 'SEMANAL': {
+        const fechas: string[] = [];
+        const ultimoDia = toLocalDate(year, month + 1, 0).getDate();
+        for (let d = 1; d <= ultimoDia; d++) {
+          const fecha = toLocalDate(year, month, d);
+          if (fecha.getDay() === 6) fechas.push(formatDate(fecha));
+        }
+        return fechas;
+      }
+      case 'QUINCENAL': {
+        const ancla1 = toLocalDate(year, month, 15);
+        const ancla2 = toLocalDate(year, month + 1, 0);
+        return [
+          formatDate(Periodo.sabadoCercano(ancla1)),
+          formatDate(Periodo.sabadoCercano(ancla2)),
+        ];
+      }
+      case 'MENSUAL': {
+        const ultimoDia = toLocalDate(year, month + 1, 0);
+        return [formatDate(Periodo.sabadoCercano(ultimoDia))];
+      }
+    }
+  }
+
+  /**
+   * Calcula el siguiente período de cobro parcial (solo referencia de calendario).
+   * La cuota en BD siempre es mensual.
+   */
   static calcularSiguiente(frecuencia: Frecuencia, desde: Date): Periodo {
-    const inicio = new Date(desde);
-    const fin = new Date(desde);
-    const vencimiento = new Date(desde);
+    const base = normalizeDate(desde);
 
     switch (frecuencia) {
       case 'SEMANAL':
-        fin.setDate(fin.getDate() + 7);
-        vencimiento.setDate(vencimiento.getDate() + 7);
-        break;
+        return Periodo.calcularSemanal(base);
       case 'QUINCENAL':
-        fin.setDate(fin.getDate() + 15);
-        vencimiento.setDate(vencimiento.getDate() + 15);
-        break;
+        return Periodo.calcularQuincenal(base);
       case 'MENSUAL':
-        fin.setMonth(fin.getMonth() + 1);
-        vencimiento.setMonth(vencimiento.getMonth() + 1);
-        break;
+        return Periodo.calcularMensual(base);
+    }
+  }
+
+  private static calcularSemanal(desde: Date): Periodo {
+    const inicio = new Date(desde);
+    while (inicio.getDay() !== 1) {
+      inicio.setDate(inicio.getDate() + 1);
     }
 
+    const fin = new Date(inicio);
+    fin.setDate(fin.getDate() + 7);
+
+    const vencimiento = new Date(inicio);
+    vencimiento.setDate(vencimiento.getDate() + 5);
+
+    return new Periodo(normalizeDate(inicio), normalizeDate(fin), normalizeDate(vencimiento));
+  }
+
+  private static calcularQuincenal(desde: Date): Periodo {
+    const day = desde.getDate();
+
+    if (day <= 15) {
+      const inicio = toLocalDate(desde.getFullYear(), desde.getMonth(), 1);
+      const fin = toLocalDate(desde.getFullYear(), desde.getMonth(), 16);
+      const ancla = toLocalDate(desde.getFullYear(), desde.getMonth(), 15);
+      const vencimiento = Periodo.sabadoCercano(ancla);
+      return new Periodo(inicio, fin, vencimiento);
+    }
+
+    const inicio = toLocalDate(desde.getFullYear(), desde.getMonth(), 16);
+    const fin = toLocalDate(desde.getFullYear(), desde.getMonth() + 1, 1);
+    const ultimoDia = toLocalDate(desde.getFullYear(), desde.getMonth() + 1, 0);
+    const vencimiento = Periodo.sabadoCercano(ultimoDia);
     return new Periodo(inicio, fin, vencimiento);
+  }
+
+  private static calcularMensual(desde: Date): Periodo {
+    const inicio = toLocalDate(desde.getFullYear(), desde.getMonth(), 1);
+    const fin = toLocalDate(desde.getFullYear(), desde.getMonth() + 1, 1);
+    const ultimoDia = toLocalDate(desde.getFullYear(), desde.getMonth() + 1, 0);
+    const vencimiento = Periodo.sabadoCercano(ultimoDia);
+    return new Periodo(inicio, fin, vencimiento);
+  }
+
+  /**
+   * Fecha límite: solo el mes actual y el próximo mes son visibles/generables.
+   */
+  static limiteGeneracion(_frecuencia?: Frecuencia, hoy = new Date()): Date {
+    const ref = normalizeDate(hoy);
+    return toLocalDate(ref.getFullYear(), ref.getMonth() + 1, 1);
+  }
+
+  /**
+   * Determina si una cuota mensual debe mostrarse (mes actual o próximo).
+   */
+  static esVisible(
+    periodoInicio: string,
+    _frecuencia?: Frecuencia,
+    hoy = new Date(),
+  ): boolean {
+    const inicio = parseLocalDate(periodoInicio);
+    const ref = normalizeDate(hoy);
+
+    if (inicio <= ref) return true;
+
+    const limite = Periodo.limiteGeneracion(undefined, ref);
+    return inicio <= limite;
+  }
+
+  /**
+   * Indica si un período ya puede generarse (su inicio llegó o es hoy).
+   */
+  static puedeGenerarse(periodo: Periodo, hoy = new Date()): boolean {
+    const ref = normalizeDate(hoy);
+    return periodo.inicio <= ref;
+  }
+
+  static formatConceptoCuotaMensual(periodo: Periodo): string {
+    const meses = [
+      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+    ];
+    const mes = meses[periodo.inicio.getMonth()];
+    const anio = periodo.inicio.getFullYear();
+    return `Administración ${mes} ${anio}`;
+  }
+
+  /** @deprecated Usar formatConceptoCuotaMensual para registros de cuota. */
+  static formatConcepto(frecuencia: Frecuencia, periodo: Periodo): string {
+    return Periodo.formatConceptoCuotaMensual(periodo);
   }
 }

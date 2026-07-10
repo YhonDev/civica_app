@@ -43,3 +43,9 @@ export class ListarTarifasQueryDto {
   @IsOptional()
   conjuntoId?: string;
 }
+
+export class TarifasVigentesQueryDto {
+  @IsString()
+  @IsNotEmpty({ message: 'conjuntoId es requerido' })
+  conjuntoId: string;
+}

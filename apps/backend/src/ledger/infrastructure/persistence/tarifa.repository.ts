@@ -49,6 +49,26 @@ export class TarifaRepository {
     return this.repo.findOne({ where: { id } });
   }
 
+  /**
+   * Tarifas vigentes hoy para las 3 modalidades de un conjunto.
+   * Siempre consultar BD — el admin puede editar los montos.
+   */
+  async findVigentesPorConjunto(
+    conjuntoId: string,
+    fecha = new Date(),
+  ): Promise<Record<Frecuencia, Tarifa | null>> {
+    const frecuencias: Frecuencia[] = ['SEMANAL', 'QUINCENAL', 'MENSUAL'];
+    const result = {} as Record<Frecuencia, Tarifa | null>;
+
+    await Promise.all(
+      frecuencias.map(async (frecuencia) => {
+        result[frecuencia] = await this.findVigente(conjuntoId, frecuencia, fecha);
+      }),
+    );
+
+    return result;
+  }
+
   async save(tarifa: Tarifa): Promise<Tarifa> {
     return this.repo.save(tarifa);
   }

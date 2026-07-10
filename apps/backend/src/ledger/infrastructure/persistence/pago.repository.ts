@@ -35,11 +35,93 @@ export class PagoRepository {
     });
   }
 
+  async countByCuota(cuotaId: string): Promise<number> {
+    return this.repo.count({ where: { cuotaId } });
+  }
+
   async save(pago: Pago): Promise<Pago> {
     return this.repo.save(pago);
   }
 
   async saveMany(pagos: Pago[]): Promise<Pago[]> {
     return this.repo.save(pagos);
+  }
+
+  // ── Dashboard queries ───────────────────────────────────
+
+  async sumMontoByMonth(
+    tenantId: string,
+    year: number,
+    month: number,
+  ): Promise<number> {
+    const result = await this.repo
+      .createQueryBuilder('pago')
+      .select('COALESCE(SUM(pago.monto), 0)', 'total')
+      .where('pago.tenantId = :tenantId', { tenantId })
+      .andWhere(
+        'pago.fecha_pago >= :start AND pago.fecha_pago < :end',
+        {
+          start: `${year}-${String(month).padStart(2, '0')}-01`,
+          end: month === 12
+            ? `${year + 1}-01-01`
+            : `${year}-${String(month + 1).padStart(2, '0')}-01`,
+        },
+      )
+      .getRawOne();
+    return Number(result?.total ?? 0);
+  }
+
+  async countDistinctPropietariosByMonth(
+    tenantId: string,
+    year: number,
+    month: number,
+  ): Promise<number> {
+    const result = await this.repo
+      .createQueryBuilder('pago')
+      .select('COUNT(DISTINCT pago.propietarioId)', 'count')
+      .where('pago.tenantId = :tenantId', { tenantId })
+      .andWhere(
+        'pago.fecha_pago >= :start AND pago.fecha_pago < :end',
+        {
+          start: `${year}-${String(month).padStart(2, '0')}-01`,
+          end: month === 12
+            ? `${year + 1}-01-01`
+            : `${year}-${String(month + 1).padStart(2, '0')}-01`,
+        },
+      )
+      .getRawOne();
+    return Number(result?.count ?? 0);
+  }
+
+  async groupByDayByMonth(
+    tenantId: string,
+    year: number,
+    month: number,
+  ): Promise<Array<{ dia: number; monto: number }>> {
+    const rows = await this.repo
+      .createQueryBuilder('pago')
+      .select(
+        "EXTRACT(DAY FROM pago.fecha_pago::timestamp)",
+        'dia',
+      )
+      .addSelect('SUM(pago.monto)', 'monto')
+      .where('pago.tenantId = :tenantId', { tenantId })
+      .andWhere(
+        'pago.fecha_pago >= :start AND pago.fecha_pago < :end',
+        {
+          start: `${year}-${String(month).padStart(2, '0')}-01`,
+          end: month === 12
+            ? `${year + 1}-01-01`
+            : `${year}-${String(month + 1).padStart(2, '0')}-01`,
+        },
+      )
+      .groupBy("EXTRACT(DAY FROM pago.fecha_pago::timestamp)")
+      .orderBy('dia', 'ASC')
+      .getRawMany();
+
+    return rows.map((r) => ({
+      dia: Number(r.dia),
+      monto: Number(r.monto),
+    }));
   }
 }

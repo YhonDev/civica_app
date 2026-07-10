@@ -6,6 +6,7 @@ import {
   Query,
   Body,
   UseGuards,
+  UseInterceptors,
   NotFoundException,
 } from '@nestjs/common';
 import { RegistrarPagoUseCase } from '../../application/use-cases/registrar-pago.use-case';
@@ -18,6 +19,10 @@ import { CurrentUser } from '../../../shared/tenant/current-user.decorator';
 import { CurrentTenant } from '../../../shared/tenant/current-tenant.decorator';
 import { RolUsuario } from '../../../iam/domain/usuario.entity';
 import { Usuario } from '../../../iam/domain/usuario.entity';
+import {
+  RegistrarActividad,
+  ActividadInterceptor,
+} from '../../../shared/common/decorators/registrar-actividad.decorator';
 
 @Controller('pagos')
 @UseGuards(JwtAuthGuard)
@@ -30,6 +35,12 @@ export class PagosController {
   @Post()
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN, RolUsuario.COBRADOR)
+  @UseInterceptors(ActividadInterceptor)
+  @RegistrarActividad({
+    tipo: 'PAGO',
+    descripcionFn: (result) =>
+      `Pago registrado: $${(result.pago.monto / 100).toFixed(0)} COP (${result.cuotasAfectadas.length} cuota(s))`,
+  })
   async registrar(
     @Body() dto: RegistrarPagoDto,
     @CurrentUser() user: Usuario,

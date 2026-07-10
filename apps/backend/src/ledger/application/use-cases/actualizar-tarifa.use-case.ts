@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Tarifa } from '../../domain/tarifa.entity';
 import { TarifaRepository } from '../../infrastructure/persistence/tarifa.repository';
-import { Frecuencia } from '../../../shared/common/value-objects';
+import { TarifaDerivacionService } from '../services/tarifa-derivacion.service';
 
 interface ActualizarTarifaParams {
   tarifaId: string;
@@ -8,29 +9,19 @@ interface ActualizarTarifaParams {
   fechaVigencia?: string;
 }
 
-/**
- * Updates an existing tarifa.
- * For MVP simplicity, we follow the ADR approach: changes to tarifa fields
- * are allowed when no cuotas have been generated with this tarifa yet.
- * Otherwise, users should create a new tarifa version.
- */
 @Injectable()
 export class ActualizarTarifaUseCase {
-  constructor(private readonly tarifaRepository: TarifaRepository) {}
+  constructor(
+    private readonly tarifaRepository: TarifaRepository,
+    private readonly tarifaDerivacionService: TarifaDerivacionService,
+  ) {}
 
-  async execute(params: ActualizarTarifaParams) {
+  async execute(params: ActualizarTarifaParams): Promise<Tarifa> {
     const { tarifaId, montoPesos, fechaVigencia } = params;
 
     const tarifa = await this.tarifaRepository.findById(tarifaId);
     if (!tarifa) {
       throw new NotFoundException('Tarifa no encontrada');
-    }
-
-    if (montoPesos !== undefined) {
-      if (montoPesos <= 0) {
-        throw new BadRequestException('El monto debe ser mayor a cero');
-      }
-      tarifa.monto = Math.round(montoPesos * 100);
     }
 
     if (fechaVigencia !== undefined) {
@@ -39,6 +30,34 @@ export class ActualizarTarifaUseCase {
         throw new BadRequestException('fechaVigencia no es una fecha válida');
       }
       tarifa.fechaVigencia = fechaVigencia;
+    }
+
+    if (montoPesos !== undefined) {
+      if (montoPesos <= 0) {
+        throw new BadRequestException('El monto debe ser mayor a cero');
+      }
+
+      const montoCentavos = Math.round(montoPesos * 100);
+      const actualizadas = await this.tarifaDerivacionService.actualizarActivas(
+        tarifa.conjuntoId,
+        tarifa.tenantId,
+        tarifa.frecuencia,
+        montoCentavos,
+      );
+
+      const actualizada = actualizadas.find(
+        (t) => t.frecuencia === tarifa.frecuencia,
+      );
+      if (!actualizada) {
+        throw new BadRequestException('No se encontraron tarifas activas para actualizar');
+      }
+
+      if (fechaVigencia !== undefined) {
+        actualizada.fechaVigencia = fechaVigencia;
+        return this.tarifaRepository.save(actualizada);
+      }
+
+      return actualizada;
     }
 
     return this.tarifaRepository.save(tarifa);

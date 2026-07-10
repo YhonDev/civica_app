@@ -5,6 +5,7 @@ import {
   Query,
   Body,
   UseGuards,
+  UseInterceptors,
   UnauthorizedException,
 } from '@nestjs/common';
 import { DataSource } from 'typeorm';
@@ -16,6 +17,10 @@ import { RolesGuard } from '../../../shared/auth/guards/roles.guard';
 import { Roles } from '../../../shared/auth/decorators/roles.decorator';
 import { CurrentUser } from '../../../shared/tenant/current-user.decorator';
 import { Usuario, RolUsuario } from '../../../iam/domain/usuario.entity';
+import {
+  RegistrarActividad,
+  ActividadInterceptor,
+} from '../../../shared/common/decorators/registrar-actividad.decorator';
 
 @Controller('propietarios')
 @UseGuards(JwtAuthGuard)
@@ -29,6 +34,11 @@ export class PropietariosController {
   @Post()
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN)
+  @UseInterceptors(ActividadInterceptor)
+  @RegistrarActividad({
+    tipo: 'PROPIETARIO',
+    descripcionFn: (result) => `Nuevo propietario registrado: ${result.nombre}`,
+  })
   async registrar(@Body() dto: RegistrarPropietarioDto) {
     return this.registrarPropietarioUseCase.execute({
       nombre: dto.nombre,

@@ -1,4 +1,5 @@
 import { Global, Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Usuario } from '../../iam/domain/usuario.entity';
@@ -7,15 +8,17 @@ import { JwtStrategy } from './jwt.strategy';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 
-const jwtSecret = process.env.JWT_SECRET || 'dev-secret-change-in-production';
-
 @Global()
 @Module({
   imports: [
     TypeOrmModule.forFeature([Usuario]),
-    JwtModule.register({
-      secret: jwtSecret,
-      signOptions: { expiresIn: '1h' },
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        secret: config.get<string>('JWT_SECRET') || 'dev-secret-change-in-production',
+        signOptions: { expiresIn: '1h' },
+      }),
     }),
   ],
   providers: [AuthService, JwtStrategy, JwtAuthGuard, RolesGuard],

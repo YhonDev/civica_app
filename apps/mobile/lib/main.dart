@@ -1,16 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 import 'core/database/app_database.dart';
 import 'core/network/api_client.dart';
 import 'core/sync/connectivity_detector.dart';
 import 'core/sync/sync_service.dart';
+import 'core/theme/app_theme.dart';
+import 'core/theme/app_colors.dart';
+import 'core/router/app_router.dart';
 import 'screens/auth/auth_cubit.dart';
-import 'screens/auth/login_screen.dart';
-import 'screens/search_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Inicializar formateo de fechas en español
+  await initializeDateFormatting('es', null);
 
   // Inicializar base de datos local
   await AppDatabase.init();
@@ -35,64 +40,66 @@ class CivicaPagoApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = ThemeData(
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: const Color(0xFF1565C0), // Blue 800
-        brightness: Brightness.light,
-      ),
-      useMaterial3: true,
-      appBarTheme: const AppBarTheme(
-        centerTitle: true,
-        elevation: 0,
-      ),
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: Colors.grey.shade50,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 14,
-        ),
-      ),
-    );
-
-    return MaterialApp(
-      title: 'Cívica Pago',
-      debugShowCheckedModeBanner: false,
-      theme: theme,
-      home: BlocProvider(
-        create: (_) => AuthCubit()..checkSession(),
-        child: const _AuthGate(),
-      ),
-    );
-  }
-}
-
-/// Auth gate: muestra LoginScreen o Home según el estado de autenticación.
-class _AuthGate extends StatelessWidget {
-  const _AuthGate();
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<AuthCubit, AuthState>(
-      builder: (context, state) {
-        switch (state.status) {
-          case AuthStatus.initial:
-          case AuthStatus.loading:
-            return const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            );
-          case AuthStatus.authenticated:
-            return const SearchScreen();
-          case AuthStatus.unauthenticated:
-          case AuthStatus.error:
-            return const LoginScreen();
-        }
+    return ValueListenableBuilder<bool>(
+      valueListenable: darkThemeNotifier,
+      builder: (context, isDark, _) {
+        AppColors.setDarkMode(isDark);
+        return MaterialApp(
+          title: 'VigiVecino',
+          debugShowCheckedModeBanner: false,
+          theme: buildLightTheme(),
+          themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
+          home: BlocProvider(
+            create: (_) => AuthCubit()..checkSession(),
+            child: const AuthGate(),
+          ),
+        );
       },
     );
   }
 }
 
+/// Auth gate: espera que se determine la sesión, luego pasa a GoRouter.
+class AuthGate extends StatelessWidget {
+  const AuthGate({super.key});
 
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<AuthCubit, AuthState>(
+      builder: (context, state) {
+        if (state.status == AuthStatus.initial ||
+            state.status == AuthStatus.loading) {
+          return Scaffold(
+            body: Center(
+              child: SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+            ),
+          );
+        }
+        // Una vez determinado el estado, usar GoRouter
+        // El router se reconstruye aquí para que tenga acceso al AuthCubit
+        return _RouterWithAuth();
+      },
+    );
+  }
+}
+
+/// Wraps GoRouter inside the BlocProvider tree so redirect callbacks
+/// can access AuthCubit via context.
+class _RouterWithAuth extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp.router(
+      title: 'VigiVecino',
+      debugShowCheckedModeBanner: false,
+      theme: buildLightTheme(),
+      routerConfig: appRouter,
+    );
+  }
+}

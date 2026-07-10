@@ -9,6 +9,7 @@ import { TenantModule } from './shared/tenant/tenant.module';
 import { CommunityModule } from './community/community.module';
 import { IamModule } from './iam/iam.module';
 import { LedgerModule } from './ledger/ledger.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { LedgerModule } from './ledger/ledger.module';
     CommunityModule,
     IamModule,
     LedgerModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

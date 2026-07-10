@@ -1,0 +1,96 @@
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
+import { Usuario } from '../../iam/domain/usuario.entity';
+import { Cuota } from './cuota.entity';
+
+export enum SolicitudEstado {
+  PENDIENTE = 'PENDIENTE',
+  EN_REVISION = 'EN_REVISION',
+  RESUELTA = 'RESUELTA',
+  RECHAZADA = 'RECHAZADA',
+}
+
+@Entity('solicitudes')
+export class Solicitud {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column({ name: 'tenant_id', type: 'uuid' })
+  tenantId: string;
+
+  @Column({ name: 'usuario_id', type: 'uuid' })
+  usuarioId: string;
+
+  @ManyToOne(() => Usuario)
+  @JoinColumn({ name: 'usuario_id' })
+  usuario: Usuario;
+
+  @Column({ name: 'cuota_id', type: 'uuid' })
+  cuotaId: string;
+
+  @ManyToOne(() => Cuota)
+  @JoinColumn({ name: 'cuota_id' })
+  cuota: Cuota;
+
+  @Column({ name: 'nro_recibo', type: 'varchar', length: 20, unique: true })
+  nroRecibo: string;
+
+  @Column({ name: 'tipo', type: 'varchar', length: 255 })
+  tipo: string;
+
+  @Column({ name: 'descripcion', type: 'text' })
+  descripcion: string;
+
+  @Column({
+    name: 'estado',
+    type: 'varchar',
+    length: 20,
+    default: SolicitudEstado.EN_REVISION,
+  })
+  estado: SolicitudEstado;
+
+  @Column({ name: 'fecha', type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
+  fecha: Date;
+
+  @Column({ name: 'respuesta', type: 'text', nullable: true })
+  respuesta: string | null;
+
+  @Column({ name: 'fecha_respuesta', type: 'timestamptz', nullable: true })
+  fechaRespuesta: Date | null;
+
+  @CreateDateColumn({ name: 'created_at' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ name: 'updated_at' })
+  updatedAt: Date;
+
+  static crear(
+    tenantId: string,
+    usuarioId: string,
+    cuotaId: string,
+    tipo: string,
+    descripcion: string,
+  ): Solicitud {
+    const solicitud = new Solicitud();
+    solicitud.tenantId = tenantId;
+    solicitud.usuarioId = usuarioId;
+    solicitud.cuotaId = cuotaId;
+    
+    // Generate a unique ticket reference format: TK-XXXXXX
+    const randomNum = Math.floor(100000 + Math.random() * 900000);
+    solicitud.nroRecibo = `TK-${randomNum}`;
+    
+    solicitud.tipo = tipo;
+    solicitud.descripcion = descripcion;
+    solicitud.estado = SolicitudEstado.EN_REVISION;
+    solicitud.fecha = new Date();
+    return solicitud;
+  }
+}

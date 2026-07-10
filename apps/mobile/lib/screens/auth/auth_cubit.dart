@@ -3,6 +3,7 @@ import 'package:equatable/equatable.dart';
 
 import '../../core/network/auth_api.dart';
 import '../../core/network/api_exceptions.dart';
+import '../../core/network/api_client.dart';
 
 // ════════════════════════════════════════════════════════════
 // STATE
@@ -63,9 +64,12 @@ class AuthCubit extends Cubit<AuthState> {
     try {
       final loggedIn = await _authApi.isLoggedIn();
       if (loggedIn) {
-        // Si hay tokens, consideramos que la sesión es válida.
-        // El AuthInterceptor refrescará si es necesario.
-        emit(const AuthState.authenticated({}));
+        final user = await ApiClient.instance.tokenStorage.getUser();
+        if (user != null) {
+          emit(AuthState.authenticated(user));
+        } else {
+          emit(const AuthState.unauthenticated());
+        }
       } else {
         emit(const AuthState.unauthenticated());
       }

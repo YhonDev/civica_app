@@ -6,23 +6,28 @@ import { Cuota } from '../../domain/cuota.entity';
 import { CuentaDeCartera } from '../../domain/cuenta-de-cartera.entity';
 import { Periodo, Money } from '../../../shared/common/value-objects';
 
+function parseLocalDate(dateStr: string): Date {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function toLocalDate(year: number, month: number, day: number): Date {
+  return new Date(year, month, day);
+}
+
 export interface GenerarCuotasResult {
   generated: number;
   detalles: string[];
 }
 
 /**
- * Genera cuotas para cuentas de cartera activas.
+ * Genera cuotas mensuales para cuentas de cartera activas.
  *
- * Core business logic:
- * - For each active CuentaDeCartera (filtered by tenant and optionally conjuntoId)
- * - Find the latest cuota to know the last period
- * - If no cuotas exist, start from fechaActivacion
- * - Calculate the next period using Periodo.calcularSiguiente
- * - Find the vigente tarifa for this conjunto+frecuencia
- * - Create cuota with the tarifa's monto
- *
- * Key rule: changes to tarifa only affect future cuotas.
+ * Regla de negocio:
+ * - El día 1 de cada mes se crea UN solo registro de cuota por propietario.
+ * - El monto es la tarifa mensual completa ($40.000 por casa, editable por admin).
+ * - SEMANAL / QUINCENAL / MENSUAL define cuántos abonos parciales se esperan (4, 2, 1)
+ *   pero todos se acumulan en el mismo registro mensual (montoPagado, estado PARCIAL).
  */
 @Injectable()
 export class GenerarCuotasUseCase {
@@ -41,13 +46,11 @@ export class GenerarCuotasUseCase {
     const detalles: string[] = [];
     let generated = 0;
 
-    // Step 1: Find all active CuentaDeCartera
     let cuentas: CuentaDeCartera[];
 
     if (conjuntoId) {
       cuentas = await this.cuentaCarteraRepository.findByConjunto(conjuntoId);
     } else {
-      // Get all accounts for tenant, then filter active ones
       const allAccounts =
         await this.cuentaCarteraRepository.findAllByTenant(tenantId);
       cuentas = allAccounts.filter((a) => a.activa);
@@ -58,21 +61,20 @@ export class GenerarCuotasUseCase {
     );
     detalles.push(`Cuentas activas encontradas: ${cuentas.length}`);
 
-    // Step 2: For each account, generate the next cuota
     for (const cuenta of cuentas) {
       try {
-        const result = await this.generarCuotaParaCuenta(cuenta);
+        const result = await this.generarCuotaMensual(cuenta);
         if (result) {
           generated += result;
           detalles.push(
-            `Cuenta ${cuenta.propietarioId}: ${result} cuota(s) generada(s)`,
+            `Cuenta ${cuenta.propietarioId}: cuota mensual generada`,
           );
         }
       } catch (error) {
         const message =
           error instanceof Error ? error.message : 'Error desconocido';
         this.logger.error(
-          `Error generando cuotas para cuenta ${cuenta.id}: ${message}`,
+          `Error generando cuota para cuenta ${cuenta.id}: ${message}`,
         );
         detalles.push(`Cuenta ${cuenta.propietarioId}: Error - ${message}`);
       }
@@ -81,66 +83,71 @@ export class GenerarCuotasUseCase {
     return { generated, detalles };
   }
 
-  private async generarCuotaParaCuenta(
-    cuenta: CuentaDeCartera,
-  ): Promise<number> {
-    // Step 2a: Find the latest cuota for this propietario
-    const ultimaCuota =
-      await this.cuotaRepository.findUltimaPorPropietario(
-        cuenta.propietarioId,
-      );
+  private async generarCuotaMensual(cuenta: CuentaDeCartera): Promise<number> {
+    const hoy = new Date();
+    const ultimaCuota = await this.cuotaRepository.findUltimaPorPropietario(
+      cuenta.propietarioId,
+    );
 
-    // Step 2b-2c: Determine the period
-    let periodoInicio: Date;
-
+    let cursor: Date;
     if (!ultimaCuota) {
-      // No cuotas exist yet — start from fechaActivacion
-      periodoInicio = new Date(cuenta.fechaActivacion);
+      const activacion = parseLocalDate(cuenta.fechaActivacion);
+      cursor = toLocalDate(activacion.getFullYear(), activacion.getMonth(), 1);
     } else {
-      // Start from the end of the last period
-      periodoInicio = new Date(ultimaCuota.periodoFin);
+      cursor = parseLocalDate(ultimaCuota.periodoFin);
     }
 
-    // Step 2c: Calculate the next period
-    const periodo = Periodo.calcularSiguiente(
-      cuenta.frecuencia,
-      periodoInicio,
-    );
+    const periodo = Periodo.calcularCuotaMensual(cursor);
+    const limite = Periodo.limiteGeneracion(undefined, hoy);
 
-    // Step 2d: Find the vigente tarifa for this conjunto+frecuencia
-    const tarifa = await this.tarifaRepository.findVigente(
-      cuenta.conjuntoId,
-      cuenta.frecuencia,
-      periodo.inicio,
-    );
-
-    if (!tarifa) {
-      this.logger.warn(
-        `No se encontró tarifa vigente para conjunto ${cuenta.conjuntoId}, ` +
-          `frecuencia ${cuenta.frecuencia} en fecha ${periodo.inicio.toISOString().split('T')[0]}`,
-      );
+    if (periodo.inicio > limite) {
       return 0;
     }
 
-    // Build concepto
-    const fechaInicioStr = periodo.inicio.toISOString().split('T')[0];
-    const fechaFinStr = periodo.fin.toISOString().split('T')[0];
-    const vencimientoStr = periodo.vencimiento.toISOString().split('T')[0];
-    const concepto = `Cuota ${cuenta.frecuencia.toLowerCase()} ${fechaInicioStr} al ${fechaFinStr}`;
+    const yaExiste = await this.cuotaRepository.existsForPropietarioAndPeriodo(
+      cuenta.propietarioId,
+      periodo.inicioStr,
+    );
+    if (yaExiste) {
+      return 0;
+    }
 
-    // Step 2e: Create Cuota
+    const created = await this.crearCuotaMensual(cuenta, periodo);
+    return created ? 1 : 0;
+  }
+
+  private async crearCuotaMensual(
+    cuenta: CuentaDeCartera,
+    periodo: Periodo,
+  ): Promise<boolean> {
+    const tarifaMensual = await this.tarifaRepository.findVigente(
+      cuenta.conjuntoId,
+      'MENSUAL',
+      periodo.inicio,
+    );
+
+    if (!tarifaMensual) {
+      this.logger.warn(
+        `No se encontró tarifa mensual vigente para conjunto ${cuenta.conjuntoId} ` +
+          `en fecha ${periodo.inicioStr}`,
+      );
+      return false;
+    }
+
+    const concepto = Periodo.formatConceptoCuotaMensual(periodo);
+
     const cuota = Cuota.crear(
       cuenta.propietarioId,
       cuenta.tenantId,
       concepto,
-      tarifa.getMonto(),
-      fechaInicioStr,
-      fechaFinStr,
-      vencimientoStr,
-      tarifa.id,
+      Money.ofCOP(tarifaMensual.monto),
+      periodo.inicioStr,
+      periodo.finStr,
+      periodo.vencimientoStr,
+      tarifaMensual.id,
     );
 
     await this.cuotaRepository.save(cuota);
-    return 1;
+    return true;
   }
 }

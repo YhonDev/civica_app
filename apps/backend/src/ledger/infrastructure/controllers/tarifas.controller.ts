@@ -16,6 +16,7 @@ import {
   CrearTarifaDto,
   ActualizarTarifaDto,
   ListarTarifasQueryDto,
+  TarifasVigentesQueryDto,
 } from './dtos/tarifas.dto';
 import { JwtAuthGuard } from '../../../shared/auth/jwt-auth.guard';
 import { RolesGuard } from '../../../shared/auth/guards/roles.guard';
@@ -54,6 +55,41 @@ export class TarifasController {
     @CurrentTenant() tenantId: string,
   ) {
     return this.tarifaRepository.findAll(tenantId, query.conjuntoId);
+  }
+
+  /** Tarifas vigentes hoy — siempre desde BD (editables por admin). */
+  @Get('vigentes')
+  async vigentes(
+    @Query() query: TarifasVigentesQueryDto,
+    @CurrentTenant() tenantId: string,
+  ) {
+    const vigentes = await this.tarifaRepository.findVigentesPorConjunto(
+      query.conjuntoId,
+    );
+
+    const toDto = (tarifa: typeof vigentes.MENSUAL) =>
+      tarifa
+        ? {
+            id: tarifa.id,
+            frecuencia: tarifa.frecuencia,
+            monto: tarifa.monto,
+            montoPesos: Math.round(tarifa.monto / 100),
+            fechaVigencia: tarifa.fechaVigencia,
+          }
+        : null;
+
+    return {
+      conjuntoId: query.conjuntoId,
+      tenantId,
+      tarifas: {
+        MENSUAL: toDto(vigentes.MENSUAL),
+        QUINCENAL: toDto(vigentes.QUINCENAL),
+        SEMANAL: toDto(vigentes.SEMANAL),
+      },
+      cuotaMensualPesos: vigentes.MENSUAL
+        ? Math.round(vigentes.MENSUAL.monto / 100)
+        : null,
+    };
   }
 
   @Get(':id')
