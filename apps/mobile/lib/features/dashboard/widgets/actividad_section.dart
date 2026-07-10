@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -107,6 +108,43 @@ class ActividadSection extends StatelessWidget {
                 );
               }
             },
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Divider(height: 1, color: AppColors.border),
+          
+          // Footer (Call to Action)
+          Material(
+            color: Colors.transparent,
+            borderRadius: const BorderRadius.vertical(
+              bottom: Radius.circular(AppSpacing.cardRadius),
+            ),
+            child: InkWell(
+              onTap: () {
+                context.push('/actividad-admin');
+              },
+              borderRadius: const BorderRadius.vertical(
+                bottom: Radius.circular(AppSpacing.cardRadius),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.md,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Abrir módulo',
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
         ],
       ),

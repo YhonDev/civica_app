@@ -2,14 +2,64 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import 'cartera_repository.dart';
+import 'models/cartera_models.dart';
+import 'widgets/cartera_resumen_header.dart';
+import 'widgets/cobro_card.dart';
+import '../../shared/widgets/empty_state.dart';
+import '../dashboard/widgets/skeleton_loading.dart';
 
-/// Cartera screen — listado de cuentas de propietarios con saldos.
-///
-/// Per doc/20-screen-specifications.md (Propietario / Gestión):
-/// Debe mostrar: nombre, casa, modalidad, estado, saldo.
-/// Acciones: llamar, WhatsApp, registrar pago.
-class CarteraScreen extends StatelessWidget {
+class CarteraScreen extends StatefulWidget {
   const CarteraScreen({super.key});
+
+  @override
+  State<CarteraScreen> createState() => _CarteraScreenState();
+}
+
+class _CarteraScreenState extends State<CarteraScreen> {
+  final CarteraRepository _repository = CarteraRepository();
+  
+  bool _isLoading = true;
+  CarteraResumen? _resumen;
+  List<CobroItem> _allCobros = [];
+  
+  // Filtro activo. Por defecto mostramos 'Pendiente' para que sea información útil inmediata.
+  String _activeFilter = 'Pendiente';
+  
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() => _isLoading = true);
+    
+    try {
+      final resumen = await _repository.getCarteraResumen();
+      final cobros = await _repository.getCobros();
+      
+      if (mounted) {
+        setState(() {
+          _resumen = resumen;
+          _allCobros = cobros;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        // Handle error visually if needed
+      }
+    }
+  }
+
+  List<CobroItem> get _filteredCobros {
+    if (_activeFilter == 'Todos') {
+      return _allCobros;
+    }
+    return _allCobros.where((c) => c.estado == _activeFilter).toList();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,14 +77,14 @@ class CarteraScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Cartera',
+                    'Gestión de Cartera',
                     style: AppTypography.title.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.xs),
                   Text(
-                    'Propietarios con cuenta activa',
+                    'Administración de cobros y propietarios',
                     style: AppTypography.body.copyWith(
                       color: AppColors.textSecondary,
                     ),
@@ -43,214 +93,160 @@ class CarteraScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: AppSpacing.md),
-            // Search
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.screenPadding,
-              ),
-              child: TextField(
-                decoration: InputDecoration(
-                  hintText: 'Buscar propietario...',
-                  hintStyle: AppTypography.body.copyWith(
-                    color: AppColors.textDisabled,
-                  ),
-                  prefixIcon: Icon(
-                    Icons.search_rounded,
-                    color: AppColors.textDisabled,
-                  ),
-                  filled: true,
-                  fillColor: AppColors.card,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            // List
+            
+            // Content
             Expanded(
-              child: ListView.separated(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.screenPadding,
-                ),
-                itemCount: 3, // TODO: real data
-                separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
-                itemBuilder: (_, i) {
-                  return _PropietarioCard(
-                    nombre: ['Juan Pérez', 'María García', 'Carlos López'][i],
-                    casa: ['Casa 101', 'Casa 102', 'Casa 103'][i],
-                    etapa: 'Etapa 1',
-                    saldo: [40000, 0, 80000][i],
-                    estado: ['Pendiente', 'Al día', 'Mora'][i],
-                  );
-                },
-              ),
+              child: _isLoading
+                  ? const _CarteraSkeleton()
+                  : _buildContent(),
             ),
           ],
         ),
       ),
     );
   }
+
+  Widget _buildContent() {
+    if (_resumen == null) {
+      return const EmptyState(
+        icon: Icons.error_outline,
+        title: 'Error de carga',
+        description: 'No se pudo cargar la información de la cartera.',
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadData,
+      child: CustomScrollView(
+        slivers: [
+          // Resumen
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
+              child: CarteraResumenHeader(resumen: _resumen!),
+            ),
+          ),
+          
+          const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
+          
+          // Filtros (Chips)
+          SliverToBoxAdapter(
+            child: _buildFilters(),
+          ),
+          
+          const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.md)),
+
+          // Lista
+          _filteredCobros.isEmpty
+              ? SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: AppSpacing.xl),
+                    child: EmptyState(
+                      icon: Icons.inbox_rounded,
+                      title: 'Sin registros',
+                      description: 'No hay propietarios en estado "$_activeFilter".',
+                    ),
+                  ),
+                )
+              : SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final cobro = _filteredCobros[index];
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                          child: CobroCard(cobro: cobro),
+                        );
+                      },
+                      childCount: _filteredCobros.length,
+                    ),
+                  ),
+                ),
+                
+          // Espaciado final
+          const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xl)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilters() {
+    final filters = ['Pendiente', 'Mora', 'Pagado', 'Todos'];
+    
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
+      child: Row(
+        children: filters.map((filter) {
+          final isSelected = _activeFilter == filter;
+          return Padding(
+            padding: const EdgeInsets.only(right: AppSpacing.sm),
+            child: FilterChip(
+              label: Text(
+                filter,
+                style: AppTypography.small.copyWith(
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  color: isSelected ? Colors.white : AppColors.textPrimary,
+                ),
+              ),
+              selected: isSelected,
+              onSelected: (selected) {
+                if (selected) {
+                  setState(() => _activeFilter = filter);
+                }
+              },
+              backgroundColor: AppColors.surface,
+              selectedColor: AppColors.primary,
+              checkmarkColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+                side: BorderSide(
+                  color: isSelected ? AppColors.primary : AppColors.border,
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
 }
 
-class _PropietarioCard extends StatelessWidget {
-  final String nombre;
-  final String casa;
-  final String etapa;
-  final int saldo;
-  final String estado;
-
-  const _PropietarioCard({
-    required this.nombre,
-    required this.casa,
-    required this.etapa,
-    required this.saldo,
-    required this.estado,
-  });
-
-  Color get _color {
-    switch (estado) {
-      case 'Al día':
-        return AppColors.success;
-      case 'Mora':
-        return AppColors.error;
-      default:
-        return AppColors.warning;
-    }
-  }
-
-  IconData get _icon {
-    switch (estado) {
-      case 'Al día':
-        return Icons.check_circle_rounded;
-      case 'Mora':
-        return Icons.error_outline_rounded;
-      default:
-        return Icons.schedule_rounded;
-    }
-  }
+class _CarteraSkeleton extends StatelessWidget {
+  const _CarteraSkeleton();
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.cardPadding),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                // Avatar with initials
-                CircleAvatar(
-                  radius: 20,
-                  backgroundColor: AppColors.surface,
-                  child: Text(
-                    nombre.split(' ').map((w) => w[0]).take(2).join(),
-                    style: AppTypography.caption.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        nombre,
-                        style: AppTypography.body.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      Text(
-                        '$casa · $etapa',
-                        style: AppTypography.caption.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                // Estado badge
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _color.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(_icon, color: _color, size: 12),
-                      const SizedBox(width: 4),
-                      Text(
-                        estado,
-                        style: AppTypography.small.copyWith(
-                          color: _color,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SkeletonBox(width: double.infinity, height: 100, borderRadius: 16),
+          const SizedBox(height: AppSpacing.lg),
+          Row(
+            children: List.generate(
+              4,
+              (index) => const Padding(
+                padding: EdgeInsets.only(right: 8.0),
+                child: SkeletonBox(width: 80, height: 32, borderRadius: 16),
+              ),
             ),
-            const SizedBox(height: AppSpacing.sm),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Saldo: ',
-                  style: AppTypography.caption.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                Text(
-                  r'$' + (saldo / 100).toStringAsFixed(0),
-                  style: AppTypography.subtitle.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: saldo > 0 ? AppColors.error : AppColors.success,
-                  ),
-                ),
-              ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Expanded(
+            child: ListView.separated(
+              itemCount: 4,
+              separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
+              itemBuilder: (_, __) => const SkeletonBox(
+                width: double.infinity,
+                height: 140,
+                borderRadius: 12,
+              ),
             ),
-            const SizedBox(height: AppSpacing.sm),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.phone_rounded, size: 20),
-                  color: AppColors.textSecondary,
-                  onPressed: () {},
-                  tooltip: 'Llamar',
-                ),
-                IconButton(
-                  icon: const Icon(Icons.chat_rounded, size: 20),
-                  color: AppColors.textSecondary,
-                  onPressed: () {},
-                  tooltip: 'WhatsApp',
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                FilledButton(
-                  onPressed: () {},
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                  ),
-                  child: const Text('Cobrar'),
-                ),
-              ],
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

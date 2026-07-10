@@ -9,11 +9,23 @@ import '../../features/dashboard/dashboard_screen.dart';
 import '../../features/dashboard_cobrador/jornada_screen.dart';
 import '../../features/dashboard_propietario/mi_estado_screen.dart';
 import '../../features/cartera/cartera_screen.dart';
+import '../../features/propietarios/nuevo_propietario_screen.dart';
+import '../../features/propietarios/nuevo_cobrador_screen.dart';
+import '../../features/propietarios/proyecto_detail_screen.dart';
+import '../../features/propietarios/etapas_screen.dart';
+import '../../features/propietarios/manzanas_screen.dart';
+import '../../features/propietarios/casas_screen.dart';
+import '../../features/propietarios/proyecto_ajustes_screen.dart';
 import '../../features/profile/profile_screen.dart';
 import '../../features/historial/historial_screen.dart';
 import '../../features/dashboard/estado_admin_screen.dart';
+import '../../features/dashboard/actividad_admin_screen.dart';
 import '../../features/solicitudes/solicitudes_screen.dart';
 import '../../features/solicitudes/nueva_solicitud_screen.dart';
+import '../../features/propietarios/comunidad_screen.dart';
+import '../../features/propietarios/propietarios_screen.dart';
+import '../../features/propietarios/cobradores_screen.dart';
+import '../../features/propietarios/urbanizacion_screen.dart';
 
 /// GoRouter configuration — role-aware.
 ///
@@ -82,11 +94,57 @@ final GoRouter appRouter = GoRouter(
           },
         ),
 
-        // Lista de propietarios (solo Admin)
+        // Módulo Comunidad (Hub) y sub-rutas
         GoRoute(
-          path: '/propietarios',
-          name: 'propietarios',
-          builder: (_, __) => const PlaceholderScreen('Propietarios'),
+          path: '/comunidad',
+          name: 'comunidad',
+          builder: (_, __) => const ComunidadScreen(),
+          routes: [
+            GoRoute(
+              path: 'propietarios',
+              name: 'comunidad-propietarios',
+              builder: (_, __) => const PropietariosScreen(),
+            ),
+            GoRoute(
+              path: 'cobradores',
+              name: 'comunidad-cobradores',
+              builder: (_, __) => const CobradoresScreen(),
+            ),
+            GoRoute(
+              path: 'urbanizacion',
+              name: 'comunidad-urbanizacion',
+              builder: (_, __) => const UrbanizacionScreen(),
+              routes: [
+                GoRoute(
+                  path: 'proyecto-detalle',
+                  name: 'comunidad-proyecto-detalle',
+                  builder: (_, __) => const ProyectoDetailScreen(),
+                  routes: [
+                    GoRoute(
+                      path: 'etapas',
+                      name: 'comunidad-proyecto-etapas',
+                      builder: (_, __) => const EtapasScreen(),
+                    ),
+                    GoRoute(
+                      path: 'manzanas',
+                      name: 'comunidad-proyecto-manzanas',
+                      builder: (_, __) => const ManzanasScreen(),
+                    ),
+                    GoRoute(
+                      path: 'casas',
+                      name: 'comunidad-proyecto-casas',
+                      builder: (_, __) => const CasasScreen(),
+                    ),
+                    GoRoute(
+                      path: 'ajustes',
+                      name: 'comunidad-proyecto-ajustes',
+                      builder: (_, __) => const ProyectoAjustesScreen(),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
         ),
 
         // Perfil y configuración
@@ -105,16 +163,31 @@ final GoRouter appRouter = GoRouter(
       ],
     ),
 
-    // ── Solicitudes (Pantallas fuera del ShellRoute) ──────────────────────
+    // ── Solicitudes y Actividad (Pantallas fuera del ShellRoute) ──────────────────────
     GoRoute(
       path: '/solicitudes',
       name: 'solicitudes',
       builder: (_, __) => const SolicitudesScreen(),
     ),
     GoRoute(
+      path: '/actividad-admin',
+      name: 'actividad-admin',
+      builder: (_, __) => const ActividadAdminScreen(),
+    ),
+    GoRoute(
       path: '/solicitud-nueva',
       name: 'solicitud-nueva',
       builder: (_, __) => const NuevaSolicitudScreen(),
+    ),
+    GoRoute(
+      path: '/nuevo-propietario',
+      name: 'nuevo-propietario',
+      builder: (_, __) => const NuevoPropietarioScreen(),
+    ),
+    GoRoute(
+      path: '/nuevo-cobrador',
+      name: 'nuevo-cobrador',
+      builder: (_, __) => const NuevoCobradorScreen(),
     ),
   ],
 );

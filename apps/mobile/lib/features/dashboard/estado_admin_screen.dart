@@ -15,8 +15,18 @@ class EstadoAdminScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Para simplificar, nos conectaremos al mismo DashboardCubit
-    // que ya tiene los datos mockeados.
+    return BlocProvider(
+      create: (_) => DashboardCubit()..loadCurrentMonth(),
+      child: const _EstadoAdminBody(),
+    );
+  }
+}
+
+class _EstadoAdminBody extends StatelessWidget {
+  const _EstadoAdminBody();
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(

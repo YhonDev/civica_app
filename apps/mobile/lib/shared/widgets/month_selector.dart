@@ -59,34 +59,26 @@ class MonthSelector extends StatelessWidget {
           icon: Icons.chevron_left,
           onTap: _previousMonth,
         ),
-        const SizedBox(width: AppSpacing.sm),
+        const SizedBox(width: AppSpacing.md),
 
-        // Month chip
-        ActionChip(
-          label: Text(
-            capitalized,
-            style: AppTypography.bodyMedium.copyWith(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          onPressed: () => _openMonthPicker(context),
-          avatar: Icon(
-            Icons.calendar_today_rounded,
-            size: 16,
-            color: AppColors.textSecondary,
-          ),
-          backgroundColor: AppColors.card,
-          side: BorderSide.none,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
-          ),
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md,
-            vertical: AppSpacing.sm + 4,
+        // Month text
+        GestureDetector(
+          onTap: () => _openMonthPicker(context),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                capitalized,
+                style: AppTypography.title.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ],
           ),
         ),
-        const SizedBox(width: AppSpacing.sm),
+        const SizedBox(width: AppSpacing.md),
 
         // Next
         _ArrowButton(
@@ -107,15 +99,14 @@ class _ArrowButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AppColors.card,
+      color: Colors.transparent,
       borderRadius: BorderRadius.circular(50),
-      elevation: 0,
       child: InkWell(
         borderRadius: BorderRadius.circular(50),
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(8),
-          child: Icon(icon, size: 20, color: AppColors.textSecondary),
+          child: Icon(icon, size: 24, color: AppColors.textSecondary),
         ),
       ),
     );

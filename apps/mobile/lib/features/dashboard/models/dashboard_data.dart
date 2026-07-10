@@ -15,6 +15,18 @@ class DashboardData extends Equatable {
   final List<CobroEstadoItem> estadosCobro;
   final List<ActividadItem> actividadReciente;
 
+  // Nuevas métricas Comunidad
+  final int totalPropietarios;
+  final int nuevosPropietariosSemana;
+
+  // Nuevas métricas Cobros
+  final List<CobroSemanaItem> cobrosPorSemana;
+
+  // Centro de atencion
+  final int solicitudesPendientes;
+  final int propietariosMora;
+  final int pagosRevision;
+
   const DashboardData({
     required this.mes,
     required this.anio,
@@ -28,6 +40,12 @@ class DashboardData extends Equatable {
     required this.modalidades,
     required this.estadosCobro,
     required this.actividadReciente,
+    this.totalPropietarios = 0,
+    this.nuevosPropietariosSemana = 0,
+    this.cobrosPorSemana = const [],
+    this.solicitudesPendientes = 0,
+    this.propietariosMora = 0,
+    this.pagosRevision = 0,
   });
 
   factory DashboardData.fromJson(Map<String, dynamic> json) {
@@ -89,6 +107,12 @@ class DashboardData extends Equatable {
         modalidades,
         estadosCobro,
         actividadReciente,
+        totalPropietarios,
+        nuevosPropietariosSemana,
+        cobrosPorSemana,
+        solicitudesPendientes,
+        propietariosMora,
+        pagosRevision,
       ];
 }
 
@@ -186,4 +210,30 @@ class ActividadItem extends Equatable {
 
   @override
   List<Object?> get props => [id, tipo, descripcion, usuario, timestamp, hace];
+}
+
+class CobroSemanaItem extends Equatable {
+  final int semana;
+  final int pagados;
+  final int pendientes;
+  final int mora;
+
+  const CobroSemanaItem({
+    required this.semana,
+    required this.pagados,
+    required this.pendientes,
+    required this.mora,
+  });
+
+  factory CobroSemanaItem.fromJson(Map<String, dynamic> json) {
+    return CobroSemanaItem(
+      semana: json['semana'] as int? ?? 1,
+      pagados: json['pagados'] as int? ?? 0,
+      pendientes: json['pendientes'] as int? ?? 0,
+      mora: json['mora'] as int? ?? 0,
+    );
+  }
+
+  @override
+  List<Object?> get props => [semana, pagados, pendientes, mora];
 }

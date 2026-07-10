@@ -53,20 +53,21 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
   }
 
   List<SolicitudData> get _solicitudesFiltradas {
-    if (_filtroActivo == 'TODAS') return _solicitudes;
-    if (_filtroActivo == 'PENDIENTES') {
-      return _solicitudes
-          .where((s) =>
-              s.estado == SolicitudEstado.pendiente ||
-              s.estado == SolicitudEstado.enRevision)
-          .toList();
+    switch (_filtroActivo) {
+      case 'PENDIENTES':
+        return _solicitudes
+            .where((s) =>
+                s.estado == SolicitudEstado.pendiente ||
+                s.estado == SolicitudEstado.enRevision)
+            .toList();
+      case 'RESUELTAS':
+        return _solicitudes.where((s) => s.estado == SolicitudEstado.resuelta).toList();
+      case 'RECHAZADAS':
+        return _solicitudes.where((s) => s.estado == SolicitudEstado.rechazada).toList();
+      case 'TODAS':
+      default:
+        return _solicitudes;
     }
-    // RESUELTAS / RECHAZADAS
-    return _solicitudes
-        .where((s) =>
-            s.estado == SolicitudEstado.resuelta ||
-            s.estado == SolicitudEstado.rechazada)
-        .toList();
   }
 
   @override
@@ -88,7 +89,8 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // ── Filtros (Chips) ──────────────────────────────────
-                  Padding(
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.screenPadding,
                       vertical: AppSpacing.md,
@@ -99,7 +101,9 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
                         const SizedBox(width: AppSpacing.sm),
                         _buildFilterChip('Pendientes', 'PENDIENTES'),
                         const SizedBox(width: AppSpacing.sm),
-                        _buildFilterChip('Historial', 'RESUELTAS'),
+                        _buildFilterChip('Resueltas', 'RESUELTAS'),
+                        const SizedBox(width: AppSpacing.sm),
+                        _buildFilterChip('Rechazadas', 'RECHAZADAS'),
                       ],
                     ),
                   ),

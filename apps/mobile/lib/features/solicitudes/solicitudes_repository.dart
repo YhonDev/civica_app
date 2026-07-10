@@ -1,5 +1,6 @@
 import '../../core/network/api_client.dart';
 import '../../shared/widgets/solicitud_card.dart';
+import '../../shared/models/solicitudes_mock_store.dart';
 
 class SolicitudesRepository {
   final ApiClient _apiClient;
@@ -8,17 +9,13 @@ class SolicitudesRepository {
       : _apiClient = apiClient ?? ApiClient.instance;
 
   Future<List<SolicitudData>> getSolicitudes() async {
-    final response = await _apiClient.get<List<dynamic>>('/solicitudes');
-    return response.data!
-        .map((json) => _mapToSolicitudData(json as Map<String, dynamic>))
-        .toList();
+    await Future.delayed(const Duration(milliseconds: 300));
+    return SolicitudesMockStore.all;
   }
 
   Future<List<SolicitudData>> getSolicitudesPendientes() async {
-    final response = await _apiClient.get<List<dynamic>>('/solicitudes/pendientes');
-    return response.data!
-        .map((json) => _mapToSolicitudData(json as Map<String, dynamic>))
-        .toList();
+    await Future.delayed(const Duration(milliseconds: 300));
+    return SolicitudesMockStore.pending;
   }
 
   Future<void> crearSolicitud({

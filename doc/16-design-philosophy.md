@@ -1,243 +1,273 @@
 # VigiVecino
-## Design Philosophy
+# Dashboard & Module Philosophy
 
-Version: 1.0
-
----
-
-# Objetivo
-
-Este documento define las reglas de diseño que toda la aplicación debe seguir.
-
-No describe widgets.
-
-No describe pantallas.
-
-Describe la forma en que la aplicación debe sentirse.
-
-Toda decisión de UI y UX debe respetar estas reglas.
-
-Si alguna pantalla rompe estas reglas, debe rediseñarse.
+Version 1.0
 
 ---
 
-# Filosofía General
+# Visión General
 
-VigiVecino debe sentirse como una aplicación móvil premium del año 2026.
+VigiVecino no es una aplicación compuesta por muchas pantallas independientes.
 
-No debe parecer un sistema administrativo.
+Es un conjunto de módulos especializados.
 
-No debe parecer un ERP.
+Cada módulo tiene una responsabilidad específica.
 
-No debe parecer una aplicación desarrollada únicamente para escritorio adaptada a móvil.
+El Dashboard no intenta reemplazar esos módulos.
 
-Debe sentirse como una aplicación creada primero para dispositivos móviles (Mobile First).
+Su única función es resumir el estado del sistema y dirigir al usuario hacia el módulo correcto.
 
-La experiencia debe ser limpia, rápida, elegante y extremadamente intuitiva.
-
----
-
-# El usuario nunca debe pensar
-
-La aplicación debe ser tan intuitiva que el usuario nunca tenga que preguntarse:
-
-- ¿Dónde está esta opción?
-- ¿Qué debo hacer ahora?
-- ¿Dónde quedó esta información?
-- ¿Qué significa este botón?
-
-La interfaz debe responder esas preguntas antes de que aparezcan.
+La aplicación debe sentirse como un Centro de Operaciones y no como una colección de pantallas.
 
 ---
 
-# Una pantalla = Una tarea
+# Filosofía Principal
 
-Cada pantalla tiene un único propósito.
+Cada módulo contiene la lógica completa.
 
-Incorrecto:
+El Dashboard solamente consume pequeños resúmenes de cada módulo.
 
-Dashboard
+Nunca debe mostrar toda la información.
 
-- Balance
-- Usuarios
-- Casas
-- Reportes
-- Configuración
-- Auditoría
-- Gráficas
-- CRUD
+Debe mostrar únicamente el contexto suficiente para responder una pregunta y permitir que el usuario tome una decisión.
 
-Correcto:
+Cada tarjeta representa la entrada a un módulo completo.
 
-Dashboard
-
-¿Cómo está el conjunto hoy?
-
-Si el usuario necesita otra información, navega al módulo correspondiente.
-
-Nunca mezclar responsabilidades.
+Nunca una funcionalidad completa.
 
 ---
 
-# Menos es más
+# Flujo Mental del Administrador
 
-Eliminar cualquier elemento que no aporte valor.
+Cuando el administrador abre la aplicación debe responder estas preguntas, en este orden.
 
-Cada botón debe existir por una razón.
+1. ¿Cómo está la comunidad hoy?
 
-Cada tarjeta debe responder una pregunta.
+2. ¿Qué requiere atención inmediata?
 
-Cada icono debe comunicar algo.
+3. ¿Qué ocurrió recientemente?
 
-Si un elemento puede eliminarse sin afectar la experiencia, debe eliminarse.
+4. ¿Qué acción puedo realizar ahora?
 
----
+5. ¿En qué módulo debo profundizar?
 
-# Prioridad Visual
-
-Toda pantalla debe responder esta jerarquía.
-
-1. Lo más importante.
-
-2. Lo importante.
-
-3. Información secundaria.
-
-4. Información histórica.
-
-Nunca invertir este orden.
+Toda la estructura del Dashboard debe seguir este flujo.
 
 ---
 
-# No mostrar todo
+# Filosofía del Dashboard
 
-El error más común de las aplicaciones administrativas es mostrar demasiada información.
+El Dashboard es una colección de mini dashboards. (Actúa como un **Hub de Decisiones**)
 
-VigiVecino debe mostrar únicamente un resumen.
+Cada tarjeta resume únicamente una pequeña parte de un módulo.
 
-El detalle siempre aparece cuando el usuario lo solicita.
-
-Ejemplo.
-
-Dashboard
-
-Últimos dos pagos.
-
-No mostrar doce.
-
-Si el usuario quiere ver todos,
-
-presiona
-
-"Ver historial"
-
----
-
-# Progresive Disclosure
-
-La información aparece por niveles.
-
-Nivel 1
-
-Resumen.
-
-↓
-
-Nivel 2
-
-Detalle.
-
-↓
-
-Nivel 3
-
-Información completa.
-
-Nunca mostrar toda la información desde el inicio.
-
----
-
-# Navegación
-
-La navegación debe sentirse natural.
-
-El usuario nunca debe perder el contexto.
-
-Toda navegación importante debe mantener visible el punto de partida.
-
-Siempre que sea posible usar:
-
-Bottom Sheet
-
-Modal
-
-Slide Panel
-
-antes que abrir una pantalla completamente nueva.
-
----
-
-# Máximo tres toques
-
-Toda tarea frecuente debe completarse en tres toques o menos.
-
-Registrar un pago.
-
-Consultar una vivienda.
-
-Buscar un propietario.
-
-Solicitar una revisión.
-
-Si requiere más pasos, la experiencia debe simplificarse.
-
----
-
-# El contenido es el protagonista
-
-Los componentes nunca deben competir con la información.
-
-Los colores ayudan.
-
-No llaman la atención.
-
-Las tarjetas organizan.
-
-No decoran.
-
-Las animaciones acompañan.
-
-No distraen.
-
----
-
-# Diseño basado en acciones
-
-El usuario abre la aplicación para hacer algo.
-
-No para mirar botones.
-
-Cada pantalla debe responder inmediatamente:
-
-¿Qué puedo hacer aquí?
-
-Las acciones principales siempre deben ser visibles.
-
----
-
-# Dashboard ≠ Administración
-
-El Dashboard nunca administra.
-
-El Dashboard informa.
-
-Las operaciones administrativas pertenecen a módulos independientes.
+Ejemplo
 
 Dashboard
 
 ↓
+
+Resumen de Pagos
+
+↓
+
+Resumen de Reportes
+
+↓
+
+Resumen de Propietarios
+
+↓
+
+Resumen de Solicitudes
+
+↓
+
+Resumen de Comunidad
+
+↓
+
+Actividad Reciente
+
+↓
+
+Acciones Rápidas
+
+Nunca mostrar el módulo completo.
+
+Siempre mostrar únicamente un resumen.
+
+---
+
+# Filosofía de las Tarjetas
+
+Cada tarjeta actúa como una **ventana inteligente** hacia un módulo y responde únicamente tres preguntas.
+
+¿Cuál es el estado actual?
+
+¿Qué requiere atención?
+
+¿Cómo entro al módulo correspondiente?
+
+Nunca intentar resolver completamente una funcionalidad dentro del Dashboard.
+
+Ejemplo
+
+Cobros
+
+42 pendientes
+
+31 en mora
+
+Gestionar Cobros →
+
+No mostrar listas completas.
+
+No mostrar filtros.
+
+No mostrar tablas.
+
+Eso pertenece al módulo.
+
+---
+
+# Filosofía de Navegación
+
+Toda tarjeta del Dashboard debe dirigir exactamente al lugar donde vive esa información.
+
+Nunca abrir una pantalla genérica.
+
+Siempre abrir el módulo ya contextualizado.
+
+Ejemplos
+
+42 propietarios pendientes
+
+↓
+
+Abrir módulo Cobros
+
+↓
+
+Filtro Estado = Pendiente
+
+--------------------
+
+31 propietarios en mora
+
+↓
+
+Abrir módulo Cobros
+
+↓
+
+Filtro Estado = Mora
+
+--------------------
+
+84 % de recaudo
+
+↓
+
+Abrir módulo Reportes
+
+↓
+
+Período = Mes actual
+
+--------------------
+
+Actividad de hoy
+
+↓
+
+Abrir Historial
+
+↓
+
+Filtro = Hoy
+
+La navegación siempre conserva el contexto.
+
+---
+
+# Filosofía de los Módulos
+
+Todos los módulos (Lugares donde se trabaja) siguen exactamente la misma estructura.
 
 Resumen
+
+↓
+
+Información principal
+
+↓
+
+Herramientas de análisis
+
+↓
+
+Filtros
+
+↓
+
+Detalle
+
+↓
+
+Acciones
+
+Nunca comenzar una pantalla mostrando filtros.
+
+Primero mostrar información útil.
+
+Después permitir modificar la vista.
+
+---
+
+# Estado Inicial Inteligente
+
+Todos los módulos deben mostrar información útil apenas el usuario entra.
+
+Nunca iniciar con una pantalla vacía esperando que el usuario configure filtros.
+
+Ejemplo
+
+Dashboard
+
+Siempre muestra el estado actual.
+
+Reportes
+
+Siempre muestra el período actual.
+
+Cobros
+
+Siempre muestra los cobros pendientes del período actual.
+
+Solicitudes
+
+Siempre muestra las solicitudes pendientes.
+
+Propietarios
+
+Siempre muestra todos los propietarios activos.
+
+El usuario puede cambiar posteriormente esa vista.
+
+---
+
+# Filosofía de los Reportes
+
+El módulo Reportes es el lugar donde vive el análisis completo del sistema.
+
+El Dashboard únicamente muestra un pequeño resumen.
+
+Dentro de Reportes se puede profundizar completamente.
+
+La estructura recomendada es.
+
+Resumen General
 
 ↓
 
@@ -245,242 +275,168 @@ Indicadores
 
 ↓
 
-Actividad
+Gráfico Principal
+
+↓
+
+Distribuciones
+
+↓
+
+Comparativas
+
+↓
+
+Tablas
+
+↓
+
+Filtros Avanzados
+
+↓
+
+Exportar
+
+El Dashboard nunca debe competir con este módulo.
+
+---
+
+# Manejo de Períodos
+
+Todo módulo que trabaja con tiempo debe tener un período predeterminado.
+
+Reporte Mensual
+
+Mostrar siempre el mes actual.
+
+Reporte Semanal
+
+Mostrar siempre la semana actual.
+
+Reporte Anual
+
+Mostrar siempre el año actual.
+
+Después el usuario puede cambiar el período mediante filtros.
+
+Nunca obligar al usuario a configurar filtros antes de ver información.
+
+---
+
+# Alcance de los Filtros
+
+Los filtros deben afectar únicamente al módulo donde fueron aplicados.
+
+Ejemplo
+
+Si el usuario cambia el mes dentro de Reportes.
+
+Solo cambia Reportes.
+
+El Dashboard continúa mostrando información del período actual.
+
+Los demás módulos conservan su propio contexto.
+
+Cada módulo mantiene su independencia.
+
+---
+
+# Filosofía de la Información
+
+Toda la aplicación trabaja por niveles.
+
+Nivel 1
+
+Estado General.
+
+Nivel 2
+
+Información que requiere atención.
+
+Nivel 3
+
+Actividad reciente.
+
+Nivel 4
+
+Análisis.
+
+Nivel 5
+
+Histórico.
+
+Nunca mostrar información histórica antes de mostrar el estado actual.
+
+---
+
+# Dashboard del Administrador (Hub de Decisiones)
+
+El Dashboard del Administrador representa el estado completo de la comunidad.
+
+No representa módulos.
+
+Representa decisiones.
+
+Debe permitir comprender la situación completa en menos de cinco segundos.
+
+Su estructura es.
+
+Hero Principal
+
+↓
+
+Indicadores
+
+↓
+
+Casos que requieren atención
+
+↓
+
+Actividad reciente
 
 ↓
 
 Acciones rápidas
 
-Nunca CRUD completos.
+↓
+
+Resumen de módulos
+
+Cada sección dirige al módulo correspondiente.
+
+Nunca intenta reemplazarlo.
 
 ---
 
-# Consistencia absoluta
+# Filosofía del Desarrollo
 
-Todos los módulos utilizan el mismo lenguaje visual.
+La aplicación se desarrolla comenzando por la experiencia del usuario.
 
-Las tarjetas tienen el mismo estilo.
+Primero se construyen las pantallas utilizando datos simulados.
 
-Los botones tienen el mismo comportamiento.
+Se valida completamente la experiencia de navegación, los flujos y la organización visual.
 
-Los colores representan siempre lo mismo.
+Una vez aprobada la experiencia, se conecta el backend.
 
-Los iconos representan siempre la misma acción.
+El backend debe adaptarse a la experiencia diseñada y no al contrario.
 
-Nunca cambiar el significado de un color.
-
-Ejemplo.
-
-Verde
-
-Siempre significa correcto.
-
-Nunca significa información.
+De esta manera la arquitectura técnica respeta la experiencia del usuario desde el inicio.
 
 ---
 
-# Estados
+# Objetivo Final
 
-Todo elemento tiene estados claramente definidos.
+El usuario nunca debe sentir que navega entre pantallas independientes.
 
-Activo
+Debe sentir que toda la aplicación es un único sistema conectado.
 
-Inactivo
+Cada módulo tiene una responsabilidad.
 
-Pendiente
+Cada tarjeta resume un módulo.
 
-Pagado
+Cada clic lleva exactamente al lugar donde esa información vive.
 
-Parcial
+El Dashboard no reemplaza la aplicación.
 
-En Mora
-
-Revisión
-
-Sin conexión
-
-Sin resultados
-
-Cargando
-
-Vacío
-
-Nunca dejar un estado sin representación visual.
-
----
-
-# Microinteracciones
-
-Cada acción importante debe generar una respuesta inmediata.
-
-Guardar.
-
-Registrar.
-
-Eliminar.
-
-Actualizar.
-
-Buscar.
-
-Filtrar.
-
-La aplicación siempre confirma visualmente que la acción ocurrió.
-
----
-
-# Velocidad percibida
-
-La aplicación debe sentirse rápida incluso cuando espera información.
-
-Siempre utilizar:
-
-Skeleton Loading.
-
-Shimmer.
-
-Indicadores suaves.
-
-Nunca mostrar pantallas completamente vacías esperando datos.
-
----
-
-# Búsquedas
-
-Buscar debe ser más rápido que navegar.
-
-Siempre que existan más de diez elementos debe existir búsqueda.
-
-Siempre que existan muchos resultados deben existir filtros.
-
----
-
-# Errores
-
-Nunca mostrar errores técnicos.
-
-Incorrecto.
-
-Error 500.
-
-Correcto.
-
-No fue posible registrar el pago.
-
-Inténtalo nuevamente.
-
-Siempre indicar una posible solución.
-
----
-
-# Confirmaciones
-
-Solo confirmar acciones destructivas.
-
-Eliminar.
-
-Cerrar jornada.
-
-Cancelar.
-
-Nunca pedir confirmación para acciones frecuentes.
-
-Registrar un pago debe ser rápido.
-
----
-
-# Formularios
-
-Los formularios deben sentirse ligeros.
-
-Agrupar campos relacionados.
-
-Usar asistentes cuando existan muchos pasos.
-
-Nunca mostrar veinte campos al mismo tiempo.
-
----
-
-# Scroll
-
-El usuario debe desplazarse naturalmente.
-
-Evitar pantallas extremadamente largas.
-
-Agrupar la información mediante tarjetas.
-
----
-
-# Diseño emocional
-
-La aplicación debe transmitir confianza.
-
-Nunca ansiedad.
-
-Nunca saturación.
-
-Nunca complejidad.
-
-El usuario debe sentir que entiende la aplicación desde el primer minuto.
-
----
-
-# Filosofía por Rol
-
-Administrador
-
-Abre la aplicación para tomar decisiones.
-
-No para llenar formularios.
-
----
-
-Cobrador
-
-Abre la aplicación para trabajar.
-
-Debe registrar pagos rápidamente.
-
-Debe consultar propietarios rápidamente.
-
-Debe moverse rápidamente.
-
----
-
-Propietario
-
-Abre la aplicación para informarse.
-
-Nunca para administrar.
-
-Debe conocer inmediatamente:
-
-Estado.
-
-Próximo cobro.
-
-Último pago.
-
-Historial.
-
----
-
-# Regla de Oro
-
-Antes de agregar cualquier componente preguntarse:
-
-¿Este elemento ayuda al usuario a completar su tarea?
-
-Si la respuesta es no,
-
-el componente no debe existir.
-
----
-
-# Principio Final
-
-La mejor interfaz no es la que tiene más componentes.
-
-Es aquella donde el usuario termina su tarea sin pensar en la interfaz.
-
-Ese es el objetivo de VigiVecino.
+El Dashboard es la puerta de entrada al sistema completo.

@@ -25,9 +25,12 @@ class ScaffoldWithBottomNav extends StatelessWidget {
         final currentLocation = GoRouterState.of(context).matchedLocation;
 
         // Find which tab index matches current location
-        final currentIndex = tabs.indexWhere(
-          (t) => t.route == currentLocation,
-        );
+        int currentIndex = tabs.indexWhere((t) => t.route == currentLocation);
+        if (currentIndex < 0) {
+          currentIndex = tabs.indexWhere(
+            (t) => t.route != '/' && currentLocation.startsWith(t.route),
+          );
+        }
 
         return Scaffold(
           body: AnimatedSwitcher(
@@ -163,7 +166,7 @@ class ScaffoldWithBottomNav extends StatelessWidget {
             label: 'Comunidad',
             icon: const Icon(Icons.people_outlined),
             iconActive: const Icon(Icons.people_rounded),
-            route: '/propietarios',
+            route: '/comunidad',
           ),
           _TabItem(
             label: 'Reportes',

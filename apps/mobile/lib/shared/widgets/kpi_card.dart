@@ -18,6 +18,8 @@ class KpiCard extends StatelessWidget {
   final String amount;
   final double percentage;
   final String subtitle;
+  final String? actionLabel;
+  final VoidCallback? onTap;
 
   const KpiCard({
     super.key,
@@ -25,12 +27,14 @@ class KpiCard extends StatelessWidget {
     required this.amount,
     required this.percentage,
     required this.subtitle,
+    this.actionLabel,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: AppSpacing.cardEdgeInsets,
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -71,47 +75,65 @@ class KpiCard extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.md),
 
-          // Progress bar
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: SizedBox(
-              height: 6,
-              child: Stack(
-                children: [
-                  Container(
-                    width: double.infinity,
-                    color: Colors.white.withValues(alpha: 0.2),
+          // Compact percentage and subtitle
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '${percentage.toStringAsFixed(0)}%',
+                  style: AppTypography.small.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
                   ),
-                  FractionallySizedBox(
-                    widthFactor: (percentage.clamp(0, 100)) / 100,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Text(
+                  subtitle,
+                  style: AppTypography.body.copyWith(
+                    color: Colors.white.withValues(alpha: 0.9),
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          if (actionLabel != null && onTap != null) ...[
+            const SizedBox(height: AppSpacing.md),
+            const Divider(color: Colors.white24, height: 1),
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: onTap,
+                borderRadius: BorderRadius.circular(4),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        actionLabel!,
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: AppSpacing.xs),
+                      const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 16),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-
-          // Subtitle
-          Text(
-            subtitle,
-            style: AppTypography.caption.copyWith(
-              color: Colors.white.withValues(alpha: 0.8),
-            ),
-          ),
+          ],
         ],
       ),
     );
-  }
-
-  Color _progressColor() {
-    if (percentage >= 80) return AppColors.success;
-    if (percentage >= 50) return AppColors.warning;
-    return AppColors.error;
   }
 }
