@@ -60,6 +60,32 @@ export class PropietarioRepository {
     });
   }
 
+  /**
+   * Busca propietarios cuyas casas estén en una o más etapas específicas.
+   * Usado por COBRADORES que solo ven propietarios de sus etapas asignadas.
+   */
+  async buscarPorEtapas(tenantId: string, etapaIds: string[]): Promise<Propietario[]> {
+    if (!etapaIds || etapaIds.length === 0) {
+      return [];
+    }
+
+    const qb = this.repo.createQueryBuilder('propietario');
+    qb.leftJoinAndSelect('propietario.tenencias', 'tenencia');
+    qb.where('propietario.tenantId = :tenantId', { tenantId });
+
+    const subQuery = qb
+      .subQuery()
+      .select('c.id')
+      .from('casas', 'c')
+      .where('c.etapaId IN (:...etapaIds)')
+      .getQuery();
+
+    qb.andWhere(`tenencia.casaId IN ${subQuery}`, { etapaIds });
+    qb.orderBy('propietario.nombre', 'ASC');
+
+    return qb.getMany();
+  }
+
   async save(propietario: Propietario): Promise<Propietario> {
     return this.repo.save(propietario);
   }

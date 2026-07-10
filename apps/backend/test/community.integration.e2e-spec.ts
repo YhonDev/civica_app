@@ -3,15 +3,22 @@ import { INestApplication, ValidationPipe, ClassSerializerInterceptor } from '@n
 import { Reflector } from '@nestjs/core';
 import request from 'supertest';
 import { DataSource } from 'typeorm';
+import { hashSync as bcryptHashSync } from 'bcrypt';
 import { AppModule } from '../src/app.module';
 import { randomUUID } from 'node:crypto';
 
+jest.setTimeout(30000);
+
 describe('Community API Integration', () => {
   let app: INestApplication;
+  let dataSource: DataSource;
   let tenantId: string;
   let conjuntoId: string;
   let etapaId: string;
   let casaId: string;
+
+  // ── Auth ─────────────────────────────────────────────
+  let adminToken: string;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -29,19 +36,37 @@ describe('Community API Integration', () => {
     app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
     await app.init();
 
+    dataSource = app.get(DataSource);
     tenantId = randomUUID();
+
+    // ── Seed admin user for JWT auth ────────────────────
+    const adminId = randomUUID();
+    const adminHash = bcryptHashSync('admin123', 10);
+    await dataSource.query(
+      `INSERT INTO usuarios (id, email, password_hash, nombre, rol, propietario_id, tenant_id, activo)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [adminId, 'admin-community@test.com', adminHash, 'Admin Community', 'ADMIN', null, tenantId, true],
+    );
+
+    // ── Login to get admin token ────────────────────────
+    const loginRes = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email: 'admin-community@test.com', password: 'admin123' })
+      .expect(201);
+    adminToken = loginRes.body.accessToken;
   });
 
   afterAll(async () => {
-    const dataSource = app.get(DataSource);
-
     // Clean up in dependency order to respect FK constraints
-    // tenencias → propietarios, then conjuntos (cascades to etapas → casas)
+    await dataSource.query(`DELETE FROM asignaciones_etapa WHERE tenant_id = $1`, [tenantId]);
     await dataSource.query(
       `DELETE FROM tenencias WHERE propietario_id IN (SELECT id FROM propietarios WHERE tenant_id = $1)`,
       [tenantId],
     );
     await dataSource.query(`DELETE FROM propietarios WHERE tenant_id = $1`, [tenantId]);
+    await dataSource.query(`DELETE FROM usuarios WHERE tenant_id = $1`, [tenantId]);
+    await dataSource.query(`DELETE FROM casas WHERE etapa_id = $1`, [etapaId]);
+    await dataSource.query(`DELETE FROM etapas WHERE conjunto_id = $1`, [conjuntoId]);
     await dataSource.query(`DELETE FROM conjuntos WHERE tenant_id = $1`, [tenantId]);
 
     await app.close();
@@ -94,6 +119,7 @@ describe('Community API Integration', () => {
   it('should create a propietario (POST /propietarios) → 201', async () => {
     const res = await request(app.getHttpServer())
       .post('/propietarios')
+      .set('Authorization', `Bearer ${adminToken}`)
       .send({
         nombre: 'Juan Pérez',
         telefono: '555-0100',
@@ -112,6 +138,7 @@ describe('Community API Integration', () => {
   it('should create a propietario with casa tenencia (POST /propietarios) → 201', async () => {
     const res = await request(app.getHttpServer())
       .post('/propietarios')
+      .set('Authorization', `Bearer ${adminToken}`)
       .send({
         nombre: 'María García',
         telefono: '555-0200',
@@ -153,6 +180,7 @@ describe('Community API Integration', () => {
   it('should search propietarios by tenant (GET /propietarios?tenantId=) → 200', async () => {
     const res = await request(app.getHttpServer())
       .get('/propietarios')
+      .set('Authorization', `Bearer ${adminToken}`)
       .query({ tenantId })
       .expect(200);
 
@@ -163,6 +191,7 @@ describe('Community API Integration', () => {
   it('should filter propietarios by casa (GET /propietarios?tenantId=&casa=) → 200', async () => {
     const res = await request(app.getHttpServer())
       .get('/propietarios')
+      .set('Authorization', `Bearer ${adminToken}`)
       .query({ tenantId, casa: casaId })
       .expect(200);
 
@@ -187,6 +216,7 @@ describe('Community API Integration', () => {
   it('should return 400 for missing required fields on POST /propietarios', async () => {
     const res = await request(app.getHttpServer())
       .post('/propietarios')
+      .set('Authorization', `Bearer ${adminToken}`)
       .send({ nombre: 'Incompleto' })
       .expect(400);
 
