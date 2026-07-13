@@ -112,7 +112,7 @@ class ScaffoldWithBottomNav extends StatelessWidget {
             label: 'Más',
             icon: const Icon(Icons.menu_rounded),
             iconActive: const Icon(Icons.menu_rounded),
-            route: '/perfil',
+            route: '/mas',
           ),
         ];
       case 'PROPIETARIO':
@@ -138,14 +138,14 @@ class ScaffoldWithBottomNav extends StatelessWidget {
           _TabItem(
             label: 'Perfil',
             icon: const Icon(Icons.person_outline_rounded),
-            iconActive: const Icon(Icons.person_rounded),
-            route: '/perfil',
+            iconActive: const Icon(Icons.menu_rounded),
+            route: '/mas',
           ),
           _TabItem(
-            label: 'Más',
-            icon: const Icon(Icons.menu_rounded),
-            iconActive: const Icon(Icons.menu_rounded),
-            route: '/mas', // assuming a fallback route for Más if needed, or simply use perfil
+            label: 'Ajustes',
+            icon: const Icon(Icons.settings_rounded),
+            iconActive: const Icon(Icons.settings_rounded),
+            route: '/ajustes', // as placeholder
           ),
         ];
       default: // ADMIN
@@ -178,7 +178,7 @@ class ScaffoldWithBottomNav extends StatelessWidget {
             label: 'Más',
             icon: const Icon(Icons.menu_rounded),
             iconActive: const Icon(Icons.menu_rounded),
-            route: '/perfil',
+            route: '/mas',
           ),
         ];
     }

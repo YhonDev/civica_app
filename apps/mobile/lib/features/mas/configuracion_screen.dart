@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../screens/auth/auth_cubit.dart';
 import '../../core/theme/app_colors.dart';
@@ -8,19 +7,8 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_theme.dart';
 
-/// Perfil / Más screen.
-///
-/// Per doc/20-screen-specifications.md (PERFIL):
-///   Debe mostrar: foto, nombre, correo, teléfono, rol, conjunto, cerrar sesión.
-///   Acciones: editar datos permitidos, cambiar contraseña, tema claro/oscuro.
-///
-/// Extended: includes "Mi Casa" section and "Solicitudes" menu item
-/// with pending badge (solicitudes live here, not in bottom nav).
-class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({super.key});
-
-  // Mock data — pending solicitudes count
-  static const _pendingSolicitudes = 1;
+class ConfiguracionScreen extends StatelessWidget {
+  const ConfiguracionScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -34,6 +22,9 @@ class ProfileScreen extends StatelessWidget {
     final isPropietario = rol == 'PROPIETARIO';
 
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('Configuración'),
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
@@ -42,7 +33,7 @@ class ProfileScreen extends StatelessWidget {
             children: [
               const SizedBox(height: AppSpacing.xl),
 
-              // ── Avatar ──────────────────────────────────────────────
+              // Avatar
               CircleAvatar(
                 radius: 40,
                 backgroundColor: AppColors.primary.withValues(alpha: 0.12),
@@ -56,7 +47,7 @@ class ProfileScreen extends StatelessWidget {
               ),
               const SizedBox(height: AppSpacing.md),
 
-              // ── Nombre + rol ────────────────────────────────────────
+              // Name and Role
               Text(
                 nombre,
                 style: AppTypography.subtitle.copyWith(
@@ -65,10 +56,7 @@ class ProfileScreen extends StatelessWidget {
               ),
               const SizedBox(height: AppSpacing.xs),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 4,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
                   color: AppColors.surface,
                   borderRadius: BorderRadius.circular(20),
@@ -83,8 +71,9 @@ class ProfileScreen extends StatelessWidget {
 
               const SizedBox(height: AppSpacing.xl),
 
-              // ── Info personal ────────────────────────────────────────
+              // Basic Info
               _SectionCard(
+                title: 'Información Básica',
                 children: [
                   _InfoTile(
                     icon: Icons.email_outlined,
@@ -103,16 +92,9 @@ class ProfileScreen extends StatelessWidget {
                     label: 'Conjunto',
                     value: tenantId.isNotEmpty ? 'Portal del Prado' : '—',
                   ),
-                  const Divider(height: 1, indent: 56),
-                  _InfoTile(
-                    icon: Icons.badge_outlined,
-                    label: 'Rol',
-                    value: rolLabel,
-                  ),
                 ],
               ),
 
-              // ── Mi Casa (Propietario only) ──────────────────────────
               if (isPropietario) ...[
                 const SizedBox(height: AppSpacing.lg),
                 _SectionCard(
@@ -135,58 +117,16 @@ class ProfileScreen extends StatelessWidget {
                       label: 'Modalidad',
                       value: 'Mensual',
                     ),
-                    const Divider(height: 1, indent: 56),
-                    _InfoTile(
-                      icon: Icons.history_outlined,
-                      label: 'Antigüedad',
-                      value: '2 años',
-                    ),
                   ],
                 ),
               ],
 
               const SizedBox(height: AppSpacing.lg),
 
-              // ── Actions menu ─────────────────────────────────────────
+              // Configuration / Settings
               _SectionCard(
+                title: 'Ajustes del Sistema',
                 children: [
-                  // Solicitudes (Propietario only) — with badge
-                  if (isPropietario) ...[
-                    ListTile(
-                      leading: const Icon(Icons.description_outlined),
-                      title: const Text('Solicitudes'),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (_pendingSolicitudes > 0)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.warning,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Text(
-                                '$_pendingSolicitudes',
-                                style: AppTypography.small.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                          const SizedBox(width: 4),
-                          Icon(
-                            Icons.chevron_right_rounded,
-                            color: AppColors.textDisabled,
-                          ),
-                        ],
-                      ),
-                      onTap: () => context.push('/solicitudes'),
-                    ),
-                    const Divider(height: 1),
-                  ],
                   ValueListenableBuilder<bool>(
                     valueListenable: darkThemeNotifier,
                     builder: (context, isDark, _) {
@@ -211,14 +151,16 @@ class ProfileScreen extends StatelessWidget {
                       Icons.chevron_right_rounded,
                       color: AppColors.textDisabled,
                     ),
-                    onTap: () {},
+                    onTap: () {
+                      // TODO: Implementar cambio de contraseña
+                    },
                   ),
                 ],
               ),
 
               const SizedBox(height: AppSpacing.xl),
 
-              // ── Logout ──────────────────────────────────────────────
+              // Botón rojo para Cerrar Sesión
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
@@ -236,7 +178,7 @@ class ProfileScreen extends StatelessWidget {
                   ),
                 ),
               ),
-
+              
               const SizedBox(height: AppSpacing.xl),
             ],
           ),
@@ -259,7 +201,6 @@ class ProfileScreen extends StatelessWidget {
   }
 }
 
-/// A grouped card section with optional title.
 class _SectionCard extends StatelessWidget {
   final String? title;
   final List<Widget> children;
@@ -273,10 +214,7 @@ class _SectionCard extends StatelessWidget {
       children: [
         if (title != null) ...[
           Padding(
-            padding: const EdgeInsets.only(
-              left: 4,
-              bottom: AppSpacing.sm,
-            ),
+            padding: const EdgeInsets.only(left: 4, bottom: AppSpacing.sm),
             child: Text(
               title!,
               style: AppTypography.bodyMedium.copyWith(
@@ -291,7 +229,6 @@ class _SectionCard extends StatelessWidget {
   }
 }
 
-/// Individual info tile inside a section card.
 class _InfoTile extends StatelessWidget {
   final IconData icon;
   final String label;

@@ -34,6 +34,10 @@ export class PropietarioRepository {
   async buscarPorFiltros(params: BuscarPorFiltrosParams): Promise<Propietario[]> {
     const qb = this.repo.createQueryBuilder('propietario');
     qb.leftJoinAndSelect('propietario.tenencias', 'tenencia');
+    qb.leftJoinAndSelect('tenencia.casa', 'casa');
+    qb.leftJoinAndSelect('casa.manzana', 'manzana');
+    qb.leftJoinAndSelect('manzana.etapa', 'etapa');
+    qb.leftJoinAndSelect('propietario.cuotas', 'cuotas');
     qb.where('propietario.tenantId = :tenantId', { tenantId: params.tenantId });
 
     if (params.casaId) {
@@ -71,6 +75,10 @@ export class PropietarioRepository {
 
     const qb = this.repo.createQueryBuilder('propietario');
     qb.leftJoinAndSelect('propietario.tenencias', 'tenencia');
+    qb.leftJoinAndSelect('tenencia.casa', 'casa');
+    qb.leftJoinAndSelect('casa.manzana', 'manzana');
+    qb.leftJoinAndSelect('manzana.etapa', 'etapa');
+    qb.leftJoinAndSelect('propietario.cuotas', 'cuotas');
     qb.where('propietario.tenantId = :tenantId', { tenantId });
 
     const subQuery = qb
@@ -88,5 +96,21 @@ export class PropietarioRepository {
 
   async save(propietario: Propietario): Promise<Propietario> {
     return this.repo.save(propietario);
+  }
+
+  async delete(id: string): Promise<void> {
+    await this.repo.delete(id);
+  }
+
+  async countNuevosByWeek(tenantId: string): Promise<number> {
+    const unaSemanaAtras = new Date();
+    unaSemanaAtras.setDate(unaSemanaAtras.getDate() - 7);
+    const result = await this.repo
+      .createQueryBuilder('propietario')
+      .select('COUNT(*)', 'count')
+      .where('propietario.tenantId = :tenantId', { tenantId })
+      .andWhere('propietario.createdAt >= :fecha', { fecha: unaSemanaAtras })
+      .getRawOne();
+    return Number(result?.count ?? 0);
   }
 }

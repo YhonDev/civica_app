@@ -1,5 +1,6 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { Propietario } from '../../domain/propietario.entity';
+import { type Frecuencia } from '../../../shared/common/value-objects';
 import { PropietarioRepository } from '../../infrastructure/propietario.repository';
 
 @Injectable()
@@ -15,6 +16,7 @@ export class RegistrarPropietarioUseCase {
     tenantId: string;
     casaId?: string;
     fechaInicio?: Date;
+    modalidadPago?: Frecuencia;
   }): Promise<Propietario> {
     if (!params.nombre || params.nombre.trim().length < 2) {
       throw new BadRequestException('El nombre debe tener al menos 2 caracteres');
@@ -25,6 +27,7 @@ export class RegistrarPropietarioUseCase {
       params.telefono,
       params.email ?? null,
       params.tenantId,
+      params.modalidadPago ?? 'MENSUAL',
     );
 
     // Si se proporciona casaId, crear también la tenencia inicial

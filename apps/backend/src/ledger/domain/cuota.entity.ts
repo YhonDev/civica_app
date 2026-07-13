@@ -4,8 +4,11 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 import { Money, type EstadoCuota } from '../../shared/common/value-objects';
+import { Propietario } from '../../community/domain/propietario.entity';
 
 @Entity('cuotas')
 export class Cuota {
@@ -14,6 +17,10 @@ export class Cuota {
 
   @Column({ name: 'propietario_id', type: 'uuid' })
   propietarioId: string;
+
+  @ManyToOne(() => Propietario, { createForeignKeyConstraints: false })
+  @JoinColumn({ name: 'propietario_id' })
+  propietario: Propietario;
 
   @Column({ name: 'tenant_id', type: 'uuid' })
   tenantId: string;

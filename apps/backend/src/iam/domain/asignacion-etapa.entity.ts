@@ -8,6 +8,7 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { Usuario } from './usuario.entity';
+import { Etapa } from '../../community/domain/etapa.entity';
 
 @Entity('asignaciones_etapa')
 export class AsignacionEtapa {
@@ -24,6 +25,10 @@ export class AsignacionEtapa {
 
   @Column({ name: 'etapa_id', type: 'uuid' })
   etapaId: string;
+
+  @ManyToOne(() => Etapa, { createForeignKeyConstraints: false })
+  @JoinColumn({ name: 'etapa_id' })
+  etapa: Etapa;
 
   @Column({ name: 'tenant_id', type: 'uuid' })
   tenantId: string;

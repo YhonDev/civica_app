@@ -3,9 +3,15 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 import '../../screens/auth/auth_cubit.dart';
+import '../../screens/cobro/payment_screen.dart';
+import '../../core/database/app_database.dart';
+import '../../core/database/daos/propietario_dao.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+
+import '../solicitudes/solicitudes_repository.dart';
+import '../../shared/widgets/solicitud_card.dart';
 
 /// Cobrador Dashboard — "Mi Jornada"
 ///
@@ -17,8 +23,40 @@ import '../../core/theme/app_typography.dart';
 ///   Stats: Cobros pendientes + Monto esperado
 ///   Botón principal: Iniciar / Continuar Jornada
 ///   Lista de cobros del día
-class JornadaScreen extends StatelessWidget {
+class JornadaScreen extends StatefulWidget {
   const JornadaScreen({super.key});
+
+  @override
+  State<JornadaScreen> createState() => _JornadaScreenState();
+}
+
+class _JornadaScreenState extends State<JornadaScreen> {
+  final _solicitudesRepo = SolicitudesRepository();
+  List<SolicitudData> _solicitudesCobro = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    try {
+      final solicitudes = await _solicitudesRepo.getSolicitudesPendientes();
+      if (mounted) {
+        setState(() {
+          _solicitudesCobro = solicitudes.where((s) => s.tipo == 'SOLICITUD_COBRO').toList();
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading solicitudes cobro: $e');
+      if (mounted) {
+        setState(() => _loading = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +66,9 @@ class JornadaScreen extends StatelessWidget {
 
     return Scaffold(
       body: SafeArea(
-        child: SingleChildScrollView(
+        child: _loading 
+            ? const Center(child: CircularProgressIndicator())
+            : SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -64,14 +104,14 @@ class JornadaScreen extends StatelessWidget {
                   Expanded(child: _StatCard(
                     icon: Icons.pending_actions_rounded,
                     label: 'Cobros pendientes',
-                    value: '12',
+                    value: '${_solicitudesCobro.length}',
                     color: AppColors.warning,
                   )),
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(child: _StatCard(
                     icon: Icons.attach_money_rounded,
                     label: 'Monto esperado',
-                    value: r'$4.2M',
+                    value: r'---',
                     color: AppColors.primary,
                   )),
                 ],
@@ -101,26 +141,54 @@ class JornadaScreen extends StatelessWidget {
 
               // ── Lista de cobros ────────────────────────────────────
               Text(
-                'Cobros de hoy',
+                'Solicitudes de Cobro',
                 style: AppTypography.subtitle.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(height: AppSpacing.md),
 
-              _CobroCard(
-                casa: 'Casa 101',
-                nombre: 'Juan Pérez',
-                monto: 40000,
-                estado: 'Pendiente',
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              _CobroCard(
-                casa: 'Casa 102',
-                nombre: 'María García',
-                monto: 40000,
-                estado: 'Pendiente',
-              ),
+              if (_solicitudesCobro.isEmpty)
+                Text(
+                  'No hay solicitudes pendientes',
+                  style: AppTypography.body.copyWith(color: AppColors.textSecondary),
+                )
+              else
+                ..._solicitudesCobro.map((s) => Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                  child: SolicitudCard(
+                    solicitud: s,
+                    onTap: () async {
+                      if (s.propietarioId == null) return;
+                      final db = context.read<AppDatabase>();
+                      final tenantId = context.read<AuthCubit>().state.usuario?['tenantId'];
+                      if (tenantId == null) return;
+                      
+                      final propietarioDao = PropietarioDao(db);
+                      final res = await propietarioDao.buscarCompleto(tenantId: tenantId, nombre: s.propietarioNombre);
+                      
+                      PropietarioConInfo? propInfo;
+                      for (final p in res) {
+                        if (p.propietario.id == s.propietarioId) {
+                          propInfo = p;
+                          break;
+                        }
+                      }
+                      
+                      if (propInfo != null && mounted) {
+                        Navigator.of(context).push(MaterialPageRoute(
+                          builder: (_) => PaymentScreen(
+                            propietario: propInfo!.propietario,
+                            casaDireccion: propInfo!.casaDireccion,
+                            etapaNombre: propInfo!.etapaNombre,
+                            cobradorId: user?['id'] ?? 'offline',
+                            solicitudId: s.id,
+                          ),
+                        ));
+                      }
+                    },
+                  ),
+                )),
             ],
           ),
         ),

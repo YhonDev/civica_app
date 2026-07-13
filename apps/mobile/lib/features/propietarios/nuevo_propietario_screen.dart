@@ -3,7 +3,8 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
-import '../../core/constants/mock_data.dart';
+import 'comunidad_repository.dart';
+import 'propietarios_repository.dart';
 
 class NuevoPropietarioScreen extends StatefulWidget {
   const NuevoPropietarioScreen({super.key});
@@ -13,24 +14,66 @@ class NuevoPropietarioScreen extends StatefulWidget {
 }
 
 class _NuevoPropietarioScreenState extends State<NuevoPropietarioScreen> {
-  String? _selectedEtapa;
-  String? _selectedManzana;
-  String? _selectedCasa;
+  final ComunidadRepository _comunidadRepo = ComunidadRepository();
+  final PropietariosRepository _propietariosRepo = PropietariosRepository();
+  bool _isLoading = true;
+  bool _isSaving = false;
+  List<Map<String, dynamic>> _etapasTree = [];
 
-  List<String> get _etapas => MockData.etapas;
+  final TextEditingController _nombreCtrl = TextEditingController();
+  final TextEditingController _telefonoCtrl = TextEditingController();
+  final TextEditingController _emailCtrl = TextEditingController();
+
+  String _modalidadPago = 'MENSUAL';
+
+  String? _selectedEtapaId;
+  String? _selectedManzanaId;
+  String? _selectedCasaId;
+
+  String? _selectedEtapaName;
+  String? _selectedManzanaName;
+  String? _selectedCasaName;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTree();
+  }
+
+  @override
+  void dispose() {
+    _nombreCtrl.dispose();
+    _telefonoCtrl.dispose();
+    _emailCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadTree() async {
+    try {
+      final tree = await _comunidadRepo.getArbolCompleto();
+      setState(() {
+        _etapasTree = tree;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  List<Map<String, dynamic>> get _etapas => _etapasTree;
   
-  List<String> get _manzanas {
-    if (_selectedEtapa == null) return [];
-    return MockData.manzanasPorEtapa[_selectedEtapa!] ?? [];
+  List<Map<String, dynamic>> get _manzanas {
+    if (_selectedEtapaId == null) return [];
+    final etapa = _etapasTree.firstWhere((e) => e['id'] == _selectedEtapaId, orElse: () => {});
+    return (etapa['manzanas'] as List?)?.cast<Map<String, dynamic>>() ?? [];
   }
   
-  List<String> get _casas {
-    if (_selectedEtapa == null || _selectedManzana == null) return [];
-    // Nota: en MockData actual, casasPorManzana solo usa la manzana como key.
-    return MockData.casasPorManzana[_selectedManzana!] ?? [];
+  List<Map<String, dynamic>> get _casas {
+    if (_selectedManzanaId == null) return [];
+    final manzanasList = _manzanas;
+    final manzana = manzanasList.firstWhere((m) => m['id'] == _selectedManzanaId, orElse: () => {});
+    return (manzana['casas'] as List?)?.cast<Map<String, dynamic>>() ?? [];
   }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +85,7 @@ class _NuevoPropietarioScreenState extends State<NuevoPropietarioScreen> {
           onPressed: () => context.pop(),
         ),
       ),
-      body: SingleChildScrollView(
+      body: _isLoading ? const Center(child: CircularProgressIndicator()) : SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.screenPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -55,9 +98,28 @@ class _NuevoPropietarioScreenState extends State<NuevoPropietarioScreen> {
               ),
             ),
             const SizedBox(height: AppSpacing.md),
-            _buildTextField(label: 'Nombre completo', icon: Icons.person_outline_rounded),
+            _buildTextField(label: 'Nombre completo', icon: Icons.person_outline_rounded, controller: _nombreCtrl),
             const SizedBox(height: AppSpacing.md),
-            _buildTextField(label: 'Teléfono', icon: Icons.phone_outlined, keyboardType: TextInputType.phone),
+            _buildTextField(label: 'Teléfono', icon: Icons.phone_outlined, keyboardType: TextInputType.phone, controller: _telefonoCtrl),
+            const SizedBox(height: AppSpacing.md),
+            _buildTextField(label: 'Correo electrónico (Opcional)', icon: Icons.email_outlined, keyboardType: TextInputType.emailAddress, controller: _emailCtrl),
+            
+            const SizedBox(height: AppSpacing.md),
+            _buildDropdown(
+              label: 'Modalidad de Pago',
+              icon: Icons.calendar_today_outlined,
+              value: _modalidadPago,
+              items: [
+                {'id': 'MENSUAL', 'nombre': 'Mensual'},
+                {'id': 'QUINCENAL', 'nombre': 'Quincenal'},
+                {'id': 'SEMANAL', 'nombre': 'Semanal'},
+              ],
+              onChanged: (val) {
+                if (val != null) {
+                  setState(() => _modalidadPago = val);
+                }
+              },
+            ),
             
             const SizedBox(height: AppSpacing.xl),
             
@@ -79,13 +141,14 @@ class _NuevoPropietarioScreenState extends State<NuevoPropietarioScreen> {
             _buildDropdown(
               label: 'Etapa',
               icon: Icons.account_tree_outlined,
-              value: _selectedEtapa,
+              value: _selectedEtapaId,
               items: _etapas,
               onChanged: (val) {
                 setState(() {
-                  _selectedEtapa = val;
-                  _selectedManzana = null;
-                  _selectedCasa = null;
+                  _selectedEtapaId = val;
+                  _selectedEtapaName = _etapas.firstWhere((e) => e['id'] == val)['nombre'];
+                  _selectedManzanaId = null;
+                  _selectedCasaId = null;
                 });
               },
             ),
@@ -95,13 +158,14 @@ class _NuevoPropietarioScreenState extends State<NuevoPropietarioScreen> {
             _buildDropdown(
               label: 'Manzana',
               icon: Icons.grid_view_rounded,
-              value: _selectedManzana,
+              value: _selectedManzanaId,
               items: _manzanas,
-              enabled: _selectedEtapa != null,
+              enabled: _selectedEtapaId != null,
               onChanged: (val) {
                 setState(() {
-                  _selectedManzana = val;
-                  _selectedCasa = null;
+                  _selectedManzanaId = val;
+                  _selectedManzanaName = _manzanas.firstWhere((m) => m['id'] == val)['nombre'];
+                  _selectedCasaId = null;
                 });
               },
             ),
@@ -111,18 +175,19 @@ class _NuevoPropietarioScreenState extends State<NuevoPropietarioScreen> {
             _buildDropdown(
               label: 'Lote / Casa',
               icon: Icons.home_outlined,
-              value: _selectedCasa,
+              value: _selectedCasaId,
               items: _casas,
-              enabled: _selectedManzana != null,
+              enabled: _selectedManzanaId != null,
               onChanged: (val) {
                 setState(() {
-                  _selectedCasa = val;
+                  _selectedCasaId = val;
+                  _selectedCasaName = _casas.firstWhere((c) => c['id'] == val)['nombre'];
                 });
               },
             ),
             
             // Indicador visual de selección exitosa
-            if (_selectedCasa != null)
+            if (_selectedCasaId != null)
               Padding(
                 padding: const EdgeInsets.only(top: AppSpacing.md),
                 child: Container(
@@ -138,7 +203,7 @@ class _NuevoPropietarioScreenState extends State<NuevoPropietarioScreen> {
                       const SizedBox(width: AppSpacing.sm),
                       Expanded(
                         child: Text(
-                          '$_selectedEtapa - $_selectedManzana - $_selectedCasa asignada correctamente.',
+                          '$_selectedEtapaName - $_selectedManzanaName - $_selectedCasaName asignada correctamente.',
                           style: AppTypography.body.copyWith(
                             color: AppColors.success,
                             fontWeight: FontWeight.w600,
@@ -154,10 +219,44 @@ class _NuevoPropietarioScreenState extends State<NuevoPropietarioScreen> {
             SizedBox(
               width: double.infinity,
               child: FilledButton(
-                onPressed: _selectedCasa == null ? null : () {
-                  context.pop();
+                onPressed: _isSaving ? null : () async {
+                  if (_nombreCtrl.text.isEmpty || _telefonoCtrl.text.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Por favor, ingrese al menos el nombre y teléfono.')),
+                    );
+                    return;
+                  }
+                  
+                  setState(() => _isSaving = true);
+                  try {
+                    await _propietariosRepo.createPropietario(
+                      nombre: _nombreCtrl.text,
+                      telefono: _telefonoCtrl.text,
+                      email: _emailCtrl.text,
+                      casaId: _selectedCasaId,
+                      modalidadPago: _modalidadPago,
+                    );
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Propietario creado con éxito.')),
+                      );
+                      context.pop(true);
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Error al crear propietario: $e')),
+                      );
+                    }
+                  } finally {
+                    if (mounted) {
+                      setState(() => _isSaving = false);
+                    }
+                  }
                 },
-                child: const Text('Crear Propietario'),
+                child: _isSaving 
+                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                  : const Text('Crear Propietario'),
               ),
             ),
           ],
@@ -170,8 +269,10 @@ class _NuevoPropietarioScreenState extends State<NuevoPropietarioScreen> {
     required String label,
     required IconData icon,
     TextInputType? keyboardType,
+    TextEditingController? controller,
   }) {
     return TextField(
+      controller: controller,
       keyboardType: keyboardType,
       decoration: InputDecoration(
         labelText: label,
@@ -194,7 +295,7 @@ class _NuevoPropietarioScreenState extends State<NuevoPropietarioScreen> {
     required String label,
     required IconData icon,
     required String? value,
-    required List<String> items,
+    required List<Map<String, dynamic>> items,
     required ValueChanged<String?> onChanged,
     bool enabled = true,
   }) {
@@ -202,8 +303,8 @@ class _NuevoPropietarioScreenState extends State<NuevoPropietarioScreen> {
       value: value,
       items: items.map((item) {
         return DropdownMenuItem(
-          value: item,
-          child: Text(item),
+          value: item['id'].toString(),
+          child: Text(item['nombre'].toString()),
         );
       }).toList(),
       onChanged: enabled ? onChanged : null,
@@ -227,6 +328,7 @@ class _NuevoPropietarioScreenState extends State<NuevoPropietarioScreen> {
       ),
       icon: Icon(Icons.arrow_drop_down_rounded, color: enabled ? AppColors.textSecondary : AppColors.textDisabled.withValues(alpha: 0.3)),
       isExpanded: true,
+      menuMaxHeight: 300,
       hint: Text(
         'Selecciona $label',
         style: AppTypography.body.copyWith(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
@@ -25,6 +26,7 @@ class EstadoCuentaCard extends StatelessWidget {
   final String saldoLabel;
   final String? proximoCobro;
   final String? ultimoPago;
+  final Map<String, dynamic>? tarifaActual;
   final VoidCallback? onTap;
 
   const EstadoCuentaCard({
@@ -33,6 +35,7 @@ class EstadoCuentaCard extends StatelessWidget {
     required this.saldoLabel,
     this.proximoCobro,
     this.ultimoPago,
+    this.tarifaActual,
     this.onTap,
   });
 
@@ -71,11 +74,32 @@ class EstadoCuentaCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Status badge
-              StatusBadge(
-                status: status,
-                iconSize: 16,
-                textStyle: AppTypography.caption,
+              // Status badge and Tarifa
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  StatusBadge(
+                    status: status,
+                    iconSize: 16,
+                    textStyle: AppTypography.caption,
+                  ),
+                  if (tarifaActual != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        'Tarifa: \$ ${NumberFormat.decimalPattern('es_CO').format(tarifaActual!['cuotaMensual'])}',
+                        style: AppTypography.caption.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                ],
               ),
               const SizedBox(height: AppSpacing.md),
 

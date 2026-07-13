@@ -6,6 +6,7 @@ import 'cartera_repository.dart';
 import 'models/cartera_models.dart';
 import 'widgets/cartera_resumen_header.dart';
 import 'widgets/cobro_card.dart';
+import 'widgets/registrar_pago_bottom_sheet.dart';
 import '../../shared/widgets/empty_state.dart';
 import '../dashboard/widgets/skeleton_loading.dart';
 
@@ -156,7 +157,16 @@ class _CarteraScreenState extends State<CarteraScreen> {
                         final cobro = _filteredCobros[index];
                         return Padding(
                           padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                          child: CobroCard(cobro: cobro),
+                          child: CobroCard(
+                            cobro: cobro,
+                            onRegistrarPago: cobro.estado != 'Pagado'
+                                ? () => RegistrarPagoBottomSheet.show(
+                                      context,
+                                      cobro: cobro,
+                                      onSuccess: _loadData,
+                                    )
+                                : null,
+                          ),
                         );
                       },
                       childCount: _filteredCobros.length,

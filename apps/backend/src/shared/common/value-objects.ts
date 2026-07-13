@@ -281,6 +281,19 @@ export class Periodo {
           const fecha = toLocalDate(year, month, d);
           if (fecha.getDay() === 6) fechas.push(formatDate(fecha));
         }
+        
+        // Regla de negocio: Exactamente 4 pagos semanales por mes.
+        if (fechas.length === 5) {
+          const primerSabado = parseLocalDate(fechas[0]).getDate();
+          if (primerSabado <= 2) {
+            // Sábado cae 1 o 2: descartamos el primero (pertenece a la semana del mes anterior)
+            fechas.shift();
+          } else {
+            // Sábado cae 3, 4 o 5: descartamos el último (su semana laboral corresponde al mes siguiente)
+            fechas.pop();
+          }
+        }
+        
         return fechas;
       }
       case 'QUINCENAL': {
@@ -390,17 +403,68 @@ export class Periodo {
   }
 
   static formatConceptoCuotaMensual(periodo: Periodo): string {
-    const meses = [
-      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
-    ];
-    const mes = meses[periodo.inicio.getMonth()];
-    const anio = periodo.inicio.getFullYear();
-    return `Administración ${mes} ${anio}`;
+    return `Cuota de Vigilancia`;
   }
 
   /** @deprecated Usar formatConceptoCuotaMensual para registros de cuota. */
   static formatConcepto(frecuencia: Frecuencia, periodo: Periodo): string {
     return Periodo.formatConceptoCuotaMensual(periodo);
+  }
+
+  /**
+   * Calcula el monto prorrateado para el primer mes de registro, basado en las fechas de cobro restantes.
+   */
+  static calcularCuotaProrrateada(
+    fechaRegistro: Date,
+    frecuencia: Frecuencia,
+    tarifaMensualCentavos: number,
+  ): number {
+    const year = fechaRegistro.getFullYear();
+    const month = fechaRegistro.getMonth();
+    const fechasMes = Periodo.fechasCobroParciales(frecuencia, year, month);
+    
+    // Contar cuántas fechas son mayores o iguales a la fecha de registro
+    const registroStr = formatDate(fechaRegistro);
+    const fechasRestantes = fechasMes.filter(f => f >= registroStr).length;
+
+    // totalPagos será 4, 2 o 1
+    const totalPagos = pagosPorMes(frecuencia);
+
+    return Math.round((tarifaMensualCentavos / totalPagos) * fechasRestantes);
+  }
+
+  /**
+   * Obtiene la próxima fecha de cobro y el monto parcial a cobrar en esa fecha.
+   */
+  static obtenerProximoPago(
+    fechaBase: Date,
+    frecuencia: Frecuencia,
+    tarifaMensualCentavos: number
+  ): { fecha: string; monto: number } | null {
+    const year = fechaBase.getFullYear();
+    const month = fechaBase.getMonth();
+    
+    // Buscar en el mes actual
+    let fechas = Periodo.fechasCobroParciales(frecuencia, year, month);
+    let baseStr = formatDate(fechaBase);
+    let proximas = fechas.filter(f => f >= baseStr);
+
+    // Si ya pasaron todas las de este mes, buscar en el siguiente
+    if (proximas.length === 0) {
+      const mesSiguiente = month === 11 ? 0 : month + 1;
+      const anoSiguiente = month === 11 ? year + 1 : year;
+      fechas = Periodo.fechasCobroParciales(frecuencia, anoSiguiente, mesSiguiente);
+      proximas = fechas; 
+    }
+
+    if (proximas.length === 0) return null; // No debería pasar
+
+    const totalPagos = pagosPorMes(frecuencia);
+    const montoParcial = Math.round(tarifaMensualCentavos / totalPagos);
+
+    return {
+      fecha: proximas[0],
+      monto: montoParcial
+    };
   }
 }

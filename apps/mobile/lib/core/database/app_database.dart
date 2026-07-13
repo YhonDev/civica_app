@@ -209,6 +209,7 @@ class Pagos extends Table {
   TextColumn get tenantId => text()();
   TextColumn? get cuotaId => text().nullable()();
   TextColumn? get serverId => text().nullable()(); // ID asignado por el servidor tras sync
+  TextColumn? get solicitudId => text().nullable()(); // Request ID associated with this payment
   IntColumn get monto => integer()(); // centavos COP
   TextColumn get fechaPago => text()(); // ISO date
   TextColumn get cobradorId => text()();

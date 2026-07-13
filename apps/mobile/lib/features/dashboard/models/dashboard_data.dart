@@ -27,6 +27,11 @@ class DashboardData extends Equatable {
   final int propietariosMora;
   final int pagosRevision;
 
+  // Nuevos campos reportes anuales
+  final double acumuladoAnual;
+  final double metaAnual;
+  final List<MesHistorico> historialMeses;
+
   const DashboardData({
     required this.mes,
     required this.anio,
@@ -46,12 +51,15 @@ class DashboardData extends Equatable {
     this.solicitudesPendientes = 0,
     this.propietariosMora = 0,
     this.pagosRevision = 0,
+    required this.acumuladoAnual,
+    required this.metaAnual,
+    required this.historialMeses,
   });
 
   factory DashboardData.fromJson(Map<String, dynamic> json) {
     final resumen = json['resumen'] as Map<String, dynamic>? ?? {};
     final estadoCobrosMap = json['estadoCobros'] as Map<String, dynamic>? ?? {};
-
+ 
     return DashboardData(
       mes: int.tryParse(json['mes']?.toString() ?? '') ?? 0,
       anio: int.tryParse(json['anio']?.toString() ?? '') ?? 0,
@@ -90,6 +98,15 @@ class DashboardData extends Equatable {
               ?.map((e) => ActividadItem.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
+      solicitudesPendientes: int.tryParse(json['solicitudesPendientes']?.toString() ?? '') ?? 0,
+      propietariosMora: int.tryParse(json['propietariosMora']?.toString() ?? '') ?? 0,
+      nuevosPropietariosSemana: int.tryParse(json['nuevosPropietariosSemana']?.toString() ?? '') ?? 0,
+      acumuladoAnual: (double.tryParse(json['acumuladoAnual']?.toString() ?? '') ?? 0) / 100,
+      metaAnual: (double.tryParse(json['metaAnual']?.toString() ?? '') ?? 0) / 100,
+      historialMeses: (json['historialMeses'] as List<dynamic>?)
+              ?.map((e) => MesHistorico.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
     );
   }
 
@@ -113,6 +130,9 @@ class DashboardData extends Equatable {
         solicitudesPendientes,
         propietariosMora,
         pagosRevision,
+        acumuladoAnual,
+        metaAnual,
+        historialMeses,
       ];
 }
 
@@ -148,7 +168,7 @@ class ModalidadItem extends Equatable {
     return ModalidadItem(
       nombre: json['frecuencia'] as String? ?? '',
       porcentaje: double.tryParse(json['porcentaje']?.toString() ?? '') ?? 0,
-      valor: 0, // backend no envía recaudo por modalidad de forma plana aún
+      valor: (double.tryParse(json['montoRecaudo']?.toString() ?? '') ?? 0) / 100,
     );
   }
 
@@ -236,4 +256,33 @@ class CobroSemanaItem extends Equatable {
 
   @override
   List<Object?> get props => [semana, pagados, pendientes, mora];
+}
+
+class MesHistorico extends Equatable {
+  final int mes;
+  final int anio;
+  final double recaudo;
+  final int pendientes;
+  final double mora;
+
+  const MesHistorico({
+    required this.mes,
+    required this.anio,
+    required this.recaudo,
+    required this.pendientes,
+    required this.mora,
+  });
+
+  factory MesHistorico.fromJson(Map<String, dynamic> json) {
+    return MesHistorico(
+      mes: json['mes'] as int? ?? 1,
+      anio: json['anio'] as int? ?? 2026,
+      recaudo: (double.tryParse(json['recaudo']?.toString() ?? '') ?? 0) / 100,
+      pendientes: json['pendientes'] as int? ?? 0,
+      mora: (double.tryParse(json['mora']?.toString() ?? '') ?? 0) / 100,
+    );
+  }
+
+  @override
+  List<Object?> get props => [mes, anio, recaudo, pendientes, mora];
 }

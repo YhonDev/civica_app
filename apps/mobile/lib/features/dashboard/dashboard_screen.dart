@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import '../../screens/auth/auth_cubit.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
@@ -286,81 +287,28 @@ class _DashboardContentState extends State<_DashboardContent>
             ),
             const SizedBox(height: AppSpacing.lg),
 
-            // 1. Resumen: KPI (Recaudo)
             _buildAnimatedSection(
               index: 0,
-              child: KpiCard(
-                title: 'Recaudo del Mes',
-                amount: '\$${(widget.data.recaudoMes / 1000000).toStringAsFixed(1)}M',
-                percentage: widget.data.porcentaje,
-                subtitle: 'Meta alcanzada',
-                actionLabel: 'Abrir módulo',
-                onTap: () => context.go('/estado'),
+              child: Builder(
+                builder: (context) {
+                  final recaudo = widget.data.recaudoMes;
+                  final amountStr = '\$ ${NumberFormat.decimalPattern('es_CO').format(recaudo.toInt())}';
+                  return KpiCard(
+                    title: 'Recaudo del Mes',
+                    amount: amountStr,
+                    percentage: widget.data.porcentaje,
+                    subtitle: 'Meta alcanzada',
+                    actionLabel: 'Abrir módulo',
+                    onTap: () => context.go('/estado'),
+                  );
+                },
               ),
             ),
             const SizedBox(height: AppSpacing.xl),
 
-            // 2. Resumen del Día (La Firma de VigiVecino)
+            // 2. Centro de Atención
             _buildAnimatedSection(
               index: 1,
-              child: Container(
-                padding: AppSpacing.cardEdgeInsets,
-                decoration: BoxDecoration(
-                  color: AppColors.success.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-                  border: Border.all(color: AppColors.success.withValues(alpha: 0.2)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: AppColors.success,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.auto_awesome, color: Colors.white, size: 14),
-                        ),
-                        const SizedBox(width: AppSpacing.sm),
-                        Text(
-                          'Resumen de hoy',
-                          style: AppTypography.subtitle.copyWith(
-                            color: AppColors.success,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    Text('• Se registraron ${widget.data.actividadReciente.where((e) => e.tipo == "pago_registrado").length} pagos.', style: AppTypography.body),
-                    const SizedBox(height: 4),
-                    const Text('• Hay 5 solicitudes pendientes.', style: AppTypography.body),
-                    const SizedBox(height: 4),
-                    Text('• ${widget.data.nuevosPropietariosSemana} propietarios nuevos.', style: AppTypography.body),
-                    const SizedBox(height: 4),
-                    const Text('• Recaudo del día: \$850.000.', style: AppTypography.body),
-                    const SizedBox(height: AppSpacing.md),
-                    GestureDetector(
-                      onTap: () => context.push('/actividad-admin'),
-                      child: Row(
-                        children: [
-                          Text('Ver actividad', style: AppTypography.bodyMedium.copyWith(color: AppColors.success, fontWeight: FontWeight.w700)),
-                          const SizedBox(width: 4),
-                          Icon(Icons.arrow_forward_rounded, color: AppColors.success, size: 16),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xl),
-
-            // 3. Centro de Atención
-            _buildAnimatedSection(
-              index: 2,
               child: ModuleSummaryCard(
                 title: '⚠ Centro de Atención',
                 items: [
@@ -386,9 +334,9 @@ class _DashboardContentState extends State<_DashboardContent>
             ),
             const SizedBox(height: AppSpacing.xl),
 
-            // 4. Cobros (Grid Layout)
+            // 3. Cobros (Grid Layout)
             _buildAnimatedSection(
-              index: 3,
+              index: 2,
               child: ModuleSummaryCard(
                 title: 'Cobros',
                 isGrid: true,
@@ -450,16 +398,16 @@ class _DashboardContentState extends State<_DashboardContent>
             ),
             const SizedBox(height: AppSpacing.xl),
 
-            // 5. Actividad (Hoy)
+            // 4. Actividad (Hoy)
             _buildAnimatedSection(
-              index: 4,
+              index: 3,
               child: ActividadSection(actividad: widget.data.actividadReciente),
             ),
             const SizedBox(height: AppSpacing.lg),
 
-            // 6. Comunidad
+            // 5. Comunidad
             _buildAnimatedSection(
-              index: 5,
+              index: 4,
               child: ModuleSummaryCard(
                 title: 'Comunidad',
                 items: [
@@ -480,9 +428,9 @@ class _DashboardContentState extends State<_DashboardContent>
             ),
             const SizedBox(height: AppSpacing.xl),
 
-            // 7. Acciones rápidas
+            // 6. Acciones rápidas
             _buildAnimatedSection(
-              index: 6,
+              index: 5,
               child: const AccionesRapidasSection(),
             ),
             const SizedBox(height: AppSpacing.xl),

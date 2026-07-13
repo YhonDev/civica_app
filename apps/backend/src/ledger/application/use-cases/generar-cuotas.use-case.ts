@@ -136,11 +136,26 @@ export class GenerarCuotasUseCase {
 
     const concepto = Periodo.formatConceptoCuotaMensual(periodo);
 
+    const fechaActivacionDate = parseLocalDate(cuenta.fechaActivacion);
+    let montoCuota = tarifaMensual.monto;
+
+    // Prorrateo: Si la cuota se está generando para el mismo mes de activación
+    if (
+      fechaActivacionDate.getFullYear() === periodo.inicio.getFullYear() &&
+      fechaActivacionDate.getMonth() === periodo.inicio.getMonth()
+    ) {
+      montoCuota = Periodo.calcularCuotaProrrateada(
+        fechaActivacionDate,
+        cuenta.frecuencia,
+        tarifaMensual.monto
+      );
+    }
+
     const cuota = Cuota.crear(
       cuenta.propietarioId,
       cuenta.tenantId,
       concepto,
-      Money.ofCOP(tarifaMensual.monto),
+      Money.ofCOP(montoCuota),
       periodo.inicioStr,
       periodo.finStr,
       periodo.vencimientoStr,

@@ -4,7 +4,9 @@ import {
   IsOptional,
   MinLength,
   IsDateString,
+  IsIn,
 } from 'class-validator';
+import { type Frecuencia } from '../../../../shared/common/value-objects';
 
 export class RegistrarPropietarioDto {
   @IsString()
@@ -31,4 +33,9 @@ export class RegistrarPropietarioDto {
   @IsDateString()
   @IsOptional()
   fechaInicio?: string;
+
+  @IsString()
+  @IsOptional()
+  @IsIn(['SEMANAL', 'QUINCENAL', 'MENSUAL'])
+  modalidadPago?: Frecuencia;
 }

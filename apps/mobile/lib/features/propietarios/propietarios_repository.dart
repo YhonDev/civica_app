@@ -1,52 +1,211 @@
+import 'package:flutter/foundation.dart';
+import '../../core/network/api_client.dart';
+import '../../core/network/api_exceptions.dart';
+import 'comunidad_repository.dart';
 import 'models/propietarios_models.dart';
-import '../../core/constants/mock_data.dart';
 
 class PropietariosRepository {
+  final ApiClient _api = ApiClient.instance;
+
   /// Obtiene el resumen de la comunidad.
   Future<PropietarioResumen> getResumen() async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    
-    // Contamos casas totales (deberían ser 5 según MockData)
-    int totalCasas = 0;
-    for (var casas in MockData.casasPorManzana.values) {
-      totalCasas += casas.length;
-    }
+    try {
+      final tenantId = ComunidadRepository.currentTenantId;
 
-    final int ocupadas = MockData.propietarios.length;
-    
-    return PropietarioResumen(
-      totalPropiedades: totalCasas,
-      ocupadas: ocupadas,
-      vacantes: totalCasas - ocupadas,
-    );
+      // 1. Obtener todas las casas a través de conjuntos
+      int totalCasas = 0;
+      final responseConjuntos = await _api.get('/conjuntos', queryParameters: {'tenantId': tenantId});
+      final proyectos = responseConjuntos.data as List<dynamic>;
+      
+      for (var p in proyectos) {
+        for (var e in (p['etapas'] ?? [])) {
+          for (var m in (e['manzanas'] ?? [])) {
+            totalCasas += (m['casas'] as List).length;
+          }
+        }
+      }
+
+      // 2. Obtener casas ocupadas a través de propietarios activos
+      final responseProps = await _api.get('/propietarios', queryParameters: {'tenantId': tenantId});
+      final propietarios = responseProps.data as List<dynamic>;
+      
+      final ocupadasSet = <String>{};
+      for (var p in propietarios) {
+        final tenencias = p['tenencias'] as List<dynamic>? ?? [];
+        for (var t in tenencias) {
+          if (t['casaId'] != null) {
+            ocupadasSet.add(t['casaId'].toString());
+          }
+        }
+      }
+
+      final ocupadas = ocupadasSet.length;
+
+      return PropietarioResumen(
+        totalPropiedades: totalCasas,
+        ocupadas: ocupadas,
+        vacantes: totalCasas - ocupadas,
+      );
+    } catch (e) {
+      throw e is ApiException ? e : Exception('Error al cargar resumen: $e');
+    }
   }
 
   /// Obtiene la lista completa de propietarios en la comunidad.
   Future<List<PropietarioItem>> getPropietarios() async {
-    await Future.delayed(const Duration(milliseconds: 600));
-
-    final List<PropietarioItem> propietarios = [];
-    
-    for (int i = 0; i < MockData.propietarios.length; i++) {
-      final p = MockData.propietarios[i];
+    try {
+      final tenantId = ComunidadRepository.currentTenantId;
+      final response = await _api.get('/propietarios', queryParameters: {'tenantId': tenantId});
+      final List<dynamic> data = response.data;
       
-      // Parsear monto a double
-      String montoStr = p['monto'].replaceAll('\$', '').replaceAll('.', '');
-      double saldo = double.tryParse(montoStr) ?? 0.0;
+      final List<PropietarioItem> propietarios = [];
+      
+      for (var p in data) {
+        double saldo = 0.0;
+        bool enMora = false;
+        
+        final cuotas = p['cuotas'] as List<dynamic>? ?? [];
+        for (var cuota in cuotas) {
+          if (cuota['estado'] == 'VENCIDA') {
+            enMora = true;
+            saldo += ((cuota['monto'] ?? 0) - (cuota['montoPagado'] ?? 0)) / 100.0;
+          } else if (cuota['estado'] == 'PENDIENTE') {
+            saldo += ((cuota['monto'] ?? 0) - (cuota['montoPagado'] ?? 0)) / 100.0;
+          }
+        }
 
-      propietarios.add(
-        PropietarioItem(
-          id: 'P-$i',
-          nombre: p['nombre'],
-          telefono: '+57 300 000 000$i',
-          casa: p['casa'],
-          etapa: p['etapa'],
-          estadoFinanciero: p['estado'],
-          saldoPendiente: saldo,
-        ),
-      );
+        String estadoFinanciero = enMora ? 'Mora' : 'Al Día';
+        if (saldo == 0) estadoFinanciero = 'Al Día';
+
+        String casaNombre = 'Sin casa';
+        String etapaNombre = 'Sin etapa';
+        String manzanaNombre = 'Sin manzana';
+        String? casaId;
+        String? manzanaId;
+        String? etapaId;
+        String? email = p['email'];
+        String modalidadPago = p['modalidad_pago'] ?? p['modalidadPago'] ?? 'MENSUAL';
+        
+        final tenencias = p['tenencias'] as List<dynamic>? ?? [];
+        if (tenencias.isNotEmpty) {
+          final tenencia = tenencias.first;
+          final casa = tenencia['casa'];
+          if (casa != null) {
+            casaNombre = casa['direccionInterna'] ?? 'Sin casa';
+            casaId = casa['id'];
+            final manzana = casa['manzana'];
+            if (manzana != null) {
+              manzanaNombre = manzana['nombre'] ?? 'Sin manzana';
+              manzanaId = manzana['id'];
+              final etapa = manzana['etapa'];
+              if (etapa != null) {
+                etapaNombre = etapa['nombre'] ?? 'Sin etapa';
+                etapaId = etapa['id'];
+              }
+            }
+          }
+        }
+
+        propietarios.add(
+          PropietarioItem(
+            id: p['id'].toString(),
+            nombre: p['nombre'] ?? '',
+            telefono: p['telefono'] ?? '',
+            email: email,
+            casa: '$manzanaNombre - $casaNombre',
+            etapa: etapaNombre,
+            casaId: casaId?.toString(),
+            manzanaId: manzanaId?.toString(),
+            etapaId: etapaId?.toString(),
+            modalidadPago: modalidadPago,
+            estadoFinanciero: estadoFinanciero,
+            saldoPendiente: saldo,
+          ),
+        );
+      }
+
+      // Invertir la lista para que los más nuevos salgan arriba
+      return propietarios.reversed.toList();
+    } catch (e) {
+      throw e is ApiException ? e : Exception('Error al cargar propietarios: $e');
     }
+  }
 
-    return propietarios;
+  /// Crea un nuevo propietario en el backend.
+  Future<void> createPropietario({
+    required String nombre,
+    required String telefono,
+    String? email,
+    String? casaId,
+    String? fechaInicio,
+    String modalidadPago = 'MENSUAL',
+  }) async {
+    try {
+      final tenantId = ComunidadRepository.currentTenantId;
+      final payload = {
+        'nombre': nombre,
+        'telefono': telefono,
+        'tenantId': tenantId,
+        'modalidadPago': modalidadPago,
+      };
+
+      if (email != null && email.isNotEmpty) {
+        payload['email'] = email;
+      }
+      if (casaId != null && casaId.isNotEmpty) {
+        payload['casaId'] = casaId;
+      }
+      if (fechaInicio != null && fechaInicio.isNotEmpty) {
+        payload['fechaInicio'] = fechaInicio;
+      }
+
+      await _api.post('/propietarios', data: payload);
+    } catch (e) {
+      throw e is ApiException ? e : Exception('Error al crear propietario: $e');
+    }
+  }
+
+  Future<bool> deletePropietario(String id) async {
+    try {
+      await _api.delete('/propietarios/$id');
+      return true;
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error al eliminar propietario: $e');
+      }
+      return false;
+    }
+  }
+
+  Future<bool> updatePropietario(String id, Map<String, dynamic> data) async {
+    try {
+      await _api.patch('/propietarios/$id', data: data);
+      return true;
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error al actualizar propietario: $e');
+      }
+      return false;
+    }
+  }
+
+  Future<bool> deleteCuota(String cuotaId) async {
+    try {
+      await _api.delete('/cuotas/$cuotaId');
+      return true;
+    } catch (e) {
+      if (kDebugMode) print('Error al eliminar cuota: $e');
+      return false;
+    }
+  }
+
+  Future<bool> deletePago(String pagoId) async {
+    try {
+      await _api.delete('/pagos/$pagoId');
+      return true;
+    } catch (e) {
+      if (kDebugMode) print('Error al eliminar pago: $e');
+      return false;
+    }
   }
 }

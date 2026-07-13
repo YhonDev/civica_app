@@ -21,6 +21,11 @@ class PropietarioItem extends Equatable {
   final String telefono;
   final String casa;
   final String etapa;
+  final String? casaId;
+  final String? manzanaId;
+  final String? etapaId;
+  final String? email;
+  final String modalidadPago;
   final String estadoFinanciero; // 'Al Día', 'Mora', 'Pendiente'
   final double saldoPendiente;
 
@@ -30,6 +35,11 @@ class PropietarioItem extends Equatable {
     required this.telefono,
     required this.casa,
     required this.etapa,
+    this.casaId,
+    this.manzanaId,
+    this.etapaId,
+    this.email,
+    required this.modalidadPago,
     required this.estadoFinanciero,
     required this.saldoPendiente,
   });
@@ -41,6 +51,11 @@ class PropietarioItem extends Equatable {
         telefono,
         casa,
         etapa,
+        casaId,
+        manzanaId,
+        etapaId,
+        email,
+        modalidadPago,
         estadoFinanciero,
         saldoPendiente,
       ];

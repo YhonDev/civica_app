@@ -7,6 +7,8 @@ import {
   OneToMany,
 } from 'typeorm';
 import { Tenencia } from './tenencia.entity';
+import { Cuota } from '../../ledger/domain/cuota.entity';
+import { type Frecuencia } from '../../shared/common/value-objects';
 
 @Entity('propietarios')
 export class Propietario {
@@ -25,8 +27,14 @@ export class Propietario {
   @Column({ name: 'tenant_id', type: 'uuid' })
   tenantId: string;
 
+  @Column({ name: 'modalidad_pago', type: 'varchar', length: 20, default: 'MENSUAL' })
+  modalidadPago: Frecuencia;
+
   @OneToMany(() => Tenencia, (tenencia) => tenencia.propietario, { cascade: true })
   tenencias: Tenencia[];
+
+  @OneToMany(() => Cuota, (cuota) => cuota.propietario)
+  cuotas: Cuota[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
@@ -41,13 +49,16 @@ export class Propietario {
     telefono: string,
     email: string | null,
     tenantId: string,
+    modalidadPago: Frecuencia = 'MENSUAL',
   ): Propietario {
     const propietario = new Propietario();
     propietario.nombre = nombre;
     propietario.telefono = telefono;
     propietario.email = email;
     propietario.tenantId = tenantId;
+    propietario.modalidadPago = modalidadPago;
     propietario.tenencias = [];
+    propietario.cuotas = [];
     return propietario;
   }
 
@@ -63,6 +74,7 @@ export class Propietario {
     }
 
     const tenencia = Tenencia.crear(this.id, casaId, fechaInicio);
+    tenencia.propietario = this;
     this.tenencias.push(tenencia);
     return tenencia;
   }

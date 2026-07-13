@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/date_symbol_data_local.dart';
-
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'core/database/app_database.dart';
 import 'core/network/api_client.dart';
 import 'core/sync/connectivity_detector.dart';
@@ -19,6 +19,9 @@ void main() async {
 
   // Inicializar base de datos local
   await AppDatabase.init();
+
+  // Cargar variables de entorno
+  await dotenv.load(fileName: ".env");
 
   // Inicializar ApiClient con la URL del backend
   ApiClient.init(
@@ -95,11 +98,18 @@ class AuthGate extends StatelessWidget {
 class _RouterWithAuth extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      title: 'VigiVecino',
-      debugShowCheckedModeBanner: false,
-      theme: buildLightTheme(),
-      routerConfig: appRouter,
+    return BlocListener<AuthCubit, AuthState>(
+      listener: (context, state) {
+        if (!state.isAuthenticated) {
+          appRouter.go('/login');
+        }
+      },
+      child: MaterialApp.router(
+        title: 'VigiVecino',
+        debugShowCheckedModeBanner: false,
+        theme: buildLightTheme(),
+        routerConfig: appRouter,
+      ),
     );
   }
 }

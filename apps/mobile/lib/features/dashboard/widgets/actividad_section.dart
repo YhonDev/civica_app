@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -18,8 +19,27 @@ class ActividadSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Only count activities with today's date (or all recent activities since they are the ones loaded)
+    final pagosList = actividad.where((a) => a.tipo == 'PAGO' || a.tipo == 'pago' || a.tipo == 'pago_registrado').toList();
+    final propietariosList = actividad.where((a) => a.tipo == 'PROPIETARIO' || a.tipo == 'propietario').toList();
+    final solicitudesList = actividad.where((a) => a.tipo == 'SOLICITUD' || a.tipo == 'solicitud').toList();
+
+    double recaudoHoy = 0.0;
+    for (final act in pagosList) {
+      // Find match for "$[0-9]+" in description
+      final match = RegExp(r'\$(\d+)').firstMatch(act.descripcion);
+      if (match != null) {
+        recaudoHoy += double.tryParse(match.group(1) ?? '') ?? 0.0;
+      } else {
+        // Fallback to 20.000 if not specified in text
+        recaudoHoy += 20000;
+      }
+    }
+
+    final hasTodayActivity = pagosList.isNotEmpty || propietariosList.isNotEmpty || solicitudesList.isNotEmpty;
+
     final items = actividad.map((a) {
-      final isPago = a.tipo == 'pago' || a.tipo == 'pago_registrado';
+      final isPago = a.tipo == 'PAGO' || a.tipo == 'pago' || a.tipo == 'pago_registrado';
       final nro = a.id.hashCode.abs() % 1000;
       final mz = a.id.hashCode % 5 + 1;
       final casa = a.id.hashCode % 50 + 1;
@@ -30,7 +50,7 @@ class ActividadSection extends StatelessWidget {
       return TimelineItem(
         id: a.id,
         tipo: a.tipo,
-        descripcion: '', // Ocultamos la descripción para dejarlo minimalista
+        descripcion: a.descripcion,
         usuario: isPago ? 'Cobrador: ${a.usuario}' : 'Propietario: ${a.usuario}',
         timestamp: a.timestamp,
         hace: a.hace,
@@ -60,7 +80,7 @@ class ActividadSection extends StatelessWidget {
                   size: 20, color: AppColors.warning),
               const SizedBox(width: AppSpacing.sm),
               Text(
-                'Hoy',
+                'Actividades',
                 style: AppTypography.subtitle.copyWith(
                   color: AppColors.textPrimary,
                 ),
@@ -68,31 +88,86 @@ class ActividadSection extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.md),
+
+          // Dynamic "Resumen de hoy" block if there is today's activity
+          if (hasTodayActivity) ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(AppSpacing.md),
+              margin: const EdgeInsets.only(bottom: AppSpacing.lg),
+              decoration: BoxDecoration(
+                color: AppColors.success.withValues(alpha: 0.06),
+                borderRadius: BorderRadius.circular(AppSpacing.cardRadius - 4),
+                border: Border.all(color: AppColors.success.withValues(alpha: 0.15)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.auto_awesome, color: AppColors.success, size: 16),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Resumen de hoy',
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: AppColors.success,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  if (pagosList.isNotEmpty) ...[
+                    Text('• Se registraron ${pagosList.length} pago(s).', style: AppTypography.body),
+                    const SizedBox(height: 2),
+                  ],
+                  if (solicitudesList.isNotEmpty) ...[
+                    Text('• Se crearon ${solicitudesList.length} solicitud(es).', style: AppTypography.body),
+                    const SizedBox(height: 2),
+                  ],
+                  if (propietariosList.isNotEmpty) ...[
+                    Text('• ${propietariosList.length} propietario(s) nuevo(s).', style: AppTypography.body),
+                    const SizedBox(height: 2),
+                  ],
+                  if (recaudoHoy > 0) ...[
+                    Text(
+                      '• Recaudo del día: \$ ${NumberFormat.decimalPattern('es_CO').format(recaudoHoy.toInt())}.',
+                      style: AppTypography.body,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+
           TimelineWidget(
             items: items,
             onItemTap: (item) {
               final orig = actividad.firstWhere((a) => a.id == item.id);
-              final isPago = item.tipo == 'pago' || item.tipo == 'pago_registrado';
+              final isPago = item.tipo == 'PAGO' || item.tipo == 'pago' || item.tipo == 'pago_registrado';
               final mz = item.id.hashCode % 5 + 1;
               final casa = item.id.hashCode % 50 + 1;
               final rawCasa = 'Mz $mz, Casa $casa, 1ra etapa';
 
               if (isPago) {
+                // Parse exact amount from description
+                final match = RegExp(r'\$(\d+)').firstMatch(orig.descripcion);
+                final parsedMonto = match != null ? (int.tryParse(match.group(1) ?? '') ?? 20000) * 100 : 2000000;
+
                 TicketBottomSheet.show(
                   context,
                   TicketData(
                     numero: 'TK-${item.id.hashCode.abs().toString().padLeft(6, '0')}',
                     fecha: item.timestamp,
-                    propietario: 'Propietario Casa $casa', // Mock owner
+                    propietario: 'Propietario Casa $casa',
                     casa: rawCasa,
-                    monto: item.monto ?? 120000,
+                    monto: parsedMonto,
                     metodo: 'Efectivo',
                     estado: 'Pagado',
-                    cobrador: orig.usuario, // orig.usuario holds the cobrador name from backend
+                    cobrador: orig.usuario,
                   ),
                 );
               } else {
-                // Para solicitudes
                 SolicitudBottomSheet.show(
                   context,
                   SolicitudData(
@@ -104,7 +179,7 @@ class ActividadSection extends StatelessWidget {
                     estado: SolicitudEstado.enRevision,
                     fecha: item.timestamp,
                   ),
-                  montoStr: '\$120.000',
+                  montoStr: '\$ 120.000',
                 );
               }
             },

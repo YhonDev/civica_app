@@ -57,6 +57,7 @@ class _MiEstadoScreenState extends State<MiEstadoScreen>
   Map<String, dynamic>? _proximoPago;
   List<TimelineItem> _movimientos = [];
   List<SolicitudData> _solicitudesPendientes = [];
+  Map<String, dynamic>? _tarifaActual;
 
   final _solicitudesRepo = SolicitudesRepository();
 
@@ -90,6 +91,7 @@ class _MiEstadoScreenState extends State<MiEstadoScreen>
 
           _proximoCobro = data['proximoCobro'] as String?;
           _proximoPago = data['proximoPago'] as Map<String, dynamic>?;
+          _tarifaActual = data['tarifaActual'] as Map<String, dynamic>?;
           
           final listMovs = data['movimientos'] as List<dynamic>;
           _movimientos = listMovs.map((m) {
@@ -224,8 +226,9 @@ class _MiEstadoScreenState extends State<MiEstadoScreen>
                 index: 1,
                 child: EstadoCuentaCard(
                   status: _status,
-                  saldoLabel: 'Saldo actual: $saldoStr',
+                  saldoLabel: _saldo > 0 ? 'Deuda actual: $saldoStr' : 'Saldo actual: $saldoStr',
                   proximoCobro: _formatFecha(_proximoCobro),
+                  tarifaActual: _tarifaActual,
                 ),
               ),
 
@@ -263,97 +266,118 @@ class _MiEstadoScreenState extends State<MiEstadoScreen>
     );
   }
 
+
+
   // ── Próximo pago section ──────────────────────────────────────────
   Widget _buildProximoPago(Map<String, dynamic> pago) {
     final concepto = pago['concepto'] as String;
-    final fecha = _formatFecha(pago['fechaVencimiento'] as String);
-    final esperados = pago['pagosEsperados'] as int?;
-    final registrados = pago['pagosRegistrados'] as int? ?? 0;
-    final montoPagado = pago['montoPagado'] as int? ?? 0;
-    final montoTotal = pago['montoTotal'] as int? ?? pago['monto'] as int;
-    final montoParcial = pago['montoParcial'] as int? ?? pago['monto'] as int;
-    final saldo = montoTotal - montoPagado;
-    final proximoAbono = NumberFormat.currency(
-      locale: 'es_CO',
-      symbol: r'$',
-      decimalDigits: 0,
-    ).format(pago['monto'] as int);
-    final saldoStr = NumberFormat.currency(
-      locale: 'es_CO',
-      symbol: r'$',
-      decimalDigits: 0,
-    ).format(saldo);
-    final abonoStr = NumberFormat.currency(
-      locale: 'es_CO',
-      symbol: r'$',
-      decimalDigits: 0,
-    ).format(montoParcial);
-
+    final desglose = (pago['desglose'] as List<dynamic>?) ?? [];
+    
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.cardPadding),
       decoration: BoxDecoration(
-        color: AppColors.info.withValues(alpha: 0.08),
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-        border: Border.all(color: AppColors.info.withValues(alpha: 0.25)),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.info.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.event_outlined,
+                  color: AppColors.info,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Próximo pago',
+                      style: AppTypography.caption.copyWith(
+                        color: AppColors.info,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      concepto.replaceAll(RegExp(r' - .*'), ''),
+                      style: AppTypography.bodyMedium.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          // Desglose (Partial Payments)
+          if (desglose.isNotEmpty)
+            ...desglose.map((item) => _buildDesgloseItem(item)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDesgloseItem(dynamic item) {
+    final rawFecha = item['fecha'] as String;
+    final fecha = _formatFecha(rawFecha) ?? 'Fecha no disp.';
+    final dateObj = DateTime.parse(rawFecha);
+    final fallbackMonth = toBeginningOfSentenceCase(DateFormat('MMMM', 'es').format(dateObj)) ?? '';
+    final monthName = item['mes'] ?? fallbackMonth;
+    
+    final montoValue = NumberFormat.decimalPattern('es_CO').format(item['monto'] as int);
+    final montoStr = '\$ $montoValue';
+
+    return Container(
+      margin: const EdgeInsets.only(top: AppSpacing.sm),
+      padding: const EdgeInsets.all(AppSpacing.sm),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
       ),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: AppColors.info.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              Icons.event_outlined,
-              color: AppColors.info,
-              size: 22,
-            ),
-          ),
-          const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Próximo pago',
-                  style: AppTypography.caption.copyWith(
-                    color: AppColors.info,
-                    fontWeight: FontWeight.w700,
-                  ),
+                  '$monthName - Pago ${item['numeroPago'] ?? ''}',
+                  style: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
                 ),
-                const SizedBox(height: 2),
                 Text(
-                  concepto,
-                  style: AppTypography.bodyMedium.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+                  '$montoStr · Vence $fecha',
+                  style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  '$proximoAbono · Vence $fecha',
-                  style: AppTypography.caption.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                if (esperados != null && esperados > 1) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    'Abono: $abonoStr · $registrados de $esperados pagos',
-                    style: AppTypography.caption.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Saldo mes: $saldoStr',
-                    style: AppTypography.caption.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
               ],
+            ),
+          ),
+          OutlinedButton.icon(
+            onPressed: () => _solicitarCobro(item),
+            icon: Icon(Icons.front_hand_outlined, size: 16, color: AppColors.success),
+            label: Text('Solicitar Cobro', style: TextStyle(color: AppColors.success)),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              side: BorderSide(color: AppColors.success.withValues(alpha: 0.5)),
+              foregroundColor: AppColors.success,
+              backgroundColor: AppColors.success.withValues(alpha: 0.05),
             ),
           ),
         ],
@@ -361,13 +385,83 @@ class _MiEstadoScreenState extends State<MiEstadoScreen>
     );
   }
 
-  String? _formatFecha(String? isoDate) {
-    if (isoDate == null) return null;
-    final date = DateTime.parse(isoDate);
-    return DateFormat('dd MMM yyyy', 'es').format(date);
+  Future<void> _solicitarCobro(dynamic item) async {
+    final controller = TextEditingController();
+    final user = context.read<AuthCubit>().state.usuario;
+    if (user == null) return;
+
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Solicitar Cobro'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '¿Deseas que un cobrador pase a recolectar este pago?',
+              style: AppTypography.body,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            TextField(
+              controller: controller,
+              decoration: const InputDecoration(
+                labelText: 'Nota para el cobrador (Opcional)',
+                hintText: 'Ej. Pasen después de las 4 PM',
+              ),
+              maxLines: 2,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, controller.text),
+            child: const Text('Enviar Solicitud'),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null) {
+      setState(() => _loading = true);
+      try {
+        await _solicitudesRepo.crearSolicitud(
+          cuotaId: item['cuotaId'],
+          tipo: 'SOLICITUD_COBRO',
+          descripcion: result.isEmpty ? 'Solicita cobro en casa.' : result,
+          propietarioId: user['id'],
+        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Solicitud de cobro enviada al administrador/cobrador')),
+          );
+          _loadDashboardData();
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() => _loading = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error al enviar solicitud: $e')),
+          );
+        }
+      }
+    }
   }
 
-  // ── Header ────────────────────────────────────────────────────────
+  String? _formatFecha(String? dateStr) {
+    if (dateStr == null) return null;
+    try {
+      final date = DateTime.parse(dateStr);
+      return DateFormat("d 'de' MMMM", 'es').format(date);
+    } catch (_) {
+      return dateStr;
+    }
+  }
+
   Widget _buildHeader(String displayName) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -446,11 +540,11 @@ class _MiEstadoScreenState extends State<MiEstadoScreen>
           ),
           const SizedBox(height: AppSpacing.md),
 
-          // Timeline widget — max 2 items per doc/19
-          TimelineWidget(
-            items: _movimientos.take(2).toList(),
-            onItemTap: _openTicket,
-          ),
+          // List of PagoCards
+          ..._movimientos.take(2).map((item) => Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+            child: _buildPagoCard(item),
+          )),
 
           const SizedBox(height: AppSpacing.sm),
 
@@ -460,7 +554,7 @@ class _MiEstadoScreenState extends State<MiEstadoScreen>
             child: TextButton(
               onPressed: () => context.go('/historial'),
               child: Text(
-                'Ver todos ›',
+                'Ver historial completo ›',
                 style: AppTypography.body.copyWith(
                   color: AppColors.primary,
                   fontWeight: FontWeight.w500,
@@ -469,6 +563,70 @@ class _MiEstadoScreenState extends State<MiEstadoScreen>
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPagoCard(TimelineItem item) {
+    final isPago = item.tipo == 'pago';
+    final color = isPago ? AppColors.success : AppColors.info;
+    final icon = isPago ? Icons.payments_outlined : Icons.receipt_long_outlined;
+    
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _openTicket(item),
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: color, size: 20),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.usuario,
+                      style: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      item.descripcion,
+                      style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    NumberFormat.currency(locale: 'es_CO', symbol: r'$', decimalDigits: 0).format(item.monto ?? 0),
+                    style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    DateFormat('dd MMM', 'es').format(item.timestamp),
+                    style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

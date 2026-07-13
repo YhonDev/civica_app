@@ -1,0 +1,44 @@
+import 'package:flutter/material.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_typography.dart';
+import 'models/propietarios_models.dart';
+
+class PropietarioInmuebleScreen extends StatelessWidget {
+  final PropietarioItem propietario;
+
+  const PropietarioInmuebleScreen({super.key, required this.propietario});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Información del Inmueble'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.home_work_rounded, size: 64, color: AppColors.textDisabled),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              'Gestión de Inmueble\n(Próximamente)',
+              textAlign: TextAlign.center,
+              style: AppTypography.title.copyWith(color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            Text(
+              'Casa actual: ${propietario.casa}\n${propietario.etapa}',
+              textAlign: TextAlign.center,
+              style: AppTypography.body,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

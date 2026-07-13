@@ -1,0 +1,172 @@
+import 'package:flutter/material.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_typography.dart';
+import '../../../core/network/api_client.dart';
+import '../models/propietarios_models.dart';
+import '../propietarios_repository.dart';
+import 'package:intl/intl.dart';
+
+class PropietarioHistorialScreen extends StatefulWidget {
+  final PropietarioItem propietario;
+
+  const PropietarioHistorialScreen({super.key, required this.propietario});
+
+  @override
+  State<PropietarioHistorialScreen> createState() => _PropietarioHistorialScreenState();
+}
+
+class _PropietarioHistorialScreenState extends State<PropietarioHistorialScreen> {
+  final PropietariosRepository _repo = PropietariosRepository();
+  bool _isLoading = true;
+  List<dynamic> _pagos = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPagos();
+  }
+
+  Future<void> _loadPagos() async {
+    setState(() => _isLoading = true);
+    try {
+      final response = await ApiClient.instance.get<List<dynamic>>(
+        '/pagos',
+        queryParameters: {'propietarioId': widget.propietario.id},
+      );
+      if (mounted) {
+        setState(() {
+          _pagos = response.data ?? [];
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al cargar historial: $e')),
+        );
+      }
+    }
+  }
+
+  void _eliminarPago(String id) async {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Reversar Pago'),
+        content: const Text('¿Estás seguro de reversar este pago? El dinero se restará y las cuotas volverán a estar en Mora o Pendientes.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              setState(() => _isLoading = true);
+              final success = await _repo.deletePago(id);
+              if (success) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Pago reversado. La deuda se ha restaurado.')),
+                  );
+                }
+                _loadPagos();
+              } else {
+                if (mounted) {
+                  setState(() => _isLoading = false);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Error: No se pudo reversar el pago.')),
+                  );
+                }
+              }
+            },
+            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+            child: const Text('Reversar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Historial de Pagos'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: _buildBody(),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_pagos.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.history_rounded, size: 64, color: AppColors.textDisabled),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              'No hay pagos registrados',
+              style: AppTypography.title.copyWith(color: AppColors.textSecondary),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadPagos,
+      child: ListView.separated(
+        padding: const EdgeInsets.all(AppSpacing.screenPadding),
+        itemCount: _pagos.length,
+        separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
+        itemBuilder: (context, index) {
+          final pago = _pagos[index];
+          final monto = (pago['monto'] ?? 0) / 100.0;
+          final fechaPago = pago['fechaPago'] != null
+              ? DateFormat('dd MMM yyyy', 'es').format(DateTime.parse(pago['fechaPago']))
+              : '';
+          final ref = pago['clientPaymentId'] ?? 'N/A';
+
+          return Card(
+            child: ListTile(
+              contentPadding: const EdgeInsets.all(AppSpacing.md),
+              leading: CircleAvatar(
+                backgroundColor: AppColors.success.withValues(alpha: 0.1),
+                child: Icon(Icons.receipt_long_rounded, color: AppColors.success),
+              ),
+              title: Text(
+                'Pago por \$${monto.toStringAsFixed(2)}',
+                style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w700),
+              ),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 4),
+                  Text('Fecha: $fechaPago', style: AppTypography.caption),
+                  Text('Ref: $ref', style: AppTypography.caption),
+                ],
+              ),
+              trailing: IconButton(
+                icon: Icon(Icons.undo_rounded, color: AppColors.error.withValues(alpha: 0.8)),
+                tooltip: 'Reversar Pago',
+                onPressed: () => _eliminarPago(pago['id']),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}

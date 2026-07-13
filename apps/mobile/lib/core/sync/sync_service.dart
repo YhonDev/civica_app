@@ -188,6 +188,7 @@ class SyncService {
               'monto': pago.monto,
               'fechaPago': pago.fechaPago,
               'propietarioId': pago.propietarioId,
+              if (pago.solicitudId != null) 'solicitudId': pago.solicitudId,
             });
 
           if (response.statusCode! >= 200 && response.statusCode! < 300) {

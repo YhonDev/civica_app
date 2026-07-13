@@ -9,7 +9,7 @@ export interface DashboardResumen {
 
 export interface EvolucionDia {
   dia: number;
-  monto: number;
+  valor: number;
 }
 
 export interface ModalidadFrecuencia {
@@ -17,6 +17,7 @@ export interface ModalidadFrecuencia {
   totalCuotas: number;
   pagadas: number;
   porcentaje: number;
+  montoRecaudo: number;
 }
 
 export interface EstadoCobros {
@@ -34,6 +35,21 @@ export interface ActividadItem {
   hace: string;
 }
 
+export interface MesHistorico {
+  mes: number;
+  anio: number;
+  recaudo: number;
+  pendientes: number;
+  mora: number;
+}
+
+export interface CobroSemanaItem {
+  semana: number;
+  pagados: number;
+  pendientes: number;
+  mora: number;
+}
+
 export interface DashboardResponse {
   mes: number;
   anio: number;
@@ -42,4 +58,11 @@ export interface DashboardResponse {
   modalidades: ModalidadFrecuencia[];
   estadoCobros: EstadoCobros;
   actividad: ActividadItem[];
+  solicitudesPendientes: number;
+  nuevosPropietariosSemana: number;
+  propietariosMora: number;
+  acumuladoAnual: number;
+  metaAnual: number;
+  historialMeses: MesHistorico[];
+  cobrosPorSemana: CobroSemanaItem[];
 }

@@ -13,6 +13,7 @@ import { JwtAuthGuard } from '../../../shared/auth/jwt-auth.guard';
 import { RolesGuard } from '../../../shared/auth/guards/roles.guard';
 import { Roles } from '../../../shared/auth/decorators/roles.decorator';
 import { CurrentUser } from '../../../shared/tenant/current-user.decorator';
+import { CurrentTenant } from '../../../shared/tenant/current-tenant.decorator';
 import { AsignarEtapaUseCase } from '../../application/use-cases/asignar-etapa.use-case';
 import { Usuario, RolUsuario } from '../../domain/usuario.entity';
 import { AsignacionEtapa } from '../../domain/asignacion-etapa.entity';
@@ -29,16 +30,23 @@ export class UsuariosController {
   constructor(
     @InjectRepository(AsignacionEtapa)
     private readonly asignacionRepository: Repository<AsignacionEtapa>,
+    @InjectRepository(Usuario)
+    private readonly usuarioRepository: Repository<Usuario>,
     private readonly asignarEtapaUseCase: AsignarEtapaUseCase,
   ) {}
 
   @Get()
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN)
-  async listar() {
-    // Por ahora retorna todos los usuarios (solo ADMIN)
-    // En una implementación completa se filtraría por tenant
-    return [];
+  async listar(@CurrentTenant() tenantId: string) {
+    return this.usuarioRepository.find({
+      where: { tenantId, rol: RolUsuario.COBRADOR },
+      relations: {
+        asignaciones: {
+          etapa: true
+        }
+      }
+    });
   }
 
   @Get(':id/etapas')

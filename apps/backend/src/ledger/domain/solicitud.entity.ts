@@ -65,6 +65,9 @@ export class Solicitud {
   @Column({ name: 'fecha_respuesta', type: 'timestamptz', nullable: true })
   fechaRespuesta: Date | null;
 
+  @Column({ name: 'pago_id', type: 'uuid', nullable: true })
+  pagoId: string | null;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

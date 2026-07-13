@@ -9,7 +9,7 @@ import {
   OneToMany,
 } from 'typeorm';
 import { Conjunto } from './conjunto.entity';
-import { Casa } from './casa.entity';
+import { Manzana } from './manzana.entity';
 
 @Entity('etapas')
 export class Etapa {
@@ -27,8 +27,8 @@ export class Etapa {
   @Exclude()
   conjunto: Conjunto;
 
-  @OneToMany(() => Casa, (casa) => casa.etapa, { cascade: true })
-  casas: Casa[];
+  @OneToMany(() => Manzana, (manzana) => manzana.etapa, { cascade: true })
+  manzanas: Manzana[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
@@ -40,13 +40,13 @@ export class Etapa {
     etapa.nombre = nombre;
     etapa.conjunto = conjunto;
     etapa.conjuntoId = conjunto.id;
-    etapa.casas = [];
+    etapa.manzanas = [];
     return etapa;
   }
 
-  crearCasa(direccionInterna: string): Casa {
-    const casa = Casa.crear(direccionInterna, this);
-    this.casas.push(casa);
-    return casa;
+  crearManzana(nombre: string): Manzana {
+    const manzana = Manzana.crear(nombre, this);
+    this.manzanas.push(manzana);
+    return manzana;
   }
 }

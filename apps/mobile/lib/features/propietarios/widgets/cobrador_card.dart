@@ -109,10 +109,17 @@ class CobradorCard extends StatelessWidget {
                     ),
                     IconButton(
                       icon: const Icon(Icons.edit_rounded, size: 20),
-                      color: AppColors.info,
+                      color: AppColors.primary,
                       visualDensity: VisualDensity.compact,
                       onPressed: () {},
                       tooltip: 'Editar',
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline_rounded, size: 20),
+                      color: AppColors.error,
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () {},
+                      tooltip: 'Eliminar',
                     ),
                   ],
                 ),

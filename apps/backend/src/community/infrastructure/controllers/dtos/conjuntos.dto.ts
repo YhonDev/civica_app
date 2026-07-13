@@ -18,6 +18,13 @@ export class CrearEtapaDto {
   nombre: string;
 }
 
+export class CrearManzanaDto {
+  @IsString()
+  @IsNotEmpty()
+  @MinLength(1)
+  nombre: string;
+}
+
 export class RegistrarCasaDto {
   @IsString()
   @IsNotEmpty()

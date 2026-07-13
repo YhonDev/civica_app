@@ -1,24 +1,33 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
+import '../models/dashboard_data.dart';
 
 class BalanceAnualBottomSheet extends StatelessWidget {
-  const BalanceAnualBottomSheet({super.key});
+  final List<MesHistorico> historialMeses;
+  final double acumuladoAnual;
+  final double metaAnual;
+
+  const BalanceAnualBottomSheet({
+    super.key,
+    required this.historialMeses,
+    required this.acumuladoAnual,
+    required this.metaAnual,
+  });
 
   @override
   Widget build(BuildContext context) {
-    // Generar últimos 12 meses mock
-    final now = DateTime.now();
-    final meses = List.generate(12, (index) {
-      final date = DateTime(now.year, now.month - index, 1);
-      return _MesBalance(
-        date: date,
-        recaudo: 12500000.0 - (index * 150000), // Dato mock decreciente
-        pendientes: 42 - index,
-        mora: 2500000.0 + (index * 100000),
-      );
-    });
+    final porcentajeMeta = metaAnual > 0
+        ? (acumuladoAnual / metaAnual) * 100
+        : 0.0;
+
+    // Ordenar descendente: mes más reciente primero
+    final mesesOrdenados = List<MesHistorico>.from(historialMeses)
+      ..sort((a, b) => b.anio == a.anio
+          ? b.mes.compareTo(a.mes)
+          : b.anio.compareTo(a.anio));
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.85,
@@ -40,6 +49,7 @@ class BalanceAnualBottomSheet extends StatelessWidget {
               ),
             ),
           ),
+
           // Header
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
@@ -58,43 +68,140 @@ class BalanceAnualBottomSheet extends StatelessWidget {
             ),
           ),
           const Divider(),
-          // List
+
+          // Resumen anual
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.sm,
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Acumulado Anual',
+                        style: AppTypography.caption.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        '\$${_formatAmount(acumuladoAnual)}',
+                        style: AppTypography.title.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: porcentajeMeta >= 80
+                        ? AppColors.success.withValues(alpha: 0.1)
+                        : porcentajeMeta >= 50
+                            ? AppColors.warning.withValues(alpha: 0.1)
+                            : AppColors.error.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '${porcentajeMeta.toStringAsFixed(0)}%',
+                    style: AppTypography.body.copyWith(
+                      color: porcentajeMeta >= 80
+                          ? AppColors.success
+                          : porcentajeMeta >= 50
+                              ? AppColors.warning
+                              : AppColors.error,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Lista de meses
           Expanded(
             child: ListView.builder(
-              itemCount: meses.length,
+              itemCount: mesesOrdenados.length,
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.md,
                 vertical: AppSpacing.sm,
               ),
               itemBuilder: (context, index) {
-                final mes = meses[index];
+                final mes = mesesOrdenados[index];
+                final pctRecaudo = metaAnual / 12 > 0
+                    ? (mes.recaudo / (metaAnual / 12)) * 100
+                    : 0.0;
+
                 return Card(
                   margin: const EdgeInsets.only(bottom: AppSpacing.sm),
                   elevation: 0,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
-                    side: BorderSide(color: AppColors.border.withValues(alpha: 0.5)),
+                    side: BorderSide(
+                      color: AppColors.border.withValues(alpha: 0.5),
+                    ),
                   ),
                   child: Theme(
                     data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
                     child: ExpansionTile(
                       title: Text(
-                        _formatMonthYear(mes.date),
-                        style: AppTypography.subtitle.copyWith(color: AppColors.textPrimary),
-                      ),
-                      subtitle: Text(
-                        'Recaudo: \$${(mes.recaudo / 1000000).toStringAsFixed(1)}M',
-                        style: AppTypography.body.copyWith(
-                          color: AppColors.success,
-                          fontWeight: FontWeight.bold,
+                        _formatMonthYear(mes.mes, mes.anio),
+                        style: AppTypography.subtitle.copyWith(
+                          color: AppColors.textPrimary,
                         ),
+                      ),
+                      subtitle: Row(
+                        children: [
+                          Text(
+                            'Recaudo: \$${_formatAmount(mes.recaudo)}',
+                            style: AppTypography.body.copyWith(
+                              color: AppColors.success,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: pctRecaudo >= 80
+                                  ? AppColors.success.withValues(alpha: 0.1)
+                                  : AppColors.warning.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              '${pctRecaudo.toStringAsFixed(0)}%',
+                              style: AppTypography.small.copyWith(
+                                color: pctRecaudo >= 80
+                                    ? AppColors.success
+                                    : AppColors.warning,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       childrenPadding: const EdgeInsets.all(AppSpacing.md),
                       children: [
-                        _buildDetailRow('Cuotas Pendientes', '${mes.pendientes}'),
+                        _buildDetailRow(
+                          'Cuotas Pendientes',
+                          NumberFormat.decimalPattern('es_CO')
+                              .format(mes.pendientes),
+                        ),
                         const SizedBox(height: AppSpacing.xs),
-                        _buildDetailRow('Mora Total', '\$${(mes.mora / 1000000).toStringAsFixed(1)}M',
-                            isError: true),
+                        _buildDetailRow(
+                          'Mora Total',
+                          '\$${_formatAmount(mes.mora)}',
+                          isError: mes.mora > 0,
+                        ),
                       ],
                     ),
                   ),
@@ -125,25 +232,20 @@ class BalanceAnualBottomSheet extends StatelessWidget {
     );
   }
 
-  String _formatMonthYear(DateTime date) {
+  String _formatMonthYear(int mes, int anio) {
     const months = [
       'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
     ];
-    return '${months[date.month - 1]} ${date.year}';
+    return '${months[mes - 1]} $anio';
   }
-}
 
-class _MesBalance {
-  final DateTime date;
-  final double recaudo;
-  final int pendientes;
-  final double mora;
-
-  _MesBalance({
-    required this.date,
-    required this.recaudo,
-    required this.pendientes,
-    required this.mora,
-  });
+  String _formatAmount(double amount) {
+    if (amount >= 1000000) {
+      return '${(amount / 1000000).toStringAsFixed(1)}M';
+    } else if (amount >= 1000) {
+      return '${(amount / 1000).toStringAsFixed(0)}K';
+    }
+    return amount.toStringAsFixed(0);
+  }
 }

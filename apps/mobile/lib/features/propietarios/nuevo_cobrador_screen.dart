@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
-import '../../core/constants/mock_data.dart';
+import 'comunidad_repository.dart';
 
 class NuevoCobradorScreen extends StatefulWidget {
   const NuevoCobradorScreen({super.key});
@@ -13,7 +13,29 @@ class NuevoCobradorScreen extends StatefulWidget {
 }
 
 class _NuevoCobradorScreenState extends State<NuevoCobradorScreen> {
-  String? _selectedEtapa;
+  final ComunidadRepository _repo = ComunidadRepository();
+  bool _isLoading = true;
+  List<Map<String, dynamic>> _etapasTree = [];
+  String? _selectedEtapaId;
+  String? _selectedEtapaName;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTree();
+  }
+
+  Future<void> _loadTree() async {
+    try {
+      final tree = await _repo.getArbolCompleto();
+      setState(() {
+        _etapasTree = tree;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +47,7 @@ class _NuevoCobradorScreenState extends State<NuevoCobradorScreen> {
           onPressed: () => context.pop(),
         ),
       ),
-      body: SingleChildScrollView(
+      body: _isLoading ? const Center(child: CircularProgressIndicator()) : SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.screenPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -57,10 +79,13 @@ class _NuevoCobradorScreenState extends State<NuevoCobradorScreen> {
             _buildDropdown(
               label: 'Zona asignada (Etapa)',
               icon: Icons.map_outlined,
-              value: _selectedEtapa,
-              items: MockData.etapas,
+              value: _selectedEtapaId,
+              items: _etapasTree,
               onChanged: (val) {
-                setState(() => _selectedEtapa = val);
+                setState(() {
+                  _selectedEtapaId = val;
+                  _selectedEtapaName = _etapasTree.firstWhere((e) => e['id'] == val)['nombre'];
+                });
               },
             ),
             
@@ -112,15 +137,15 @@ class _NuevoCobradorScreenState extends State<NuevoCobradorScreen> {
     required String label,
     required IconData icon,
     required String? value,
-    required List<String> items,
+    required List<Map<String, dynamic>> items,
     required ValueChanged<String?> onChanged,
   }) {
     return DropdownButtonFormField<String>(
       value: value,
       items: items.map((item) {
         return DropdownMenuItem(
-          value: item,
-          child: Text(item),
+          value: item['id'].toString(),
+          child: Text(item['nombre'].toString()),
         );
       }).toList(),
       onChanged: onChanged,
@@ -140,6 +165,7 @@ class _NuevoCobradorScreenState extends State<NuevoCobradorScreen> {
       ),
       icon: Icon(Icons.arrow_drop_down_rounded, color: AppColors.textSecondary),
       isExpanded: true,
+      menuMaxHeight: 300,
       hint: Text(
         'Selecciona $label',
         style: AppTypography.body.copyWith(

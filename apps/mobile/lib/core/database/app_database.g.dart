@@ -5384,6 +5384,17 @@ class $PagosTable extends Pagos with TableInfo<$PagosTable, Pago> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _solicitudIdMeta = const VerificationMeta(
+    'solicitudId',
+  );
+  @override
+  late final GeneratedColumn<String> solicitudId = GeneratedColumn<String>(
+    'solicitud_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _montoMeta = const VerificationMeta('monto');
   @override
   late final GeneratedColumn<int> monto = GeneratedColumn<int>(
@@ -5477,6 +5488,7 @@ class $PagosTable extends Pagos with TableInfo<$PagosTable, Pago> {
     tenantId,
     cuotaId,
     serverId,
+    solicitudId,
     monto,
     fechaPago,
     cobradorId,
@@ -5532,6 +5544,15 @@ class $PagosTable extends Pagos with TableInfo<$PagosTable, Pago> {
       context.handle(
         _serverIdMeta,
         serverId.isAcceptableOrUnknown(data['server_id']!, _serverIdMeta),
+      );
+    }
+    if (data.containsKey('solicitud_id')) {
+      context.handle(
+        _solicitudIdMeta,
+        solicitudId.isAcceptableOrUnknown(
+          data['solicitud_id']!,
+          _solicitudIdMeta,
+        ),
       );
     }
     if (data.containsKey('monto')) {
@@ -5628,6 +5649,10 @@ class $PagosTable extends Pagos with TableInfo<$PagosTable, Pago> {
         DriftSqlType.string,
         data['${effectivePrefix}server_id'],
       ),
+      solicitudId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}solicitud_id'],
+      ),
       monto: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}monto'],
@@ -5675,6 +5700,7 @@ class Pago extends DataClass implements Insertable<Pago> {
   final String tenantId;
   final String? cuotaId;
   final String? serverId;
+  final String? solicitudId;
   final int monto;
   final String fechaPago;
   final String cobradorId;
@@ -5689,6 +5715,7 @@ class Pago extends DataClass implements Insertable<Pago> {
     required this.tenantId,
     this.cuotaId,
     this.serverId,
+    this.solicitudId,
     required this.monto,
     required this.fechaPago,
     required this.cobradorId,
@@ -5709,6 +5736,9 @@ class Pago extends DataClass implements Insertable<Pago> {
     }
     if (!nullToAbsent || serverId != null) {
       map['server_id'] = Variable<String>(serverId);
+    }
+    if (!nullToAbsent || solicitudId != null) {
+      map['solicitud_id'] = Variable<String>(solicitudId);
     }
     map['monto'] = Variable<int>(monto);
     map['fecha_pago'] = Variable<String>(fechaPago);
@@ -5734,6 +5764,9 @@ class Pago extends DataClass implements Insertable<Pago> {
       serverId: serverId == null && nullToAbsent
           ? const Value.absent()
           : Value(serverId),
+      solicitudId: solicitudId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(solicitudId),
       monto: Value(monto),
       fechaPago: Value(fechaPago),
       cobradorId: Value(cobradorId),
@@ -5758,6 +5791,7 @@ class Pago extends DataClass implements Insertable<Pago> {
       tenantId: serializer.fromJson<String>(json['tenantId']),
       cuotaId: serializer.fromJson<String?>(json['cuotaId']),
       serverId: serializer.fromJson<String?>(json['serverId']),
+      solicitudId: serializer.fromJson<String?>(json['solicitudId']),
       monto: serializer.fromJson<int>(json['monto']),
       fechaPago: serializer.fromJson<String>(json['fechaPago']),
       cobradorId: serializer.fromJson<String>(json['cobradorId']),
@@ -5777,6 +5811,7 @@ class Pago extends DataClass implements Insertable<Pago> {
       'tenantId': serializer.toJson<String>(tenantId),
       'cuotaId': serializer.toJson<String?>(cuotaId),
       'serverId': serializer.toJson<String?>(serverId),
+      'solicitudId': serializer.toJson<String?>(solicitudId),
       'monto': serializer.toJson<int>(monto),
       'fechaPago': serializer.toJson<String>(fechaPago),
       'cobradorId': serializer.toJson<String>(cobradorId),
@@ -5794,6 +5829,7 @@ class Pago extends DataClass implements Insertable<Pago> {
     String? tenantId,
     Value<String?> cuotaId = const Value.absent(),
     Value<String?> serverId = const Value.absent(),
+    Value<String?> solicitudId = const Value.absent(),
     int? monto,
     String? fechaPago,
     String? cobradorId,
@@ -5808,6 +5844,7 @@ class Pago extends DataClass implements Insertable<Pago> {
     tenantId: tenantId ?? this.tenantId,
     cuotaId: cuotaId.present ? cuotaId.value : this.cuotaId,
     serverId: serverId.present ? serverId.value : this.serverId,
+    solicitudId: solicitudId.present ? solicitudId.value : this.solicitudId,
     monto: monto ?? this.monto,
     fechaPago: fechaPago ?? this.fechaPago,
     cobradorId: cobradorId ?? this.cobradorId,
@@ -5826,6 +5863,9 @@ class Pago extends DataClass implements Insertable<Pago> {
       tenantId: data.tenantId.present ? data.tenantId.value : this.tenantId,
       cuotaId: data.cuotaId.present ? data.cuotaId.value : this.cuotaId,
       serverId: data.serverId.present ? data.serverId.value : this.serverId,
+      solicitudId: data.solicitudId.present
+          ? data.solicitudId.value
+          : this.solicitudId,
       monto: data.monto.present ? data.monto.value : this.monto,
       fechaPago: data.fechaPago.present ? data.fechaPago.value : this.fechaPago,
       cobradorId: data.cobradorId.present
@@ -5851,6 +5891,7 @@ class Pago extends DataClass implements Insertable<Pago> {
           ..write('tenantId: $tenantId, ')
           ..write('cuotaId: $cuotaId, ')
           ..write('serverId: $serverId, ')
+          ..write('solicitudId: $solicitudId, ')
           ..write('monto: $monto, ')
           ..write('fechaPago: $fechaPago, ')
           ..write('cobradorId: $cobradorId, ')
@@ -5870,6 +5911,7 @@ class Pago extends DataClass implements Insertable<Pago> {
     tenantId,
     cuotaId,
     serverId,
+    solicitudId,
     monto,
     fechaPago,
     cobradorId,
@@ -5888,6 +5930,7 @@ class Pago extends DataClass implements Insertable<Pago> {
           other.tenantId == this.tenantId &&
           other.cuotaId == this.cuotaId &&
           other.serverId == this.serverId &&
+          other.solicitudId == this.solicitudId &&
           other.monto == this.monto &&
           other.fechaPago == this.fechaPago &&
           other.cobradorId == this.cobradorId &&
@@ -5904,6 +5947,7 @@ class PagosCompanion extends UpdateCompanion<Pago> {
   final Value<String> tenantId;
   final Value<String?> cuotaId;
   final Value<String?> serverId;
+  final Value<String?> solicitudId;
   final Value<int> monto;
   final Value<String> fechaPago;
   final Value<String> cobradorId;
@@ -5919,6 +5963,7 @@ class PagosCompanion extends UpdateCompanion<Pago> {
     this.tenantId = const Value.absent(),
     this.cuotaId = const Value.absent(),
     this.serverId = const Value.absent(),
+    this.solicitudId = const Value.absent(),
     this.monto = const Value.absent(),
     this.fechaPago = const Value.absent(),
     this.cobradorId = const Value.absent(),
@@ -5935,6 +5980,7 @@ class PagosCompanion extends UpdateCompanion<Pago> {
     required String tenantId,
     this.cuotaId = const Value.absent(),
     this.serverId = const Value.absent(),
+    this.solicitudId = const Value.absent(),
     required int monto,
     required String fechaPago,
     required String cobradorId,
@@ -5960,6 +6006,7 @@ class PagosCompanion extends UpdateCompanion<Pago> {
     Expression<String>? tenantId,
     Expression<String>? cuotaId,
     Expression<String>? serverId,
+    Expression<String>? solicitudId,
     Expression<int>? monto,
     Expression<String>? fechaPago,
     Expression<String>? cobradorId,
@@ -5976,6 +6023,7 @@ class PagosCompanion extends UpdateCompanion<Pago> {
       if (tenantId != null) 'tenant_id': tenantId,
       if (cuotaId != null) 'cuota_id': cuotaId,
       if (serverId != null) 'server_id': serverId,
+      if (solicitudId != null) 'solicitud_id': solicitudId,
       if (monto != null) 'monto': monto,
       if (fechaPago != null) 'fecha_pago': fechaPago,
       if (cobradorId != null) 'cobrador_id': cobradorId,
@@ -5994,6 +6042,7 @@ class PagosCompanion extends UpdateCompanion<Pago> {
     Value<String>? tenantId,
     Value<String?>? cuotaId,
     Value<String?>? serverId,
+    Value<String?>? solicitudId,
     Value<int>? monto,
     Value<String>? fechaPago,
     Value<String>? cobradorId,
@@ -6010,6 +6059,7 @@ class PagosCompanion extends UpdateCompanion<Pago> {
       tenantId: tenantId ?? this.tenantId,
       cuotaId: cuotaId ?? this.cuotaId,
       serverId: serverId ?? this.serverId,
+      solicitudId: solicitudId ?? this.solicitudId,
       monto: monto ?? this.monto,
       fechaPago: fechaPago ?? this.fechaPago,
       cobradorId: cobradorId ?? this.cobradorId,
@@ -6039,6 +6089,9 @@ class PagosCompanion extends UpdateCompanion<Pago> {
     }
     if (serverId.present) {
       map['server_id'] = Variable<String>(serverId.value);
+    }
+    if (solicitudId.present) {
+      map['solicitud_id'] = Variable<String>(solicitudId.value);
     }
     if (monto.present) {
       map['monto'] = Variable<int>(monto.value);
@@ -6078,6 +6131,7 @@ class PagosCompanion extends UpdateCompanion<Pago> {
           ..write('tenantId: $tenantId, ')
           ..write('cuotaId: $cuotaId, ')
           ..write('serverId: $serverId, ')
+          ..write('solicitudId: $solicitudId, ')
           ..write('monto: $monto, ')
           ..write('fechaPago: $fechaPago, ')
           ..write('cobradorId: $cobradorId, ')
@@ -8859,6 +8913,7 @@ typedef $$PagosTableCreateCompanionBuilder =
       required String tenantId,
       Value<String?> cuotaId,
       Value<String?> serverId,
+      Value<String?> solicitudId,
       required int monto,
       required String fechaPago,
       required String cobradorId,
@@ -8876,6 +8931,7 @@ typedef $$PagosTableUpdateCompanionBuilder =
       Value<String> tenantId,
       Value<String?> cuotaId,
       Value<String?> serverId,
+      Value<String?> solicitudId,
       Value<int> monto,
       Value<String> fechaPago,
       Value<String> cobradorId,
@@ -8917,6 +8973,11 @@ class $$PagosTableFilterComposer extends Composer<_$AppDatabase, $PagosTable> {
 
   ColumnFilters<String> get serverId => $composableBuilder(
     column: $table.serverId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get solicitudId => $composableBuilder(
+    column: $table.solicitudId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -8995,6 +9056,11 @@ class $$PagosTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get solicitudId => $composableBuilder(
+    column: $table.solicitudId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get monto => $composableBuilder(
     column: $table.monto,
     builder: (column) => ColumnOrderings(column),
@@ -9062,6 +9128,11 @@ class $$PagosTableAnnotationComposer
   GeneratedColumn<String> get serverId =>
       $composableBuilder(column: $table.serverId, builder: (column) => column);
 
+  GeneratedColumn<String> get solicitudId => $composableBuilder(
+    column: $table.solicitudId,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<int> get monto =>
       $composableBuilder(column: $table.monto, builder: (column) => column);
 
@@ -9126,6 +9197,7 @@ class $$PagosTableTableManager
                 Value<String> tenantId = const Value.absent(),
                 Value<String?> cuotaId = const Value.absent(),
                 Value<String?> serverId = const Value.absent(),
+                Value<String?> solicitudId = const Value.absent(),
                 Value<int> monto = const Value.absent(),
                 Value<String> fechaPago = const Value.absent(),
                 Value<String> cobradorId = const Value.absent(),
@@ -9141,6 +9213,7 @@ class $$PagosTableTableManager
                 tenantId: tenantId,
                 cuotaId: cuotaId,
                 serverId: serverId,
+                solicitudId: solicitudId,
                 monto: monto,
                 fechaPago: fechaPago,
                 cobradorId: cobradorId,
@@ -9158,6 +9231,7 @@ class $$PagosTableTableManager
                 required String tenantId,
                 Value<String?> cuotaId = const Value.absent(),
                 Value<String?> serverId = const Value.absent(),
+                Value<String?> solicitudId = const Value.absent(),
                 required int monto,
                 required String fechaPago,
                 required String cobradorId,
@@ -9173,6 +9247,7 @@ class $$PagosTableTableManager
                 tenantId: tenantId,
                 cuotaId: cuotaId,
                 serverId: serverId,
+                solicitudId: solicitudId,
                 monto: monto,
                 fechaPago: fechaPago,
                 cobradorId: cobradorId,

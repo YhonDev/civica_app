@@ -18,6 +18,8 @@ class SolicitudData {
   final SolicitudEstado estado;
   final DateTime fecha;
   final String? respuesta;
+  final String? propietarioId;
+  final String? propietarioNombre;
 
   const SolicitudData({
     required this.id,
@@ -28,6 +30,8 @@ class SolicitudData {
     required this.estado,
     required this.fecha,
     this.respuesta,
+    this.propietarioId,
+    this.propietarioNombre,
   });
 }
 

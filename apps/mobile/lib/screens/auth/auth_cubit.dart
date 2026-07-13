@@ -3,7 +3,6 @@ import 'package:equatable/equatable.dart';
 
 import '../../core/network/auth_api.dart';
 import '../../core/network/api_exceptions.dart';
-import '../../core/network/api_client.dart';
 
 // ════════════════════════════════════════════════════════════
 // STATE
@@ -62,17 +61,9 @@ class AuthCubit extends Cubit<AuthState> {
   Future<void> checkSession() async {
     emit(const AuthState.loading());
     try {
-      final loggedIn = await _authApi.isLoggedIn();
-      if (loggedIn) {
-        final user = await ApiClient.instance.tokenStorage.getUser();
-        if (user != null) {
-          emit(AuthState.authenticated(user));
-        } else {
-          emit(const AuthState.unauthenticated());
-        }
-      } else {
-        emit(const AuthState.unauthenticated());
-      }
+      // Para forzar login siempre al reiniciar la app y garantizar datos frescos:
+      await _authApi.logout();
+      emit(const AuthState.unauthenticated());
     } catch (_) {
       emit(const AuthState.unauthenticated());
     }

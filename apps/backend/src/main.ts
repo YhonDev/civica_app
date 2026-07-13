@@ -16,6 +16,9 @@ async function bootstrap() {
 
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
 
+  // Habilitar los hooks de apagado para liberar el puerto inmediatamente en SIGINT/SIGTERM
+  app.enableShutdownHooks();
+
   await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();

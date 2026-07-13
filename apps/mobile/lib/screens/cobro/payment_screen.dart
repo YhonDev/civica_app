@@ -11,6 +11,7 @@ class PaymentScreen extends StatelessWidget {
   final String casaDireccion;
   final String etapaNombre;
   final String cobradorId;
+  final String? solicitudId;
 
   const PaymentScreen({
     super.key,
@@ -18,6 +19,7 @@ class PaymentScreen extends StatelessWidget {
     required this.casaDireccion,
     required this.etapaNombre,
     this.cobradorId = 'offline',
+    this.solicitudId,
   });
 
   @override
@@ -34,6 +36,7 @@ class PaymentScreen extends StatelessWidget {
         casaDireccion: casaDireccion,
         etapaNombre: etapaNombre,
         cobradorId: cobradorId,
+        solicitudId: solicitudId,
       ),
     );
   }
@@ -44,12 +47,14 @@ class _PaymentScreenBody extends StatefulWidget {
   final String casaDireccion;
   final String etapaNombre;
   final String cobradorId;
+  final String? solicitudId;
 
   const _PaymentScreenBody({
     required this.propietario,
     required this.casaDireccion,
     required this.etapaNombre,
     this.cobradorId = 'offline',
+    this.solicitudId,
   });
 
   @override
@@ -479,7 +484,7 @@ class _PaymentScreenBodyState extends State<_PaymentScreenBody> {
               Navigator.of(ctx).pop();
               context
                   .read<CobroBloc>()
-                  .add(RegistrarPago(cobradorId: widget.cobradorId));
+                  .add(RegistrarPago(cobradorId: widget.cobradorId, solicitudId: widget.solicitudId));
             },
             child: const Text('Confirmar pago'),
           ),

@@ -13,7 +13,7 @@ export class ConjuntoRepository {
   async findByTenant(tenantId: string): Promise<Conjunto[]> {
     return this.repo.find({
       where: { tenantId },
-      relations: { etapas: { casas: true } },
+      relations: { etapas: { manzanas: { casas: true } } },
       order: { nombre: 'ASC' },
     });
   }
@@ -21,7 +21,7 @@ export class ConjuntoRepository {
   async findById(id: string): Promise<Conjunto | null> {
     return this.repo.findOne({
       where: { id },
-      relations: { etapas: { casas: true } },
+      relations: { etapas: { manzanas: { casas: true } } },
     });
   }
 

@@ -47,6 +47,10 @@ export class PagoRepository {
     return this.repo.save(pagos);
   }
 
+  async delete(id: string): Promise<void> {
+    await this.repo.delete(id);
+  }
+
   // ── Dashboard queries ───────────────────────────────────
 
   async sumMontoByMonth(
@@ -97,14 +101,14 @@ export class PagoRepository {
     tenantId: string,
     year: number,
     month: number,
-  ): Promise<Array<{ dia: number; monto: number }>> {
+  ): Promise<Array<{ dia: number; valor: number }>> {
     const rows = await this.repo
       .createQueryBuilder('pago')
       .select(
         "EXTRACT(DAY FROM pago.fecha_pago::timestamp)",
         'dia',
       )
-      .addSelect('SUM(pago.monto)', 'monto')
+      .addSelect('SUM(pago.monto)', 'valor')
       .where('pago.tenantId = :tenantId', { tenantId })
       .andWhere(
         'pago.fecha_pago >= :start AND pago.fecha_pago < :end',
@@ -121,7 +125,51 @@ export class PagoRepository {
 
     return rows.map((r) => ({
       dia: Number(r.dia),
+      valor: Number(r.valor),
+    }));
+  }
+
+  async groupByWeekInMonth(
+    tenantId: string,
+    year: number,
+    month: number,
+  ): Promise<Array<{ semana: number; pagados: number; monto: number }>> {
+    const result = await this.repo
+      .createQueryBuilder('pago')
+      .select("CEIL(EXTRACT(DAY FROM pago.fecha_pago::timestamp) / 7.0)", 'semana')
+      .addSelect('COUNT(*)', 'pagados')
+      .addSelect('COALESCE(SUM(pago.monto), 0)', 'monto')
+      .where('pago.tenantId = :tenantId', { tenantId })
+      .andWhere(
+        'pago.fecha_pago >= :start AND pago.fecha_pago < :end',
+        {
+          start: `${year}-${String(month).padStart(2, '0')}-01`,
+          end: month === 12
+            ? `${year + 1}-01-01`
+            : `${year}-${String(month + 1).padStart(2, '0')}-01`,
+        },
+      )
+      .groupBy('semana')
+      .orderBy('semana', 'ASC')
+      .getRawMany();
+
+    return result.map((r) => ({
+      semana: Number(r.semana),
+      pagados: Number(r.pagados),
       monto: Number(r.monto),
     }));
+  }
+
+  async sumMontoByYear(tenantId: string, year: number): Promise<number> {
+    const result = await this.repo
+      .createQueryBuilder('pago')
+      .select('COALESCE(SUM(pago.monto), 0)', 'total')
+      .where('pago.tenantId = :tenantId', { tenantId })
+      .andWhere('pago.fecha_pago >= :start AND pago.fecha_pago < :end', {
+        start: `${year}-01-01`,
+        end: `${year + 1}-01-01`,
+      })
+      .getRawOne();
+    return Number(result?.total ?? 0);
   }
 }

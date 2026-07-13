@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsNumber, IsDateString, Min } from 'class-validator';
+import { IsString, IsNotEmpty, IsNumber, IsDateString, Min, IsOptional } from 'class-validator';
 
 export class RegistrarPagoDto {
   @IsString()
@@ -15,4 +15,8 @@ export class RegistrarPagoDto {
   @IsString()
   @IsNotEmpty()
   propietarioId: string;
+
+  @IsOptional()
+  @IsString()
+  solicitudId?: string;
 }

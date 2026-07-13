@@ -17,12 +17,32 @@ export class SolicitudRepository {
     });
   }
 
+  async findByTenant(tenantId: string): Promise<Solicitud[]> {
+    return this.repo.find({
+      where: { tenantId },
+      relations: { usuario: true },
+      order: { fecha: 'DESC' },
+    });
+  }
+
   async findPendingByUsuario(usuarioId: string): Promise<Solicitud[]> {
     return this.repo.find({
       where: [
         { usuarioId, estado: SolicitudEstado.PENDIENTE },
         { usuarioId, estado: SolicitudEstado.EN_REVISION },
       ],
+      relations: { usuario: true },
+      order: { fecha: 'DESC' },
+    });
+  }
+
+  async findPendingByTenant(tenantId: string): Promise<Solicitud[]> {
+    return this.repo.find({
+      where: [
+        { tenantId, estado: SolicitudEstado.PENDIENTE },
+        { tenantId, estado: SolicitudEstado.EN_REVISION },
+      ],
+      relations: { usuario: true },
       order: { fecha: 'DESC' },
     });
   }

@@ -69,7 +69,11 @@ class _EstadoContentState extends State<_EstadoContent> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => const BalanceAnualBottomSheet(),
+      builder: (context) => BalanceAnualBottomSheet(
+        historialMeses: widget.data.historialMeses,
+        acumuladoAnual: widget.data.acumuladoAnual,
+        metaAnual: widget.data.metaAnual,
+      ),
     );
   }
 
@@ -87,11 +91,13 @@ class _EstadoContentState extends State<_EstadoContent> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 1. Estado General del Año
-          const KpiCard(
-            title: 'Acumulado 2026',
-            amount: '\$145.3M',
-            percentage: 95.0, // Mock: 95% del total esperado anual
-            subtitle: 'Recaudo total anual. Mora Histórica: \$12.5M',
+          KpiCard(
+            title: 'Acumulado ${widget.data.anio}',
+            amount: '\$${_formatAmount(widget.data.acumuladoAnual)}',
+            percentage: widget.data.metaAnual > 0
+                ? (widget.data.acumuladoAnual / widget.data.metaAnual) * 100
+                : 0,
+            subtitle: 'Recaudo total anual. Mora Histórica: \$${_formatAmount(widget.data.mora)}',
           ),
           const SizedBox(height: AppSpacing.xl),
 
@@ -185,4 +191,13 @@ class _EstadoContentState extends State<_EstadoContent> {
   }
 
   // UI delegada a componentes reusables compartidos.
+
+  String _formatAmount(double amount) {
+    if (amount >= 1000000) {
+      return '${(amount / 1000000).toStringAsFixed(1)}M';
+    } else if (amount >= 1000) {
+      return '${(amount / 1000).toStringAsFixed(0)}K';
+    }
+    return amount.toStringAsFixed(0);
+  }
 }

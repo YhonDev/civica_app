@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Delete,
   Param,
   Query,
   Body,
@@ -10,6 +11,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { RegistrarPagoUseCase } from '../../application/use-cases/registrar-pago.use-case';
+import { EliminarPagoUseCase } from '../../application/use-cases/eliminar-pago.use-case';
 import { PagoRepository } from '../persistence/pago.repository';
 import { RegistrarPagoDto } from './dtos/pagos.dto';
 import { JwtAuthGuard } from '../../../shared/auth/jwt-auth.guard';
@@ -29,6 +31,7 @@ import {
 export class PagosController {
   constructor(
     private readonly registrarPagoUC: RegistrarPagoUseCase,
+    private readonly eliminarPagoUC: EliminarPagoUseCase,
     private readonly pagoRepo: PagoRepository,
   ) {}
 
@@ -53,6 +56,7 @@ export class PagosController {
       propietarioId: dto.propietarioId,
       cobradorId: user.id,
       tenantId,
+      solicitudId: dto.solicitudId,
     });
   }
 
@@ -68,5 +72,21 @@ export class PagosController {
   @Get()
   async listByPropietario(@Query('propietarioId') propietarioId: string) {
     return this.pagoRepo.findByPropietario(propietarioId);
+  }
+
+  @Delete(':id')
+  @UseGuards(RolesGuard)
+  @Roles(RolUsuario.ADMIN)
+  @UseInterceptors(ActividadInterceptor)
+  @RegistrarActividad({
+    tipo: 'PAGO',
+    descripcionFn: (result) => `Pago reversado/eliminado correctamente`,
+  })
+  async eliminar(
+    @Param('id') id: string,
+    @CurrentTenant() tenantId: string,
+  ) {
+    await this.eliminarPagoUC.execute(id, tenantId);
+    return { success: true };
   }
 }

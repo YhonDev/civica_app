@@ -7,6 +7,9 @@ import { CuentaCarteraRepository } from '../../infrastructure/persistence/cuenta
 import { Money } from '../../../shared/common/value-objects';
 import { PagoRegistradoEvent } from '../../domain/events/pago-registrado.event';
 
+import { SolicitudRepository } from '../../infrastructure/persistence/solicitud.repository';
+import { SolicitudEstado } from '../../domain/solicitud.entity';
+
 export interface RegistrarPagoInput {
   clientPaymentId: string;
   tenantId: string;
@@ -14,6 +17,7 @@ export interface RegistrarPagoInput {
   fechaPago: string; // ISO date
   cobradorId: string;
   propietarioId: string;
+  solicitudId?: string; // Optional request ID to close when paying
 }
 
 export interface RegistrarPagoResult {
@@ -24,19 +28,6 @@ export interface RegistrarPagoResult {
 
 /**
  * Registers a payment and distributes it across pending cuotas using FIFO.
- *
- * FIFO Distribution Algorithm:
- * 1. Idempotency: if (tenantId, clientPaymentId) already exists, return existing pago.
- * 2. Validate: propietario must have an active CuentaDeCartera.
- * 3. Loop: find oldest cuota with saldo > 0, apply payment, carry excess forward.
- * 4. Record Pago linked to the first affected cuota.
- *
- * MVP Decision: if the payment exceeds all pending cuotas, the excess is
- * effectively lost — it is NOT stored as credit. The full payment amount
- * is recorded but distributed only up to the total outstanding balance.
- *
- * Transaction: all cuota updates and pago creation happen in a single
- * database transaction via TypeORM QueryRunner.
  */
 @Injectable()
 export class RegistrarPagoUseCase {
@@ -46,6 +37,7 @@ export class RegistrarPagoUseCase {
     private readonly pagoRepo: PagoRepository,
     private readonly cuotaRepo: CuotaRepository,
     private readonly cuentaCarteraRepo: CuentaCarteraRepository,
+    private readonly solicitudRepo: SolicitudRepository,
   ) {}
 
   async execute(input: RegistrarPagoInput): Promise<RegistrarPagoResult> {
@@ -144,6 +136,17 @@ export class RegistrarPagoUseCase {
     // 5. Persist — save pago + all affected cuotas in one transaction
     await this.pagoRepo.save(pago);
     await this.cuotaRepo.saveMany(cuotasAfectadas);
+
+    if (input.solicitudId) {
+      const solicitud = await this.solicitudRepo.findById(input.solicitudId);
+      if (solicitud) {
+        solicitud.estado = SolicitudEstado.RESUELTA;
+        solicitud.pagoId = pago.id;
+        solicitud.respuesta = 'Pago registrado exitosamente.';
+        solicitud.fechaRespuesta = new Date();
+        await this.solicitudRepo.save(solicitud);
+      }
+    }
 
     // 6. Build event (not emitted yet — future enhancement)
     const event = new PagoRegistradoEvent(

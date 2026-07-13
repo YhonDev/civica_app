@@ -198,26 +198,18 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           ActionChip(
                             avatar: const Icon(Icons.engineering_outlined, size: 16),
-                            label: const Text('Cobrador'),
+                            label: const Text('Cobrador (Juan)'),
                             onPressed: () {
-                              _emailCtrl.text = 'cobrador@civica.test';
-                              _passwordCtrl.text = 'cobrador123';
+                              _emailCtrl.text = 'juan.cobrador@test.com';
+                              _passwordCtrl.text = 'admin123';
                             },
                           ),
                           ActionChip(
                             avatar: const Icon(Icons.home_outlined, size: 16),
-                            label: const Text('Propietario'),
+                            label: const Text('Propietario (Juan)'),
                             onPressed: () {
-                              _emailCtrl.text = 'propietario@civica.test';
-                              _passwordCtrl.text = 'propietario123';
-                            },
-                          ),
-                          ActionChip(
-                            avatar: const Icon(Icons.home_outlined, size: 16),
-                            label: const Text('Propietario (Alt)'),
-                            onPressed: () {
-                              _emailCtrl.text = 'propetario@civica.test';
-                              _passwordCtrl.text = 'propetario123';
+                              _emailCtrl.text = 'juan@email.com';
+                              _passwordCtrl.text = 'admin123';
                             },
                           ),
                         ],

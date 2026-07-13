@@ -6,10 +6,12 @@ import '../models/cartera_models.dart';
 
 class CobroCard extends StatelessWidget {
   final CobroItem cobro;
+  final VoidCallback? onRegistrarPago;
 
   const CobroCard({
     super.key,
     required this.cobro,
+    this.onRegistrarPago,
   });
 
   Color get _color {
@@ -143,7 +145,7 @@ class CobroCard extends StatelessWidget {
                 if (cobro.estado != 'Pagado') ...[
                   const SizedBox(width: AppSpacing.sm),
                   FilledButton(
-                    onPressed: () {},
+                    onPressed: onRegistrarPago,
                     style: FilledButton.styleFrom(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,

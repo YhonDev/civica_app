@@ -16,7 +16,8 @@ import '../../features/propietarios/etapas_screen.dart';
 import '../../features/propietarios/manzanas_screen.dart';
 import '../../features/propietarios/casas_screen.dart';
 import '../../features/propietarios/proyecto_ajustes_screen.dart';
-import '../../features/profile/profile_screen.dart';
+import '../../features/mas/mas_screen.dart';
+import '../../features/mas/configuracion_screen.dart';
 import '../../features/historial/historial_screen.dart';
 import '../../features/dashboard/estado_admin_screen.dart';
 import '../../features/dashboard/actividad_admin_screen.dart';
@@ -24,8 +25,16 @@ import '../../features/solicitudes/solicitudes_screen.dart';
 import '../../features/solicitudes/nueva_solicitud_screen.dart';
 import '../../features/propietarios/comunidad_screen.dart';
 import '../../features/propietarios/propietarios_screen.dart';
+import '../../features/propietarios/models/propietarios_models.dart';
+import '../../features/propietarios/propietario_detail_screen.dart';
+import '../../features/propietarios/editar_propietario_screen.dart';
 import '../../features/propietarios/cobradores_screen.dart';
 import '../../features/propietarios/urbanizacion_screen.dart';
+import '../../features/propietarios/widgets/propietario_finanzas_tab.dart';
+import '../../features/propietarios/widgets/propietario_historial_tab.dart';
+import '../../features/propietarios/propietario_inmueble_screen.dart';
+
+import '../../features/propietarios/tarifas_screen.dart';
 
 /// GoRouter configuration — role-aware.
 ///
@@ -104,11 +113,57 @@ final GoRouter appRouter = GoRouter(
               path: 'propietarios',
               name: 'comunidad-propietarios',
               builder: (_, __) => const PropietariosScreen(),
+              routes: [
+                GoRoute(
+                  path: 'detalle',
+                  name: 'comunidad-propietario-detalle',
+                  builder: (_, state) {
+                    final propietario = state.extra as PropietarioItem;
+                    return PropietarioDetailScreen(propietario: propietario);
+                  },
+                  routes: [
+                    GoRoute(
+                      path: 'finanzas',
+                      builder: (_, state) {
+                        final propietario = state.extra as PropietarioItem;
+                        return PropietarioFinanzasScreen(propietario: propietario);
+                      },
+                    ),
+                    GoRoute(
+                      path: 'historial',
+                      builder: (_, state) {
+                        final propietario = state.extra as PropietarioItem;
+                        return PropietarioHistorialScreen(propietario: propietario);
+                      },
+                    ),
+                    GoRoute(
+                      path: 'inmueble',
+                      builder: (_, state) {
+                        final propietario = state.extra as PropietarioItem;
+                        return PropietarioInmuebleScreen(propietario: propietario);
+                      },
+                    ),
+                  ],
+                ),
+                GoRoute(
+                  path: 'editar',
+                  name: 'comunidad-propietario-editar',
+                  builder: (_, state) {
+                    final propietario = state.extra as PropietarioItem;
+                    return EditarPropietarioScreen(propietario: propietario);
+                  },
+                ),
+              ],
             ),
             GoRoute(
               path: 'cobradores',
               name: 'comunidad-cobradores',
               builder: (_, __) => const CobradoresScreen(),
+            ),
+            GoRoute(
+              path: 'tarifas',
+              name: 'comunidad-tarifas',
+              builder: (_, __) => const TarifasScreen(),
             ),
             GoRoute(
               path: 'urbanizacion',
@@ -118,12 +173,19 @@ final GoRouter appRouter = GoRouter(
                 GoRoute(
                   path: 'proyecto-detalle',
                   name: 'comunidad-proyecto-detalle',
-                  builder: (_, __) => const ProyectoDetailScreen(),
+                  builder: (_, state) {
+                    final extra = state.extra as Map<String, dynamic>? ?? {};
+                    return ProyectoDetailScreen(proyecto: extra);
+                  },
                   routes: [
                     GoRoute(
                       path: 'etapas',
                       name: 'comunidad-proyecto-etapas',
-                      builder: (_, __) => const EtapasScreen(),
+                      builder: (_, state) {
+                        final pId = state.extra as String?;
+                        // Si pId es null, la pantalla usará el fallback default (currentTenantId)
+                        return EtapasScreen(proyectoId: pId ?? '');
+                      },
                     ),
                     GoRoute(
                       path: 'manzanas',
@@ -147,11 +209,18 @@ final GoRouter appRouter = GoRouter(
           ],
         ),
 
-        // Perfil y configuración
+        // Menú Más
         GoRoute(
-          path: '/perfil',
-          name: 'perfil',
-          builder: (_, __) => const ProfileScreen(),
+          path: '/mas',
+          name: 'mas',
+          builder: (_, __) => const MasScreen(),
+          routes: [
+            GoRoute(
+              path: 'configuracion',
+              name: 'mas-configuracion',
+              builder: (_, __) => const ConfiguracionScreen(),
+            ),
+          ],
         ),
 
         // Historial (Propietario)

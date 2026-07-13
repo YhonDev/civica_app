@@ -64,6 +64,12 @@ class ComunidadScreen extends StatelessWidget {
                 title: 'Estructura de Urbanización',
                 onTap: () => context.go('/comunidad/urbanizacion'),
               ),
+              const SizedBox(height: AppSpacing.sm),
+              ActionCard(
+                icon: Icons.payments_outlined,
+                title: 'Configuración de Tarifas',
+                onTap: () => context.go('/comunidad/tarifas'),
+              ),
             ],
           ),
         ),

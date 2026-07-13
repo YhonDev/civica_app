@@ -22,6 +22,8 @@ import { ActualizarTarifaUseCase } from './application/use-cases/actualizar-tari
 import { ConfigurarMontoUseCase } from './application/use-cases/configurar-monto.use-case';
 import { GenerarCuotasUseCase } from './application/use-cases/generar-cuotas.use-case';
 import { RegistrarPagoUseCase } from './application/use-cases/registrar-pago.use-case';
+import { EliminarPagoUseCase } from './application/use-cases/eliminar-pago.use-case';
+import { EliminarCuotaUseCase } from './application/use-cases/eliminar-cuota.use-case';
 import { MarcarVencidasUseCase } from './application/use-cases/marcar-vencidas.use-case';
 import { TarifaDerivacionService } from './application/services/tarifa-derivacion.service';
 
@@ -43,6 +45,7 @@ import { MarcarVencidasJob } from './infrastructure/jobs/marcar-vencidas.job';
 
 // Shared
 import { NotificationsModule } from '../notifications/notifications.module';
+import { CommunityModule } from '../community/community.module';
 import { ActividadInterceptor } from '../shared/common/decorators/registrar-actividad.decorator';
 import { Reflector } from '@nestjs/core';
 
@@ -51,6 +54,7 @@ import { Reflector } from '@nestjs/core';
     TypeOrmModule.forFeature([Tarifa, MontoPagoPredefinido, Cuota, CuentaDeCartera, Pago, Solicitud]),
     ScheduleModule.forRoot(),
     NotificationsModule,
+    CommunityModule,
   ],
   controllers: [
     TarifasController,
@@ -76,6 +80,8 @@ import { Reflector } from '@nestjs/core';
     ConfigurarMontoUseCase,
     GenerarCuotasUseCase,
     RegistrarPagoUseCase,
+    EliminarPagoUseCase,
+    EliminarCuotaUseCase,
     MarcarVencidasUseCase,
 
     // Services

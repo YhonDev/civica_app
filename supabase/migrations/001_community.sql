@@ -25,15 +25,25 @@ CREATE TABLE etapas (
 
 CREATE INDEX idx_etapas_conjunto ON etapas (conjunto_id);
 
+-- ── Manzanas (Bloques) ──────────────────────────────────
+CREATE TABLE manzanas (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  nombre      VARCHAR(255) NOT NULL,
+  etapa_id    UUID NOT NULL REFERENCES etapas(id) ON DELETE CASCADE,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_manzanas_etapa ON manzanas (etapa_id);
+
 -- ── Casas ────────────────────────────────────────────────
 CREATE TABLE casas (
   id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   direccion_interna VARCHAR(255) NOT NULL,
-  etapa_id         UUID NOT NULL REFERENCES etapas(id) ON DELETE CASCADE,
+  manzana_id       UUID NOT NULL REFERENCES manzanas(id) ON DELETE CASCADE,
   created_at       TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_casas_etapa ON casas (etapa_id);
+CREATE INDEX idx_casas_manzana ON casas (manzana_id);
 
 -- ── Propietarios ─────────────────────────────────────────
 CREATE TABLE propietarios (
@@ -65,6 +75,7 @@ CREATE INDEX idx_tenencias_activas    ON tenencias (propietario_id, casa_id) WHE
 -- ── RLS (preparación para multi-tenant) ──────────────────
 ALTER TABLE conjuntos     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE etapas        ENABLE ROW LEVEL SECURITY;
+ALTER TABLE manzanas      ENABLE ROW LEVEL SECURITY;
 ALTER TABLE casas         ENABLE ROW LEVEL SECURITY;
 ALTER TABLE propietarios  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tenencias     ENABLE ROW LEVEL SECURITY;
@@ -73,6 +84,7 @@ ALTER TABLE tenencias     ENABLE ROW LEVEL SECURITY;
 -- (se refinarán cuando integremos Auth en Sprint 2)
 CREATE POLICY "service_role_all_conjuntos"    ON conjuntos    FOR ALL TO service_role USING (true);
 CREATE POLICY "service_role_all_etapas"       ON etapas       FOR ALL TO service_role USING (true);
+CREATE POLICY "service_role_all_manzanas"     ON manzanas     FOR ALL TO service_role USING (true);
 CREATE POLICY "service_role_all_casas"        ON casas        FOR ALL TO service_role USING (true);
 CREATE POLICY "service_role_all_propietarios" ON propietarios FOR ALL TO service_role USING (true);
 CREATE POLICY "service_role_all_tenencias"    ON tenencias    FOR ALL TO service_role USING (true);

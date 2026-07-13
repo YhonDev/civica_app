@@ -67,6 +67,17 @@ export class DashboardController {
     const frecuencia: Frecuencia = cuenta?.frecuencia ?? 'MENSUAL';
     const hoy = new Date();
 
+    let tarifaMensual: any = null;
+    let tarifaPropia: any = null;
+    if (cuenta) {
+      const vigentes = await this.tarifaRepository.findVigentesPorConjunto(
+        cuenta.conjuntoId,
+        hoy,
+      );
+      tarifaMensual = vigentes.MENSUAL;
+      tarifaPropia = vigentes[frecuencia];
+    }
+
     const cuotas = cuotasRaw.filter((c) =>
       Periodo.esVisible(c.periodoInicio, frecuencia, hoy),
     );
@@ -102,6 +113,13 @@ export class DashboardController {
       pagosEsperados: number;
       pagosRegistrados: number;
       montoParcial: number;
+      desglose: {
+        id: string;
+        cuotaId: string;
+        fecha: string;
+        monto: number;
+        numeroPago: number;
+      }[];
     } | null = null;
 
     const pendingCuotas = cuotas.filter((c) => c.monto > c.montoPagado);
@@ -114,16 +132,63 @@ export class DashboardController {
       const pagosRegistrados = await this.pagoRepository.countByCuota(next.id);
       const montoParcial = calcularMontoParcial(next.monto, frecuencia).amount;
 
-      proximoCobro = next.fechaVencimiento;
+      const desglose: any[] = [];
+      const [y, m] = next.periodoInicio.split('-').map(Number);
+      let currentYear = y;
+      let currentMonth = m - 1; // 0-indexed
+
+      const mesesEsp = [
+        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+      ];
+
+      while (desglose.length < pagosEsperados) {
+        const periodStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`;
+        const quotaForMonth = cuotas.find(c => c.periodoInicio === periodStr);
+
+        const quotaId = quotaForMonth ? quotaForMonth.id : null;
+        const quotaMonto = quotaForMonth ? quotaForMonth.monto : (tarifaMensual ? tarifaMensual.monto : 0);
+        const quotaMontoParcial = calcularMontoParcial(quotaMonto, frecuencia).amount;
+
+        let pRegistrados = 0;
+        if (quotaForMonth) {
+          pRegistrados = await this.pagoRepository.countByCuota(quotaForMonth.id);
+        }
+
+        const fechas = Periodo.fechasCobroParciales(frecuencia, currentYear, currentMonth);
+        const remainingFechas = fechas.slice(pRegistrados);
+        const mesNombre = mesesEsp[currentMonth];
+
+        for (let i = 0; i < remainingFechas.length; i++) {
+          if (desglose.length >= pagosEsperados) break;
+          desglose.push({
+            id: quotaId ? `${quotaId}-${pRegistrados + i + 1}` : `future-${periodStr}-${pRegistrados + i + 1}`,
+            cuotaId: quotaId,
+            fecha: remainingFechas[i],
+            monto: Math.round(quotaMontoParcial / 100),
+            numeroPago: pRegistrados + i + 1,
+            mes: mesNombre,
+          });
+        }
+
+        currentMonth++;
+        if (currentMonth > 11) {
+          currentMonth = 0;
+          currentYear++;
+        }
+      }
+
+      proximoCobro = desglose.length > 0 ? desglose[0].fecha : next.fechaVencimiento;
       proximoPago = {
         concepto: next.concepto,
-        fechaVencimiento: next.fechaVencimiento,
+        fechaVencimiento: proximoCobro ?? next.fechaVencimiento,
         monto: Math.round(montoParcial / 100),
         montoTotal: Math.round(next.monto / 100),
         montoPagado: Math.round(next.montoPagado / 100),
         pagosEsperados,
         pagosRegistrados,
         montoParcial: Math.round(montoParcial / 100),
+        desglose,
       };
     }
 
@@ -167,23 +232,14 @@ export class DashboardController {
       frecuencia: Frecuencia;
     } | null = null;
 
-    if (cuenta) {
-      const vigentes = await this.tarifaRepository.findVigentesPorConjunto(
-        cuenta.conjuntoId,
-        hoy,
-      );
-      const tarifaMensual = vigentes.MENSUAL;
-      const tarifaPropia = vigentes[frecuencia];
-
-      if (tarifaMensual) {
-        tarifaActual = {
-          cuotaMensual: Math.round(tarifaMensual.monto / 100),
-          montoSegunFrecuencia: tarifaPropia
-            ? Math.round(tarifaPropia.monto / 100)
-            : Math.round(tarifaMensual.monto / 100),
-          frecuencia,
-        };
-      }
+    if (tarifaMensual) {
+      tarifaActual = {
+        cuotaMensual: Math.round(tarifaMensual.monto / 100),
+        montoSegunFrecuencia: tarifaPropia
+          ? Math.round(tarifaPropia.monto / 100)
+          : Math.round(tarifaMensual.monto / 100),
+        frecuencia,
+      };
     }
 
     return {

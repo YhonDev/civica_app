@@ -109,11 +109,15 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
       final prefix = isPagada ? 'Revisión pago de' : 'Revisión cargo de';
       final tipo = '$prefix $capitalizedPeriod';
 
+      final user = context.read<AuthCubit>().state.usuario;
+      final propietarioId = user?['propietarioId'] as String? ?? '00000000-0000-0000-0000-000000000000'; // fallback temporal
+      
       final repo = SolicitudesRepository();
       await repo.crearSolicitud(
         cuotaId: _cuotaIdSeleccionada!,
         tipo: tipo,
         descripcion: _descripcionController.text.trim(),
+        propietarioId: propietarioId,
       );
 
       if (mounted) {

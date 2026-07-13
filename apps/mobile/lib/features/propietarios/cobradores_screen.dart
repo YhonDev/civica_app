@@ -8,8 +8,7 @@ import 'models/cobradores_models.dart';
 import 'widgets/cobrador_card.dart';
 import '../../shared/widgets/empty_state.dart';
 import '../dashboard/widgets/skeleton_loading.dart';
-import '../../shared/widgets/expandable_fab.dart';
-
+import '../dashboard/widgets/skeleton_loading.dart';
 class CobradoresScreen extends StatefulWidget {
   const CobradoresScreen({super.key});
 
@@ -22,7 +21,6 @@ class _CobradoresScreenState extends State<CobradoresScreen> {
   final TextEditingController _searchController = TextEditingController();
 
   bool _isLoading = true;
-  CobradorResumen? _resumen;
   List<CobradorItem> _allCobradores = [];
   
   String _activeFilter = 'Todos';
@@ -49,12 +47,10 @@ class _CobradoresScreenState extends State<CobradoresScreen> {
     setState(() => _isLoading = true);
     
     try {
-      final resumen = await _repository.getResumen();
       final cobradores = await _repository.getCobradores();
       
       if (mounted) {
         setState(() {
-          _resumen = resumen;
           _allCobradores = cobradores;
           _isLoading = false;
         });
@@ -84,44 +80,13 @@ class _CobradoresScreenState extends State<CobradoresScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Directorio de Cobradores'),
+        title: const Text('Gestión de Cobradores'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.pop(),
         ),
       ),
       body: _buildBody(),
-      floatingActionButton: ExpandableFab(
-        backgroundColor: AppColors.info,
-        actions: [
-          ExpandableFabAction(
-            icon: Icons.shield_rounded,
-            label: 'Crear',
-            color: AppColors.info,
-            onPressed: () => context.push('/nuevo-cobrador'),
-          ),
-          ExpandableFabAction(
-            icon: Icons.edit_rounded,
-            label: 'Editar',
-            color: AppColors.primary,
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Seleccione un cobrador para editar')),
-              );
-            },
-          ),
-          ExpandableFabAction(
-            icon: Icons.delete_rounded,
-            label: 'Eliminar',
-            color: AppColors.error,
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Seleccione un cobrador para eliminar')),
-              );
-            },
-          ),
-        ],
-      ),
     );
   }
 
@@ -130,15 +95,11 @@ class _CobradoresScreenState extends State<CobradoresScreen> {
       return const _CobradoresSkeleton();
     }
 
-    if (_resumen == null) {
-      return const EmptyState(
-        icon: Icons.error_outline,
-        title: 'Error de carga',
-        description: 'No se pudo cargar la información de los cobradores.',
-      );
-    }
-
     final filteredList = _filteredCobradores;
+    
+    int total = _allCobradores.length;
+    int activos = _allCobradores.where((c) => c.activo).length;
+    int inactivos = _allCobradores.where((c) => !c.activo).length;
 
     return RefreshIndicator(
       onRefresh: _loadData,
@@ -151,11 +112,48 @@ class _CobradoresScreenState extends State<CobradoresScreen> {
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
-              child: _buildResumenHeader(_resumen!),
+              child: _buildResumenHeader(total, activos, inactivos),
             ),
           ),
           
           const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
+          
+          // Botón Nuevo
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: FilledButton.icon(
+                  onPressed: () => context.push('/nuevo-cobrador'),
+                  icon: const Icon(Icons.shield_rounded, size: 18),
+                  label: const Text('Nuevo Cobrador'),
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    backgroundColor: AppColors.info,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          
+          const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
+          
+          // Historial Title
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
+              child: Text(
+                'Historial',
+                style: AppTypography.subtitle.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ),
+          ),
+          
+          const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.md)),
           
           // Buscador
           SliverToBoxAdapter(
@@ -193,11 +191,17 @@ class _CobradoresScreenState extends State<CobradoresScreen> {
               ? SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.only(top: AppSpacing.xl),
-                    child: EmptyState(
-                      icon: Icons.search_off_rounded,
-                      title: 'No hay resultados',
-                      description: 'Intenta cambiar el filtro o la búsqueda.',
-                    ),
+                    child: _allCobradores.isEmpty 
+                      ? const EmptyState(
+                          icon: Icons.person_off_rounded,
+                          title: 'Sin Cobradores',
+                          description: 'Aún no hay cobradores registrados.',
+                        )
+                      : const EmptyState(
+                          icon: Icons.search_off_rounded,
+                          title: 'No hay resultados',
+                          description: 'Intenta cambiar el filtro o la búsqueda.',
+                        ),
                   ),
                 )
               : SliverPadding(
@@ -207,7 +211,9 @@ class _CobradoresScreenState extends State<CobradoresScreen> {
                       (context, index) {
                         return Padding(
                           padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                          child: CobradorCard(cobrador: filteredList[index]),
+                          child: CobradorCard(
+                            cobrador: filteredList[index],
+                          ),
                         );
                       },
                       childCount: filteredList.length,
@@ -221,7 +227,7 @@ class _CobradoresScreenState extends State<CobradoresScreen> {
     );
   }
 
-  Widget _buildResumenHeader(CobradorResumen resumen) {
+  Widget _buildResumenHeader(int total, int activos, int inactivos) {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.cardPadding),
       decoration: BoxDecoration(
@@ -229,14 +235,26 @@ class _CobradoresScreenState extends State<CobradoresScreen> {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
+      child: Column(
         children: [
-          _buildResumenMetric('Activos', resumen.activos, AppColors.success),
-          Container(width: 1, height: 30, color: AppColors.border),
-          _buildResumenMetric('Inactivos', resumen.inactivos, AppColors.textSecondary),
-          Container(width: 1, height: 30, color: AppColors.border),
-          _buildResumenMetric('Total', resumen.totalCobradores, AppColors.info),
+          Text(
+            'Balance de Cobradores',
+            style: AppTypography.subtitle.copyWith(
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildResumenMetric('Total', total, AppColors.info),
+              Container(width: 1, height: 30, color: AppColors.border),
+              _buildResumenMetric('Activos', activos, AppColors.success),
+              Container(width: 1, height: 30, color: AppColors.border),
+              _buildResumenMetric('Inactivos', inactivos, AppColors.textSecondary),
+            ],
+          ),
         ],
       ),
     );

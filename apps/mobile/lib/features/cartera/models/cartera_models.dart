@@ -33,6 +33,7 @@ class CarteraResumen extends Equatable {
 /// Representa un cobro o estado de cuenta de un propietario individual.
 class CobroItem extends Equatable {
   final String id;
+  final String propietarioId;
   final String nombre;
   final String casa;
   final String etapa;
@@ -42,6 +43,7 @@ class CobroItem extends Equatable {
 
   const CobroItem({
     required this.id,
+    required this.propietarioId,
     required this.nombre,
     required this.casa,
     required this.etapa,
@@ -53,6 +55,7 @@ class CobroItem extends Equatable {
   @override
   List<Object?> get props => [
         id,
+        propietarioId,
         nombre,
         casa,
         etapa,

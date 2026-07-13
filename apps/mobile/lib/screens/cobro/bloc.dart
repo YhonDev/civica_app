@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:drift/drift.dart';
 
 import '../../core/database/app_database.dart';
 import '../../core/database/daos/cuota_dao.dart';
@@ -55,11 +56,15 @@ class CambiarMontoManual extends CobroEvent {
 /// Registra el pago offline.
 class RegistrarPago extends CobroEvent {
   final String cobradorId;
+  final String? solicitudId;
 
-  const RegistrarPago({this.cobradorId = 'offline'});
+  const RegistrarPago({
+    this.cobradorId = 'offline',
+    this.solicitudId,
+  });
 
   @override
-  List<Object?> get props => [cobradorId];
+  List<Object?> get props => [cobradorId, solicitudId];
 }
 
 /// Limpia el estado.
@@ -299,6 +304,7 @@ class CobroBloc extends Bloc<CobroEvent, CobroState> {
         id: pagoId,
         clientPaymentId: clientPaymentId,
         tenantId: tenantId,
+        solicitudId: event.solicitudId == null ? const Value.absent() : Value(event.solicitudId!),
         monto: s.montoTotal,
         fechaPago: now.toIso8601String(),
         cobradorId: event.cobradorId,

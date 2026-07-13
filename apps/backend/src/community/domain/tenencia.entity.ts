@@ -8,6 +8,7 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { Propietario } from './propietario.entity';
+import { Casa } from './casa.entity';
 
 @Entity('tenencias')
 export class Tenencia {
@@ -19,6 +20,10 @@ export class Tenencia {
 
   @Column({ name: 'casa_id', type: 'uuid' })
   casaId: string;
+
+  @ManyToOne(() => Casa, { createForeignKeyConstraints: false })
+  @JoinColumn({ name: 'casa_id' })
+  casa: Casa;
 
   @Column({ name: 'fecha_inicio', type: 'date' })
   fechaInicio: Date;

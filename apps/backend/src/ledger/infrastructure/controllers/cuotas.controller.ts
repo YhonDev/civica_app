@@ -6,8 +6,10 @@ import {
   Query,
   Body,
   UseGuards,
+  Delete,
 } from '@nestjs/common';
 import { GenerarCuotasUseCase } from '../../application/use-cases/generar-cuotas.use-case';
+import { EliminarCuotaUseCase } from '../../application/use-cases/eliminar-cuota.use-case';
 import { CuotaRepository } from '../persistence/cuota.repository';
 import { PagoRepository } from '../persistence/pago.repository';
 import { CuentaCarteraRepository } from '../persistence/cuenta-cartera.repository';
@@ -25,6 +27,7 @@ import { RolUsuario } from '../../../iam/domain/usuario.entity';
 export class CuotasController {
   constructor(
     private readonly generarCuotasUseCase: GenerarCuotasUseCase,
+    private readonly eliminarCuotaUseCase: EliminarCuotaUseCase,
     private readonly cuotaRepository: CuotaRepository,
     private readonly pagoRepository: PagoRepository,
     private readonly cuentaCarteraRepository: CuentaCarteraRepository,
@@ -38,6 +41,11 @@ export class CuotasController {
     @CurrentTenant() tenantId: string,
   ) {
     return this.generarCuotasUseCase.execute(tenantId, dto.conjuntoId);
+  }
+
+  @Get()
+  async listar(@CurrentTenant() tenantId: string) {
+    return this.cuotaRepository.findByTenant(tenantId);
   }
 
   @Get('propietario/:propietarioId')
@@ -75,5 +83,16 @@ export class CuotasController {
         };
       }),
     );
+  }
+
+  @Delete(':id')
+  @UseGuards(RolesGuard)
+  @Roles(RolUsuario.ADMIN)
+  async eliminar(
+    @Param('id') id: string,
+    @CurrentTenant() tenantId: string,
+  ) {
+    await this.eliminarCuotaUseCase.execute(id, tenantId);
+    return { success: true };
   }
 }

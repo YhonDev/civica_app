@@ -1,90 +1,91 @@
 import '../../core/network/api_client.dart';
 import '../../core/network/api_exceptions.dart';
+import '../propietarios/comunidad_repository.dart';
 import 'models/dashboard_data.dart';
 
-/// Repository for fetching dashboard data from the API.
 class DashboardRepository {
-  final ApiClient _apiClient;
+  final ApiClient _api = ApiClient.instance;
 
-  DashboardRepository({ApiClient? apiClient})
-      : _apiClient = apiClient ?? ApiClient.instance;
-
-  /// Fetches dashboard data for a given month and year.
-  ///
-  /// Calls GET /dashboard/administrador?mes=X&anio=Y
-  /// and returns a [DashboardData] with all KPIs, charts, and activity.
   Future<DashboardData> getDashboard(int mes, int anio) async {
-    // MOCK DATA for UI/UX testing
-    await Future.delayed(const Duration(milliseconds: 600));
-    
-    return DashboardData(
-      mes: mes,
-      anio: anio,
-      recaudoMes: 7800000,
-      metaMensual: 10560000,
-      pagaron: 65,
-      pendientes: 17,
-      mora: 720000,
-      porcentaje: 73.9,
-      evolucion: const [
-        EvolucionPunto(dia: '01', valor: 1200000),
-        EvolucionPunto(dia: '05', valor: 3500000),
-        EvolucionPunto(dia: '10', valor: 5800000),
-        EvolucionPunto(dia: '15', valor: 7800000),
-      ],
-      modalidades: const [
-        ModalidadItem(nombre: 'Mensual', porcentaje: 65, valor: 5070000),
-        ModalidadItem(nombre: 'Quincenal', porcentaje: 25, valor: 1950000),
-        ModalidadItem(nombre: 'Semanal', porcentaje: 10, valor: 780000),
-      ],
-      estadosCobro: const [
-        CobroEstadoItem(estado: 'Pagados', porcentaje: 73.9, cantidad: 65),
-        CobroEstadoItem(estado: 'Pendientes', porcentaje: 19.3, cantidad: 17),
-        CobroEstadoItem(estado: 'En mora', porcentaje: 6.8, cantidad: 6),
-      ],
-      actividadReciente: [
-        ActividadItem(
-          id: 'A1',
-          tipo: 'pago_registrado',
-          descripcion: 'Pagó la cuota mensual',
-          usuario: 'Juan Pérez',
-          timestamp: DateTime.now().subtract(const Duration(minutes: 5)),
-          hace: 'hace 5 min',
-        ),
-        ActividadItem(
-          id: 'A2',
-          tipo: 'mora_generada',
-          descripcion: 'Sistema detectó mora',
-          usuario: 'Automatización',
-          timestamp: DateTime.now().subtract(const Duration(minutes: 15)),
-          hace: 'hace 15 min',
-        ),
-        ActividadItem(
-          id: 'A3',
-          tipo: 'solicitud_revision',
-          descripcion: 'Solicitó revisión de pago',
-          usuario: 'María Gómez',
-          timestamp: DateTime.now().subtract(const Duration(hours: 1)),
-          hace: 'hace 1h',
-        ),
-        ActividadItem(
-          id: 'A4',
-          tipo: 'nuevo_propietario',
-          descripcion: 'Se registró en la plataforma',
-          usuario: 'Carlos Ruiz',
-          timestamp: DateTime.now().subtract(const Duration(hours: 3)),
-          hace: 'hace 3h',
-        ),
-      ],
-      totalPropietarios: 257,
-      nuevosPropietariosSemana: 3,
-      solicitudesPendientes: 5,
-      propietariosMora: 6,
-      pagosRevision: 3,
-      cobrosPorSemana: const [
-        CobroSemanaItem(semana: 1, pagados: 25, pendientes: 5, mora: 2),
-        CobroSemanaItem(semana: 2, pagados: 40, pendientes: 12, mora: 4),
-      ],
-    );
+    try {
+      final tenantId = ComunidadRepository.currentTenantId;
+
+      // Llamada principal al backend NestJS
+      final response = await _api.get('/dashboard/administrador', queryParameters: {
+        'mes': mes,
+        'anio': anio,
+        'tenantId': tenantId,
+      });
+
+      final data = response.data;
+      final resumen = data['resumen'];
+      final estadoCobros = data['estadoCobros'];
+
+      // Obtener total de propietarios
+      int totalPropietarios = 0;
+      try {
+        final propsResp = await _api.get('/propietarios', queryParameters: {'tenantId': tenantId});
+        totalPropietarios = (propsResp.data as List).length;
+      } catch (_) {
+        // Ignorar si falla, total 0
+      }
+
+      final recaudoMes = (resumen['recaudoTotal'] ?? 0) / 100.0;
+      final metaMensual = (resumen['metaMensual'] ?? 0) / 100.0;
+      final mora = (resumen['moraTotal'] ?? 0) / 100.0;
+      final porcentaje = resumen['porcentajeMeta'] ?? 0.0;
+      
+      final pagaron = resumen['pagaron'] ?? 0;
+      final pendientes = resumen['pendientes'] ?? 0;
+
+      final acumuladoAnual = (data['acumuladoAnual'] ?? 0) / 100.0;
+      final metaAnual = (data['metaAnual'] ?? 0) / 100.0;
+      final List<MesHistorico> historialMeses = (data['historialMeses'] as List<dynamic>? ?? [])
+          .map((e) => MesHistorico.fromJson(e as Map<String, dynamic>))
+          .toList();
+
+      return DashboardData(
+        mes: data['mes'] ?? mes,
+        anio: data['anio'] ?? anio,
+        recaudoMes: recaudoMes,
+        metaMensual: metaMensual,
+        pagaron: pagaron,
+        pendientes: pendientes,
+        mora: mora,
+        porcentaje: porcentaje.toDouble(),
+        evolucion: (data['evolucion'] as List<dynamic>? ?? []).map((e) => 
+          EvolucionPunto(dia: e['dia'].toString(), valor: (e['valor'] ?? 0) / 100.0)
+        ).toList(),
+        modalidades: (data['modalidades'] as List<dynamic>? ?? []).map((m) => 
+          ModalidadItem(nombre: m['frecuencia'], porcentaje: (m['porcentaje'] ?? 0).toDouble(), valor: (m['montoRecaudo'] ?? 0) / 100.0)
+        ).toList(),
+        estadosCobro: [
+          CobroEstadoItem(estado: 'Pagados', porcentaje: (estadoCobros['pagados'] ?? 0).toDouble(), cantidad: pagaron),
+          CobroEstadoItem(estado: 'Pendientes', porcentaje: (estadoCobros['pendientes'] ?? 0).toDouble(), cantidad: pendientes),
+          CobroEstadoItem(estado: 'En mora', porcentaje: (100 - ((estadoCobros['pagados']??0) + (estadoCobros['pendientes']??0))).toDouble(), cantidad: data['propietariosMora'] ?? 0),
+        ],
+        actividadReciente: (data['actividad'] as List<dynamic>? ?? [])
+            .map((a) => ActividadItem.fromJson(a as Map<String, dynamic>))
+            .toList(),
+        totalPropietarios: totalPropietarios,
+        nuevosPropietariosSemana: data['nuevosPropietariosSemana'] ?? 0,
+        solicitudesPendientes: data['solicitudesPendientes'] ?? 0,
+        propietariosMora: data['propietariosMora'] ?? 0,
+        pagosRevision: estadoCobros['revision'] ?? 0,
+        cobrosPorSemana: (data['cobrosPorSemana'] as List<dynamic>? ?? [])
+            .map((s) => CobroSemanaItem(
+                semana: s['semana'] as int? ?? 1,
+                pagados: s['pagados'] as int? ?? 0,
+                pendientes: s['pendientes'] as int? ?? 0,
+                mora: s['mora'] as int? ?? 0,
+            )).toList(),
+        acumuladoAnual: acumuladoAnual,
+        metaAnual: metaAnual,
+        historialMeses: historialMeses,
+      );
+    } catch (e) {
+      throw e is ApiException ? e : Exception('Error al cargar dashboard: $e');
+    }
   }
+
 }

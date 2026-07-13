@@ -8,8 +8,6 @@ import 'models/propietarios_models.dart';
 import 'widgets/propietario_card.dart';
 import '../../shared/widgets/empty_state.dart';
 import '../dashboard/widgets/skeleton_loading.dart';
-import '../../shared/widgets/expandable_fab.dart';
-
 class PropietariosScreen extends StatefulWidget {
   const PropietariosScreen({super.key});
 
@@ -22,7 +20,6 @@ class _PropietariosScreenState extends State<PropietariosScreen> {
   final TextEditingController _searchController = TextEditingController();
 
   bool _isLoading = true;
-  PropietarioResumen? _resumen;
   List<PropietarioItem> _allPropietarios = [];
   
   String _activeFilter = 'Todos';
@@ -49,12 +46,10 @@ class _PropietariosScreenState extends State<PropietariosScreen> {
     setState(() => _isLoading = true);
     
     try {
-      final resumen = await _repository.getResumen();
       final propietarios = await _repository.getPropietarios();
       
       if (mounted) {
         setState(() {
-          _resumen = resumen;
           _allPropietarios = propietarios;
           _isLoading = false;
         });
@@ -80,74 +75,13 @@ class _PropietariosScreenState extends State<PropietariosScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Directorio de Propietarios'),
+        title: const Text('Gestión de Propietarios'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.pop(),
         ),
       ),
       body: _buildBody(),
-      floatingActionButton: ExpandableFab(
-        backgroundColor: AppColors.primary,
-        actions: [
-          ExpandableFabAction(
-            icon: Icons.person_add_rounded,
-            label: 'Crear',
-            color: AppColors.primary,
-            onPressed: () {
-              // Simulación de validación de estructura
-              final bool hasEstructura = false; // Cambiado a false para probar la validación
-              
-              if (!hasEstructura) {
-                showDialog(
-                  context: context,
-                  builder: (ctx) => AlertDialog(
-                    title: const Text('Estructura Incompleta'),
-                    content: const Text(
-                      'No se puede crear un usuario sin antes definir la estructura física del proyecto (Etapas, Manzanas y Casas). Por favor, configure la urbanización primero.',
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(ctx),
-                        child: const Text('Entendido'),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.pop(ctx);
-                          context.push('/nuevo-propietario'); // Modo desarrollo para ver la UI
-                        },
-                        child: const Text('Continuar (Demo UI)'),
-                      ),
-                    ],
-                  ),
-                );
-              } else {
-                context.push('/nuevo-propietario');
-              }
-            },
-          ),
-          ExpandableFabAction(
-            icon: Icons.edit_rounded,
-            label: 'Editar',
-            color: AppColors.info,
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Seleccione un propietario para editar')),
-              );
-            },
-          ),
-          ExpandableFabAction(
-            icon: Icons.delete_rounded,
-            label: 'Eliminar',
-            color: AppColors.error,
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Seleccione un propietario para eliminar')),
-              );
-            },
-          ),
-        ],
-      ),
     );
   }
 
@@ -156,15 +90,11 @@ class _PropietariosScreenState extends State<PropietariosScreen> {
       return const _PropietariosSkeleton();
     }
 
-    if (_resumen == null) {
-      return const EmptyState(
-        icon: Icons.error_outline,
-        title: 'Error de carga',
-        description: 'No se pudo cargar la información de los propietarios.',
-      );
-    }
-
     final filteredList = _filteredPropietarios;
+    
+    int total = _allPropietarios.length;
+    int alDia = _allPropietarios.where((p) => p.estadoFinanciero == 'Al día' || p.estadoFinanciero == 'Al Día').length;
+    int enMora = _allPropietarios.where((p) => p.estadoFinanciero == 'Mora').length;
 
     return RefreshIndicator(
       onRefresh: _loadData,
@@ -177,11 +107,52 @@ class _PropietariosScreenState extends State<PropietariosScreen> {
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
-              child: _buildResumenHeader(_resumen!),
+              child: _buildResumenHeader(total, alDia, enMora),
             ),
           ),
           
           const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
+          
+          // Botón Nuevo
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: FilledButton.icon(
+                  onPressed: () async {
+                    final result = await context.push<bool>('/nuevo-propietario');
+                    if (result == true) {
+                      _loadData();
+                    }
+                  },
+                  icon: const Icon(Icons.person_add_rounded, size: 18),
+                  label: const Text('Nuevo Propietario'),
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    backgroundColor: AppColors.info,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          
+          const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
+          
+          // Historial Title
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
+              child: Text(
+                'Historial',
+                style: AppTypography.subtitle.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.md)),
           
           // Buscador
           SliverToBoxAdapter(
@@ -219,11 +190,17 @@ class _PropietariosScreenState extends State<PropietariosScreen> {
               ? SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.only(top: AppSpacing.xl),
-                    child: EmptyState(
-                      icon: Icons.search_off_rounded,
-                      title: 'No hay resultados',
-                      description: 'Intenta cambiar el filtro o la búsqueda.',
-                    ),
+                    child: _allPropietarios.isEmpty 
+                      ? const EmptyState(
+                          icon: Icons.person_off_rounded,
+                          title: 'Sin Propietarios',
+                          description: 'Aún no hay propietarios registrados.',
+                        )
+                      : const EmptyState(
+                          icon: Icons.search_off_rounded,
+                          title: 'No hay resultados',
+                          description: 'Intenta cambiar el filtro o la búsqueda.',
+                        ),
                   ),
                 )
               : SliverPadding(
@@ -233,7 +210,10 @@ class _PropietariosScreenState extends State<PropietariosScreen> {
                       (context, index) {
                         return Padding(
                           padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                          child: PropietarioCard(propietario: filteredList[index]),
+                          child: PropietarioCard(
+                            propietario: filteredList[index],
+                            onUpdate: _loadData,
+                          ),
                         );
                       },
                       childCount: filteredList.length,
@@ -247,7 +227,7 @@ class _PropietariosScreenState extends State<PropietariosScreen> {
     );
   }
 
-  Widget _buildResumenHeader(PropietarioResumen resumen) {
+  Widget _buildResumenHeader(int total, int alDia, int enMora) {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.cardPadding),
       decoration: BoxDecoration(
@@ -255,24 +235,36 @@ class _PropietariosScreenState extends State<PropietariosScreen> {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
+      child: Column(
         children: [
-          _buildResumenMetric('Ocupadas', resumen.ocupadas, AppColors.success),
-          Container(width: 1, height: 30, color: AppColors.border),
-          _buildResumenMetric('Vacantes', resumen.vacantes, AppColors.textSecondary),
-          Container(width: 1, height: 30, color: AppColors.border),
-          _buildResumenMetric('Total', resumen.totalPropiedades, AppColors.primary),
+          Text(
+            'Balance de Propietarios',
+            style: AppTypography.subtitle.copyWith(
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildResumenMetric('Total', total.toString(), AppColors.primary),
+              Container(width: 1, height: 30, color: AppColors.border),
+              _buildResumenMetric('Al Día', alDia.toString(), AppColors.success),
+              Container(width: 1, height: 30, color: AppColors.border),
+              _buildResumenMetric('En Mora', enMora.toString(), AppColors.warning),
+            ],
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildResumenMetric(String label, int value, Color color) {
+  Widget _buildResumenMetric(String label, String value, Color color) {
     return Column(
       children: [
         Text(
-          value.toString(),
+          value,
           style: AppTypography.title.copyWith(
             color: color,
             fontWeight: FontWeight.w700,

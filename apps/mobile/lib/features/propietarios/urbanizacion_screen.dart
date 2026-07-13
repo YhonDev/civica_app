@@ -3,9 +3,113 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import 'comunidad_repository.dart';
+import '../../shared/widgets/empty_state.dart';
 
-class UrbanizacionScreen extends StatelessWidget {
+class UrbanizacionScreen extends StatefulWidget {
   const UrbanizacionScreen({super.key});
+
+  @override
+  State<UrbanizacionScreen> createState() => _UrbanizacionScreenState();
+}
+
+class _UrbanizacionScreenState extends State<UrbanizacionScreen> {
+  final ComunidadRepository _comunidadRepo = ComunidadRepository();
+  bool _isLoading = true;
+  List<Map<String, dynamic>> _proyectos = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProyectos();
+  }
+
+  Future<void> _loadProyectos() async {
+    setState(() => _isLoading = true);
+    try {
+      final proyectos = await _comunidadRepo.getProyectos();
+      setState(() {
+        _proyectos = proyectos;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al cargar proyectos: $e')),
+        );
+      }
+    }
+  }
+
+  void _mostrarCrearProyecto() {
+    final formKey = GlobalKey<FormState>();
+    final nombreController = TextEditingController();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.background,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(ctx).viewInsets.bottom,
+          left: AppSpacing.screenPadding,
+          right: AppSpacing.screenPadding,
+          top: AppSpacing.xl,
+        ),
+        child: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Nuevo Proyecto', style: AppTypography.subtitle),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.md),
+              TextFormField(
+                controller: nombreController,
+                autofocus: true,
+                decoration: InputDecoration(
+                  labelText: 'Nombre del Proyecto',
+                  hintText: 'Ej. Urbanización Los Pinos',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                validator: (val) => val == null || val.isEmpty ? 'El nombre es requerido' : null,
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: FilledButton(
+                  onPressed: () async {
+                    if (formKey.currentState!.validate()) {
+                      Navigator.pop(ctx);
+                      setState(() => _isLoading = true);
+                      await _comunidadRepo.createProyecto(nombreController.text);
+                      await _loadProyectos();
+                    }
+                  },
+                  child: const Text('Crear Proyecto'),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -17,58 +121,56 @@ class UrbanizacionScreen extends StatelessWidget {
           onPressed: () => context.pop(),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.screenPadding),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Tus Urbanizaciones',
-              style: AppTypography.subtitle.copyWith(
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              'Selecciona un proyecto para gestionar su estructura.',
-              style: AppTypography.body.copyWith(color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            
-            // Lista de proyectos
-            _buildProjectCard(
-              context,
-              name: 'Urbanización Los Pinos',
-              status: 'Activo',
-              etapas: 3,
-              manzanas: 5,
-              casas: 120,
-              onTap: () => context.push('/comunidad/urbanizacion/proyecto-detalle'),
-            ),
-            
-            const SizedBox(height: AppSpacing.md),
-            
-            // Mock de un segundo proyecto para demostrar capacidad multi-proyecto
-            _buildProjectCard(
-              context,
-              name: 'Condominio El Bosque',
-              status: 'En configuración',
-              etapas: 1,
-              manzanas: 2,
-              casas: 40,
-              isActive: false,
-              onTap: () => context.push('/comunidad/urbanizacion/proyecto-detalle'),
-            ),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Crear nuevo proyecto...')),
-          );
-        },
+      body: _isLoading 
+          ? const Center(child: CircularProgressIndicator())
+          : _proyectos.isEmpty 
+              ? EmptyState(
+                  icon: Icons.domain_disabled_rounded,
+                  title: 'Aún no hay proyectos',
+                  description: 'Crea tu primera urbanización para comenzar a gestionar la comunidad.',
+                  actionLabel: 'Crear Proyecto',
+                  onAction: _mostrarCrearProyecto,
+                )
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.all(AppSpacing.screenPadding),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Tus Urbanizaciones',
+                        style: AppTypography.subtitle.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      Text(
+                        'Selecciona un proyecto para gestionar su estructura.',
+                        style: AppTypography.body.copyWith(color: AppColors.textSecondary),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                      
+                      ..._proyectos.map((proyecto) => Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                        child: _buildProjectCard(
+                          context,
+                          name: proyecto['nombre'],
+                          status: proyecto['estado'],
+                          etapas: proyecto['etapas'] ?? 0,
+                          manzanas: proyecto['manzanas'] ?? 0,
+                          casas: proyecto['casas'] ?? 0,
+                          isActive: proyecto['estado'] == 'Activo',
+                          onTap: () {
+                            // Pasamos el objeto proyecto usando extra para que las vistas hijas tengan el contexto
+                            context.push('/comunidad/urbanizacion/proyecto-detalle', extra: proyecto);
+                          },
+                        ),
+                      )),
+                    ],
+                  ),
+                ),
+      floatingActionButton: _proyectos.isEmpty ? null : FloatingActionButton.extended(
+        onPressed: _mostrarCrearProyecto,
         backgroundColor: AppColors.primary,
         icon: const Icon(Icons.add_rounded, color: Colors.white),
         label: const Text(
@@ -149,22 +251,17 @@ class UrbanizacionScreen extends StatelessWidget {
                           ),
                         ),
                       ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Text(
+                        '$etapas Etapas • $manzanas Mz • $casas Lotes',
+                        style: AppTypography.small.copyWith(color: AppColors.textSecondary),
+                      ),
                     ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '$etapas Etapas • $manzanas Manzanas • $casas Casas',
-                    style: AppTypography.caption.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
                   ),
                 ],
               ),
             ),
-            Icon(
-              Icons.chevron_right_rounded,
-              color: isActive ? AppColors.primary : AppColors.textDisabled,
-            ),
+            Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
           ],
         ),
       ),
