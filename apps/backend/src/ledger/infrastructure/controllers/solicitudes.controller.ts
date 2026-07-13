@@ -25,6 +25,8 @@ export class SolicitudesController {
   constructor(private readonly solicitudRepo: SolicitudRepository) {}
 
   @Post()
+  @UseGuards(RolesGuard)
+  @Roles(RolUsuario.PROPIETARIO, RolUsuario.ADMIN)
   async crear(
     @Body() dto: { cuotaId: string; tipo: string; descripcion: string },
     @CurrentUser() user: Usuario,
@@ -41,11 +43,15 @@ export class SolicitudesController {
   }
 
   @Get()
+  @UseGuards(RolesGuard)
+  @Roles(RolUsuario.PROPIETARIO, RolUsuario.ADMIN)
   async listar(@CurrentUser() user: Usuario) {
     return this.solicitudRepo.findByUsuario(user.id);
   }
 
   @Get('pendientes')
+  @UseGuards(RolesGuard)
+  @Roles(RolUsuario.ADMIN, RolUsuario.COBRADOR)
   async listarPendientes(@CurrentUser() user: Usuario) {
     return this.solicitudRepo.findPendingByUsuario(user.id);
   }

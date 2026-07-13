@@ -44,11 +44,15 @@ export class CuotasController {
   }
 
   @Get()
+  @UseGuards(RolesGuard)
+  @Roles(RolUsuario.ADMIN)
   async listar(@CurrentTenant() tenantId: string) {
     return this.cuotaRepository.findByTenant(tenantId);
   }
 
   @Get('propietario/:propietarioId')
+  @UseGuards(RolesGuard)
+  @Roles(RolUsuario.ADMIN)
   async listarPorPropietario(
     @Param('propietarioId') propietarioId: string,
     @Query() query: ListarCuotasQueryDto,

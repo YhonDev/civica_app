@@ -36,14 +36,22 @@ class MockHttpAdapter implements HttpClientAdapter {
     Stream<Uint8List>? requestStream,
     Future<void>? cancelFuture,
   ) async {
-    // Resolver el path base sin query string
-    // Dio 5: options.path tiene el path original, options.uri es la URI completa
-    final rawPath = options.path;
-    // Tomar solo la parte del path (sin query string si el path la incluye)
-    final basePath = rawPath.contains('?')
-        ? rawPath.substring(0, rawPath.indexOf('?'))
-        : rawPath;
-    final key = '${options.method} $basePath';
+    // Intentar varias formas de resolver el path (compatible con Dio 5.x)
+    // Opción 1: options.uri?.path (disponible en Dio 5.0+)
+    // Opción 2: options.path (path original)
+    String resolvedPath;
+    try {
+      resolvedPath = options.uri.path;
+    } catch (_) {
+      resolvedPath = options.path;
+    }
+
+    // Normalizar: asegurar leading slash
+    if (!resolvedPath.startsWith('/')) {
+      resolvedPath = '/$resolvedPath';
+    }
+
+    final key = '${options.method} $resolvedPath';
 
     _callCount[key] = (_callCount[key] ?? 0) + 1;
 

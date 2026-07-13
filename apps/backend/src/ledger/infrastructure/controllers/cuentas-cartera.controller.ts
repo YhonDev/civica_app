@@ -58,6 +58,8 @@ export class CuentasCarteraController {
   }
 
   @Get(':propietarioId')
+  @UseGuards(RolesGuard)
+  @Roles(RolUsuario.ADMIN, RolUsuario.PROPIETARIO)
   async obtenerPorPropietario(
     @Param('propietarioId') propietarioId: string,
   ) {
@@ -73,7 +75,7 @@ export class CuentasCarteraController {
 
   @Patch(':id/frecuencia')
   @UseGuards(RolesGuard)
-  @Roles(RolUsuario.ADMIN)
+  @Roles(RolUsuario.ADMIN, RolUsuario.PROPIETARIO)
   async actualizarFrecuencia(
     @Param('id') id: string,
     @Body() dto: ActualizarFrecuenciaDto,

@@ -21,8 +21,11 @@ import 'solicitudes_repository.dart';
 ///   5. Estado inicial inteligente — Pendientes para admin
 class SolicitudesScreen extends StatefulWidget {
   final String? solicitudId;
+  /// Optional pre-configured repository (for testing).
+  /// If null, a default [SolicitudesRepository] is created.
+  final SolicitudesRepository? repository;
 
-  const SolicitudesScreen({super.key, this.solicitudId});
+  const SolicitudesScreen({super.key, this.solicitudId, this.repository});
 
   @override
   State<SolicitudesScreen> createState() => _SolicitudesScreenState();
@@ -35,7 +38,7 @@ class _SolicitudesScreenState extends State<SolicitudesScreen>
   late String _filtroActivo;
   bool _isAdmin = false;
 
-  final _repo = SolicitudesRepository();
+  late final SolicitudesRepository _repo;
 
   // Stagger animations — same pattern as dashboard (250ms, 80ms delay)
   static const _sectionCount = 3; // hero, filters, list
@@ -46,6 +49,7 @@ class _SolicitudesScreenState extends State<SolicitudesScreen>
   @override
   void initState() {
     super.initState();
+    _repo = widget.repository ?? SolicitudesRepository();
     _detectRole();
     _initAnimations();
     _loadSolicitudes();

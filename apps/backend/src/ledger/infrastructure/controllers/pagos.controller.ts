@@ -61,6 +61,8 @@ export class PagosController {
   }
 
   @Get(':id')
+  @UseGuards(RolesGuard)
+  @Roles(RolUsuario.ADMIN, RolUsuario.COBRADOR)
   async getById(@Param('id') id: string) {
     const pago = await this.pagoRepo.findById(id);
     if (!pago) {
@@ -70,6 +72,8 @@ export class PagosController {
   }
 
   @Get()
+  @UseGuards(RolesGuard)
+  @Roles(RolUsuario.ADMIN)
   async listByPropietario(@Query('propietarioId') propietarioId: string) {
     return this.pagoRepo.findByPropietario(propietarioId);
   }

@@ -127,6 +127,8 @@ export class DashboardController {
   }
 
   @Get('dashboard/propietario')
+  @UseGuards(RolesGuard)
+  @Roles(RolUsuario.PROPIETARIO)
   async getDashboardPropietario(
     @CurrentUser() user: Usuario,
     @CurrentTenant() tenantId: string,

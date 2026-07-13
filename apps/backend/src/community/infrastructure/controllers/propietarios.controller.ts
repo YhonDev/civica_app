@@ -103,6 +103,8 @@ export class PropietariosController {
   }
 
   @Get()
+  @UseGuards(RolesGuard)
+  @Roles(RolUsuario.ADMIN, RolUsuario.COBRADOR, RolUsuario.PROPIETARIO)
   async listar(
     @CurrentTenant() tenantId: string,
     @Query('etapa') etapaId?: string,

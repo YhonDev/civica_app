@@ -50,6 +50,8 @@ export class UsuariosController {
   }
 
   @Get(':id/etapas')
+  @UseGuards(RolesGuard)
+  @Roles(RolUsuario.ADMIN, RolUsuario.COBRADOR)
   async obtenerEtapas(
     @Param('id') usuarioId: string,
     @CurrentUser() currentUser: Usuario,

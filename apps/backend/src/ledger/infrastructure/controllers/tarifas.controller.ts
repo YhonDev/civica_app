@@ -50,6 +50,8 @@ export class TarifasController {
   }
 
   @Get()
+  @UseGuards(RolesGuard)
+  @Roles(RolUsuario.ADMIN, RolUsuario.PROPIETARIO)
   async listar(
     @Query() query: ListarTarifasQueryDto,
     @CurrentTenant() tenantId: string,
@@ -59,6 +61,8 @@ export class TarifasController {
 
   /** Tarifas vigentes hoy — siempre desde BD (editables por admin). */
   @Get('vigentes')
+  @UseGuards(RolesGuard)
+  @Roles(RolUsuario.ADMIN, RolUsuario.PROPIETARIO)
   async vigentes(
     @Query() query: TarifasVigentesQueryDto,
     @CurrentTenant() tenantId: string,
@@ -93,6 +97,8 @@ export class TarifasController {
   }
 
   @Get(':id')
+  @UseGuards(RolesGuard)
+  @Roles(RolUsuario.ADMIN, RolUsuario.PROPIETARIO)
   async obtener(@Param('id') id: string) {
     const tarifa = await this.tarifaRepository.findById(id);
     if (!tarifa) {

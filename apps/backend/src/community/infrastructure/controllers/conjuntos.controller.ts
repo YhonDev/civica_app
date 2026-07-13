@@ -6,11 +6,14 @@ import {
   Query,
   Body,
   Delete,
+  UseGuards,
 } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { CurrentTenant } from '../../../shared/tenant/current-tenant.decorator';
 import { JwtAuthGuard } from '../../../shared/auth/jwt-auth.guard';
-import { UseGuards } from '@nestjs/common';
+import { RolesGuard } from '../../../shared/auth/guards/roles.guard';
+import { Roles } from '../../../shared/auth/decorators/roles.decorator';
+import { RolUsuario } from '../../../iam/domain/usuario.entity';
 import { CrearConjuntoUseCase } from '../../application/use-cases/crear-conjunto.use-case';
 import { CrearEtapaUseCase } from '../../application/use-cases/crear-etapa.use-case';
 import { CrearManzanaUseCase } from '../../application/use-cases/crear-manzana.use-case';
@@ -36,11 +39,15 @@ export class ConjuntosController {
   ) {}
 
   @Post()
+  @UseGuards(RolesGuard)
+  @Roles(RolUsuario.ADMIN)
   async crear(@Body() dto: CrearConjuntoDto) {
     return this.crearConjuntoUseCase.execute(dto.nombre, dto.tenantId);
   }
 
   @Post(':id/etapas')
+  @UseGuards(RolesGuard)
+  @Roles(RolUsuario.ADMIN)
   async crearEtapa(
     @Param('id') conjuntoId: string,
     @Body() dto: CrearEtapaDto,
@@ -49,6 +56,8 @@ export class ConjuntosController {
   }
 
   @Post('etapas/:id/manzanas')
+  @UseGuards(RolesGuard)
+  @Roles(RolUsuario.ADMIN)
   async crearManzana(
     @Param('id') etapaId: string,
     @Body() dto: CrearManzanaDto,
@@ -57,6 +66,8 @@ export class ConjuntosController {
   }
 
   @Post('manzanas/:id/casas')
+  @UseGuards(RolesGuard)
+  @Roles(RolUsuario.ADMIN)
   async crearCasa(
     @Param('id') manzanaId: string,
     @Body() dto: RegistrarCasaDto,
@@ -65,24 +76,32 @@ export class ConjuntosController {
   }
 
   @Delete('etapas/:id')
+  @UseGuards(RolesGuard)
+  @Roles(RolUsuario.ADMIN)
   async eliminarEtapa(@Param('id') id: string) {
     await this.dataSource.query('DELETE FROM etapas WHERE id = $1', [id]);
     return { success: true };
   }
 
   @Delete('manzanas/:id')
+  @UseGuards(RolesGuard)
+  @Roles(RolUsuario.ADMIN)
   async eliminarManzana(@Param('id') id: string) {
     await this.dataSource.query('DELETE FROM manzanas WHERE id = $1', [id]);
     return { success: true };
   }
 
   @Delete('casas/:id')
+  @UseGuards(RolesGuard)
+  @Roles(RolUsuario.ADMIN)
   async eliminarCasa(@Param('id') id: string) {
     await this.dataSource.query('DELETE FROM casas WHERE id = $1', [id]);
     return { success: true };
   }
 
   @Get()
+  @UseGuards(RolesGuard)
+  @Roles(RolUsuario.ADMIN)
   async listar(@CurrentTenant() tenantId: string) {
     if (!tenantId) return [];
     return this.conjuntoRepository.findByTenant(tenantId);

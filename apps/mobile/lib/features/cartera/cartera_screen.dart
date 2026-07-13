@@ -11,14 +11,18 @@ import '../../shared/widgets/empty_state.dart';
 import '../dashboard/widgets/skeleton_loading.dart';
 
 class CarteraScreen extends StatefulWidget {
-  const CarteraScreen({super.key});
+  /// Optional pre-configured repository (for testing).
+  /// If null, a default [CarteraRepository] is created.
+  final CarteraRepository? repository;
+
+  const CarteraScreen({super.key, this.repository});
 
   @override
   State<CarteraScreen> createState() => _CarteraScreenState();
 }
 
 class _CarteraScreenState extends State<CarteraScreen> {
-  final CarteraRepository _repository = CarteraRepository();
+  late final CarteraRepository _repository;
   
   bool _isLoading = true;
   CarteraResumen? _resumen;
@@ -30,6 +34,7 @@ class _CarteraScreenState extends State<CarteraScreen> {
   @override
   void initState() {
     super.initState();
+    _repository = widget.repository ?? CarteraRepository();
     _loadData();
   }
 

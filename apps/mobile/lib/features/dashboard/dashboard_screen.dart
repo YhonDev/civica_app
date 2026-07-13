@@ -22,11 +22,21 @@ import 'widgets/skeleton_loading.dart';
 ///   Sin AppBar — header integrado en el scroll
 ///   Skeleton loading, no spinner
 class DashboardScreen extends StatelessWidget {
-  const DashboardScreen({super.key});
+  /// Optional pre-configured cubit (for testing or custom setups).
+  /// If null, a default [DashboardCubit] is created and loadCurrentMonth() is called.
+  final DashboardCubit? cubit;
+
+  const DashboardScreen({super.key, this.cubit});
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
+    if (cubit != null) {
+      return BlocProvider<DashboardCubit>.value(
+        value: cubit!,
+        child: const _DashboardBody(),
+      );
+    }
+    return BlocProvider<DashboardCubit>(
       create: (_) => DashboardCubit()..loadCurrentMonth(),
       child: const _DashboardBody(),
     );
