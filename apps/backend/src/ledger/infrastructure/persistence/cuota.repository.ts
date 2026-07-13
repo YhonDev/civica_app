@@ -298,6 +298,30 @@ export class CuotaRepository {
     }));
   }
 
+  /**
+   * Find pending cuotas (PENDIENTE, PARCIAL, VENCIDA) for propietarios
+   * whose casas are in the given etapas. Used by COBRADOR dashboard.
+   */
+  async findPendientesConPropietarioByEtapas(
+    tenantId: string,
+    etapaIds: string[],
+  ): Promise<Cuota[]> {
+    if (!etapaIds || etapaIds.length === 0) return [];
+
+    return this.repo
+      .createQueryBuilder('cuota')
+      .leftJoinAndSelect('cuota.propietario', 'propietario')
+      .leftJoin('propietario.tenencias', 'tenencia')
+      .leftJoin('tenencia.casa', 'casa')
+      .where('cuota.tenantId = :tenantId', { tenantId })
+      .andWhere('cuota.estado IN (:...estados)', {
+        estados: ['PENDIENTE', 'PARCIAL', 'VENCIDA'],
+      })
+      .andWhere('casa.etapaId IN (:...etapaIds)', { etapaIds })
+      .orderBy('cuota.fechaVencimiento', 'ASC')
+      .getMany();
+  }
+
   async sumMontoByYear(tenantId: string, year: number): Promise<number> {
     const result = await this.repo
       .createQueryBuilder('cuota')

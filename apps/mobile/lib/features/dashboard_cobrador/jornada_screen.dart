@@ -10,8 +10,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 
-import '../solicitudes/solicitudes_repository.dart';
-import '../../shared/widgets/solicitud_card.dart';
+import '../../core/network/api_client.dart';
 
 /// Cobrador Dashboard — "Mi Jornada"
 ///
@@ -31,8 +30,8 @@ class JornadaScreen extends StatefulWidget {
 }
 
 class _JornadaScreenState extends State<JornadaScreen> {
-  final _solicitudesRepo = SolicitudesRepository();
-  List<SolicitudData> _solicitudesCobro = [];
+  final _api = ApiClient.instance;
+  Map<String, dynamic>? _dashboard;
   bool _loading = true;
 
   @override
@@ -43,15 +42,15 @@ class _JornadaScreenState extends State<JornadaScreen> {
 
   Future<void> _loadData() async {
     try {
-      final solicitudes = await _solicitudesRepo.getSolicitudesPendientes();
+      final response = await _api.get('/dashboard/cobrador');
       if (mounted) {
         setState(() {
-          _solicitudesCobro = solicitudes.where((s) => s.tipo == 'SOLICITUD_COBRO').toList();
+          _dashboard = response.data as Map<String, dynamic>;
           _loading = false;
         });
       }
     } catch (e) {
-      debugPrint('Error loading solicitudes cobro: $e');
+      debugPrint('Error loading cobrador dashboard: $e');
       if (mounted) {
         setState(() => _loading = false);
       }
@@ -104,85 +103,73 @@ class _JornadaScreenState extends State<JornadaScreen> {
                   Expanded(child: _StatCard(
                     icon: Icons.pending_actions_rounded,
                     label: 'Cobros pendientes',
-                    value: '${_solicitudesCobro.length}',
+                    value: '${_dashboard?['stats']?['pendientes'] ?? 0}',
                     color: AppColors.warning,
                   )),
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(child: _StatCard(
                     icon: Icons.attach_money_rounded,
                     label: 'Monto esperado',
-                    value: r'---',
+                    value: _formatMonto(_dashboard?['stats']?['montoEsperado'] ?? 0),
                     color: AppColors.primary,
+                  )),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(child: _StatCard(
+                    icon: Icons.check_circle_rounded,
+                    label: 'Cobrados hoy',
+                    value: '${_dashboard?['stats']?['cobradosHoy'] ?? 0}',
+                    color: AppColors.success,
                   )),
                 ],
               ),
 
               const SizedBox(height: AppSpacing.lg),
 
-              // ── Botón principal ─────────────────────────────────────
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: () {
-                    // TODO: iniciar jornada
-                  },
-                  icon: const Icon(Icons.play_arrow_rounded),
-                  label: const Text('Iniciar Jornada'),
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 18),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
-                    ),
-                  ),
-                ),
-              ),
+              const SizedBox(height: AppSpacing.md),
 
-              const SizedBox(height: AppSpacing.lg),
-
-              // ── Lista de cobros ────────────────────────────────────
+              // ── Lista de viviendas a cobrar ─────────────────────────
               Text(
-                'Solicitudes de Cobro',
+                'Viviendas pendientes',
                 style: AppTypography.subtitle.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(height: AppSpacing.md),
 
-              if (_solicitudesCobro.isEmpty)
+              final viviendas = (_dashboard?['viviendas'] as List<dynamic>? ?? []);
+              if (viviendas.isEmpty)
                 Text(
-                  'No hay solicitudes pendientes',
+                  'No hay viviendas pendientes',
                   style: AppTypography.body.copyWith(color: AppColors.textSecondary),
                 )
               else
-                ..._solicitudesCobro.map((s) => Padding(
+                ...viviendas.map((v) => Padding(
                   padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                  child: SolicitudCard(
-                    solicitud: s,
-                    onTap: () async {
-                      if (s.propietarioId == null) return;
+                  child: _CobroCard(
+                    casa: v['casaDireccion'] ?? '',
+                    nombre: v['propietarioNombre'] ?? '',
+                    monto: v['saldoTotal'] ?? v['saldo'] ?? 0,
+                    estado: v['estado'] ?? 'PENDIENTE',
+                    onCobrar: () async {
+                      final user = context.read<AuthCubit>().state.usuario;
                       final db = context.read<AppDatabase>();
-                      final tenantId = context.read<AuthCubit>().state.usuario?['tenantId'];
-                      if (tenantId == null) return;
-                      
+                      final tenantId = user?['tenantId'];
+                      if (tenantId == null || v['propietarioId'] == null) return;
+
                       final propietarioDao = PropietarioDao(db);
-                      final res = await propietarioDao.buscarCompleto(tenantId: tenantId, nombre: s.propietarioNombre);
+                      final res = await propietarioDao.buscarCompleto(
+                        tenantId: tenantId,
+                        nombre: v['propietarioNombre'] ?? '',
+                      );
                       
-                      PropietarioConInfo? propInfo;
-                      for (final p in res) {
-                        if (p.propietario.id == s.propietarioId) {
-                          propInfo = p;
-                          break;
-                        }
-                      }
-                      
-                      if (propInfo != null && mounted) {
+                      if (res.isNotEmpty && mounted) {
+                        final p = res.first;
                         Navigator.of(context).push(MaterialPageRoute(
                           builder: (_) => PaymentScreen(
-                            propietario: propInfo!.propietario,
-                            casaDireccion: propInfo!.casaDireccion,
-                            etapaNombre: propInfo!.etapaNombre,
+                            propietario: p.propietario,
+                            casaDireccion: p.casaDireccion,
+                            etapaNombre: p.etapaNombre,
                             cobradorId: user?['id'] ?? 'offline',
-                            solicitudId: s.id,
                           ),
                         ));
                       }
@@ -256,12 +243,14 @@ class _CobroCard extends StatelessWidget {
   final String nombre;
   final int monto;
   final String estado;
+  final VoidCallback? onCobrar;
 
   const _CobroCard({
     required this.casa,
     required this.nombre,
     required this.monto,
     required this.estado,
+    this.onCobrar,
   });
 
   @override
@@ -299,21 +288,21 @@ class _CobroCard extends StatelessWidget {
               children: [
                 Icon(
                   Icons.circle_rounded,
-                  color: AppColors.warning,
+                  color: estado == 'VENCIDA' ? AppColors.error : AppColors.warning,
                   size: 10,
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  estado,
+                  estado == 'VENCIDA' ? 'Vencido' : estado == 'PARCIAL' ? 'Parcial' : 'Pendiente',
                   style: AppTypography.small.copyWith(
-                    color: AppColors.warning,
+color: estado == 'VENCIDA' ? AppColors.error : AppColors.warning,
                   ),
                 ),
               ],
             ),
             const SizedBox(width: AppSpacing.sm),
             FilledButton(
-              onPressed: () {},
+              onPressed: onCobrar,
               style: FilledButton.styleFrom(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
@@ -328,8 +317,7 @@ class _CobroCard extends StatelessWidget {
     );
   }
 
-  String _format(int centavos) {
-    final pesos = centavos / 100;
+  String _format(int pesos) {
     if (pesos >= 1000000) {
       return '${(pesos / 1000000).toStringAsFixed(1)}M';
     }
@@ -338,4 +326,15 @@ class _CobroCard extends StatelessWidget {
     }
     return pesos.toStringAsFixed(0);
   }
+}
+
+String _formatMonto(dynamic value) {
+  final pesos = (value is int ? value : 0);
+  if (pesos >= 1000000) {
+    return '\$${(pesos / 1000000).toStringAsFixed(1)}M';
+  }
+  if (pesos >= 1000) {
+    return '\$${(pesos / 1000).toStringAsFixed(0)}K';
+  }
+  return '\$$pesos';
 }

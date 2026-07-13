@@ -18,6 +18,7 @@ import { Roles } from '../../../shared/auth/decorators/roles.decorator';
 import { CurrentTenant } from '../../../shared/tenant/current-tenant.decorator';
 import { CurrentUser } from '../../../shared/tenant/current-user.decorator';
 import { RolUsuario, Usuario } from '../../../iam/domain/usuario.entity';
+import { DataSource } from 'typeorm';
 
 @Controller()
 @UseGuards(JwtAuthGuard)
@@ -28,6 +29,7 @@ export class DashboardController {
     private readonly pagoRepository: PagoRepository,
     private readonly cuentaCarteraRepository: CuentaCarteraRepository,
     private readonly tarifaRepository: TarifaRepository,
+    private readonly dataSource: DataSource,
   ) {}
 
   @Get('dashboard/administrador')
@@ -41,6 +43,87 @@ export class DashboardController {
     @CurrentTenant() tenantId: string,
   ) {
     return this.dashboardQuery.execute(mes, anio, tenantId);
+  }
+
+  @Get('dashboard/cobrador')
+  @UseGuards(RolesGuard)
+  @Roles(RolUsuario.COBRADOR)
+  async getDashboardCobrador(
+    @CurrentUser() user: Usuario,
+    @CurrentTenant() tenantId: string,
+  ) {
+    // 1. Obtener etapas asignadas al cobrador
+    const asignaciones = await this.dataSource.query(
+      'SELECT etapa_id FROM asignaciones_etapa WHERE usuario_id = $1',
+      [user.id],
+    );
+    const etapaIds: string[] = asignaciones.map((a: any) => a.etapa_id);
+
+    // 2. Cuotas pendientes en esas etapas
+    const cuotas = etapaIds.length > 0
+      ? await this.cuotaRepository.findPendientesConPropietarioByEtapas(tenantId, etapaIds)
+      : [];
+
+    // 3. Pagos del cobrador hoy
+    const { pagos: pagosHoy, total: totalHoy, count: countHoy } =
+      await this.pagoRepository.findByCobradorToday(user.id);
+
+    // 4. Armar respuesta
+    const viviendas = cuotas.map((c) => {
+      const prop = c.propietario;
+      const tenencia = prop?.tenencias?.[0];
+      const casa = tenencia?.casa;
+      const manzana = casa?.manzana;
+      const etapa = manzana?.etapa;
+
+      return {
+        id: c.id,
+        propietarioId: prop?.id ?? '',
+        propietarioNombre: prop?.nombre ?? 'Desconocido',
+        casaDireccion: casa ? `${casa.direccionInterna}${manzana ? `, Mz. ${manzana.nombre}` : ''}` : 'Sin dirección',
+        etapaNombre: etapa?.nombre ?? 'Sin etapa',
+        monto: Math.round(c.monto / 100),
+        montoPagado: Math.round(c.montoPagado / 100),
+        saldo: Math.round((c.monto - c.montoPagado) / 100),
+        estado: c.estado,
+        cuotaId: c.id,
+        fechaVencimiento: c.fechaVencimiento,
+      };
+    });
+
+    // Agrupar por propietario: mostrar el saldo total por visita
+    const viviendasAgrupadas = new Map<string, typeof viviendas[0] & { saldoTotal: number }>();
+    for (const v of viviendas) {
+      const existing = viviendasAgrupadas.get(v.propietarioId);
+      if (existing) {
+        existing.saldoTotal += v.saldo;
+      } else {
+        viviendasAgrupadas.set(v.propietarioId, { ...v, saldoTotal: v.saldo });
+      }
+    }
+
+    const montoEsperado = Array.from(viviendasAgrupadas.values()).reduce(
+      (sum, v) => sum + v.saldoTotal, 0,
+    );
+
+    const ultimosCobros = pagosHoy.slice(0, 10).map((p) => ({
+      id: p.id,
+      propietarioNombre: p.propietarioId,
+      monto: Math.round(p.monto / 100),
+      fecha: p.fechaPago,
+    }));
+
+    return {
+      cobrador: { nombre: user.nombre },
+      stats: {
+        pendientes: viviendasAgrupadas.size,
+        montoEsperado,
+        cobradosHoy: countHoy,
+        montoCobradoHoy: Math.round(totalHoy / 100),
+      },
+      viviendas: Array.from(viviendasAgrupadas.values()),
+      ultimosCobros,
+    };
   }
 
   @Get('dashboard/propietario')

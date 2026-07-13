@@ -160,6 +160,31 @@ export class PagoRepository {
     }));
   }
 
+  /**
+   * Find today's pagos made by a specific cobrador.
+   * Used by COBRADOR dashboard to show "cobrados hoy".
+   */
+  async findByCobradorToday(
+    cobradorId: string,
+  ): Promise<{ pagos: Pago[]; total: number; count: number }> {
+    const hoy = new Date();
+    const start = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')} 00:00:00`;
+    const end = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')} 23:59:59`;
+
+    const pagos = await this.repo.find({
+      where: { cobradorId },
+      order: { fechaPago: 'DESC' },
+    });
+
+    // Filter in-memory by today's date (fechaPago is a string YYYY-MM-DD)
+    const hoyStr = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
+    const hoyPagos = pagos.filter((p) => p.fechaPago.startsWith(hoyStr));
+
+    const total = hoyPagos.reduce((sum, p) => sum + p.monto, 0);
+
+    return { pagos: hoyPagos, total, count: hoyPagos.length };
+  }
+
   async sumMontoByYear(tenantId: string, year: number): Promise<number> {
     const result = await this.repo
       .createQueryBuilder('pago')

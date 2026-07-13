@@ -50,6 +50,41 @@ export interface CobroSemanaItem {
   mora: number;
 }
 
+// ── Cobrador Dashboard ─────────────────────────
+
+export interface ViviendaCobroItem {
+  id: string;
+  propietarioId: string;
+  propietarioNombre: string;
+  casaDireccion: string;
+  etapaNombre: string;
+  monto: number;
+  montoPagado: number;
+  saldo: number;
+  estado: string;
+  cuotaId: string;
+  fechaVencimiento: string;
+}
+
+export interface CobroHoyItem {
+  id: string;
+  propietarioNombre: string;
+  monto: number;
+  fecha: string;
+}
+
+export interface CobradorDashboardResponse {
+  cobrador: { nombre: string };
+  stats: {
+    pendientes: number;
+    montoEsperado: number;
+    cobradosHoy: number;
+    montoCobradoHoy: number;
+  };
+  viviendas: ViviendaCobroItem[];
+  ultimosCobros: CobroHoyItem[];
+}
+
 export interface DashboardResponse {
   mes: number;
   anio: number;
