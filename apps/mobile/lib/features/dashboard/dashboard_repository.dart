@@ -4,7 +4,10 @@ import '../propietarios/comunidad_repository.dart';
 import 'models/dashboard_data.dart';
 
 class DashboardRepository {
-  final ApiClient _api = ApiClient.instance;
+  final ApiClient _api;
+
+  DashboardRepository({ApiClient? apiClient})
+      : _api = apiClient ?? ApiClient.instance;
 
   Future<DashboardData> getDashboard(int mes, int anio) async {
     try {

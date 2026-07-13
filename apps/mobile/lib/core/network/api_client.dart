@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:flutter/foundation.dart' show debugPrint, visibleForTesting;
 
 import 'api_exceptions.dart';
 
@@ -269,6 +269,14 @@ class ApiClient {
       );
     }
     return _instance!;
+  }
+
+  /// Reemplaza el adaptador HTTP interno con uno mock para testing.
+  /// Solo afecta al Dio de la instancia actual.
+  @visibleForTesting
+  static void setHttpClientAdapter(HttpClientAdapter adapter) {
+    if (_instance == null) return;
+    _instance!._dio.httpClientAdapter = adapter;
   }
 
   // ── Métodos HTTP expuestos ──────────────────

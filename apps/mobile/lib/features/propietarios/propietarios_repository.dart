@@ -5,7 +5,10 @@ import 'comunidad_repository.dart';
 import 'models/propietarios_models.dart';
 
 class PropietariosRepository {
-  final ApiClient _api = ApiClient.instance;
+  final ApiClient _api;
+
+  PropietariosRepository({ApiClient? apiClient})
+      : _api = apiClient ?? ApiClient.instance;
 
   /// Obtiene el resumen de la comunidad.
   Future<PropietarioResumen> getResumen() async {

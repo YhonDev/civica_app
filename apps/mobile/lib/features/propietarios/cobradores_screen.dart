@@ -8,7 +8,6 @@ import 'models/cobradores_models.dart';
 import 'widgets/cobrador_card.dart';
 import '../../shared/widgets/empty_state.dart';
 import '../dashboard/widgets/skeleton_loading.dart';
-import '../dashboard/widgets/skeleton_loading.dart';
 class CobradoresScreen extends StatefulWidget {
   const CobradoresScreen({super.key});
 

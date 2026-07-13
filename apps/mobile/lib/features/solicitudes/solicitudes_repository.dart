@@ -4,7 +4,10 @@ import '../propietarios/comunidad_repository.dart';
 import '../../shared/widgets/solicitud_card.dart';
 
 class SolicitudesRepository {
-  final ApiClient _api = ApiClient.instance;
+  final ApiClient _api;
+
+  SolicitudesRepository({ApiClient? apiClient})
+      : _api = apiClient ?? ApiClient.instance;
 
   Future<List<SolicitudData>> getSolicitudes() async {
     try {
@@ -61,7 +64,7 @@ class SolicitudesRepository {
     return SolicitudData(
       id: json['id'] as String,
       cuotaId: json['cuotaId'] as String? ?? '',
-      nroRecibo: json['nroTicket'] as String? ?? json['nroRecibo'] as String? ?? 'TK-000000',
+      nroRecibo: json['nroRecibo'] as String? ?? 'TK-000000',
       tipo: json['tipo'] as String,
       descripcion: json['descripcion'] as String,
       estado: estado,

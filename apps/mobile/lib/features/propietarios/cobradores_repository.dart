@@ -4,7 +4,10 @@ import 'models/cobradores_models.dart';
 import 'comunidad_repository.dart';
 
 class CobradoresRepository {
-  final ApiClient _api = ApiClient.instance;
+  final ApiClient _api;
+
+  CobradoresRepository({ApiClient? apiClient})
+      : _api = apiClient ?? ApiClient.instance;
 
   Future<CobradorResumen> getResumen() async {
     try {
@@ -38,7 +41,7 @@ class CobradoresRepository {
       final List<CobradorItem> cobradores = [];
       
       for (var u in (response.data as List)) {
-        final asignaciones = u['asignacionesEtapa'] as List<dynamic>? ?? [];
+        final asignaciones = u['asignaciones'] as List<dynamic>? ?? [];
         final zonas = asignaciones
             .where((a) => a['etapa'] != null)
             .map((a) => a['etapa']['nombre'].toString())

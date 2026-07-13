@@ -4,7 +4,10 @@ import '../propietarios/comunidad_repository.dart';
 import 'models/cartera_models.dart';
 
 class CarteraRepository {
-  final ApiClient _api = ApiClient.instance;
+  final ApiClient _api;
+
+  CarteraRepository({ApiClient? apiClient})
+      : _api = apiClient ?? ApiClient.instance;
 
   /// Devuelve el resumen general de la cartera.
   Future<CarteraResumen> getCarteraResumen() async {

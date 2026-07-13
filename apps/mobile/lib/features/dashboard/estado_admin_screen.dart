@@ -79,11 +79,32 @@ class _EstadoContentState extends State<_EstadoContent> {
 
   @override
   Widget build(BuildContext context) {
-    // Calculamos valores mock dinámicos basados en el filtro seleccionado para dar interactividad
-    double factor = 1.0;
-    if (_selectedFiltro == 'Mensual') factor = 0.65;
-    if (_selectedFiltro == 'Quincenal') factor = 0.25;
-    if (_selectedFiltro == 'Semanal') factor = 0.10;
+    // Obtener datos reales según filtro seleccionado
+    final bool esGeneral = _selectedFiltro == 'General';
+    double recaudoFiltrado;
+    double pendienteFiltrado;
+
+    if (esGeneral) {
+      recaudoFiltrado = widget.data.recaudoMes;
+      pendienteFiltrado = widget.data.mora;
+    } else {
+      // Mapear label del chip al valor de modalidad backend
+      final freqMap = <String, String>{
+        'Mensual': 'MENSUAL',
+        'Quincenal': 'QUINCENAL',
+        'Semanal': 'SEMANAL',
+      };
+      final backendFreq = freqMap[_selectedFiltro] ?? '';
+      final modalidad = widget.data.modalidades.where(
+        (m) => m.nombre == backendFreq,
+      ).firstOrNull;
+      recaudoFiltrado = modalidad?.valor ?? 0;
+      // Proporcionalmente, estimamos pendiente según el % de recaudo de esta modalidad
+      final pct = widget.data.recaudoMes > 0
+          ? recaudoFiltrado / widget.data.recaudoMes
+          : 0.0;
+      pendienteFiltrado = widget.data.mora * pct;
+    }
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
@@ -146,15 +167,15 @@ class _EstadoContentState extends State<_EstadoContent> {
             children: [
               MiniStatCard(
                 icon: Icons.arrow_upward_rounded,
-                label: 'Recaudo',
-                value: '\$${((widget.data.recaudoMes * factor) / 1000000).toStringAsFixed(1)}M',
+                label: 'Recaudo $_selectedFiltro',
+                value: '\$${_formatAmount(recaudoFiltrado)}',
                 color: AppColors.success,
               ),
               const SizedBox(width: AppSpacing.sm),
               MiniStatCard(
                 icon: Icons.warning_rounded,
-                label: 'Pendiente',
-                value: '\$${((widget.data.mora * factor) / 1000000).toStringAsFixed(1)}M',
+                label: 'Pendiente $_selectedFiltro',
+                value: '\$${_formatAmount(pendienteFiltrado)}',
                 color: AppColors.warning,
               ),
             ],
