@@ -1,12 +1,12 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { Tarifa } from '../../domain/tarifa.entity';
 import { TarifaDerivacionService } from '../services/tarifa-derivacion.service';
-import { Frecuencia } from '../../../shared/common/value-objects';
+import { ModalidadRecaudo } from '../../../shared/common/value-objects';
 
 interface ConfigurarTarifaParams {
   proyectoId: string;
   tenantId: string;
-  frecuencia: Frecuencia;
+  modalidad: ModalidadRecaudo;
   montoPesos: number;
   fechaVigencia: string;
 }
@@ -18,7 +18,7 @@ export class ConfigurarTarifaUseCase {
   ) {}
 
   async execute(params: ConfigurarTarifaParams): Promise<Tarifa> {
-    const { proyectoId, tenantId, frecuencia, montoPesos, fechaVigencia } =
+    const { proyectoId, tenantId, modalidad, montoPesos, fechaVigencia } =
       params;
 
     if (montoPesos <= 0) {
@@ -35,12 +35,12 @@ export class ConfigurarTarifaUseCase {
     const creadas = await this.tarifaDerivacionService.crearVersiones(
       proyectoId,
       tenantId,
-      frecuencia,
+      modalidad,
       montoCentavos,
       fechaVigencia,
     );
 
-    const tarifaSolicitada = creadas.find((t) => t.frecuencia === frecuencia);
+    const tarifaSolicitada = creadas.find((t) => t.modalidad === modalidad);
     if (!tarifaSolicitada) {
       throw new BadRequestException('Error al crear tarifas derivadas');
     }

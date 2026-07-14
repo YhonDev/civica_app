@@ -43,7 +43,7 @@ export class TarifasController {
     return this.configurarTarifaUseCase.execute({
       proyectoId: dto.proyectoId,
       tenantId,
-      frecuencia: dto.frecuencia,
+      modalidad: dto.modalidad,
       montoPesos: dto.monto,
       fechaVigencia: dto.fechaVigencia,
     });
@@ -75,7 +75,7 @@ export class TarifasController {
       tarifa
         ? {
             id: tarifa.id,
-            frecuencia: tarifa.frecuencia,
+            modalidad: tarifa.modalidad,
             monto: tarifa.monto,
             montoPesos: Math.round(tarifa.monto / 100),
             fechaVigencia: tarifa.fechaVigencia,

@@ -3,10 +3,6 @@
 -- Generado desde las entidades TypeORM del backend (16 entidades)
 -- Lenguaje Ubicuo: Proyecto, Residente, Casa, Cobro, PlanDeCobro
 --
--- NOTA: Las columnas `conjunto_id` en tarifas/montos_predefinidos
--- y `propietario_id` en tenencias están PENDIENTES de actualización
--- en las entidades del backend (deuda técnica).
---
 -- Uso: psql -h <host> -U <user> -d <db> -f schema.sql
 -- ═══════════════════════════════════════════════════════════
 
@@ -85,7 +81,7 @@ CREATE TABLE tarifas (
   id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id      UUID NOT NULL,
   proyecto_id    UUID NOT NULL REFERENCES proyectos(id) ON DELETE CASCADE,
-  frecuencia     VARCHAR(20) NOT NULL CHECK (frecuencia IN ('SEMANAL', 'QUINCENAL', 'MENSUAL')),
+  modalidad     VARCHAR(20) NOT NULL CHECK (modalidad IN ('SEMANAL', 'QUINCENAL', 'MENSUAL')),
   monto          INTEGER NOT NULL CHECK (monto > 0),
   fecha_vigencia DATE NOT NULL,
   activa         BOOLEAN NOT NULL DEFAULT true,
@@ -299,7 +295,7 @@ JOIN manzanas m ON m.id = c.manzana_id
 JOIN etapas e ON e.id = m.etapa_id
 JOIN proyectos pj ON pj.id = e.proyecto_id
 LEFT JOIN tenencias t ON t.casa_id = c.id AND t.fecha_fin IS NULL
-LEFT JOIN residentes r ON r.id = t.propietario_id
+LEFT JOIN residentes r ON r.id = t.residente_id
 LEFT JOIN planes_de_cobro pc ON pc.residente_id = r.id AND pc.activa = true
 LEFT JOIN cobros co ON co.residente_id = r.id
 GROUP BY c.id, c.direccion_interna, m.id, m.nombre, e.id, e.nombre,

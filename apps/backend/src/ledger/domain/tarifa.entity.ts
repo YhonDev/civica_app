@@ -5,7 +5,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { type Frecuencia, Money } from '../../shared/common/value-objects';
+import { type ModalidadRecaudo, Money } from '../../shared/common/value-objects';
 
 @Entity('tarifas')
 export class Tarifa {
@@ -18,8 +18,8 @@ export class Tarifa {
   @Column({ name: 'proyecto_id', type: 'uuid' })
   proyectoId: string;
 
-  @Column({ name: 'frecuencia', type: 'varchar', length: 20 })
-  frecuencia: Frecuencia;
+  @Column({ name: 'modalidad', type: 'varchar', length: 20 })
+  modalidad: ModalidadRecaudo;
 
   @Column({ name: 'monto', type: 'integer' })
   monto: number; // en centavos COP
@@ -39,14 +39,14 @@ export class Tarifa {
   static crear(
     proyectoId: string,
     tenantId: string,
-    frecuencia: Frecuencia,
+    modalidad: ModalidadRecaudo,
     monto: Money,
     fechaVigencia: string,
   ): Tarifa {
     const tarifa = new Tarifa();
     tarifa.proyectoId = proyectoId;
     tarifa.tenantId = tenantId;
-    tarifa.frecuencia = frecuencia;
+    tarifa.modalidad = modalidad;
     tarifa.monto = monto.amount;
     tarifa.fechaVigencia = fechaVigencia;
     tarifa.activa = true;

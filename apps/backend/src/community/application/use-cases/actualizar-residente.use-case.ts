@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Residente } from '../../domain/residente.entity';
 import { ResidenteRepository } from '../../infrastructure/residente.repository';
-import { type Frecuencia } from '../../../shared/common/value-objects';
+import { type ModalidadRecaudo } from '../../../shared/common/value-objects';
 
 interface ActualizarResidenteParams {
   id: string;
@@ -10,7 +10,7 @@ interface ActualizarResidenteParams {
   telefono?: string;
   email?: string | null;
   casaId?: string;
-  modalidadPago?: Frecuencia;
+  modalidadPago?: ModalidadRecaudo;
 }
 
 @Injectable()

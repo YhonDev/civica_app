@@ -110,19 +110,19 @@ export class CobroRepository extends BaseTenantRepository<Cobro> {
     };
   }
 
-  async groupByTarifaFrecuencia(tenantId: string, anio: number, mes: number): Promise<any[]> {
+  async groupByTarifaModalidad(tenantId: string, anio: number, mes: number): Promise<any[]> {
     const periodoInicioStr = `${anio}-${String(mes).padStart(2, '0')}-01`;
     return this.repo
       .createQueryBuilder('cobro')
       .select([
-        'tarifa.frecuencia AS frecuencia',
+        'tarifa.modalidad AS modalidad',
         'COUNT(cobro.id) AS totalCuotas',
         "COALESCE(SUM(CASE WHEN cobro.estado IN ('PAGADA', 'PARCIAL') THEN 1 ELSE 0 END), 0) AS pagadas",
       ])
       .leftJoin('tarifas', 'tarifa', 'tarifa.id = cobro.tarifaId')
       .where('cobro.tenantId = :tenantId', { tenantId })
       .andWhere('cobro.periodoInicio = :periodoInicio', { periodoInicio: periodoInicioStr })
-      .groupBy('tarifa.frecuencia')
+      .groupBy('tarifa.modalidad')
       .getRawMany();
   }
 

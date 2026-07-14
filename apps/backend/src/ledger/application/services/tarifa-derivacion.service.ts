@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Tarifa } from '../../domain/tarifa.entity';
 import { TarifaRepository } from '../../infrastructure/persistence/tarifa.repository';
 import {
-  Frecuencia,
+  ModalidadRecaudo,
   Money,
   montoMensualDesde,
   tarifasDerivadas,
@@ -23,21 +23,21 @@ export class TarifaDerivacionService {
   async crearVersiones(
     proyectoId: string,
     tenantId: string,
-    frecuenciaOrigen: Frecuencia,
+    modalidadOrigen: ModalidadRecaudo,
     montoCentavos: number,
     fechaVigencia: string,
   ): Promise<Tarifa[]> {
-    const montoMensual = montoMensualDesde(frecuenciaOrigen, montoCentavos);
+    const montoMensual = montoMensualDesde(modalidadOrigen, montoCentavos);
     const derivadas = tarifasDerivadas(montoMensual);
     const creadas: Tarifa[] = [];
 
-    for (const frecuencia of ['SEMANAL', 'QUINCENAL', 'MENSUAL'] as Frecuencia[]) {
-      await this.desactivarFuturas(proyectoId, tenantId, frecuencia, fechaVigencia);
+    for (const modalidad of ['SEMANAL', 'QUINCENAL', 'MENSUAL'] as ModalidadRecaudo[]) {
+      await this.desactivarFuturas(proyectoId, tenantId, modalidad, fechaVigencia);
       const tarifa = Tarifa.crear(
         proyectoId,
         tenantId,
-        frecuencia,
-        Money.ofCOP(derivadas[frecuencia]),
+        modalidad,
+        Money.ofCOP(derivadas[modalidad]),
         fechaVigencia,
       );
       creadas.push(await this.tarifaRepository.save(tarifa));
@@ -53,19 +53,19 @@ export class TarifaDerivacionService {
   async actualizarActivas(
     proyectoId: string,
     tenantId: string,
-    frecuenciaOrigen: Frecuencia,
+    modalidadOrigen: ModalidadRecaudo,
     montoCentavos: number,
   ): Promise<Tarifa[]> {
-    const montoMensual = montoMensualDesde(frecuenciaOrigen, montoCentavos);
+    const montoMensual = montoMensualDesde(modalidadOrigen, montoCentavos);
     const derivadas = tarifasDerivadas(montoMensual);
     const actualizadas: Tarifa[] = [];
 
     const todas = await this.tarifaRepository.findAll(tenantId, proyectoId);
 
-    for (const frecuencia of ['SEMANAL', 'QUINCENAL', 'MENSUAL'] as Frecuencia[]) {
-      const activa = todas.find((t) => t.activa && t.frecuencia === frecuencia);
+    for (const modalidad of ['SEMANAL', 'QUINCENAL', 'MENSUAL'] as ModalidadRecaudo[]) {
+      const activa = todas.find((t) => t.activa && t.modalidad === modalidad);
       if (activa) {
-        activa.monto = derivadas[frecuencia];
+        activa.monto = derivadas[modalidad];
         actualizadas.push(await this.tarifaRepository.save(activa));
       }
     }
@@ -76,14 +76,14 @@ export class TarifaDerivacionService {
   private async desactivarFuturas(
     proyectoId: string,
     tenantId: string,
-    frecuencia: Frecuencia,
+    modalidad: ModalidadRecaudo,
     fechaVigencia: string,
   ): Promise<void> {
     const existentes = await this.tarifaRepository.findAll(tenantId, proyectoId);
     for (const t of existentes) {
       if (
         t.activa &&
-        t.frecuencia === frecuencia &&
+        t.modalidad === modalidad &&
         t.fechaVigencia >= fechaVigencia
       ) {
         t.desactivar();

@@ -53,7 +53,7 @@ export class DashboardQuery {
         this.cobroRepo.countPendientesByMonth(tenantId, anio, mes).catch(() => 0),
         this.cobroRepo.sumSaldoVencidasByTenant(tenantId).catch(() => 0),
         this.pagoRepo.groupByDayByMonth(tenantId, anio, mes).catch(() => [] as any[]),
-        this.cobroRepo.groupByTarifaFrecuencia(tenantId, anio, mes).catch(() => [] as any[]),
+        this.cobroRepo.groupByTarifaModalidad(tenantId, anio, mes).catch(() => [] as any[]),
         this.cobroRepo.countByEstadoInMonth(tenantId, anio, mes).catch(() => ({ pagadas: 0, pendientes: 0 })),
         this.actividadRepo.findByTenant(tenantId, 20).catch(() => [] as any[]),
         this.solicitudRepo.findPendingByTenant(tenantId).catch(() => [] as any[]),
@@ -83,7 +83,7 @@ export class DashboardQuery {
         const porcentaje = total > 0 ? Math.round((pagadas / total) * 10000) / 100 : 0;
         
         return {
-          frecuencia: m.frecuencia || 'DESCONOCIDO',
+          modalidad: m.modalidad || 'DESCONOCIDO',
           totalCuotas: total,
           pagadas: pagadas,
           porcentaje: porcentaje,

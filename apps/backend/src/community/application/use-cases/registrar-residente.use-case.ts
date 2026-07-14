@@ -1,7 +1,7 @@
 import { Injectable, ConflictException } from '@nestjs/common';
 import { Residente } from '../../domain/residente.entity';
 import { ResidenteRepository } from '../../infrastructure/residente.repository';
-import { type Frecuencia } from '../../../shared/common/value-objects';
+import { type ModalidadRecaudo } from '../../../shared/common/value-objects';
 
 interface RegistrarResidenteParams {
   nombre: string;
@@ -10,7 +10,7 @@ interface RegistrarResidenteParams {
   tenantId: string;
   casaId?: string;
   fechaInicio?: Date;
-  modalidadPago?: Frecuencia;
+  modalidadPago?: ModalidadRecaudo;
 }
 
 @Injectable()

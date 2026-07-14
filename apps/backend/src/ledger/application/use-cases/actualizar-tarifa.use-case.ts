@@ -41,12 +41,12 @@ export class ActualizarTarifaUseCase {
       const actualizadas = await this.tarifaDerivacionService.actualizarActivas(
         tarifa.proyectoId,
         tarifa.tenantId,
-        tarifa.frecuencia,
+        tarifa.modalidad,
         montoCentavos,
       );
 
       const actualizada = actualizadas.find(
-        (t) => t.frecuencia === tarifa.frecuencia,
+        (t) => t.modalidad === tarifa.modalidad,
       );
       if (!actualizada) {
         throw new BadRequestException('No se encontraron tarifas activas para actualizar');

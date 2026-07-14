@@ -21,7 +21,7 @@ describe('DashboardQuery', () => {
     sumMontoByMonth: jest.fn(),
     countPendientesByMonth: jest.fn(),
     sumSaldoVencidasByTenant: jest.fn(),
-    groupByTarifaFrecuencia: jest.fn(),
+    groupByTarifaModalidad: jest.fn(),
     countByEstadoInMonth: jest.fn(),
     countPropietariosInMora: jest.fn(),
     sumMontoByYear: jest.fn(),
@@ -61,9 +61,9 @@ describe('DashboardQuery', () => {
       { dia: 5, valor: 12000 },
       { dia: 15, valor: 8000 },
     ]);
-    mockCobroRepo.groupByTarifaFrecuencia.mockResolvedValue([
-      { frecuencia: 'MENSUAL', totalCuotas: 50, pagadas: 35 },
-      { frecuencia: 'QUINCENAL', totalCuotas: 20, pagadas: 15 },
+    mockCobroRepo.groupByTarifaModalidad.mockResolvedValue([
+      { modalidad: 'MENSUAL', totalCuotas: 50, pagadas: 35 },
+      { modalidad: 'QUINCENAL', totalCuotas: 20, pagadas: 15 },
     ]);
     mockCobroRepo.countByEstadoInMonth.mockResolvedValue({
       pagadas: 35,
@@ -178,7 +178,7 @@ describe('DashboardQuery', () => {
       const result = await query.execute(MES, ANIO, TENANT);
 
       expect(result.modalidades[0]).toEqual({
-        frecuencia: 'MENSUAL',
+        modalidad: 'MENSUAL',
         totalCuotas: 50,
         pagadas: 35,
         porcentaje: 70,
@@ -186,7 +186,7 @@ describe('DashboardQuery', () => {
       });
 
       expect(result.modalidades[1]).toEqual({
-        frecuencia: 'QUINCENAL',
+        modalidad: 'QUINCENAL',
         totalCuotas: 20,
         pagadas: 15,
         porcentaje: 75,
@@ -356,7 +356,7 @@ describe('DashboardQuery', () => {
       mockCobroRepo.countPendientesByMonth.mockResolvedValue(0);
       mockCobroRepo.sumSaldoVencidasByTenant.mockResolvedValue(0);
       mockPagoRepo.groupByDayByMonth.mockResolvedValue([]);
-      mockCobroRepo.groupByTarifaFrecuencia.mockResolvedValue([]);
+      mockCobroRepo.groupByTarifaModalidad.mockResolvedValue([]);
       mockCobroRepo.countByEstadoInMonth.mockResolvedValue({ pagadas: 0, pendientes: 0 });
       mockActividadRepo.findByTenant.mockResolvedValue([]);
       mockSolicitudRepo.findPendingByTenant.mockResolvedValue([]);
@@ -428,14 +428,14 @@ describe('DashboardQuery', () => {
   describe('Modalidades edge cases', () => {
     it('should handle totalCuotas = 0 without division by zero', async () => {
       setupHappyPathMocks();
-      mockCobroRepo.groupByTarifaFrecuencia.mockResolvedValue([
-        { frecuencia: 'ANUAL', totalCuotas: 0, pagadas: 0 },
-      ]);
+    mockCobroRepo.groupByTarifaModalidad.mockResolvedValue([
+      { modalidad: 'DESCONOCIDO', totalCuotas: 0, pagadas: 0 },
+    ]);
 
       const result = await query.execute(MES, ANIO, TENANT);
 
       expect(result.modalidades[0]).toEqual({
-        frecuencia: 'ANUAL',
+        modalidad: 'ANUAL',
         totalCuotas: 0,
         pagadas: 0,
         porcentaje: 0,
@@ -445,8 +445,8 @@ describe('DashboardQuery', () => {
 
     it('should handle 100% pagadas', async () => {
       setupHappyPathMocks();
-      mockCobroRepo.groupByTarifaFrecuencia.mockResolvedValue([
-        { frecuencia: 'MENSUAL', totalCuotas: 20, pagadas: 20 },
+      mockCobroRepo.groupByTarifaModalidad.mockResolvedValue([
+        { modalidad: 'MENSUAL', totalCuotas: 20, pagadas: 20 },
       ]);
 
       const result = await query.execute(MES, ANIO, TENANT);

@@ -14,7 +14,7 @@ import { SolicitudRepository } from '../persistence/solicitud.repository';
 import { TarifaRepository } from '../persistence/tarifa.repository';
 import type { TimelineItemDto, TimelineResponse } from '../../application/dtos/dashboard.dto';
 import { ResidenteRepository } from '../../../community/infrastructure/residente.repository';
-import { Periodo, type Frecuencia, pagosPorMes, calcularMontoParcial } from '../../../shared/common/value-objects';
+import { Periodo, type ModalidadRecaudo, pagosPorMes, calcularMontoParcial } from '../../../shared/common/value-objects';
 import { JwtAuthGuard } from '../../../shared/auth/jwt-auth.guard';
 import { RolesGuard } from '../../../shared/auth/guards/roles.guard';
 import { Roles } from '../../../shared/auth/decorators/roles.decorator';
@@ -343,7 +343,7 @@ export class DashboardController {
       etapaNombre: etapa?.nombre ?? '',
     };
 
-    const frecuencia: Frecuencia = (cuenta?.modalidad as Frecuencia) ?? 'MENSUAL';
+    const modalidad: ModalidadRecaudo = (cuenta?.modalidad as ModalidadRecaudo) ?? 'MENSUAL';
     const hoy = new Date();
 
     let tarifaMensual: any = null;
@@ -354,11 +354,11 @@ export class DashboardController {
         hoy,
       );
       tarifaMensual = vigentes.MENSUAL;
-      tarifaPropia = vigentes[frecuencia];
+      tarifaPropia = vigentes[modalidad];
     }
 
     const cobros = cobrosRaw.filter((c) =>
-      Periodo.esVisible(c.periodoInicio, frecuencia, hoy),
+      Periodo.esVisible(c.periodoInicio, modalidad, hoy),
     );
 
     let saldo = 0;
@@ -407,9 +407,9 @@ export class DashboardController {
         a.fechaVencimiento.localeCompare(b.fechaVencimiento),
       );
       const next = pendingCobros[0];
-      const pagosEsperados = pagosPorMes(frecuencia);
+      const pagosEsperados = pagosPorMes(modalidad);
       const pagosRegistrados = await this.pagoRepository.countByCobro(next.id);
-      const montoParcial = calcularMontoParcial(next.monto, frecuencia).amount;
+      const montoParcial = calcularMontoParcial(next.monto, modalidad).amount;
 
       const desglose: any[] = [];
       const [y, m] = next.periodoInicio.split('-').map(Number);
@@ -427,14 +427,14 @@ export class DashboardController {
 
         const cobroId = cobroForMonth ? cobroForMonth.id : null;
         const cobroMonto = cobroForMonth ? cobroForMonth.monto : (tarifaMensual ? tarifaMensual.monto : 0);
-        const cobroMontoParcial = calcularMontoParcial(cobroMonto, frecuencia).amount;
+        const cobroMontoParcial = calcularMontoParcial(cobroMonto, modalidad).amount;
 
         let pRegistrados = 0;
         if (cobroForMonth) {
           pRegistrados = await this.pagoRepository.countByCobro(cobroForMonth.id);
         }
 
-        const fechas = Periodo.fechasCobroParciales(frecuencia, currentYear, currentMonth);
+        const fechas = Periodo.fechasCobroParciales(modalidad, currentYear, currentMonth);
         const remainingFechas = fechas.slice(pRegistrados);
         const mesNombre = mesesEsp[currentMonth];
 
@@ -507,17 +507,17 @@ export class DashboardController {
 
     let tarifaActual: {
       cuotaMensual: number;
-      montoSegunFrecuencia: number;
-      frecuencia: Frecuencia;
+      montoSegunModalidad: number;
+      modalidad: ModalidadRecaudo;
     } | null = null;
 
     if (tarifaMensual) {
       tarifaActual = {
         cuotaMensual: Math.round(tarifaMensual.monto / 100),
-        montoSegunFrecuencia: tarifaPropia
+        montoSegunModalidad: tarifaPropia
           ? Math.round(tarifaPropia.monto / 100)
           : Math.round(tarifaMensual.monto / 100),
-        frecuencia,
+        modalidad: modalidad,
       };
     }
 

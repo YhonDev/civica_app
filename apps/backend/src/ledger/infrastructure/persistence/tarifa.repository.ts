@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThanOrEqual } from 'typeorm';
 import { Tarifa } from '../../domain/tarifa.entity';
-import { Frecuencia } from '../../../shared/common/value-objects';
+import { ModalidadRecaudo } from '../../../shared/common/value-objects';
 
 @Injectable()
 export class TarifaRepository {
@@ -28,14 +28,14 @@ export class TarifaRepository {
    */
   async findVigente(
     proyectoId: string,
-    frecuencia: Frecuencia,
+    modalidad: ModalidadRecaudo,
     fecha: Date,
   ): Promise<Tarifa | null> {
     const dateStr = fecha.toISOString().split('T')[0];
     const result = await this.repo
       .createQueryBuilder('tarifa')
       .where('tarifa.proyectoId = :proyectoId', { proyectoId })
-      .andWhere('tarifa.frecuencia = :frecuencia', { frecuencia })
+      .andWhere('tarifa.modalidad = :modalidad', { modalidad })
       .andWhere('tarifa.fechaVigencia <= :fecha', { fecha: dateStr })
       .andWhere('tarifa.activa = :activa', { activa: true })
       .orderBy('tarifa.fechaVigencia', 'DESC')
@@ -56,13 +56,13 @@ export class TarifaRepository {
   async findVigentesPorConjunto(
     proyectoId: string,
     fecha = new Date(),
-  ): Promise<Record<Frecuencia, Tarifa | null>> {
-    const frecuencias: Frecuencia[] = ['SEMANAL', 'QUINCENAL', 'MENSUAL'];
-    const result = {} as Record<Frecuencia, Tarifa | null>;
+  ): Promise<Record<ModalidadRecaudo, Tarifa | null>> {
+    const modalidades: ModalidadRecaudo[] = ['SEMANAL', 'QUINCENAL', 'MENSUAL'];
+    const result = {} as Record<ModalidadRecaudo, Tarifa | null>;
 
     await Promise.all(
-      frecuencias.map(async (frecuencia) => {
-        result[frecuencia] = await this.findVigente(proyectoId, frecuencia, fecha);
+      modalidades.map(async (modalidad) => {
+        result[modalidad] = await this.findVigente(proyectoId, modalidad, fecha);
       }),
     );
 

@@ -7,7 +7,7 @@ import {
   IsOptional,
   Min,
 } from 'class-validator';
-import { type Frecuencia } from '../../../../shared/common/value-objects';
+import { type ModalidadRecaudo } from '../../../../shared/common/value-objects';
 
 export class CrearTarifaDto {
   @IsString()
@@ -15,9 +15,9 @@ export class CrearTarifaDto {
   proyectoId: string;
 
   @IsEnum(['SEMANAL', 'QUINCENAL', 'MENSUAL'] as const, {
-    message: 'La frecuencia debe ser SEMANAL, QUINCENAL o MENSUAL',
+    message: 'La modalidad debe ser SEMANAL, QUINCENAL o MENSUAL',
   })
-  frecuencia: Frecuencia;
+  modalidad: ModalidadRecaudo;
 
   @IsNumber()
   @Min(1, { message: 'El monto debe ser mayor a cero' })

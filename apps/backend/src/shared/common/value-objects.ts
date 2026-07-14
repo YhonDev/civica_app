@@ -68,10 +68,14 @@ export class DireccionInterna {
 
 export type ModalidadRecaudo = 'SEMANAL' | 'QUINCENAL' | 'MENSUAL';
 
-/**
- * @deprecated Usar ModalidadRecaudo — se eliminará después de la migración completa.
- */
+/** @deprecated Usar ModalidadRecaudo. Se mantiene temporalmente para compatibilidad. */
 export type Frecuencia = ModalidadRecaudo;
+
+/**
+ * Alias semántico para ModalidadRecaudo.
+ * Usar en contextos donde se hable de 'modalidad' del plan/tarifa.
+ */
+export type Modalidad = ModalidadRecaudo;
 
 /** Valor inicial para seeds — en runtime siempre consultar tarifas vigentes en BD. */
 export const CUOTA_MENSUAL_CIVICA_DEFAULT_PESOS = 40_000;

@@ -12,8 +12,8 @@ export interface EvolucionDia {
   valor: number;
 }
 
-export interface ModalidadFrecuencia {
-  frecuencia: string;
+export interface ModalidadItem {
+  modalidad: string;
   totalCuotas: number;
   pagadas: number;
   porcentaje: number;
@@ -106,7 +106,7 @@ export interface DashboardResponse {
   anio: number;
   resumen: DashboardResumen;
   evolucion: EvolucionDia[];
-  modalidades: ModalidadFrecuencia[];
+  modalidades: ModalidadItem[];
   estadoCobros: EstadoCobros;
   actividad: ActividadItem[];
   solicitudesPendientes: number;

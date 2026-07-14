@@ -11,7 +11,7 @@ import {
 import { Tenencia } from './tenencia.entity';
 import { Casa } from './casa.entity';
 import { Cobro } from '../../ledger/domain/cobro.entity';
-import { type Frecuencia } from '../../shared/common/value-objects';
+import { type ModalidadRecaudo } from '../../shared/common/value-objects';
 
 @Entity('residentes')
 export class Residente {
@@ -40,7 +40,7 @@ export class Residente {
   tenantId: string;
 
   @Column({ name: 'modalidad_pago', type: 'varchar', length: 20, default: 'MENSUAL' })
-  modalidadPago: Frecuencia;
+  modalidadPago: ModalidadRecaudo;
 
   @ManyToOne(() => Casa)
   @JoinColumn({ name: 'casa_actual_id' })
@@ -65,7 +65,7 @@ export class Residente {
     telefono: string,
     email: string | null,
     tenantId: string,
-    modalidadPago: Frecuencia = 'MENSUAL',
+    modalidadPago: ModalidadRecaudo = 'MENSUAL',
     tipo: 'PROPIETARIO' | 'INQUILINO' = 'PROPIETARIO',
     casaActualId?: string,
   ): Residente {
