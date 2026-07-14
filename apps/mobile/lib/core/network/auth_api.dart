@@ -29,15 +29,15 @@ class AuthApi {
 
   AuthApi([ApiClient? client]) : _client = client ?? ApiClient.instance;
 
-  /// Inicia sesión con email y contraseña.
+  /// Inicia sesión con username y contraseña.
   /// En caso de éxito, [ApiClient] guarda los tokens automáticamente.
   Future<LoginResult> login({
-    required String email,
+    required String username,
     required String password,
   }) async {
     final response = await _client.post<Map<String, dynamic>>(
       '/auth/login',
-      data: {'email': email, 'password': password},
+      data: {'username': username, 'password': password},
     );
 
     final data = response.data;
@@ -59,23 +59,22 @@ class AuthApi {
 
   /// Registra un nuevo usuario (solo ADMIN).
   Future<Map<String, dynamic>> register({
-    required String email,
+    required String username,
     required String password,
     required String nombre,
     required String rol,
     required String tenantId,
-    String? propietarioId,
+    String? residenteId,
   }) async {
     final response = await _client.post<Map<String, dynamic>>(
       '/auth/register',
       data: {
-        'email': email,
+        'username': username,
         'password': password,
         'nombre': nombre,
         'rol': rol,
         'tenantId': tenantId,
-        // ignore: use_null_aware_elements
-        if (propietarioId != null) 'residenteId': propietarioId,
+        if (residenteId != null) 'residenteId': residenteId,
       },
     );
 

@@ -1,6 +1,5 @@
 import {
   IsString,
-  IsEmail,
   IsNotEmpty,
   IsOptional,
   MinLength,
@@ -9,8 +8,9 @@ import {
 import { RolUsuario } from '../../../domain/usuario.entity';
 
 export class RegisterDto {
-  @IsEmail({}, { message: 'El email debe tener un formato válido' })
-  email: string;
+  @IsString()
+  @IsNotEmpty({ message: 'El nombre de usuario es requerido' })
+  username: string;
 
   @IsString()
   @IsNotEmpty()
@@ -35,8 +35,9 @@ export class RegisterDto {
 }
 
 export class LoginDto {
-  @IsEmail({}, { message: 'El email debe tener un formato válido' })
-  email: string;
+  @IsString()
+  @IsNotEmpty({ message: 'El nombre de usuario es requerido' })
+  username: string;
 
   @IsString()
   @IsNotEmpty({ message: 'La contraseña es requerida' })

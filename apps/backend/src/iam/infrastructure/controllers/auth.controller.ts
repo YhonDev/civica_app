@@ -17,7 +17,7 @@ export class AuthController {
   @Post('register')
   async register(@Body() dto: RegisterDto) {
     return this.crearUsuarioUseCase.execute({
-      email: dto.email,
+      username: dto.username,
       password: dto.password,
       nombre: dto.nombre,
       rol: dto.rol,
@@ -29,7 +29,7 @@ export class AuthController {
   @Post('login')
   async login(@Body() dto: LoginDto) {
     const usuario = await this.authService.validateUser(
-      dto.email,
+      dto.username,
       dto.password,
     );
     return this.authService.login(usuario);

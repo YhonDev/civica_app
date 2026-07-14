@@ -81,18 +81,15 @@ class _LoginScreenState extends State<LoginScreen> {
                       TextFormField(
                         controller: _emailCtrl,
                         decoration: const InputDecoration(
-                          labelText: 'Correo electrónico',
-                          prefixIcon: Icon(Icons.email_outlined),
+                          labelText: 'Nombre de usuario',
+                          prefixIcon: Icon(Icons.person_outlined),
                           border: OutlineInputBorder(),
                         ),
-                        keyboardType: TextInputType.emailAddress,
+                        keyboardType: TextInputType.text,
                         textCapitalization: TextCapitalization.none,
                         validator: (v) {
                           if (v == null || v.trim().isEmpty) {
-                            return 'Ingresa tu correo';
-                          }
-                          if (!v.contains('@')) {
-                            return 'Correo inválido';
+                            return 'Ingresa tu usuario';
                           }
                           return null;
                         },
@@ -192,24 +189,24 @@ class _LoginScreenState extends State<LoginScreen> {
                             avatar: const Icon(Icons.admin_panel_settings_outlined, size: 16),
                             label: const Text('Admin'),
                             onPressed: () {
-                              _emailCtrl.text = 'admin@civica.test';
-                              _passwordCtrl.text = 'admin123';
+                              _emailCtrl.text = 'admin';
+                              _passwordCtrl.text = 'Admin2026!';
                             },
                           ),
                           ActionChip(
                             avatar: const Icon(Icons.engineering_outlined, size: 16),
                             label: const Text('Cobrador (Juan)'),
                             onPressed: () {
-                              _emailCtrl.text = 'juan.cobrador@test.com';
-                              _passwordCtrl.text = 'admin123';
+                              _emailCtrl.text = 'juanperezcobrador';
+                              _passwordCtrl.text = 'juanperez2026';
                             },
                           ),
                           ActionChip(
                             avatar: const Icon(Icons.home_outlined, size: 16),
-                            label: const Text('Propietario (Juan)'),
+                            label: const Text('Residente (Juan Pérez)'),
                             onPressed: () {
-                              _emailCtrl.text = 'juan@email.com';
-                              _passwordCtrl.text = 'admin123';
+                              _emailCtrl.text = 'manzanaA_casa101_residente';
+                              _passwordCtrl.text = 'A3bK7xP9mN';
                             },
                           ),
                         ],
@@ -229,7 +226,7 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     context.read<AuthCubit>().login(
-          email: _emailCtrl.text.trim(),
+          username: _emailCtrl.text.trim(),
           password: _passwordCtrl.text,
         );
   }

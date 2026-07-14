@@ -30,4 +30,10 @@ export class PlanDeCobroRepository extends BaseTenantRepository<PlanDeCobro> {
       where: { tenantId, activa: true },
     });
   }
+
+  async findAllActivos(): Promise<PlanDeCobro[]> {
+    return this.repo.find({
+      where: { activa: true },
+    });
+  }
 }

@@ -9,7 +9,7 @@ import * as bcrypt from 'bcrypt';
 import { Usuario, RolUsuario } from '../../domain/usuario.entity';
 
 interface CrearUsuarioParams {
-  email: string;
+  username: string;
   password: string;
   nombre: string;
   rol: RolUsuario;
@@ -25,10 +25,11 @@ export class CrearUsuarioUseCase {
   ) {}
 
   async execute(params: CrearUsuarioParams): Promise<Usuario> {
-    // Validar email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(params.email)) {
-      throw new BadRequestException('El formato del email es inválido');
+    // Validar username
+    if (!params.username || params.username.trim().length < 3) {
+      throw new BadRequestException(
+        'El nombre de usuario debe tener al menos 3 caracteres',
+      );
     }
 
     // Validar password
@@ -48,13 +49,13 @@ export class CrearUsuarioUseCase {
       throw new BadRequestException('El tenantId es requerido');
     }
 
-    // Verificar unicidad del email
+    // Verificar unicidad del username
     const existingUser = await this.usuarioRepository.findOne({
-      where: { email: params.email },
+      where: { email: params.username },
     });
     if (existingUser) {
       throw new ConflictException(
-        `Ya existe un usuario con el email ${params.email}`,
+        `Ya existe un usuario con el nombre de usuario ${params.username}`,
       );
     }
 
@@ -62,8 +63,9 @@ export class CrearUsuarioUseCase {
     const passwordHash = await bcrypt.hash(params.password, 10);
 
     // Crear entidad de dominio
+    // El campo 'email' en la BD se usa para almacenar el username
     const usuario = Usuario.crear(
-      params.email,
+      params.username,
       passwordHash,
       params.nombre,
       params.rol,

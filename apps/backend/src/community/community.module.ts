@@ -17,8 +17,10 @@ import { RegistrarResidenteUseCase } from './application/use-cases/registrar-res
 import { EliminarResidenteUseCase } from './application/use-cases/eliminar-residente.use-case';
 import { ActualizarResidenteUseCase } from './application/use-cases/actualizar-residente.use-case';
 import { AgregarTenenciaUseCase } from './application/use-cases/agregar-tenencia.use-case';
+import { CrearCobradorUseCase } from './application/use-cases/crear-cobrador.use-case';
 import { ProyectosController } from './infrastructure/controllers/proyectos.controller';
 import { ResidentesController } from './infrastructure/controllers/residentes.controller';
+import { IamModule } from '../iam/iam.module';
 import { LedgerModule } from '../ledger/ledger.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { ActividadInterceptor } from '../shared/common/decorators/registrar-actividad.decorator';
@@ -27,6 +29,7 @@ import { Reflector } from '@nestjs/core';
 @Module({
   imports: [
     TypeOrmModule.forFeature([Proyecto, Etapa, Manzana, Casa, Residente, Tenencia]),
+    IamModule,
     forwardRef(() => LedgerModule),
     NotificationsModule,
   ],
@@ -46,6 +49,7 @@ import { Reflector } from '@nestjs/core';
     EliminarResidenteUseCase,
     ActualizarResidenteUseCase,
     AgregarTenenciaUseCase,
+    CrearCobradorUseCase,
     // Interceptors
     Reflector,
     ActividadInterceptor,

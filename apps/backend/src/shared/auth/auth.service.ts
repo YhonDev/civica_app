@@ -17,8 +17,10 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async validateUser(email: string, password: string): Promise<Usuario> {
-    const user = await this.usuarioRepository.findOne({ where: { email } });
+  async validateUser(username: string, password: string): Promise<Usuario> {
+    const user = await this.usuarioRepository.findOne({
+      where: { email: username },
+    });
     if (!user) {
       throw new UnauthorizedException('Credenciales inválidas');
     }

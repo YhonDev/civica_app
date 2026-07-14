@@ -69,15 +69,15 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 
-  /// Inicia sesión con email y contraseña.
+  /// Inicia sesión con username y contraseña.
   Future<void> login({
-    required String email,
+    required String username,
     required String password,
   }) async {
     emit(const AuthState.loading());
     try {
       final result = await _authApi.login(
-        email: email,
+        username: username,
         password: password,
       );
       emit(AuthState.authenticated(result.usuario));
