@@ -23,14 +23,14 @@ class SyncDao extends DatabaseAccessor<AppDatabase> {
         .then((rows) => rows.length);
   }
 
-  /// Obtiene todos los IDs de propietarios con cuotas pendientes.
-  Future<List<String>> propietariosConDeuda() async {
-    final cuotas = await (db.select(db.cuotas)
+  /// Obtiene todos los IDs de residentes con cobros pendientes.
+  Future<List<String>> residentesConDeuda() async {
+    final cobros = await (db.select(db.cobros)
           ..where((t) =>
               t.estado.equals('PENDIENTE') | t.estado.equals('VENCIDA')))
         .get();
 
-    final ids = cuotas.map((c) => c.propietarioId).toSet().toList();
+    final ids = cobros.map((c) => c.residenteId).toSet().toList();
     return ids;
   }
 

@@ -329,7 +329,7 @@ class _DashboardContentState extends State<_DashboardContent>
                   ),
                   ModuleSummaryItem(
                     label: 'Propietarios en mora',
-                    value: widget.data.propietariosMora.toString(),
+                    value: widget.data.residentesMora.toString(),
                     color: AppColors.error,
                   ),
                   ModuleSummaryItem(
@@ -363,7 +363,7 @@ class _DashboardContentState extends State<_DashboardContent>
                   ),
                   ModuleSummaryItem(
                     label: 'En mora',
-                    value: widget.data.propietariosMora.toString(),
+                    value: widget.data.residentesMora.toString(),
                     color: AppColors.error,
                   ),
                 ],
@@ -423,12 +423,12 @@ class _DashboardContentState extends State<_DashboardContent>
                 items: [
                   ModuleSummaryItem(
                     label: 'Propietarios registrados',
-                    value: widget.data.totalPropietarios.toString(),
+                    value: widget.data.totalResidentes.toString(),
                     color: AppColors.textPrimary,
                   ),
                   ModuleSummaryItem(
                     label: 'Nuevos esta semana',
-                    value: widget.data.nuevosPropietariosSemana.toString(),
+                    value: widget.data.nuevosResidentesSemana.toString(),
                     color: AppColors.info,
                   ),
                 ],

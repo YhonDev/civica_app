@@ -2,22 +2,22 @@ import 'package:flutter/foundation.dart';
 import '../../core/network/api_client.dart';
 import '../../core/network/api_exceptions.dart';
 import 'comunidad_repository.dart';
-import 'models/propietarios_models.dart';
+import 'models/residentes_models.dart';
 
-class PropietariosRepository {
+class ResidentesRepository {
   final ApiClient _api;
 
-  PropietariosRepository({ApiClient? apiClient})
+  ResidentesRepository({ApiClient? apiClient})
       : _api = apiClient ?? ApiClient.instance;
 
   /// Obtiene el resumen de la comunidad.
-  Future<PropietarioResumen> getResumen() async {
+  Future<ResidenteResumen> getResumen() async {
     try {
       final tenantId = ComunidadRepository.currentTenantId;
 
       // 1. Obtener todas las casas a través de conjuntos
       int totalCasas = 0;
-      final responseConjuntos = await _api.get('/conjuntos', queryParameters: {'tenantId': tenantId});
+      final responseConjuntos = await _api.get('/proyectos', queryParameters: {'tenantId': tenantId});
       final proyectos = responseConjuntos.data as List<dynamic>;
       
       for (var p in proyectos) {
@@ -29,7 +29,7 @@ class PropietariosRepository {
       }
 
       // 2. Obtener casas ocupadas a través de propietarios activos
-      final responseProps = await _api.get('/propietarios', queryParameters: {'tenantId': tenantId});
+      final responseProps = await _api.get('/residentes', queryParameters: {'tenantId': tenantId});
       final propietarios = responseProps.data as List<dynamic>;
       
       final ocupadasSet = <String>{};
@@ -44,7 +44,7 @@ class PropietariosRepository {
 
       final ocupadas = ocupadasSet.length;
 
-      return PropietarioResumen(
+      return ResidenteResumen(
         totalPropiedades: totalCasas,
         ocupadas: ocupadas,
         vacantes: totalCasas - ocupadas,
@@ -55,13 +55,13 @@ class PropietariosRepository {
   }
 
   /// Obtiene la lista completa de propietarios en la comunidad.
-  Future<List<PropietarioItem>> getPropietarios() async {
+  Future<List<ResidenteItem>> getPropietarios() async {
     try {
       final tenantId = ComunidadRepository.currentTenantId;
-      final response = await _api.get('/propietarios', queryParameters: {'tenantId': tenantId});
+      final response = await _api.get('/residentes', queryParameters: {'tenantId': tenantId});
       final List<dynamic> data = response.data;
       
-      final List<PropietarioItem> propietarios = [];
+      final List<ResidenteItem> propietarios = [];
       
       for (var p in data) {
         double saldo = 0.0;
@@ -110,7 +110,7 @@ class PropietariosRepository {
         }
 
         propietarios.add(
-          PropietarioItem(
+          ResidenteItem(
             id: p['id'].toString(),
             nombre: p['nombre'] ?? '',
             telefono: p['telefono'] ?? '',
@@ -162,7 +162,7 @@ class PropietariosRepository {
         payload['fechaInicio'] = fechaInicio;
       }
 
-      await _api.post('/propietarios', data: payload);
+      await _api.post('/residentes', data: payload);
     } catch (e) {
       throw e is ApiException ? e : Exception('Error al crear propietario: $e');
     }
@@ -170,7 +170,7 @@ class PropietariosRepository {
 
   Future<bool> deletePropietario(String id) async {
     try {
-      await _api.delete('/propietarios/$id');
+      await _api.delete('/residentes/$id');
       return true;
     } catch (e) {
       if (kDebugMode) {
@@ -182,7 +182,7 @@ class PropietariosRepository {
 
   Future<bool> updatePropietario(String id, Map<String, dynamic> data) async {
     try {
-      await _api.patch('/propietarios/$id', data: data);
+      await _api.patch('/residentes/$id', data: data);
       return true;
     } catch (e) {
       if (kDebugMode) {
@@ -192,9 +192,9 @@ class PropietariosRepository {
     }
   }
 
-  Future<bool> deleteCuota(String cuotaId) async {
+  Future<bool> deleteCuota(String cobroId) async {
     try {
-      await _api.delete('/cuotas/$cuotaId');
+      await _api.delete('/cobros/$cobroId');
       return true;
     } catch (e) {
       if (kDebugMode) print('Error al eliminar cuota: $e');

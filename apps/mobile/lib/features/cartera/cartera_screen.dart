@@ -47,7 +47,7 @@ class _CarteraScreenState extends State<CarteraScreen> {
       case 'COBRADOR':
         return 'Resumen de cobros';
       case 'PROPIETARIO':
-        return 'Tus cuotas';
+        return 'Tus cobros';
       default:
         return 'Administración de cobros y propietarios';
     }
@@ -61,8 +61,8 @@ class _CarteraScreenState extends State<CarteraScreen> {
     } else {
       final user = context.read<AuthCubit>().state.usuario;
       final rol = user?['rol'] as String?;
-      final propietarioId = user?['propietarioId'] as String?;
-      _repository = CarteraRepository(role: rol, propietarioId: propietarioId);
+      final propietarioId = user?['residenteId'] as String?;
+      _repository = CarteraRepository(role: rol, residenteId: propietarioId);
     }
     _loadData();
   }

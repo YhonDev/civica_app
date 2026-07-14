@@ -12,7 +12,7 @@ class ComunidadRepository {
 
   Future<List<Map<String, dynamic>>> getProyectos() async {
     try {
-      final response = await _api.get('/conjuntos', queryParameters: {
+      final response = await _api.get('/proyectos', queryParameters: {
         'tenantId': currentTenantId,
       });
       return (response.data as List<dynamic>).map((p) {
@@ -49,7 +49,7 @@ class ComunidadRepository {
 
   Future<Map<String, dynamic>> createProyecto(String nombre) async {
     try {
-      final response = await _api.post('/conjuntos', data: {
+      final response = await _api.post('/proyectos', data: {
         'nombre': nombre,
         'tenantId': currentTenantId,
       });
@@ -69,7 +69,7 @@ class ComunidadRepository {
 
   Future<List<Map<String, dynamic>>> getEtapasPorProyecto(String proyectoId) async {
     try {
-      final response = await _api.get('/conjuntos', queryParameters: {
+      final response = await _api.get('/proyectos', queryParameters: {
         'tenantId': currentTenantId,
       });
       final proyectos = response.data as List<dynamic>;
@@ -87,7 +87,7 @@ class ComunidadRepository {
 
   Future<Map<String, dynamic>> createEtapa(String nombre, String proyectoId) async {
     try {
-      final response = await _api.post('/conjuntos/$proyectoId/etapas', data: {
+      final response = await _api.post('/proyectos/$proyectoId/etapas', data: {
         'nombre': nombre,
       });
       return response.data;
@@ -98,7 +98,7 @@ class ComunidadRepository {
   
   Future<void> deleteEtapa(String id) async {
     try {
-      await _api.delete('/conjuntos/etapas/$id');
+      await _api.delete('/proyectos/etapas/$id');
     } catch (e) {
       throw e is ApiException ? e : Exception('Error al eliminar etapa: $e');
     }
@@ -110,7 +110,7 @@ class ComunidadRepository {
 
   Future<List<Map<String, dynamic>>> getManzanasPorEtapa(String etapaId) async {
     try {
-      final response = await _api.get('/conjuntos', queryParameters: {
+      final response = await _api.get('/proyectos', queryParameters: {
         'tenantId': currentTenantId,
       });
       final proyectos = response.data as List<dynamic>;
@@ -133,7 +133,7 @@ class ComunidadRepository {
   // Obtiene todas las etapas con sus respectivas manzanas (para la pantalla de manzanas)
   Future<List<Map<String, dynamic>>> getEtapasConManzanas() async {
     try {
-      final response = await _api.get('/conjuntos', queryParameters: {
+      final response = await _api.get('/proyectos', queryParameters: {
         'tenantId': currentTenantId,
       });
       final proyectos = response.data as List<dynamic>;
@@ -156,14 +156,14 @@ class ComunidadRepository {
   // Obtiene todo el árbol: Etapas -> Manzanas -> Casas (Solo disponibles + includeCasaId)
   Future<List<Map<String, dynamic>>> getArbolCompleto({String? includeCasaId}) async {
     try {
-      final response = await _api.get('/conjuntos', queryParameters: {
+      final response = await _api.get('/proyectos', queryParameters: {
         'tenantId': currentTenantId,
       });
       final proyectos = response.data as List<dynamic>;
       if (proyectos.isEmpty) return [];
       
       // Obtener casas ocupadas a través de propietarios activos
-      final responseProps = await _api.get('/propietarios', queryParameters: {
+      final responseProps = await _api.get('/residentes', queryParameters: {
         'tenantId': currentTenantId,
       });
       final propietarios = responseProps.data as List<dynamic>;
@@ -207,7 +207,7 @@ class ComunidadRepository {
 
   Future<Map<String, dynamic>> createManzana(String nombre, String etapaId) async {
     try {
-      final response = await _api.post('/conjuntos/etapas/$etapaId/manzanas', data: {
+      final response = await _api.post('/proyectos/etapas/$etapaId/manzanas', data: {
         'nombre': nombre,
       });
       return response.data;
@@ -218,7 +218,7 @@ class ComunidadRepository {
   
   Future<void> deleteManzana(String id) async {
     try {
-      await _api.delete('/conjuntos/manzanas/$id');
+      await _api.delete('/proyectos/manzanas/$id');
     } catch (e) {
       throw e is ApiException ? e : Exception('Error al eliminar manzana: $e');
     }
@@ -230,7 +230,7 @@ class ComunidadRepository {
 
   Future<List<Map<String, dynamic>>> getCasasPorManzana(String manzanaId) async {
     try {
-      final response = await _api.get('/conjuntos', queryParameters: {
+      final response = await _api.get('/proyectos', queryParameters: {
         'tenantId': currentTenantId,
       });
       final proyectos = response.data as List<dynamic>;
@@ -254,7 +254,7 @@ class ComunidadRepository {
 
   Future<Map<String, dynamic>> createCasa(String nombre, String manzanaId) async {
     try {
-      final response = await _api.post('/conjuntos/manzanas/$manzanaId/casas', data: {
+      final response = await _api.post('/proyectos/manzanas/$manzanaId/casas', data: {
         'direccionInterna': nombre,
       });
       return {
@@ -268,7 +268,7 @@ class ComunidadRepository {
   
   Future<void> deleteCasa(String id) async {
     try {
-      await _api.delete('/conjuntos/casas/$id');
+      await _api.delete('/proyectos/casas/$id');
     } catch (e) {
       throw e is ApiException ? e : Exception('Error al eliminar casa: $e');
     }

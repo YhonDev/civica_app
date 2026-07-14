@@ -87,7 +87,7 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
 
     try {
       await _repo.registrarPago(
-        propietarioId: widget.cobro.propietarioId,
+        residenteId: widget.cobro.residenteId,
         montoCentavos: monto * 100, // Convert to centavos
       );
 

@@ -3,12 +3,12 @@
 part of 'app_database.dart';
 
 // ignore_for_file: type=lint
-class $ConjuntosTable extends Conjuntos
-    with TableInfo<$ConjuntosTable, Conjunto> {
+class $ProyectosTable extends Proyectos
+    with TableInfo<$ProyectosTable, Proyecto> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
-  $ConjuntosTable(this.attachedDatabase, [this._alias]);
+  $ProyectosTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
   late final GeneratedColumn<String> id = GeneratedColumn<String>(
@@ -72,10 +72,10 @@ class $ConjuntosTable extends Conjuntos
   String get aliasedName => _alias ?? actualTableName;
   @override
   String get actualTableName => $name;
-  static const String $name = 'conjuntos';
+  static const String $name = 'proyectos';
   @override
   VerificationContext validateIntegrity(
-    Insertable<Conjunto> instance, {
+    Insertable<Proyecto> instance, {
     bool isInserting = false,
   }) {
     final context = VerificationContext();
@@ -123,9 +123,9 @@ class $ConjuntosTable extends Conjuntos
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  Conjunto map(Map<String, dynamic> data, {String? tablePrefix}) {
+  Proyecto map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return Conjunto(
+    return Proyecto(
       id: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}id'],
@@ -150,18 +150,18 @@ class $ConjuntosTable extends Conjuntos
   }
 
   @override
-  $ConjuntosTable createAlias(String alias) {
-    return $ConjuntosTable(attachedDatabase, alias);
+  $ProyectosTable createAlias(String alias) {
+    return $ProyectosTable(attachedDatabase, alias);
   }
 }
 
-class Conjunto extends DataClass implements Insertable<Conjunto> {
+class Proyecto extends DataClass implements Insertable<Proyecto> {
   final String id;
   final String nombre;
   final String tenantId;
   final DateTime createdAt;
   final DateTime updatedAt;
-  const Conjunto({
+  const Proyecto({
     required this.id,
     required this.nombre,
     required this.tenantId,
@@ -179,8 +179,8 @@ class Conjunto extends DataClass implements Insertable<Conjunto> {
     return map;
   }
 
-  ConjuntosCompanion toCompanion(bool nullToAbsent) {
-    return ConjuntosCompanion(
+  ProyectosCompanion toCompanion(bool nullToAbsent) {
+    return ProyectosCompanion(
       id: Value(id),
       nombre: Value(nombre),
       tenantId: Value(tenantId),
@@ -189,12 +189,12 @@ class Conjunto extends DataClass implements Insertable<Conjunto> {
     );
   }
 
-  factory Conjunto.fromJson(
+  factory Proyecto.fromJson(
     Map<String, dynamic> json, {
     ValueSerializer? serializer,
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return Conjunto(
+    return Proyecto(
       id: serializer.fromJson<String>(json['id']),
       nombre: serializer.fromJson<String>(json['nombre']),
       tenantId: serializer.fromJson<String>(json['tenantId']),
@@ -214,21 +214,21 @@ class Conjunto extends DataClass implements Insertable<Conjunto> {
     };
   }
 
-  Conjunto copyWith({
+  Proyecto copyWith({
     String? id,
     String? nombre,
     String? tenantId,
     DateTime? createdAt,
     DateTime? updatedAt,
-  }) => Conjunto(
+  }) => Proyecto(
     id: id ?? this.id,
     nombre: nombre ?? this.nombre,
     tenantId: tenantId ?? this.tenantId,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );
-  Conjunto copyWithCompanion(ConjuntosCompanion data) {
-    return Conjunto(
+  Proyecto copyWithCompanion(ProyectosCompanion data) {
+    return Proyecto(
       id: data.id.present ? data.id.value : this.id,
       nombre: data.nombre.present ? data.nombre.value : this.nombre,
       tenantId: data.tenantId.present ? data.tenantId.value : this.tenantId,
@@ -239,7 +239,7 @@ class Conjunto extends DataClass implements Insertable<Conjunto> {
 
   @override
   String toString() {
-    return (StringBuffer('Conjunto(')
+    return (StringBuffer('Proyecto(')
           ..write('id: $id, ')
           ..write('nombre: $nombre, ')
           ..write('tenantId: $tenantId, ')
@@ -254,7 +254,7 @@ class Conjunto extends DataClass implements Insertable<Conjunto> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is Conjunto &&
+      (other is Proyecto &&
           other.id == this.id &&
           other.nombre == this.nombre &&
           other.tenantId == this.tenantId &&
@@ -262,14 +262,14 @@ class Conjunto extends DataClass implements Insertable<Conjunto> {
           other.updatedAt == this.updatedAt);
 }
 
-class ConjuntosCompanion extends UpdateCompanion<Conjunto> {
+class ProyectosCompanion extends UpdateCompanion<Proyecto> {
   final Value<String> id;
   final Value<String> nombre;
   final Value<String> tenantId;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
-  const ConjuntosCompanion({
+  const ProyectosCompanion({
     this.id = const Value.absent(),
     this.nombre = const Value.absent(),
     this.tenantId = const Value.absent(),
@@ -277,7 +277,7 @@ class ConjuntosCompanion extends UpdateCompanion<Conjunto> {
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
-  ConjuntosCompanion.insert({
+  ProyectosCompanion.insert({
     required String id,
     required String nombre,
     required String tenantId,
@@ -289,7 +289,7 @@ class ConjuntosCompanion extends UpdateCompanion<Conjunto> {
        tenantId = Value(tenantId),
        createdAt = Value(createdAt),
        updatedAt = Value(updatedAt);
-  static Insertable<Conjunto> custom({
+  static Insertable<Proyecto> custom({
     Expression<String>? id,
     Expression<String>? nombre,
     Expression<String>? tenantId,
@@ -307,7 +307,7 @@ class ConjuntosCompanion extends UpdateCompanion<Conjunto> {
     });
   }
 
-  ConjuntosCompanion copyWith({
+  ProyectosCompanion copyWith({
     Value<String>? id,
     Value<String>? nombre,
     Value<String>? tenantId,
@@ -315,7 +315,7 @@ class ConjuntosCompanion extends UpdateCompanion<Conjunto> {
     Value<DateTime>? updatedAt,
     Value<int>? rowid,
   }) {
-    return ConjuntosCompanion(
+    return ProyectosCompanion(
       id: id ?? this.id,
       nombre: nombre ?? this.nombre,
       tenantId: tenantId ?? this.tenantId,
@@ -351,7 +351,7 @@ class ConjuntosCompanion extends UpdateCompanion<Conjunto> {
 
   @override
   String toString() {
-    return (StringBuffer('ConjuntosCompanion(')
+    return (StringBuffer('ProyectosCompanion(')
           ..write('id: $id, ')
           ..write('nombre: $nombre, ')
           ..write('tenantId: $tenantId, ')
@@ -386,12 +386,12 @@ class $EtapasTable extends Etapas with TableInfo<$EtapasTable, Etapa> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _conjuntoIdMeta = const VerificationMeta(
-    'conjuntoId',
+  static const VerificationMeta _proyectoIdMeta = const VerificationMeta(
+    'proyectoId',
   );
   @override
-  late final GeneratedColumn<String> conjuntoId = GeneratedColumn<String>(
-    'conjunto_id',
+  late final GeneratedColumn<String> proyectoId = GeneratedColumn<String>(
+    'proyecto_id',
     aliasedName,
     false,
     type: DriftSqlType.string,
@@ -409,7 +409,7 @@ class $EtapasTable extends Etapas with TableInfo<$EtapasTable, Etapa> {
     requiredDuringInsert: true,
   );
   @override
-  List<GeneratedColumn> get $columns => [id, nombre, conjuntoId, createdAt];
+  List<GeneratedColumn> get $columns => [id, nombre, proyectoId, createdAt];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -435,13 +435,13 @@ class $EtapasTable extends Etapas with TableInfo<$EtapasTable, Etapa> {
     } else if (isInserting) {
       context.missing(_nombreMeta);
     }
-    if (data.containsKey('conjunto_id')) {
+    if (data.containsKey('proyecto_id')) {
       context.handle(
-        _conjuntoIdMeta,
-        conjuntoId.isAcceptableOrUnknown(data['conjunto_id']!, _conjuntoIdMeta),
+        _proyectoIdMeta,
+        proyectoId.isAcceptableOrUnknown(data['proyecto_id']!, _proyectoIdMeta),
       );
     } else if (isInserting) {
-      context.missing(_conjuntoIdMeta);
+      context.missing(_proyectoIdMeta);
     }
     if (data.containsKey('created_at')) {
       context.handle(
@@ -468,9 +468,9 @@ class $EtapasTable extends Etapas with TableInfo<$EtapasTable, Etapa> {
         DriftSqlType.string,
         data['${effectivePrefix}nombre'],
       )!,
-      conjuntoId: attachedDatabase.typeMapping.read(
+      proyectoId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}conjunto_id'],
+        data['${effectivePrefix}proyecto_id'],
       )!,
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
@@ -488,12 +488,12 @@ class $EtapasTable extends Etapas with TableInfo<$EtapasTable, Etapa> {
 class Etapa extends DataClass implements Insertable<Etapa> {
   final String id;
   final String nombre;
-  final String conjuntoId;
+  final String proyectoId;
   final DateTime createdAt;
   const Etapa({
     required this.id,
     required this.nombre,
-    required this.conjuntoId,
+    required this.proyectoId,
     required this.createdAt,
   });
   @override
@@ -501,7 +501,7 @@ class Etapa extends DataClass implements Insertable<Etapa> {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
     map['nombre'] = Variable<String>(nombre);
-    map['conjunto_id'] = Variable<String>(conjuntoId);
+    map['proyecto_id'] = Variable<String>(proyectoId);
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
@@ -510,7 +510,7 @@ class Etapa extends DataClass implements Insertable<Etapa> {
     return EtapasCompanion(
       id: Value(id),
       nombre: Value(nombre),
-      conjuntoId: Value(conjuntoId),
+      proyectoId: Value(proyectoId),
       createdAt: Value(createdAt),
     );
   }
@@ -523,7 +523,7 @@ class Etapa extends DataClass implements Insertable<Etapa> {
     return Etapa(
       id: serializer.fromJson<String>(json['id']),
       nombre: serializer.fromJson<String>(json['nombre']),
-      conjuntoId: serializer.fromJson<String>(json['conjuntoId']),
+      proyectoId: serializer.fromJson<String>(json['proyectoId']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -533,7 +533,7 @@ class Etapa extends DataClass implements Insertable<Etapa> {
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
       'nombre': serializer.toJson<String>(nombre),
-      'conjuntoId': serializer.toJson<String>(conjuntoId),
+      'proyectoId': serializer.toJson<String>(proyectoId),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -541,21 +541,21 @@ class Etapa extends DataClass implements Insertable<Etapa> {
   Etapa copyWith({
     String? id,
     String? nombre,
-    String? conjuntoId,
+    String? proyectoId,
     DateTime? createdAt,
   }) => Etapa(
     id: id ?? this.id,
     nombre: nombre ?? this.nombre,
-    conjuntoId: conjuntoId ?? this.conjuntoId,
+    proyectoId: proyectoId ?? this.proyectoId,
     createdAt: createdAt ?? this.createdAt,
   );
   Etapa copyWithCompanion(EtapasCompanion data) {
     return Etapa(
       id: data.id.present ? data.id.value : this.id,
       nombre: data.nombre.present ? data.nombre.value : this.nombre,
-      conjuntoId: data.conjuntoId.present
-          ? data.conjuntoId.value
-          : this.conjuntoId,
+      proyectoId: data.proyectoId.present
+          ? data.proyectoId.value
+          : this.proyectoId,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -565,58 +565,58 @@ class Etapa extends DataClass implements Insertable<Etapa> {
     return (StringBuffer('Etapa(')
           ..write('id: $id, ')
           ..write('nombre: $nombre, ')
-          ..write('conjuntoId: $conjuntoId, ')
+          ..write('proyectoId: $proyectoId, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, nombre, conjuntoId, createdAt);
+  int get hashCode => Object.hash(id, nombre, proyectoId, createdAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Etapa &&
           other.id == this.id &&
           other.nombre == this.nombre &&
-          other.conjuntoId == this.conjuntoId &&
+          other.proyectoId == this.proyectoId &&
           other.createdAt == this.createdAt);
 }
 
 class EtapasCompanion extends UpdateCompanion<Etapa> {
   final Value<String> id;
   final Value<String> nombre;
-  final Value<String> conjuntoId;
+  final Value<String> proyectoId;
   final Value<DateTime> createdAt;
   final Value<int> rowid;
   const EtapasCompanion({
     this.id = const Value.absent(),
     this.nombre = const Value.absent(),
-    this.conjuntoId = const Value.absent(),
+    this.proyectoId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   EtapasCompanion.insert({
     required String id,
     required String nombre,
-    required String conjuntoId,
+    required String proyectoId,
     required DateTime createdAt,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        nombre = Value(nombre),
-       conjuntoId = Value(conjuntoId),
+       proyectoId = Value(proyectoId),
        createdAt = Value(createdAt);
   static Insertable<Etapa> custom({
     Expression<String>? id,
     Expression<String>? nombre,
-    Expression<String>? conjuntoId,
+    Expression<String>? proyectoId,
     Expression<DateTime>? createdAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (nombre != null) 'nombre': nombre,
-      if (conjuntoId != null) 'conjunto_id': conjuntoId,
+      if (proyectoId != null) 'proyecto_id': proyectoId,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -625,14 +625,14 @@ class EtapasCompanion extends UpdateCompanion<Etapa> {
   EtapasCompanion copyWith({
     Value<String>? id,
     Value<String>? nombre,
-    Value<String>? conjuntoId,
+    Value<String>? proyectoId,
     Value<DateTime>? createdAt,
     Value<int>? rowid,
   }) {
     return EtapasCompanion(
       id: id ?? this.id,
       nombre: nombre ?? this.nombre,
-      conjuntoId: conjuntoId ?? this.conjuntoId,
+      proyectoId: proyectoId ?? this.proyectoId,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
     );
@@ -647,8 +647,8 @@ class EtapasCompanion extends UpdateCompanion<Etapa> {
     if (nombre.present) {
       map['nombre'] = Variable<String>(nombre.value);
     }
-    if (conjuntoId.present) {
-      map['conjunto_id'] = Variable<String>(conjuntoId.value);
+    if (proyectoId.present) {
+      map['proyecto_id'] = Variable<String>(proyectoId.value);
     }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
@@ -664,7 +664,7 @@ class EtapasCompanion extends UpdateCompanion<Etapa> {
     return (StringBuffer('EtapasCompanion(')
           ..write('id: $id, ')
           ..write('nombre: $nombre, ')
-          ..write('conjuntoId: $conjuntoId, ')
+          ..write('proyectoId: $proyectoId, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -991,12 +991,12 @@ class CasasCompanion extends UpdateCompanion<Casa> {
   }
 }
 
-class $PropietariosTable extends Propietarios
-    with TableInfo<$PropietariosTable, Propietario> {
+class $ResidentesTable extends Residentes
+    with TableInfo<$ResidentesTable, Residente> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
-  $PropietariosTable(this.attachedDatabase, [this._alias]);
+  $ResidentesTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
   late final GeneratedColumn<String> id = GeneratedColumn<String>(
@@ -1082,10 +1082,10 @@ class $PropietariosTable extends Propietarios
   String get aliasedName => _alias ?? actualTableName;
   @override
   String get actualTableName => $name;
-  static const String $name = 'propietarios';
+  static const String $name = 'residentes';
   @override
   VerificationContext validateIntegrity(
-    Insertable<Propietario> instance, {
+    Insertable<Residente> instance, {
     bool isInserting = false,
   }) {
     final context = VerificationContext();
@@ -1147,9 +1147,9 @@ class $PropietariosTable extends Propietarios
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  Propietario map(Map<String, dynamic> data, {String? tablePrefix}) {
+  Residente map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return Propietario(
+    return Residente(
       id: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}id'],
@@ -1182,12 +1182,12 @@ class $PropietariosTable extends Propietarios
   }
 
   @override
-  $PropietariosTable createAlias(String alias) {
-    return $PropietariosTable(attachedDatabase, alias);
+  $ResidentesTable createAlias(String alias) {
+    return $ResidentesTable(attachedDatabase, alias);
   }
 }
 
-class Propietario extends DataClass implements Insertable<Propietario> {
+class Residente extends DataClass implements Insertable<Residente> {
   final String id;
   final String nombre;
   final String telefono;
@@ -1195,7 +1195,7 @@ class Propietario extends DataClass implements Insertable<Propietario> {
   final String tenantId;
   final DateTime createdAt;
   final DateTime updatedAt;
-  const Propietario({
+  const Residente({
     required this.id,
     required this.nombre,
     required this.telefono,
@@ -1219,8 +1219,8 @@ class Propietario extends DataClass implements Insertable<Propietario> {
     return map;
   }
 
-  PropietariosCompanion toCompanion(bool nullToAbsent) {
-    return PropietariosCompanion(
+  ResidentesCompanion toCompanion(bool nullToAbsent) {
+    return ResidentesCompanion(
       id: Value(id),
       nombre: Value(nombre),
       telefono: Value(telefono),
@@ -1233,12 +1233,12 @@ class Propietario extends DataClass implements Insertable<Propietario> {
     );
   }
 
-  factory Propietario.fromJson(
+  factory Residente.fromJson(
     Map<String, dynamic> json, {
     ValueSerializer? serializer,
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return Propietario(
+    return Residente(
       id: serializer.fromJson<String>(json['id']),
       nombre: serializer.fromJson<String>(json['nombre']),
       telefono: serializer.fromJson<String>(json['telefono']),
@@ -1262,7 +1262,7 @@ class Propietario extends DataClass implements Insertable<Propietario> {
     };
   }
 
-  Propietario copyWith({
+  Residente copyWith({
     String? id,
     String? nombre,
     String? telefono,
@@ -1270,7 +1270,7 @@ class Propietario extends DataClass implements Insertable<Propietario> {
     String? tenantId,
     DateTime? createdAt,
     DateTime? updatedAt,
-  }) => Propietario(
+  }) => Residente(
     id: id ?? this.id,
     nombre: nombre ?? this.nombre,
     telefono: telefono ?? this.telefono,
@@ -1279,8 +1279,8 @@ class Propietario extends DataClass implements Insertable<Propietario> {
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );
-  Propietario copyWithCompanion(PropietariosCompanion data) {
-    return Propietario(
+  Residente copyWithCompanion(ResidentesCompanion data) {
+    return Residente(
       id: data.id.present ? data.id.value : this.id,
       nombre: data.nombre.present ? data.nombre.value : this.nombre,
       telefono: data.telefono.present ? data.telefono.value : this.telefono,
@@ -1293,7 +1293,7 @@ class Propietario extends DataClass implements Insertable<Propietario> {
 
   @override
   String toString() {
-    return (StringBuffer('Propietario(')
+    return (StringBuffer('Residente(')
           ..write('id: $id, ')
           ..write('nombre: $nombre, ')
           ..write('telefono: $telefono, ')
@@ -1311,7 +1311,7 @@ class Propietario extends DataClass implements Insertable<Propietario> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is Propietario &&
+      (other is Residente &&
           other.id == this.id &&
           other.nombre == this.nombre &&
           other.telefono == this.telefono &&
@@ -1321,7 +1321,7 @@ class Propietario extends DataClass implements Insertable<Propietario> {
           other.updatedAt == this.updatedAt);
 }
 
-class PropietariosCompanion extends UpdateCompanion<Propietario> {
+class ResidentesCompanion extends UpdateCompanion<Residente> {
   final Value<String> id;
   final Value<String> nombre;
   final Value<String> telefono;
@@ -1330,7 +1330,7 @@ class PropietariosCompanion extends UpdateCompanion<Propietario> {
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
-  const PropietariosCompanion({
+  const ResidentesCompanion({
     this.id = const Value.absent(),
     this.nombre = const Value.absent(),
     this.telefono = const Value.absent(),
@@ -1340,7 +1340,7 @@ class PropietariosCompanion extends UpdateCompanion<Propietario> {
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
-  PropietariosCompanion.insert({
+  ResidentesCompanion.insert({
     required String id,
     required String nombre,
     required String telefono,
@@ -1355,7 +1355,7 @@ class PropietariosCompanion extends UpdateCompanion<Propietario> {
        tenantId = Value(tenantId),
        createdAt = Value(createdAt),
        updatedAt = Value(updatedAt);
-  static Insertable<Propietario> custom({
+  static Insertable<Residente> custom({
     Expression<String>? id,
     Expression<String>? nombre,
     Expression<String>? telefono,
@@ -1377,7 +1377,7 @@ class PropietariosCompanion extends UpdateCompanion<Propietario> {
     });
   }
 
-  PropietariosCompanion copyWith({
+  ResidentesCompanion copyWith({
     Value<String>? id,
     Value<String>? nombre,
     Value<String>? telefono,
@@ -1387,7 +1387,7 @@ class PropietariosCompanion extends UpdateCompanion<Propietario> {
     Value<DateTime>? updatedAt,
     Value<int>? rowid,
   }) {
-    return PropietariosCompanion(
+    return ResidentesCompanion(
       id: id ?? this.id,
       nombre: nombre ?? this.nombre,
       telefono: telefono ?? this.telefono,
@@ -1431,7 +1431,7 @@ class PropietariosCompanion extends UpdateCompanion<Propietario> {
 
   @override
   String toString() {
-    return (StringBuffer('PropietariosCompanion(')
+    return (StringBuffer('ResidentesCompanion(')
           ..write('id: $id, ')
           ..write('nombre: $nombre, ')
           ..write('telefono: $telefono, ')
@@ -1460,12 +1460,12 @@ class $TenenciasTable extends Tenencias
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _propietarioIdMeta = const VerificationMeta(
-    'propietarioId',
+  static const VerificationMeta _residenteIdMeta = const VerificationMeta(
+    'residenteId',
   );
   @override
-  late final GeneratedColumn<String> propietarioId = GeneratedColumn<String>(
-    'propietario_id',
+  late final GeneratedColumn<String> residenteId = GeneratedColumn<String>(
+    'residente_id',
     aliasedName,
     false,
     type: DriftSqlType.string,
@@ -1516,7 +1516,7 @@ class $TenenciasTable extends Tenencias
   @override
   List<GeneratedColumn> get $columns => [
     id,
-    propietarioId,
+    residenteId,
     casaId,
     fechaInicio,
     fechaFin,
@@ -1539,16 +1539,16 @@ class $TenenciasTable extends Tenencias
     } else if (isInserting) {
       context.missing(_idMeta);
     }
-    if (data.containsKey('propietario_id')) {
+    if (data.containsKey('residente_id')) {
       context.handle(
-        _propietarioIdMeta,
-        propietarioId.isAcceptableOrUnknown(
-          data['propietario_id']!,
-          _propietarioIdMeta,
+        _residenteIdMeta,
+        residenteId.isAcceptableOrUnknown(
+          data['residente_id']!,
+          _residenteIdMeta,
         ),
       );
     } else if (isInserting) {
-      context.missing(_propietarioIdMeta);
+      context.missing(_residenteIdMeta);
     }
     if (data.containsKey('casa_id')) {
       context.handle(
@@ -1596,9 +1596,9 @@ class $TenenciasTable extends Tenencias
         DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
-      propietarioId: attachedDatabase.typeMapping.read(
+      residenteId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}propietario_id'],
+        data['${effectivePrefix}residente_id'],
       )!,
       casaId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -1627,14 +1627,14 @@ class $TenenciasTable extends Tenencias
 
 class Tenencia extends DataClass implements Insertable<Tenencia> {
   final String id;
-  final String propietarioId;
+  final String residenteId;
   final String casaId;
   final DateTime fechaInicio;
   final DateTime? fechaFin;
   final DateTime createdAt;
   const Tenencia({
     required this.id,
-    required this.propietarioId,
+    required this.residenteId,
     required this.casaId,
     required this.fechaInicio,
     this.fechaFin,
@@ -1644,7 +1644,7 @@ class Tenencia extends DataClass implements Insertable<Tenencia> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
-    map['propietario_id'] = Variable<String>(propietarioId);
+    map['residente_id'] = Variable<String>(residenteId);
     map['casa_id'] = Variable<String>(casaId);
     map['fecha_inicio'] = Variable<DateTime>(fechaInicio);
     if (!nullToAbsent || fechaFin != null) {
@@ -1657,7 +1657,7 @@ class Tenencia extends DataClass implements Insertable<Tenencia> {
   TenenciasCompanion toCompanion(bool nullToAbsent) {
     return TenenciasCompanion(
       id: Value(id),
-      propietarioId: Value(propietarioId),
+      residenteId: Value(residenteId),
       casaId: Value(casaId),
       fechaInicio: Value(fechaInicio),
       fechaFin: fechaFin == null && nullToAbsent
@@ -1674,7 +1674,7 @@ class Tenencia extends DataClass implements Insertable<Tenencia> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Tenencia(
       id: serializer.fromJson<String>(json['id']),
-      propietarioId: serializer.fromJson<String>(json['propietarioId']),
+      residenteId: serializer.fromJson<String>(json['residenteId']),
       casaId: serializer.fromJson<String>(json['casaId']),
       fechaInicio: serializer.fromJson<DateTime>(json['fechaInicio']),
       fechaFin: serializer.fromJson<DateTime?>(json['fechaFin']),
@@ -1686,7 +1686,7 @@ class Tenencia extends DataClass implements Insertable<Tenencia> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
-      'propietarioId': serializer.toJson<String>(propietarioId),
+      'residenteId': serializer.toJson<String>(residenteId),
       'casaId': serializer.toJson<String>(casaId),
       'fechaInicio': serializer.toJson<DateTime>(fechaInicio),
       'fechaFin': serializer.toJson<DateTime?>(fechaFin),
@@ -1696,14 +1696,14 @@ class Tenencia extends DataClass implements Insertable<Tenencia> {
 
   Tenencia copyWith({
     String? id,
-    String? propietarioId,
+    String? residenteId,
     String? casaId,
     DateTime? fechaInicio,
     Value<DateTime?> fechaFin = const Value.absent(),
     DateTime? createdAt,
   }) => Tenencia(
     id: id ?? this.id,
-    propietarioId: propietarioId ?? this.propietarioId,
+    residenteId: residenteId ?? this.residenteId,
     casaId: casaId ?? this.casaId,
     fechaInicio: fechaInicio ?? this.fechaInicio,
     fechaFin: fechaFin.present ? fechaFin.value : this.fechaFin,
@@ -1712,9 +1712,9 @@ class Tenencia extends DataClass implements Insertable<Tenencia> {
   Tenencia copyWithCompanion(TenenciasCompanion data) {
     return Tenencia(
       id: data.id.present ? data.id.value : this.id,
-      propietarioId: data.propietarioId.present
-          ? data.propietarioId.value
-          : this.propietarioId,
+      residenteId: data.residenteId.present
+          ? data.residenteId.value
+          : this.residenteId,
       casaId: data.casaId.present ? data.casaId.value : this.casaId,
       fechaInicio: data.fechaInicio.present
           ? data.fechaInicio.value
@@ -1728,7 +1728,7 @@ class Tenencia extends DataClass implements Insertable<Tenencia> {
   String toString() {
     return (StringBuffer('Tenencia(')
           ..write('id: $id, ')
-          ..write('propietarioId: $propietarioId, ')
+          ..write('residenteId: $residenteId, ')
           ..write('casaId: $casaId, ')
           ..write('fechaInicio: $fechaInicio, ')
           ..write('fechaFin: $fechaFin, ')
@@ -1739,13 +1739,13 @@ class Tenencia extends DataClass implements Insertable<Tenencia> {
 
   @override
   int get hashCode =>
-      Object.hash(id, propietarioId, casaId, fechaInicio, fechaFin, createdAt);
+      Object.hash(id, residenteId, casaId, fechaInicio, fechaFin, createdAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Tenencia &&
           other.id == this.id &&
-          other.propietarioId == this.propietarioId &&
+          other.residenteId == this.residenteId &&
           other.casaId == this.casaId &&
           other.fechaInicio == this.fechaInicio &&
           other.fechaFin == this.fechaFin &&
@@ -1754,7 +1754,7 @@ class Tenencia extends DataClass implements Insertable<Tenencia> {
 
 class TenenciasCompanion extends UpdateCompanion<Tenencia> {
   final Value<String> id;
-  final Value<String> propietarioId;
+  final Value<String> residenteId;
   final Value<String> casaId;
   final Value<DateTime> fechaInicio;
   final Value<DateTime?> fechaFin;
@@ -1762,7 +1762,7 @@ class TenenciasCompanion extends UpdateCompanion<Tenencia> {
   final Value<int> rowid;
   const TenenciasCompanion({
     this.id = const Value.absent(),
-    this.propietarioId = const Value.absent(),
+    this.residenteId = const Value.absent(),
     this.casaId = const Value.absent(),
     this.fechaInicio = const Value.absent(),
     this.fechaFin = const Value.absent(),
@@ -1771,20 +1771,20 @@ class TenenciasCompanion extends UpdateCompanion<Tenencia> {
   });
   TenenciasCompanion.insert({
     required String id,
-    required String propietarioId,
+    required String residenteId,
     required String casaId,
     required DateTime fechaInicio,
     this.fechaFin = const Value.absent(),
     required DateTime createdAt,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
-       propietarioId = Value(propietarioId),
+       residenteId = Value(residenteId),
        casaId = Value(casaId),
        fechaInicio = Value(fechaInicio),
        createdAt = Value(createdAt);
   static Insertable<Tenencia> custom({
     Expression<String>? id,
-    Expression<String>? propietarioId,
+    Expression<String>? residenteId,
     Expression<String>? casaId,
     Expression<DateTime>? fechaInicio,
     Expression<DateTime>? fechaFin,
@@ -1793,7 +1793,7 @@ class TenenciasCompanion extends UpdateCompanion<Tenencia> {
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
-      if (propietarioId != null) 'propietario_id': propietarioId,
+      if (residenteId != null) 'residente_id': residenteId,
       if (casaId != null) 'casa_id': casaId,
       if (fechaInicio != null) 'fecha_inicio': fechaInicio,
       if (fechaFin != null) 'fecha_fin': fechaFin,
@@ -1804,7 +1804,7 @@ class TenenciasCompanion extends UpdateCompanion<Tenencia> {
 
   TenenciasCompanion copyWith({
     Value<String>? id,
-    Value<String>? propietarioId,
+    Value<String>? residenteId,
     Value<String>? casaId,
     Value<DateTime>? fechaInicio,
     Value<DateTime?>? fechaFin,
@@ -1813,7 +1813,7 @@ class TenenciasCompanion extends UpdateCompanion<Tenencia> {
   }) {
     return TenenciasCompanion(
       id: id ?? this.id,
-      propietarioId: propietarioId ?? this.propietarioId,
+      residenteId: residenteId ?? this.residenteId,
       casaId: casaId ?? this.casaId,
       fechaInicio: fechaInicio ?? this.fechaInicio,
       fechaFin: fechaFin ?? this.fechaFin,
@@ -1828,8 +1828,8 @@ class TenenciasCompanion extends UpdateCompanion<Tenencia> {
     if (id.present) {
       map['id'] = Variable<String>(id.value);
     }
-    if (propietarioId.present) {
-      map['propietario_id'] = Variable<String>(propietarioId.value);
+    if (residenteId.present) {
+      map['residente_id'] = Variable<String>(residenteId.value);
     }
     if (casaId.present) {
       map['casa_id'] = Variable<String>(casaId.value);
@@ -1853,7 +1853,7 @@ class TenenciasCompanion extends UpdateCompanion<Tenencia> {
   String toString() {
     return (StringBuffer('TenenciasCompanion(')
           ..write('id: $id, ')
-          ..write('propietarioId: $propietarioId, ')
+          ..write('residenteId: $residenteId, ')
           ..write('casaId: $casaId, ')
           ..write('fechaInicio: $fechaInicio, ')
           ..write('fechaFin: $fechaFin, ')
@@ -1905,12 +1905,12 @@ class $UsuariosTable extends Usuarios with TableInfo<$UsuariosTable, Usuario> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _propietarioIdMeta = const VerificationMeta(
-    'propietarioId',
+  static const VerificationMeta _residenteIdMeta = const VerificationMeta(
+    'residenteId',
   );
   @override
-  late final GeneratedColumn<String> propietarioId = GeneratedColumn<String>(
-    'propietario_id',
+  late final GeneratedColumn<String> residenteId = GeneratedColumn<String>(
+    'residente_id',
     aliasedName,
     true,
     type: DriftSqlType.string,
@@ -1967,7 +1967,7 @@ class $UsuariosTable extends Usuarios with TableInfo<$UsuariosTable, Usuario> {
     email,
     nombre,
     rol,
-    propietarioId,
+    residenteId,
     tenantId,
     activo,
     createdAt,
@@ -2014,12 +2014,12 @@ class $UsuariosTable extends Usuarios with TableInfo<$UsuariosTable, Usuario> {
     } else if (isInserting) {
       context.missing(_rolMeta);
     }
-    if (data.containsKey('propietario_id')) {
+    if (data.containsKey('residente_id')) {
       context.handle(
-        _propietarioIdMeta,
-        propietarioId.isAcceptableOrUnknown(
-          data['propietario_id']!,
-          _propietarioIdMeta,
+        _residenteIdMeta,
+        residenteId.isAcceptableOrUnknown(
+          data['residente_id']!,
+          _residenteIdMeta,
         ),
       );
     }
@@ -2080,9 +2080,9 @@ class $UsuariosTable extends Usuarios with TableInfo<$UsuariosTable, Usuario> {
         DriftSqlType.string,
         data['${effectivePrefix}rol'],
       )!,
-      propietarioId: attachedDatabase.typeMapping.read(
+      residenteId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}propietario_id'],
+        data['${effectivePrefix}residente_id'],
       ),
       tenantId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -2114,7 +2114,7 @@ class Usuario extends DataClass implements Insertable<Usuario> {
   final String email;
   final String nombre;
   final String rol;
-  final String? propietarioId;
+  final String? residenteId;
   final String tenantId;
   final bool activo;
   final DateTime createdAt;
@@ -2124,7 +2124,7 @@ class Usuario extends DataClass implements Insertable<Usuario> {
     required this.email,
     required this.nombre,
     required this.rol,
-    this.propietarioId,
+    this.residenteId,
     required this.tenantId,
     required this.activo,
     required this.createdAt,
@@ -2137,8 +2137,8 @@ class Usuario extends DataClass implements Insertable<Usuario> {
     map['email'] = Variable<String>(email);
     map['nombre'] = Variable<String>(nombre);
     map['rol'] = Variable<String>(rol);
-    if (!nullToAbsent || propietarioId != null) {
-      map['propietario_id'] = Variable<String>(propietarioId);
+    if (!nullToAbsent || residenteId != null) {
+      map['residente_id'] = Variable<String>(residenteId);
     }
     map['tenant_id'] = Variable<String>(tenantId);
     map['activo'] = Variable<bool>(activo);
@@ -2153,9 +2153,9 @@ class Usuario extends DataClass implements Insertable<Usuario> {
       email: Value(email),
       nombre: Value(nombre),
       rol: Value(rol),
-      propietarioId: propietarioId == null && nullToAbsent
+      residenteId: residenteId == null && nullToAbsent
           ? const Value.absent()
-          : Value(propietarioId),
+          : Value(residenteId),
       tenantId: Value(tenantId),
       activo: Value(activo),
       createdAt: Value(createdAt),
@@ -2173,7 +2173,7 @@ class Usuario extends DataClass implements Insertable<Usuario> {
       email: serializer.fromJson<String>(json['email']),
       nombre: serializer.fromJson<String>(json['nombre']),
       rol: serializer.fromJson<String>(json['rol']),
-      propietarioId: serializer.fromJson<String?>(json['propietarioId']),
+      residenteId: serializer.fromJson<String?>(json['residenteId']),
       tenantId: serializer.fromJson<String>(json['tenantId']),
       activo: serializer.fromJson<bool>(json['activo']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
@@ -2188,7 +2188,7 @@ class Usuario extends DataClass implements Insertable<Usuario> {
       'email': serializer.toJson<String>(email),
       'nombre': serializer.toJson<String>(nombre),
       'rol': serializer.toJson<String>(rol),
-      'propietarioId': serializer.toJson<String?>(propietarioId),
+      'residenteId': serializer.toJson<String?>(residenteId),
       'tenantId': serializer.toJson<String>(tenantId),
       'activo': serializer.toJson<bool>(activo),
       'createdAt': serializer.toJson<DateTime>(createdAt),
@@ -2201,7 +2201,7 @@ class Usuario extends DataClass implements Insertable<Usuario> {
     String? email,
     String? nombre,
     String? rol,
-    Value<String?> propietarioId = const Value.absent(),
+    Value<String?> residenteId = const Value.absent(),
     String? tenantId,
     bool? activo,
     DateTime? createdAt,
@@ -2211,9 +2211,7 @@ class Usuario extends DataClass implements Insertable<Usuario> {
     email: email ?? this.email,
     nombre: nombre ?? this.nombre,
     rol: rol ?? this.rol,
-    propietarioId: propietarioId.present
-        ? propietarioId.value
-        : this.propietarioId,
+    residenteId: residenteId.present ? residenteId.value : this.residenteId,
     tenantId: tenantId ?? this.tenantId,
     activo: activo ?? this.activo,
     createdAt: createdAt ?? this.createdAt,
@@ -2225,9 +2223,9 @@ class Usuario extends DataClass implements Insertable<Usuario> {
       email: data.email.present ? data.email.value : this.email,
       nombre: data.nombre.present ? data.nombre.value : this.nombre,
       rol: data.rol.present ? data.rol.value : this.rol,
-      propietarioId: data.propietarioId.present
-          ? data.propietarioId.value
-          : this.propietarioId,
+      residenteId: data.residenteId.present
+          ? data.residenteId.value
+          : this.residenteId,
       tenantId: data.tenantId.present ? data.tenantId.value : this.tenantId,
       activo: data.activo.present ? data.activo.value : this.activo,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
@@ -2242,7 +2240,7 @@ class Usuario extends DataClass implements Insertable<Usuario> {
           ..write('email: $email, ')
           ..write('nombre: $nombre, ')
           ..write('rol: $rol, ')
-          ..write('propietarioId: $propietarioId, ')
+          ..write('residenteId: $residenteId, ')
           ..write('tenantId: $tenantId, ')
           ..write('activo: $activo, ')
           ..write('createdAt: $createdAt, ')
@@ -2257,7 +2255,7 @@ class Usuario extends DataClass implements Insertable<Usuario> {
     email,
     nombre,
     rol,
-    propietarioId,
+    residenteId,
     tenantId,
     activo,
     createdAt,
@@ -2271,7 +2269,7 @@ class Usuario extends DataClass implements Insertable<Usuario> {
           other.email == this.email &&
           other.nombre == this.nombre &&
           other.rol == this.rol &&
-          other.propietarioId == this.propietarioId &&
+          other.residenteId == this.residenteId &&
           other.tenantId == this.tenantId &&
           other.activo == this.activo &&
           other.createdAt == this.createdAt &&
@@ -2283,7 +2281,7 @@ class UsuariosCompanion extends UpdateCompanion<Usuario> {
   final Value<String> email;
   final Value<String> nombre;
   final Value<String> rol;
-  final Value<String?> propietarioId;
+  final Value<String?> residenteId;
   final Value<String> tenantId;
   final Value<bool> activo;
   final Value<DateTime> createdAt;
@@ -2294,7 +2292,7 @@ class UsuariosCompanion extends UpdateCompanion<Usuario> {
     this.email = const Value.absent(),
     this.nombre = const Value.absent(),
     this.rol = const Value.absent(),
-    this.propietarioId = const Value.absent(),
+    this.residenteId = const Value.absent(),
     this.tenantId = const Value.absent(),
     this.activo = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -2306,7 +2304,7 @@ class UsuariosCompanion extends UpdateCompanion<Usuario> {
     required String email,
     required String nombre,
     required String rol,
-    this.propietarioId = const Value.absent(),
+    this.residenteId = const Value.absent(),
     required String tenantId,
     required bool activo,
     required DateTime createdAt,
@@ -2325,7 +2323,7 @@ class UsuariosCompanion extends UpdateCompanion<Usuario> {
     Expression<String>? email,
     Expression<String>? nombre,
     Expression<String>? rol,
-    Expression<String>? propietarioId,
+    Expression<String>? residenteId,
     Expression<String>? tenantId,
     Expression<bool>? activo,
     Expression<DateTime>? createdAt,
@@ -2337,7 +2335,7 @@ class UsuariosCompanion extends UpdateCompanion<Usuario> {
       if (email != null) 'email': email,
       if (nombre != null) 'nombre': nombre,
       if (rol != null) 'rol': rol,
-      if (propietarioId != null) 'propietario_id': propietarioId,
+      if (residenteId != null) 'residente_id': residenteId,
       if (tenantId != null) 'tenant_id': tenantId,
       if (activo != null) 'activo': activo,
       if (createdAt != null) 'created_at': createdAt,
@@ -2351,7 +2349,7 @@ class UsuariosCompanion extends UpdateCompanion<Usuario> {
     Value<String>? email,
     Value<String>? nombre,
     Value<String>? rol,
-    Value<String?>? propietarioId,
+    Value<String?>? residenteId,
     Value<String>? tenantId,
     Value<bool>? activo,
     Value<DateTime>? createdAt,
@@ -2363,7 +2361,7 @@ class UsuariosCompanion extends UpdateCompanion<Usuario> {
       email: email ?? this.email,
       nombre: nombre ?? this.nombre,
       rol: rol ?? this.rol,
-      propietarioId: propietarioId ?? this.propietarioId,
+      residenteId: residenteId ?? this.residenteId,
       tenantId: tenantId ?? this.tenantId,
       activo: activo ?? this.activo,
       createdAt: createdAt ?? this.createdAt,
@@ -2387,8 +2385,8 @@ class UsuariosCompanion extends UpdateCompanion<Usuario> {
     if (rol.present) {
       map['rol'] = Variable<String>(rol.value);
     }
-    if (propietarioId.present) {
-      map['propietario_id'] = Variable<String>(propietarioId.value);
+    if (residenteId.present) {
+      map['residente_id'] = Variable<String>(residenteId.value);
     }
     if (tenantId.present) {
       map['tenant_id'] = Variable<String>(tenantId.value);
@@ -2415,7 +2413,7 @@ class UsuariosCompanion extends UpdateCompanion<Usuario> {
           ..write('email: $email, ')
           ..write('nombre: $nombre, ')
           ..write('rol: $rol, ')
-          ..write('propietarioId: $propietarioId, ')
+          ..write('residenteId: $residenteId, ')
           ..write('tenantId: $tenantId, ')
           ..write('activo: $activo, ')
           ..write('createdAt: $createdAt, ')
@@ -2815,12 +2813,12 @@ class $TarifasTable extends Tarifas with TableInfo<$TarifasTable, Tarifa> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _conjuntoIdMeta = const VerificationMeta(
-    'conjuntoId',
+  static const VerificationMeta _proyectoIdMeta = const VerificationMeta(
+    'proyectoId',
   );
   @override
-  late final GeneratedColumn<String> conjuntoId = GeneratedColumn<String>(
-    'conjunto_id',
+  late final GeneratedColumn<String> proyectoId = GeneratedColumn<String>(
+    'proyecto_id',
     aliasedName,
     false,
     type: DriftSqlType.string,
@@ -2895,7 +2893,7 @@ class $TarifasTable extends Tarifas with TableInfo<$TarifasTable, Tarifa> {
   List<GeneratedColumn> get $columns => [
     id,
     tenantId,
-    conjuntoId,
+    proyectoId,
     frecuencia,
     monto,
     fechaVigencia,
@@ -2928,13 +2926,13 @@ class $TarifasTable extends Tarifas with TableInfo<$TarifasTable, Tarifa> {
     } else if (isInserting) {
       context.missing(_tenantIdMeta);
     }
-    if (data.containsKey('conjunto_id')) {
+    if (data.containsKey('proyecto_id')) {
       context.handle(
-        _conjuntoIdMeta,
-        conjuntoId.isAcceptableOrUnknown(data['conjunto_id']!, _conjuntoIdMeta),
+        _proyectoIdMeta,
+        proyectoId.isAcceptableOrUnknown(data['proyecto_id']!, _proyectoIdMeta),
       );
     } else if (isInserting) {
-      context.missing(_conjuntoIdMeta);
+      context.missing(_proyectoIdMeta);
     }
     if (data.containsKey('frecuencia')) {
       context.handle(
@@ -3004,9 +3002,9 @@ class $TarifasTable extends Tarifas with TableInfo<$TarifasTable, Tarifa> {
         DriftSqlType.string,
         data['${effectivePrefix}tenant_id'],
       )!,
-      conjuntoId: attachedDatabase.typeMapping.read(
+      proyectoId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}conjunto_id'],
+        data['${effectivePrefix}proyecto_id'],
       )!,
       frecuencia: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -3044,7 +3042,7 @@ class $TarifasTable extends Tarifas with TableInfo<$TarifasTable, Tarifa> {
 class Tarifa extends DataClass implements Insertable<Tarifa> {
   final String id;
   final String tenantId;
-  final String conjuntoId;
+  final String proyectoId;
   final String frecuencia;
   final int monto;
   final String fechaVigencia;
@@ -3054,7 +3052,7 @@ class Tarifa extends DataClass implements Insertable<Tarifa> {
   const Tarifa({
     required this.id,
     required this.tenantId,
-    required this.conjuntoId,
+    required this.proyectoId,
     required this.frecuencia,
     required this.monto,
     required this.fechaVigencia,
@@ -3067,7 +3065,7 @@ class Tarifa extends DataClass implements Insertable<Tarifa> {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
     map['tenant_id'] = Variable<String>(tenantId);
-    map['conjunto_id'] = Variable<String>(conjuntoId);
+    map['proyecto_id'] = Variable<String>(proyectoId);
     map['frecuencia'] = Variable<String>(frecuencia);
     map['monto'] = Variable<int>(monto);
     map['fecha_vigencia'] = Variable<String>(fechaVigencia);
@@ -3081,7 +3079,7 @@ class Tarifa extends DataClass implements Insertable<Tarifa> {
     return TarifasCompanion(
       id: Value(id),
       tenantId: Value(tenantId),
-      conjuntoId: Value(conjuntoId),
+      proyectoId: Value(proyectoId),
       frecuencia: Value(frecuencia),
       monto: Value(monto),
       fechaVigencia: Value(fechaVigencia),
@@ -3099,7 +3097,7 @@ class Tarifa extends DataClass implements Insertable<Tarifa> {
     return Tarifa(
       id: serializer.fromJson<String>(json['id']),
       tenantId: serializer.fromJson<String>(json['tenantId']),
-      conjuntoId: serializer.fromJson<String>(json['conjuntoId']),
+      proyectoId: serializer.fromJson<String>(json['proyectoId']),
       frecuencia: serializer.fromJson<String>(json['frecuencia']),
       monto: serializer.fromJson<int>(json['monto']),
       fechaVigencia: serializer.fromJson<String>(json['fechaVigencia']),
@@ -3114,7 +3112,7 @@ class Tarifa extends DataClass implements Insertable<Tarifa> {
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
       'tenantId': serializer.toJson<String>(tenantId),
-      'conjuntoId': serializer.toJson<String>(conjuntoId),
+      'proyectoId': serializer.toJson<String>(proyectoId),
       'frecuencia': serializer.toJson<String>(frecuencia),
       'monto': serializer.toJson<int>(monto),
       'fechaVigencia': serializer.toJson<String>(fechaVigencia),
@@ -3127,7 +3125,7 @@ class Tarifa extends DataClass implements Insertable<Tarifa> {
   Tarifa copyWith({
     String? id,
     String? tenantId,
-    String? conjuntoId,
+    String? proyectoId,
     String? frecuencia,
     int? monto,
     String? fechaVigencia,
@@ -3137,7 +3135,7 @@ class Tarifa extends DataClass implements Insertable<Tarifa> {
   }) => Tarifa(
     id: id ?? this.id,
     tenantId: tenantId ?? this.tenantId,
-    conjuntoId: conjuntoId ?? this.conjuntoId,
+    proyectoId: proyectoId ?? this.proyectoId,
     frecuencia: frecuencia ?? this.frecuencia,
     monto: monto ?? this.monto,
     fechaVigencia: fechaVigencia ?? this.fechaVigencia,
@@ -3149,9 +3147,9 @@ class Tarifa extends DataClass implements Insertable<Tarifa> {
     return Tarifa(
       id: data.id.present ? data.id.value : this.id,
       tenantId: data.tenantId.present ? data.tenantId.value : this.tenantId,
-      conjuntoId: data.conjuntoId.present
-          ? data.conjuntoId.value
-          : this.conjuntoId,
+      proyectoId: data.proyectoId.present
+          ? data.proyectoId.value
+          : this.proyectoId,
       frecuencia: data.frecuencia.present
           ? data.frecuencia.value
           : this.frecuencia,
@@ -3170,7 +3168,7 @@ class Tarifa extends DataClass implements Insertable<Tarifa> {
     return (StringBuffer('Tarifa(')
           ..write('id: $id, ')
           ..write('tenantId: $tenantId, ')
-          ..write('conjuntoId: $conjuntoId, ')
+          ..write('proyectoId: $proyectoId, ')
           ..write('frecuencia: $frecuencia, ')
           ..write('monto: $monto, ')
           ..write('fechaVigencia: $fechaVigencia, ')
@@ -3185,7 +3183,7 @@ class Tarifa extends DataClass implements Insertable<Tarifa> {
   int get hashCode => Object.hash(
     id,
     tenantId,
-    conjuntoId,
+    proyectoId,
     frecuencia,
     monto,
     fechaVigencia,
@@ -3199,7 +3197,7 @@ class Tarifa extends DataClass implements Insertable<Tarifa> {
       (other is Tarifa &&
           other.id == this.id &&
           other.tenantId == this.tenantId &&
-          other.conjuntoId == this.conjuntoId &&
+          other.proyectoId == this.proyectoId &&
           other.frecuencia == this.frecuencia &&
           other.monto == this.monto &&
           other.fechaVigencia == this.fechaVigencia &&
@@ -3211,7 +3209,7 @@ class Tarifa extends DataClass implements Insertable<Tarifa> {
 class TarifasCompanion extends UpdateCompanion<Tarifa> {
   final Value<String> id;
   final Value<String> tenantId;
-  final Value<String> conjuntoId;
+  final Value<String> proyectoId;
   final Value<String> frecuencia;
   final Value<int> monto;
   final Value<String> fechaVigencia;
@@ -3222,7 +3220,7 @@ class TarifasCompanion extends UpdateCompanion<Tarifa> {
   const TarifasCompanion({
     this.id = const Value.absent(),
     this.tenantId = const Value.absent(),
-    this.conjuntoId = const Value.absent(),
+    this.proyectoId = const Value.absent(),
     this.frecuencia = const Value.absent(),
     this.monto = const Value.absent(),
     this.fechaVigencia = const Value.absent(),
@@ -3234,7 +3232,7 @@ class TarifasCompanion extends UpdateCompanion<Tarifa> {
   TarifasCompanion.insert({
     required String id,
     required String tenantId,
-    required String conjuntoId,
+    required String proyectoId,
     required String frecuencia,
     required int monto,
     required String fechaVigencia,
@@ -3244,7 +3242,7 @@ class TarifasCompanion extends UpdateCompanion<Tarifa> {
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        tenantId = Value(tenantId),
-       conjuntoId = Value(conjuntoId),
+       proyectoId = Value(proyectoId),
        frecuencia = Value(frecuencia),
        monto = Value(monto),
        fechaVigencia = Value(fechaVigencia),
@@ -3254,7 +3252,7 @@ class TarifasCompanion extends UpdateCompanion<Tarifa> {
   static Insertable<Tarifa> custom({
     Expression<String>? id,
     Expression<String>? tenantId,
-    Expression<String>? conjuntoId,
+    Expression<String>? proyectoId,
     Expression<String>? frecuencia,
     Expression<int>? monto,
     Expression<String>? fechaVigencia,
@@ -3266,7 +3264,7 @@ class TarifasCompanion extends UpdateCompanion<Tarifa> {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (tenantId != null) 'tenant_id': tenantId,
-      if (conjuntoId != null) 'conjunto_id': conjuntoId,
+      if (proyectoId != null) 'proyecto_id': proyectoId,
       if (frecuencia != null) 'frecuencia': frecuencia,
       if (monto != null) 'monto': monto,
       if (fechaVigencia != null) 'fecha_vigencia': fechaVigencia,
@@ -3280,7 +3278,7 @@ class TarifasCompanion extends UpdateCompanion<Tarifa> {
   TarifasCompanion copyWith({
     Value<String>? id,
     Value<String>? tenantId,
-    Value<String>? conjuntoId,
+    Value<String>? proyectoId,
     Value<String>? frecuencia,
     Value<int>? monto,
     Value<String>? fechaVigencia,
@@ -3292,7 +3290,7 @@ class TarifasCompanion extends UpdateCompanion<Tarifa> {
     return TarifasCompanion(
       id: id ?? this.id,
       tenantId: tenantId ?? this.tenantId,
-      conjuntoId: conjuntoId ?? this.conjuntoId,
+      proyectoId: proyectoId ?? this.proyectoId,
       frecuencia: frecuencia ?? this.frecuencia,
       monto: monto ?? this.monto,
       fechaVigencia: fechaVigencia ?? this.fechaVigencia,
@@ -3312,8 +3310,8 @@ class TarifasCompanion extends UpdateCompanion<Tarifa> {
     if (tenantId.present) {
       map['tenant_id'] = Variable<String>(tenantId.value);
     }
-    if (conjuntoId.present) {
-      map['conjunto_id'] = Variable<String>(conjuntoId.value);
+    if (proyectoId.present) {
+      map['proyecto_id'] = Variable<String>(proyectoId.value);
     }
     if (frecuencia.present) {
       map['frecuencia'] = Variable<String>(frecuencia.value);
@@ -3344,7 +3342,7 @@ class TarifasCompanion extends UpdateCompanion<Tarifa> {
     return (StringBuffer('TarifasCompanion(')
           ..write('id: $id, ')
           ..write('tenantId: $tenantId, ')
-          ..write('conjuntoId: $conjuntoId, ')
+          ..write('proyectoId: $proyectoId, ')
           ..write('frecuencia: $frecuencia, ')
           ..write('monto: $monto, ')
           ..write('fechaVigencia: $fechaVigencia, ')
@@ -3383,12 +3381,12 @@ class $MontosPredefinidosTable extends MontosPredefinidos
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _conjuntoIdMeta = const VerificationMeta(
-    'conjuntoId',
+  static const VerificationMeta _proyectoIdMeta = const VerificationMeta(
+    'proyectoId',
   );
   @override
-  late final GeneratedColumn<String> conjuntoId = GeneratedColumn<String>(
-    'conjunto_id',
+  late final GeneratedColumn<String> proyectoId = GeneratedColumn<String>(
+    'proyecto_id',
     aliasedName,
     false,
     type: DriftSqlType.string,
@@ -3461,7 +3459,7 @@ class $MontosPredefinidosTable extends MontosPredefinidos
   List<GeneratedColumn> get $columns => [
     id,
     tenantId,
-    conjuntoId,
+    proyectoId,
     monto,
     descripcion,
     activo,
@@ -3494,13 +3492,13 @@ class $MontosPredefinidosTable extends MontosPredefinidos
     } else if (isInserting) {
       context.missing(_tenantIdMeta);
     }
-    if (data.containsKey('conjunto_id')) {
+    if (data.containsKey('proyecto_id')) {
       context.handle(
-        _conjuntoIdMeta,
-        conjuntoId.isAcceptableOrUnknown(data['conjunto_id']!, _conjuntoIdMeta),
+        _proyectoIdMeta,
+        proyectoId.isAcceptableOrUnknown(data['proyecto_id']!, _proyectoIdMeta),
       );
     } else if (isInserting) {
-      context.missing(_conjuntoIdMeta);
+      context.missing(_proyectoIdMeta);
     }
     if (data.containsKey('monto')) {
       context.handle(
@@ -3570,9 +3568,9 @@ class $MontosPredefinidosTable extends MontosPredefinidos
         DriftSqlType.string,
         data['${effectivePrefix}tenant_id'],
       )!,
-      conjuntoId: attachedDatabase.typeMapping.read(
+      proyectoId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}conjunto_id'],
+        data['${effectivePrefix}proyecto_id'],
       )!,
       monto: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
@@ -3611,7 +3609,7 @@ class MontosPredefinido extends DataClass
     implements Insertable<MontosPredefinido> {
   final String id;
   final String tenantId;
-  final String conjuntoId;
+  final String proyectoId;
   final int monto;
   final String descripcion;
   final bool activo;
@@ -3621,7 +3619,7 @@ class MontosPredefinido extends DataClass
   const MontosPredefinido({
     required this.id,
     required this.tenantId,
-    required this.conjuntoId,
+    required this.proyectoId,
     required this.monto,
     required this.descripcion,
     required this.activo,
@@ -3634,7 +3632,7 @@ class MontosPredefinido extends DataClass
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
     map['tenant_id'] = Variable<String>(tenantId);
-    map['conjunto_id'] = Variable<String>(conjuntoId);
+    map['proyecto_id'] = Variable<String>(proyectoId);
     map['monto'] = Variable<int>(monto);
     map['descripcion'] = Variable<String>(descripcion);
     map['activo'] = Variable<bool>(activo);
@@ -3648,7 +3646,7 @@ class MontosPredefinido extends DataClass
     return MontosPredefinidosCompanion(
       id: Value(id),
       tenantId: Value(tenantId),
-      conjuntoId: Value(conjuntoId),
+      proyectoId: Value(proyectoId),
       monto: Value(monto),
       descripcion: Value(descripcion),
       activo: Value(activo),
@@ -3666,7 +3664,7 @@ class MontosPredefinido extends DataClass
     return MontosPredefinido(
       id: serializer.fromJson<String>(json['id']),
       tenantId: serializer.fromJson<String>(json['tenantId']),
-      conjuntoId: serializer.fromJson<String>(json['conjuntoId']),
+      proyectoId: serializer.fromJson<String>(json['proyectoId']),
       monto: serializer.fromJson<int>(json['monto']),
       descripcion: serializer.fromJson<String>(json['descripcion']),
       activo: serializer.fromJson<bool>(json['activo']),
@@ -3681,7 +3679,7 @@ class MontosPredefinido extends DataClass
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
       'tenantId': serializer.toJson<String>(tenantId),
-      'conjuntoId': serializer.toJson<String>(conjuntoId),
+      'proyectoId': serializer.toJson<String>(proyectoId),
       'monto': serializer.toJson<int>(monto),
       'descripcion': serializer.toJson<String>(descripcion),
       'activo': serializer.toJson<bool>(activo),
@@ -3694,7 +3692,7 @@ class MontosPredefinido extends DataClass
   MontosPredefinido copyWith({
     String? id,
     String? tenantId,
-    String? conjuntoId,
+    String? proyectoId,
     int? monto,
     String? descripcion,
     bool? activo,
@@ -3704,7 +3702,7 @@ class MontosPredefinido extends DataClass
   }) => MontosPredefinido(
     id: id ?? this.id,
     tenantId: tenantId ?? this.tenantId,
-    conjuntoId: conjuntoId ?? this.conjuntoId,
+    proyectoId: proyectoId ?? this.proyectoId,
     monto: monto ?? this.monto,
     descripcion: descripcion ?? this.descripcion,
     activo: activo ?? this.activo,
@@ -3716,9 +3714,9 @@ class MontosPredefinido extends DataClass
     return MontosPredefinido(
       id: data.id.present ? data.id.value : this.id,
       tenantId: data.tenantId.present ? data.tenantId.value : this.tenantId,
-      conjuntoId: data.conjuntoId.present
-          ? data.conjuntoId.value
-          : this.conjuntoId,
+      proyectoId: data.proyectoId.present
+          ? data.proyectoId.value
+          : this.proyectoId,
       monto: data.monto.present ? data.monto.value : this.monto,
       descripcion: data.descripcion.present
           ? data.descripcion.value
@@ -3735,7 +3733,7 @@ class MontosPredefinido extends DataClass
     return (StringBuffer('MontosPredefinido(')
           ..write('id: $id, ')
           ..write('tenantId: $tenantId, ')
-          ..write('conjuntoId: $conjuntoId, ')
+          ..write('proyectoId: $proyectoId, ')
           ..write('monto: $monto, ')
           ..write('descripcion: $descripcion, ')
           ..write('activo: $activo, ')
@@ -3750,7 +3748,7 @@ class MontosPredefinido extends DataClass
   int get hashCode => Object.hash(
     id,
     tenantId,
-    conjuntoId,
+    proyectoId,
     monto,
     descripcion,
     activo,
@@ -3764,7 +3762,7 @@ class MontosPredefinido extends DataClass
       (other is MontosPredefinido &&
           other.id == this.id &&
           other.tenantId == this.tenantId &&
-          other.conjuntoId == this.conjuntoId &&
+          other.proyectoId == this.proyectoId &&
           other.monto == this.monto &&
           other.descripcion == this.descripcion &&
           other.activo == this.activo &&
@@ -3776,7 +3774,7 @@ class MontosPredefinido extends DataClass
 class MontosPredefinidosCompanion extends UpdateCompanion<MontosPredefinido> {
   final Value<String> id;
   final Value<String> tenantId;
-  final Value<String> conjuntoId;
+  final Value<String> proyectoId;
   final Value<int> monto;
   final Value<String> descripcion;
   final Value<bool> activo;
@@ -3787,7 +3785,7 @@ class MontosPredefinidosCompanion extends UpdateCompanion<MontosPredefinido> {
   const MontosPredefinidosCompanion({
     this.id = const Value.absent(),
     this.tenantId = const Value.absent(),
-    this.conjuntoId = const Value.absent(),
+    this.proyectoId = const Value.absent(),
     this.monto = const Value.absent(),
     this.descripcion = const Value.absent(),
     this.activo = const Value.absent(),
@@ -3799,7 +3797,7 @@ class MontosPredefinidosCompanion extends UpdateCompanion<MontosPredefinido> {
   MontosPredefinidosCompanion.insert({
     required String id,
     required String tenantId,
-    required String conjuntoId,
+    required String proyectoId,
     required int monto,
     required String descripcion,
     required bool activo,
@@ -3809,7 +3807,7 @@ class MontosPredefinidosCompanion extends UpdateCompanion<MontosPredefinido> {
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        tenantId = Value(tenantId),
-       conjuntoId = Value(conjuntoId),
+       proyectoId = Value(proyectoId),
        monto = Value(monto),
        descripcion = Value(descripcion),
        activo = Value(activo),
@@ -3819,7 +3817,7 @@ class MontosPredefinidosCompanion extends UpdateCompanion<MontosPredefinido> {
   static Insertable<MontosPredefinido> custom({
     Expression<String>? id,
     Expression<String>? tenantId,
-    Expression<String>? conjuntoId,
+    Expression<String>? proyectoId,
     Expression<int>? monto,
     Expression<String>? descripcion,
     Expression<bool>? activo,
@@ -3831,7 +3829,7 @@ class MontosPredefinidosCompanion extends UpdateCompanion<MontosPredefinido> {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (tenantId != null) 'tenant_id': tenantId,
-      if (conjuntoId != null) 'conjunto_id': conjuntoId,
+      if (proyectoId != null) 'proyecto_id': proyectoId,
       if (monto != null) 'monto': monto,
       if (descripcion != null) 'descripcion': descripcion,
       if (activo != null) 'activo': activo,
@@ -3845,7 +3843,7 @@ class MontosPredefinidosCompanion extends UpdateCompanion<MontosPredefinido> {
   MontosPredefinidosCompanion copyWith({
     Value<String>? id,
     Value<String>? tenantId,
-    Value<String>? conjuntoId,
+    Value<String>? proyectoId,
     Value<int>? monto,
     Value<String>? descripcion,
     Value<bool>? activo,
@@ -3857,7 +3855,7 @@ class MontosPredefinidosCompanion extends UpdateCompanion<MontosPredefinido> {
     return MontosPredefinidosCompanion(
       id: id ?? this.id,
       tenantId: tenantId ?? this.tenantId,
-      conjuntoId: conjuntoId ?? this.conjuntoId,
+      proyectoId: proyectoId ?? this.proyectoId,
       monto: monto ?? this.monto,
       descripcion: descripcion ?? this.descripcion,
       activo: activo ?? this.activo,
@@ -3877,8 +3875,8 @@ class MontosPredefinidosCompanion extends UpdateCompanion<MontosPredefinido> {
     if (tenantId.present) {
       map['tenant_id'] = Variable<String>(tenantId.value);
     }
-    if (conjuntoId.present) {
-      map['conjunto_id'] = Variable<String>(conjuntoId.value);
+    if (proyectoId.present) {
+      map['proyecto_id'] = Variable<String>(proyectoId.value);
     }
     if (monto.present) {
       map['monto'] = Variable<int>(monto.value);
@@ -3909,7 +3907,7 @@ class MontosPredefinidosCompanion extends UpdateCompanion<MontosPredefinido> {
     return (StringBuffer('MontosPredefinidosCompanion(')
           ..write('id: $id, ')
           ..write('tenantId: $tenantId, ')
-          ..write('conjuntoId: $conjuntoId, ')
+          ..write('proyectoId: $proyectoId, ')
           ..write('monto: $monto, ')
           ..write('descripcion: $descripcion, ')
           ..write('activo: $activo, ')
@@ -3922,12 +3920,12 @@ class MontosPredefinidosCompanion extends UpdateCompanion<MontosPredefinido> {
   }
 }
 
-class $CuentasCarteraTable extends CuentasCartera
-    with TableInfo<$CuentasCarteraTable, CuentasCarteraData> {
+class $PlanesDeCobroTable extends PlanesDeCobro
+    with TableInfo<$PlanesDeCobroTable, PlanesDeCobroData> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
-  $CuentasCarteraTable(this.attachedDatabase, [this._alias]);
+  $PlanesDeCobroTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
   late final GeneratedColumn<String> id = GeneratedColumn<String>(
@@ -3937,12 +3935,12 @@ class $CuentasCarteraTable extends CuentasCartera
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _propietarioIdMeta = const VerificationMeta(
-    'propietarioId',
+  static const VerificationMeta _residenteIdMeta = const VerificationMeta(
+    'residenteId',
   );
   @override
-  late final GeneratedColumn<String> propietarioId = GeneratedColumn<String>(
-    'propietario_id',
+  late final GeneratedColumn<String> residenteId = GeneratedColumn<String>(
+    'residente_id',
     aliasedName,
     false,
     type: DriftSqlType.string,
@@ -3959,12 +3957,12 @@ class $CuentasCarteraTable extends CuentasCartera
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _conjuntoIdMeta = const VerificationMeta(
-    'conjuntoId',
+  static const VerificationMeta _proyectoIdMeta = const VerificationMeta(
+    'proyectoId',
   );
   @override
-  late final GeneratedColumn<String> conjuntoId = GeneratedColumn<String>(
-    'conjunto_id',
+  late final GeneratedColumn<String> proyectoId = GeneratedColumn<String>(
+    'proyecto_id',
     aliasedName,
     false,
     type: DriftSqlType.string,
@@ -4029,9 +4027,9 @@ class $CuentasCarteraTable extends CuentasCartera
   @override
   List<GeneratedColumn> get $columns => [
     id,
-    propietarioId,
+    residenteId,
     tenantId,
-    conjuntoId,
+    proyectoId,
     frecuencia,
     fechaActivacion,
     activa,
@@ -4042,10 +4040,10 @@ class $CuentasCarteraTable extends CuentasCartera
   String get aliasedName => _alias ?? actualTableName;
   @override
   String get actualTableName => $name;
-  static const String $name = 'cuentas_cartera';
+  static const String $name = 'planes_de_cobro';
   @override
   VerificationContext validateIntegrity(
-    Insertable<CuentasCarteraData> instance, {
+    Insertable<PlanesDeCobroData> instance, {
     bool isInserting = false,
   }) {
     final context = VerificationContext();
@@ -4055,16 +4053,16 @@ class $CuentasCarteraTable extends CuentasCartera
     } else if (isInserting) {
       context.missing(_idMeta);
     }
-    if (data.containsKey('propietario_id')) {
+    if (data.containsKey('residente_id')) {
       context.handle(
-        _propietarioIdMeta,
-        propietarioId.isAcceptableOrUnknown(
-          data['propietario_id']!,
-          _propietarioIdMeta,
+        _residenteIdMeta,
+        residenteId.isAcceptableOrUnknown(
+          data['residente_id']!,
+          _residenteIdMeta,
         ),
       );
     } else if (isInserting) {
-      context.missing(_propietarioIdMeta);
+      context.missing(_residenteIdMeta);
     }
     if (data.containsKey('tenant_id')) {
       context.handle(
@@ -4074,13 +4072,13 @@ class $CuentasCarteraTable extends CuentasCartera
     } else if (isInserting) {
       context.missing(_tenantIdMeta);
     }
-    if (data.containsKey('conjunto_id')) {
+    if (data.containsKey('proyecto_id')) {
       context.handle(
-        _conjuntoIdMeta,
-        conjuntoId.isAcceptableOrUnknown(data['conjunto_id']!, _conjuntoIdMeta),
+        _proyectoIdMeta,
+        proyectoId.isAcceptableOrUnknown(data['proyecto_id']!, _proyectoIdMeta),
       );
     } else if (isInserting) {
-      context.missing(_conjuntoIdMeta);
+      context.missing(_proyectoIdMeta);
     }
     if (data.containsKey('frecuencia')) {
       context.handle(
@@ -4131,24 +4129,24 @@ class $CuentasCarteraTable extends CuentasCartera
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  CuentasCarteraData map(Map<String, dynamic> data, {String? tablePrefix}) {
+  PlanesDeCobroData map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return CuentasCarteraData(
+    return PlanesDeCobroData(
       id: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
-      propietarioId: attachedDatabase.typeMapping.read(
+      residenteId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}propietario_id'],
+        data['${effectivePrefix}residente_id'],
       )!,
       tenantId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}tenant_id'],
       )!,
-      conjuntoId: attachedDatabase.typeMapping.read(
+      proyectoId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}conjunto_id'],
+        data['${effectivePrefix}proyecto_id'],
       )!,
       frecuencia: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -4174,27 +4172,27 @@ class $CuentasCarteraTable extends CuentasCartera
   }
 
   @override
-  $CuentasCarteraTable createAlias(String alias) {
-    return $CuentasCarteraTable(attachedDatabase, alias);
+  $PlanesDeCobroTable createAlias(String alias) {
+    return $PlanesDeCobroTable(attachedDatabase, alias);
   }
 }
 
-class CuentasCarteraData extends DataClass
-    implements Insertable<CuentasCarteraData> {
+class PlanesDeCobroData extends DataClass
+    implements Insertable<PlanesDeCobroData> {
   final String id;
-  final String propietarioId;
+  final String residenteId;
   final String tenantId;
-  final String conjuntoId;
+  final String proyectoId;
   final String frecuencia;
   final String fechaActivacion;
   final bool activa;
   final DateTime createdAt;
   final DateTime updatedAt;
-  const CuentasCarteraData({
+  const PlanesDeCobroData({
     required this.id,
-    required this.propietarioId,
+    required this.residenteId,
     required this.tenantId,
-    required this.conjuntoId,
+    required this.proyectoId,
     required this.frecuencia,
     required this.fechaActivacion,
     required this.activa,
@@ -4205,9 +4203,9 @@ class CuentasCarteraData extends DataClass
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
-    map['propietario_id'] = Variable<String>(propietarioId);
+    map['residente_id'] = Variable<String>(residenteId);
     map['tenant_id'] = Variable<String>(tenantId);
-    map['conjunto_id'] = Variable<String>(conjuntoId);
+    map['proyecto_id'] = Variable<String>(proyectoId);
     map['frecuencia'] = Variable<String>(frecuencia);
     map['fecha_activacion'] = Variable<String>(fechaActivacion);
     map['activa'] = Variable<bool>(activa);
@@ -4216,12 +4214,12 @@ class CuentasCarteraData extends DataClass
     return map;
   }
 
-  CuentasCarteraCompanion toCompanion(bool nullToAbsent) {
-    return CuentasCarteraCompanion(
+  PlanesDeCobroCompanion toCompanion(bool nullToAbsent) {
+    return PlanesDeCobroCompanion(
       id: Value(id),
-      propietarioId: Value(propietarioId),
+      residenteId: Value(residenteId),
       tenantId: Value(tenantId),
-      conjuntoId: Value(conjuntoId),
+      proyectoId: Value(proyectoId),
       frecuencia: Value(frecuencia),
       fechaActivacion: Value(fechaActivacion),
       activa: Value(activa),
@@ -4230,16 +4228,16 @@ class CuentasCarteraData extends DataClass
     );
   }
 
-  factory CuentasCarteraData.fromJson(
+  factory PlanesDeCobroData.fromJson(
     Map<String, dynamic> json, {
     ValueSerializer? serializer,
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return CuentasCarteraData(
+    return PlanesDeCobroData(
       id: serializer.fromJson<String>(json['id']),
-      propietarioId: serializer.fromJson<String>(json['propietarioId']),
+      residenteId: serializer.fromJson<String>(json['residenteId']),
       tenantId: serializer.fromJson<String>(json['tenantId']),
-      conjuntoId: serializer.fromJson<String>(json['conjuntoId']),
+      proyectoId: serializer.fromJson<String>(json['proyectoId']),
       frecuencia: serializer.fromJson<String>(json['frecuencia']),
       fechaActivacion: serializer.fromJson<String>(json['fechaActivacion']),
       activa: serializer.fromJson<bool>(json['activa']),
@@ -4252,9 +4250,9 @@ class CuentasCarteraData extends DataClass
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
-      'propietarioId': serializer.toJson<String>(propietarioId),
+      'residenteId': serializer.toJson<String>(residenteId),
       'tenantId': serializer.toJson<String>(tenantId),
-      'conjuntoId': serializer.toJson<String>(conjuntoId),
+      'proyectoId': serializer.toJson<String>(proyectoId),
       'frecuencia': serializer.toJson<String>(frecuencia),
       'fechaActivacion': serializer.toJson<String>(fechaActivacion),
       'activa': serializer.toJson<bool>(activa),
@@ -4263,37 +4261,37 @@ class CuentasCarteraData extends DataClass
     };
   }
 
-  CuentasCarteraData copyWith({
+  PlanesDeCobroData copyWith({
     String? id,
-    String? propietarioId,
+    String? residenteId,
     String? tenantId,
-    String? conjuntoId,
+    String? proyectoId,
     String? frecuencia,
     String? fechaActivacion,
     bool? activa,
     DateTime? createdAt,
     DateTime? updatedAt,
-  }) => CuentasCarteraData(
+  }) => PlanesDeCobroData(
     id: id ?? this.id,
-    propietarioId: propietarioId ?? this.propietarioId,
+    residenteId: residenteId ?? this.residenteId,
     tenantId: tenantId ?? this.tenantId,
-    conjuntoId: conjuntoId ?? this.conjuntoId,
+    proyectoId: proyectoId ?? this.proyectoId,
     frecuencia: frecuencia ?? this.frecuencia,
     fechaActivacion: fechaActivacion ?? this.fechaActivacion,
     activa: activa ?? this.activa,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );
-  CuentasCarteraData copyWithCompanion(CuentasCarteraCompanion data) {
-    return CuentasCarteraData(
+  PlanesDeCobroData copyWithCompanion(PlanesDeCobroCompanion data) {
+    return PlanesDeCobroData(
       id: data.id.present ? data.id.value : this.id,
-      propietarioId: data.propietarioId.present
-          ? data.propietarioId.value
-          : this.propietarioId,
+      residenteId: data.residenteId.present
+          ? data.residenteId.value
+          : this.residenteId,
       tenantId: data.tenantId.present ? data.tenantId.value : this.tenantId,
-      conjuntoId: data.conjuntoId.present
-          ? data.conjuntoId.value
-          : this.conjuntoId,
+      proyectoId: data.proyectoId.present
+          ? data.proyectoId.value
+          : this.proyectoId,
       frecuencia: data.frecuencia.present
           ? data.frecuencia.value
           : this.frecuencia,
@@ -4308,11 +4306,11 @@ class CuentasCarteraData extends DataClass
 
   @override
   String toString() {
-    return (StringBuffer('CuentasCarteraData(')
+    return (StringBuffer('PlanesDeCobroData(')
           ..write('id: $id, ')
-          ..write('propietarioId: $propietarioId, ')
+          ..write('residenteId: $residenteId, ')
           ..write('tenantId: $tenantId, ')
-          ..write('conjuntoId: $conjuntoId, ')
+          ..write('proyectoId: $proyectoId, ')
           ..write('frecuencia: $frecuencia, ')
           ..write('fechaActivacion: $fechaActivacion, ')
           ..write('activa: $activa, ')
@@ -4325,9 +4323,9 @@ class CuentasCarteraData extends DataClass
   @override
   int get hashCode => Object.hash(
     id,
-    propietarioId,
+    residenteId,
     tenantId,
-    conjuntoId,
+    proyectoId,
     frecuencia,
     fechaActivacion,
     activa,
@@ -4337,11 +4335,11 @@ class CuentasCarteraData extends DataClass
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is CuentasCarteraData &&
+      (other is PlanesDeCobroData &&
           other.id == this.id &&
-          other.propietarioId == this.propietarioId &&
+          other.residenteId == this.residenteId &&
           other.tenantId == this.tenantId &&
-          other.conjuntoId == this.conjuntoId &&
+          other.proyectoId == this.proyectoId &&
           other.frecuencia == this.frecuencia &&
           other.fechaActivacion == this.fechaActivacion &&
           other.activa == this.activa &&
@@ -4349,22 +4347,22 @@ class CuentasCarteraData extends DataClass
           other.updatedAt == this.updatedAt);
 }
 
-class CuentasCarteraCompanion extends UpdateCompanion<CuentasCarteraData> {
+class PlanesDeCobroCompanion extends UpdateCompanion<PlanesDeCobroData> {
   final Value<String> id;
-  final Value<String> propietarioId;
+  final Value<String> residenteId;
   final Value<String> tenantId;
-  final Value<String> conjuntoId;
+  final Value<String> proyectoId;
   final Value<String> frecuencia;
   final Value<String> fechaActivacion;
   final Value<bool> activa;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
-  const CuentasCarteraCompanion({
+  const PlanesDeCobroCompanion({
     this.id = const Value.absent(),
-    this.propietarioId = const Value.absent(),
+    this.residenteId = const Value.absent(),
     this.tenantId = const Value.absent(),
-    this.conjuntoId = const Value.absent(),
+    this.proyectoId = const Value.absent(),
     this.frecuencia = const Value.absent(),
     this.fechaActivacion = const Value.absent(),
     this.activa = const Value.absent(),
@@ -4372,11 +4370,11 @@ class CuentasCarteraCompanion extends UpdateCompanion<CuentasCarteraData> {
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
-  CuentasCarteraCompanion.insert({
+  PlanesDeCobroCompanion.insert({
     required String id,
-    required String propietarioId,
+    required String residenteId,
     required String tenantId,
-    required String conjuntoId,
+    required String proyectoId,
     required String frecuencia,
     required String fechaActivacion,
     required bool activa,
@@ -4384,19 +4382,19 @@ class CuentasCarteraCompanion extends UpdateCompanion<CuentasCarteraData> {
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
-       propietarioId = Value(propietarioId),
+       residenteId = Value(residenteId),
        tenantId = Value(tenantId),
-       conjuntoId = Value(conjuntoId),
+       proyectoId = Value(proyectoId),
        frecuencia = Value(frecuencia),
        fechaActivacion = Value(fechaActivacion),
        activa = Value(activa),
        createdAt = Value(createdAt),
        updatedAt = Value(updatedAt);
-  static Insertable<CuentasCarteraData> custom({
+  static Insertable<PlanesDeCobroData> custom({
     Expression<String>? id,
-    Expression<String>? propietarioId,
+    Expression<String>? residenteId,
     Expression<String>? tenantId,
-    Expression<String>? conjuntoId,
+    Expression<String>? proyectoId,
     Expression<String>? frecuencia,
     Expression<String>? fechaActivacion,
     Expression<bool>? activa,
@@ -4406,9 +4404,9 @@ class CuentasCarteraCompanion extends UpdateCompanion<CuentasCarteraData> {
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
-      if (propietarioId != null) 'propietario_id': propietarioId,
+      if (residenteId != null) 'residente_id': residenteId,
       if (tenantId != null) 'tenant_id': tenantId,
-      if (conjuntoId != null) 'conjunto_id': conjuntoId,
+      if (proyectoId != null) 'proyecto_id': proyectoId,
       if (frecuencia != null) 'frecuencia': frecuencia,
       if (fechaActivacion != null) 'fecha_activacion': fechaActivacion,
       if (activa != null) 'activa': activa,
@@ -4418,11 +4416,11 @@ class CuentasCarteraCompanion extends UpdateCompanion<CuentasCarteraData> {
     });
   }
 
-  CuentasCarteraCompanion copyWith({
+  PlanesDeCobroCompanion copyWith({
     Value<String>? id,
-    Value<String>? propietarioId,
+    Value<String>? residenteId,
     Value<String>? tenantId,
-    Value<String>? conjuntoId,
+    Value<String>? proyectoId,
     Value<String>? frecuencia,
     Value<String>? fechaActivacion,
     Value<bool>? activa,
@@ -4430,11 +4428,11 @@ class CuentasCarteraCompanion extends UpdateCompanion<CuentasCarteraData> {
     Value<DateTime>? updatedAt,
     Value<int>? rowid,
   }) {
-    return CuentasCarteraCompanion(
+    return PlanesDeCobroCompanion(
       id: id ?? this.id,
-      propietarioId: propietarioId ?? this.propietarioId,
+      residenteId: residenteId ?? this.residenteId,
       tenantId: tenantId ?? this.tenantId,
-      conjuntoId: conjuntoId ?? this.conjuntoId,
+      proyectoId: proyectoId ?? this.proyectoId,
       frecuencia: frecuencia ?? this.frecuencia,
       fechaActivacion: fechaActivacion ?? this.fechaActivacion,
       activa: activa ?? this.activa,
@@ -4450,14 +4448,14 @@ class CuentasCarteraCompanion extends UpdateCompanion<CuentasCarteraData> {
     if (id.present) {
       map['id'] = Variable<String>(id.value);
     }
-    if (propietarioId.present) {
-      map['propietario_id'] = Variable<String>(propietarioId.value);
+    if (residenteId.present) {
+      map['residente_id'] = Variable<String>(residenteId.value);
     }
     if (tenantId.present) {
       map['tenant_id'] = Variable<String>(tenantId.value);
     }
-    if (conjuntoId.present) {
-      map['conjunto_id'] = Variable<String>(conjuntoId.value);
+    if (proyectoId.present) {
+      map['proyecto_id'] = Variable<String>(proyectoId.value);
     }
     if (frecuencia.present) {
       map['frecuencia'] = Variable<String>(frecuencia.value);
@@ -4482,11 +4480,11 @@ class CuentasCarteraCompanion extends UpdateCompanion<CuentasCarteraData> {
 
   @override
   String toString() {
-    return (StringBuffer('CuentasCarteraCompanion(')
+    return (StringBuffer('PlanesDeCobroCompanion(')
           ..write('id: $id, ')
-          ..write('propietarioId: $propietarioId, ')
+          ..write('residenteId: $residenteId, ')
           ..write('tenantId: $tenantId, ')
-          ..write('conjuntoId: $conjuntoId, ')
+          ..write('proyectoId: $proyectoId, ')
           ..write('frecuencia: $frecuencia, ')
           ..write('fechaActivacion: $fechaActivacion, ')
           ..write('activa: $activa, ')
@@ -4498,11 +4496,11 @@ class CuentasCarteraCompanion extends UpdateCompanion<CuentasCarteraData> {
   }
 }
 
-class $CuotasTable extends Cuotas with TableInfo<$CuotasTable, Cuota> {
+class $CobrosTable extends Cobros with TableInfo<$CobrosTable, Cobro> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
-  $CuotasTable(this.attachedDatabase, [this._alias]);
+  $CobrosTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
   late final GeneratedColumn<String> id = GeneratedColumn<String>(
@@ -4512,12 +4510,12 @@ class $CuotasTable extends Cuotas with TableInfo<$CuotasTable, Cuota> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _propietarioIdMeta = const VerificationMeta(
-    'propietarioId',
+  static const VerificationMeta _residenteIdMeta = const VerificationMeta(
+    'residenteId',
   );
   @override
-  late final GeneratedColumn<String> propietarioId = GeneratedColumn<String>(
-    'propietario_id',
+  late final GeneratedColumn<String> residenteId = GeneratedColumn<String>(
+    'residente_id',
     aliasedName,
     false,
     type: DriftSqlType.string,
@@ -4656,7 +4654,7 @@ class $CuotasTable extends Cuotas with TableInfo<$CuotasTable, Cuota> {
   @override
   List<GeneratedColumn> get $columns => [
     id,
-    propietarioId,
+    residenteId,
     tenantId,
     tarifaId,
     concepto,
@@ -4674,10 +4672,10 @@ class $CuotasTable extends Cuotas with TableInfo<$CuotasTable, Cuota> {
   String get aliasedName => _alias ?? actualTableName;
   @override
   String get actualTableName => $name;
-  static const String $name = 'cuotas';
+  static const String $name = 'cobros';
   @override
   VerificationContext validateIntegrity(
-    Insertable<Cuota> instance, {
+    Insertable<Cobro> instance, {
     bool isInserting = false,
   }) {
     final context = VerificationContext();
@@ -4687,16 +4685,16 @@ class $CuotasTable extends Cuotas with TableInfo<$CuotasTable, Cuota> {
     } else if (isInserting) {
       context.missing(_idMeta);
     }
-    if (data.containsKey('propietario_id')) {
+    if (data.containsKey('residente_id')) {
       context.handle(
-        _propietarioIdMeta,
-        propietarioId.isAcceptableOrUnknown(
-          data['propietario_id']!,
-          _propietarioIdMeta,
+        _residenteIdMeta,
+        residenteId.isAcceptableOrUnknown(
+          data['residente_id']!,
+          _residenteIdMeta,
         ),
       );
     } else if (isInserting) {
-      context.missing(_propietarioIdMeta);
+      context.missing(_residenteIdMeta);
     }
     if (data.containsKey('tenant_id')) {
       context.handle(
@@ -4810,16 +4808,16 @@ class $CuotasTable extends Cuotas with TableInfo<$CuotasTable, Cuota> {
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  Cuota map(Map<String, dynamic> data, {String? tablePrefix}) {
+  Cobro map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return Cuota(
+    return Cobro(
       id: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
-      propietarioId: attachedDatabase.typeMapping.read(
+      residenteId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}propietario_id'],
+        data['${effectivePrefix}residente_id'],
       )!,
       tenantId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -4873,14 +4871,14 @@ class $CuotasTable extends Cuotas with TableInfo<$CuotasTable, Cuota> {
   }
 
   @override
-  $CuotasTable createAlias(String alias) {
-    return $CuotasTable(attachedDatabase, alias);
+  $CobrosTable createAlias(String alias) {
+    return $CobrosTable(attachedDatabase, alias);
   }
 }
 
-class Cuota extends DataClass implements Insertable<Cuota> {
+class Cobro extends DataClass implements Insertable<Cobro> {
   final String id;
-  final String propietarioId;
+  final String residenteId;
   final String tenantId;
   final String? tarifaId;
   final String concepto;
@@ -4893,9 +4891,9 @@ class Cuota extends DataClass implements Insertable<Cuota> {
   final bool notificacionEnviada;
   final DateTime createdAt;
   final DateTime updatedAt;
-  const Cuota({
+  const Cobro({
     required this.id,
-    required this.propietarioId,
+    required this.residenteId,
     required this.tenantId,
     this.tarifaId,
     required this.concepto,
@@ -4913,7 +4911,7 @@ class Cuota extends DataClass implements Insertable<Cuota> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
-    map['propietario_id'] = Variable<String>(propietarioId);
+    map['residente_id'] = Variable<String>(residenteId);
     map['tenant_id'] = Variable<String>(tenantId);
     if (!nullToAbsent || tarifaId != null) {
       map['tarifa_id'] = Variable<String>(tarifaId);
@@ -4931,10 +4929,10 @@ class Cuota extends DataClass implements Insertable<Cuota> {
     return map;
   }
 
-  CuotasCompanion toCompanion(bool nullToAbsent) {
-    return CuotasCompanion(
+  CobrosCompanion toCompanion(bool nullToAbsent) {
+    return CobrosCompanion(
       id: Value(id),
-      propietarioId: Value(propietarioId),
+      residenteId: Value(residenteId),
       tenantId: Value(tenantId),
       tarifaId: tarifaId == null && nullToAbsent
           ? const Value.absent()
@@ -4952,14 +4950,14 @@ class Cuota extends DataClass implements Insertable<Cuota> {
     );
   }
 
-  factory Cuota.fromJson(
+  factory Cobro.fromJson(
     Map<String, dynamic> json, {
     ValueSerializer? serializer,
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return Cuota(
+    return Cobro(
       id: serializer.fromJson<String>(json['id']),
-      propietarioId: serializer.fromJson<String>(json['propietarioId']),
+      residenteId: serializer.fromJson<String>(json['residenteId']),
       tenantId: serializer.fromJson<String>(json['tenantId']),
       tarifaId: serializer.fromJson<String?>(json['tarifaId']),
       concepto: serializer.fromJson<String>(json['concepto']),
@@ -4981,7 +4979,7 @@ class Cuota extends DataClass implements Insertable<Cuota> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
-      'propietarioId': serializer.toJson<String>(propietarioId),
+      'residenteId': serializer.toJson<String>(residenteId),
       'tenantId': serializer.toJson<String>(tenantId),
       'tarifaId': serializer.toJson<String?>(tarifaId),
       'concepto': serializer.toJson<String>(concepto),
@@ -4997,9 +4995,9 @@ class Cuota extends DataClass implements Insertable<Cuota> {
     };
   }
 
-  Cuota copyWith({
+  Cobro copyWith({
     String? id,
-    String? propietarioId,
+    String? residenteId,
     String? tenantId,
     Value<String?> tarifaId = const Value.absent(),
     String? concepto,
@@ -5012,9 +5010,9 @@ class Cuota extends DataClass implements Insertable<Cuota> {
     bool? notificacionEnviada,
     DateTime? createdAt,
     DateTime? updatedAt,
-  }) => Cuota(
+  }) => Cobro(
     id: id ?? this.id,
-    propietarioId: propietarioId ?? this.propietarioId,
+    residenteId: residenteId ?? this.residenteId,
     tenantId: tenantId ?? this.tenantId,
     tarifaId: tarifaId.present ? tarifaId.value : this.tarifaId,
     concepto: concepto ?? this.concepto,
@@ -5028,12 +5026,12 @@ class Cuota extends DataClass implements Insertable<Cuota> {
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );
-  Cuota copyWithCompanion(CuotasCompanion data) {
-    return Cuota(
+  Cobro copyWithCompanion(CobrosCompanion data) {
+    return Cobro(
       id: data.id.present ? data.id.value : this.id,
-      propietarioId: data.propietarioId.present
-          ? data.propietarioId.value
-          : this.propietarioId,
+      residenteId: data.residenteId.present
+          ? data.residenteId.value
+          : this.residenteId,
       tenantId: data.tenantId.present ? data.tenantId.value : this.tenantId,
       tarifaId: data.tarifaId.present ? data.tarifaId.value : this.tarifaId,
       concepto: data.concepto.present ? data.concepto.value : this.concepto,
@@ -5061,9 +5059,9 @@ class Cuota extends DataClass implements Insertable<Cuota> {
 
   @override
   String toString() {
-    return (StringBuffer('Cuota(')
+    return (StringBuffer('Cobro(')
           ..write('id: $id, ')
-          ..write('propietarioId: $propietarioId, ')
+          ..write('residenteId: $residenteId, ')
           ..write('tenantId: $tenantId, ')
           ..write('tarifaId: $tarifaId, ')
           ..write('concepto: $concepto, ')
@@ -5083,7 +5081,7 @@ class Cuota extends DataClass implements Insertable<Cuota> {
   @override
   int get hashCode => Object.hash(
     id,
-    propietarioId,
+    residenteId,
     tenantId,
     tarifaId,
     concepto,
@@ -5100,9 +5098,9 @@ class Cuota extends DataClass implements Insertable<Cuota> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is Cuota &&
+      (other is Cobro &&
           other.id == this.id &&
-          other.propietarioId == this.propietarioId &&
+          other.residenteId == this.residenteId &&
           other.tenantId == this.tenantId &&
           other.tarifaId == this.tarifaId &&
           other.concepto == this.concepto &&
@@ -5117,9 +5115,9 @@ class Cuota extends DataClass implements Insertable<Cuota> {
           other.updatedAt == this.updatedAt);
 }
 
-class CuotasCompanion extends UpdateCompanion<Cuota> {
+class CobrosCompanion extends UpdateCompanion<Cobro> {
   final Value<String> id;
-  final Value<String> propietarioId;
+  final Value<String> residenteId;
   final Value<String> tenantId;
   final Value<String?> tarifaId;
   final Value<String> concepto;
@@ -5133,9 +5131,9 @@ class CuotasCompanion extends UpdateCompanion<Cuota> {
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
-  const CuotasCompanion({
+  const CobrosCompanion({
     this.id = const Value.absent(),
-    this.propietarioId = const Value.absent(),
+    this.residenteId = const Value.absent(),
     this.tenantId = const Value.absent(),
     this.tarifaId = const Value.absent(),
     this.concepto = const Value.absent(),
@@ -5150,9 +5148,9 @@ class CuotasCompanion extends UpdateCompanion<Cuota> {
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
-  CuotasCompanion.insert({
+  CobrosCompanion.insert({
     required String id,
-    required String propietarioId,
+    required String residenteId,
     required String tenantId,
     this.tarifaId = const Value.absent(),
     required String concepto,
@@ -5167,7 +5165,7 @@ class CuotasCompanion extends UpdateCompanion<Cuota> {
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
-       propietarioId = Value(propietarioId),
+       residenteId = Value(residenteId),
        tenantId = Value(tenantId),
        concepto = Value(concepto),
        monto = Value(monto),
@@ -5179,9 +5177,9 @@ class CuotasCompanion extends UpdateCompanion<Cuota> {
        notificacionEnviada = Value(notificacionEnviada),
        createdAt = Value(createdAt),
        updatedAt = Value(updatedAt);
-  static Insertable<Cuota> custom({
+  static Insertable<Cobro> custom({
     Expression<String>? id,
-    Expression<String>? propietarioId,
+    Expression<String>? residenteId,
     Expression<String>? tenantId,
     Expression<String>? tarifaId,
     Expression<String>? concepto,
@@ -5198,7 +5196,7 @@ class CuotasCompanion extends UpdateCompanion<Cuota> {
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
-      if (propietarioId != null) 'propietario_id': propietarioId,
+      if (residenteId != null) 'residente_id': residenteId,
       if (tenantId != null) 'tenant_id': tenantId,
       if (tarifaId != null) 'tarifa_id': tarifaId,
       if (concepto != null) 'concepto': concepto,
@@ -5216,9 +5214,9 @@ class CuotasCompanion extends UpdateCompanion<Cuota> {
     });
   }
 
-  CuotasCompanion copyWith({
+  CobrosCompanion copyWith({
     Value<String>? id,
-    Value<String>? propietarioId,
+    Value<String>? residenteId,
     Value<String>? tenantId,
     Value<String?>? tarifaId,
     Value<String>? concepto,
@@ -5233,9 +5231,9 @@ class CuotasCompanion extends UpdateCompanion<Cuota> {
     Value<DateTime>? updatedAt,
     Value<int>? rowid,
   }) {
-    return CuotasCompanion(
+    return CobrosCompanion(
       id: id ?? this.id,
-      propietarioId: propietarioId ?? this.propietarioId,
+      residenteId: residenteId ?? this.residenteId,
       tenantId: tenantId ?? this.tenantId,
       tarifaId: tarifaId ?? this.tarifaId,
       concepto: concepto ?? this.concepto,
@@ -5258,8 +5256,8 @@ class CuotasCompanion extends UpdateCompanion<Cuota> {
     if (id.present) {
       map['id'] = Variable<String>(id.value);
     }
-    if (propietarioId.present) {
-      map['propietario_id'] = Variable<String>(propietarioId.value);
+    if (residenteId.present) {
+      map['residente_id'] = Variable<String>(residenteId.value);
     }
     if (tenantId.present) {
       map['tenant_id'] = Variable<String>(tenantId.value);
@@ -5305,9 +5303,9 @@ class CuotasCompanion extends UpdateCompanion<Cuota> {
 
   @override
   String toString() {
-    return (StringBuffer('CuotasCompanion(')
+    return (StringBuffer('CobrosCompanion(')
           ..write('id: $id, ')
-          ..write('propietarioId: $propietarioId, ')
+          ..write('residenteId: $residenteId, ')
           ..write('tenantId: $tenantId, ')
           ..write('tarifaId: $tarifaId, ')
           ..write('concepto: $concepto, ')
@@ -5362,12 +5360,12 @@ class $PagosTable extends Pagos with TableInfo<$PagosTable, Pago> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _cuotaIdMeta = const VerificationMeta(
-    'cuotaId',
+  static const VerificationMeta _cobroIdMeta = const VerificationMeta(
+    'cobroId',
   );
   @override
-  late final GeneratedColumn<String> cuotaId = GeneratedColumn<String>(
-    'cuota_id',
+  late final GeneratedColumn<String> cobroId = GeneratedColumn<String>(
+    'cobro_id',
     aliasedName,
     true,
     type: DriftSqlType.string,
@@ -5426,12 +5424,12 @@ class $PagosTable extends Pagos with TableInfo<$PagosTable, Pago> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _propietarioIdMeta = const VerificationMeta(
-    'propietarioId',
+  static const VerificationMeta _residenteIdMeta = const VerificationMeta(
+    'residenteId',
   );
   @override
-  late final GeneratedColumn<String> propietarioId = GeneratedColumn<String>(
-    'propietario_id',
+  late final GeneratedColumn<String> residenteId = GeneratedColumn<String>(
+    'residente_id',
     aliasedName,
     false,
     type: DriftSqlType.string,
@@ -5486,13 +5484,13 @@ class $PagosTable extends Pagos with TableInfo<$PagosTable, Pago> {
     id,
     clientPaymentId,
     tenantId,
-    cuotaId,
+    cobroId,
     serverId,
     solicitudId,
     monto,
     fechaPago,
     cobradorId,
-    propietarioId,
+    residenteId,
     fechaSync,
     syncStatus,
     createdAt,
@@ -5534,10 +5532,10 @@ class $PagosTable extends Pagos with TableInfo<$PagosTable, Pago> {
     } else if (isInserting) {
       context.missing(_tenantIdMeta);
     }
-    if (data.containsKey('cuota_id')) {
+    if (data.containsKey('cobro_id')) {
       context.handle(
-        _cuotaIdMeta,
-        cuotaId.isAcceptableOrUnknown(data['cuota_id']!, _cuotaIdMeta),
+        _cobroIdMeta,
+        cobroId.isAcceptableOrUnknown(data['cobro_id']!, _cobroIdMeta),
       );
     }
     if (data.containsKey('server_id')) {
@@ -5579,16 +5577,16 @@ class $PagosTable extends Pagos with TableInfo<$PagosTable, Pago> {
     } else if (isInserting) {
       context.missing(_cobradorIdMeta);
     }
-    if (data.containsKey('propietario_id')) {
+    if (data.containsKey('residente_id')) {
       context.handle(
-        _propietarioIdMeta,
-        propietarioId.isAcceptableOrUnknown(
-          data['propietario_id']!,
-          _propietarioIdMeta,
+        _residenteIdMeta,
+        residenteId.isAcceptableOrUnknown(
+          data['residente_id']!,
+          _residenteIdMeta,
         ),
       );
     } else if (isInserting) {
-      context.missing(_propietarioIdMeta);
+      context.missing(_residenteIdMeta);
     }
     if (data.containsKey('fecha_sync')) {
       context.handle(
@@ -5641,9 +5639,9 @@ class $PagosTable extends Pagos with TableInfo<$PagosTable, Pago> {
         DriftSqlType.string,
         data['${effectivePrefix}tenant_id'],
       )!,
-      cuotaId: attachedDatabase.typeMapping.read(
+      cobroId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}cuota_id'],
+        data['${effectivePrefix}cobro_id'],
       ),
       serverId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -5665,9 +5663,9 @@ class $PagosTable extends Pagos with TableInfo<$PagosTable, Pago> {
         DriftSqlType.string,
         data['${effectivePrefix}cobrador_id'],
       )!,
-      propietarioId: attachedDatabase.typeMapping.read(
+      residenteId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}propietario_id'],
+        data['${effectivePrefix}residente_id'],
       )!,
       fechaSync: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
@@ -5698,13 +5696,13 @@ class Pago extends DataClass implements Insertable<Pago> {
   final String id;
   final String clientPaymentId;
   final String tenantId;
-  final String? cuotaId;
+  final String? cobroId;
   final String? serverId;
   final String? solicitudId;
   final int monto;
   final String fechaPago;
   final String cobradorId;
-  final String propietarioId;
+  final String residenteId;
   final DateTime? fechaSync;
   final String syncStatus;
   final DateTime createdAt;
@@ -5713,13 +5711,13 @@ class Pago extends DataClass implements Insertable<Pago> {
     required this.id,
     required this.clientPaymentId,
     required this.tenantId,
-    this.cuotaId,
+    this.cobroId,
     this.serverId,
     this.solicitudId,
     required this.monto,
     required this.fechaPago,
     required this.cobradorId,
-    required this.propietarioId,
+    required this.residenteId,
     this.fechaSync,
     required this.syncStatus,
     required this.createdAt,
@@ -5731,8 +5729,8 @@ class Pago extends DataClass implements Insertable<Pago> {
     map['id'] = Variable<String>(id);
     map['client_payment_id'] = Variable<String>(clientPaymentId);
     map['tenant_id'] = Variable<String>(tenantId);
-    if (!nullToAbsent || cuotaId != null) {
-      map['cuota_id'] = Variable<String>(cuotaId);
+    if (!nullToAbsent || cobroId != null) {
+      map['cobro_id'] = Variable<String>(cobroId);
     }
     if (!nullToAbsent || serverId != null) {
       map['server_id'] = Variable<String>(serverId);
@@ -5743,7 +5741,7 @@ class Pago extends DataClass implements Insertable<Pago> {
     map['monto'] = Variable<int>(monto);
     map['fecha_pago'] = Variable<String>(fechaPago);
     map['cobrador_id'] = Variable<String>(cobradorId);
-    map['propietario_id'] = Variable<String>(propietarioId);
+    map['residente_id'] = Variable<String>(residenteId);
     if (!nullToAbsent || fechaSync != null) {
       map['fecha_sync'] = Variable<DateTime>(fechaSync);
     }
@@ -5758,9 +5756,9 @@ class Pago extends DataClass implements Insertable<Pago> {
       id: Value(id),
       clientPaymentId: Value(clientPaymentId),
       tenantId: Value(tenantId),
-      cuotaId: cuotaId == null && nullToAbsent
+      cobroId: cobroId == null && nullToAbsent
           ? const Value.absent()
-          : Value(cuotaId),
+          : Value(cobroId),
       serverId: serverId == null && nullToAbsent
           ? const Value.absent()
           : Value(serverId),
@@ -5770,7 +5768,7 @@ class Pago extends DataClass implements Insertable<Pago> {
       monto: Value(monto),
       fechaPago: Value(fechaPago),
       cobradorId: Value(cobradorId),
-      propietarioId: Value(propietarioId),
+      residenteId: Value(residenteId),
       fechaSync: fechaSync == null && nullToAbsent
           ? const Value.absent()
           : Value(fechaSync),
@@ -5789,13 +5787,13 @@ class Pago extends DataClass implements Insertable<Pago> {
       id: serializer.fromJson<String>(json['id']),
       clientPaymentId: serializer.fromJson<String>(json['clientPaymentId']),
       tenantId: serializer.fromJson<String>(json['tenantId']),
-      cuotaId: serializer.fromJson<String?>(json['cuotaId']),
+      cobroId: serializer.fromJson<String?>(json['cobroId']),
       serverId: serializer.fromJson<String?>(json['serverId']),
       solicitudId: serializer.fromJson<String?>(json['solicitudId']),
       monto: serializer.fromJson<int>(json['monto']),
       fechaPago: serializer.fromJson<String>(json['fechaPago']),
       cobradorId: serializer.fromJson<String>(json['cobradorId']),
-      propietarioId: serializer.fromJson<String>(json['propietarioId']),
+      residenteId: serializer.fromJson<String>(json['residenteId']),
       fechaSync: serializer.fromJson<DateTime?>(json['fechaSync']),
       syncStatus: serializer.fromJson<String>(json['syncStatus']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
@@ -5809,13 +5807,13 @@ class Pago extends DataClass implements Insertable<Pago> {
       'id': serializer.toJson<String>(id),
       'clientPaymentId': serializer.toJson<String>(clientPaymentId),
       'tenantId': serializer.toJson<String>(tenantId),
-      'cuotaId': serializer.toJson<String?>(cuotaId),
+      'cobroId': serializer.toJson<String?>(cobroId),
       'serverId': serializer.toJson<String?>(serverId),
       'solicitudId': serializer.toJson<String?>(solicitudId),
       'monto': serializer.toJson<int>(monto),
       'fechaPago': serializer.toJson<String>(fechaPago),
       'cobradorId': serializer.toJson<String>(cobradorId),
-      'propietarioId': serializer.toJson<String>(propietarioId),
+      'residenteId': serializer.toJson<String>(residenteId),
       'fechaSync': serializer.toJson<DateTime?>(fechaSync),
       'syncStatus': serializer.toJson<String>(syncStatus),
       'createdAt': serializer.toJson<DateTime>(createdAt),
@@ -5827,13 +5825,13 @@ class Pago extends DataClass implements Insertable<Pago> {
     String? id,
     String? clientPaymentId,
     String? tenantId,
-    Value<String?> cuotaId = const Value.absent(),
+    Value<String?> cobroId = const Value.absent(),
     Value<String?> serverId = const Value.absent(),
     Value<String?> solicitudId = const Value.absent(),
     int? monto,
     String? fechaPago,
     String? cobradorId,
-    String? propietarioId,
+    String? residenteId,
     Value<DateTime?> fechaSync = const Value.absent(),
     String? syncStatus,
     DateTime? createdAt,
@@ -5842,13 +5840,13 @@ class Pago extends DataClass implements Insertable<Pago> {
     id: id ?? this.id,
     clientPaymentId: clientPaymentId ?? this.clientPaymentId,
     tenantId: tenantId ?? this.tenantId,
-    cuotaId: cuotaId.present ? cuotaId.value : this.cuotaId,
+    cobroId: cobroId.present ? cobroId.value : this.cobroId,
     serverId: serverId.present ? serverId.value : this.serverId,
     solicitudId: solicitudId.present ? solicitudId.value : this.solicitudId,
     monto: monto ?? this.monto,
     fechaPago: fechaPago ?? this.fechaPago,
     cobradorId: cobradorId ?? this.cobradorId,
-    propietarioId: propietarioId ?? this.propietarioId,
+    residenteId: residenteId ?? this.residenteId,
     fechaSync: fechaSync.present ? fechaSync.value : this.fechaSync,
     syncStatus: syncStatus ?? this.syncStatus,
     createdAt: createdAt ?? this.createdAt,
@@ -5861,7 +5859,7 @@ class Pago extends DataClass implements Insertable<Pago> {
           ? data.clientPaymentId.value
           : this.clientPaymentId,
       tenantId: data.tenantId.present ? data.tenantId.value : this.tenantId,
-      cuotaId: data.cuotaId.present ? data.cuotaId.value : this.cuotaId,
+      cobroId: data.cobroId.present ? data.cobroId.value : this.cobroId,
       serverId: data.serverId.present ? data.serverId.value : this.serverId,
       solicitudId: data.solicitudId.present
           ? data.solicitudId.value
@@ -5871,9 +5869,9 @@ class Pago extends DataClass implements Insertable<Pago> {
       cobradorId: data.cobradorId.present
           ? data.cobradorId.value
           : this.cobradorId,
-      propietarioId: data.propietarioId.present
-          ? data.propietarioId.value
-          : this.propietarioId,
+      residenteId: data.residenteId.present
+          ? data.residenteId.value
+          : this.residenteId,
       fechaSync: data.fechaSync.present ? data.fechaSync.value : this.fechaSync,
       syncStatus: data.syncStatus.present
           ? data.syncStatus.value
@@ -5889,13 +5887,13 @@ class Pago extends DataClass implements Insertable<Pago> {
           ..write('id: $id, ')
           ..write('clientPaymentId: $clientPaymentId, ')
           ..write('tenantId: $tenantId, ')
-          ..write('cuotaId: $cuotaId, ')
+          ..write('cobroId: $cobroId, ')
           ..write('serverId: $serverId, ')
           ..write('solicitudId: $solicitudId, ')
           ..write('monto: $monto, ')
           ..write('fechaPago: $fechaPago, ')
           ..write('cobradorId: $cobradorId, ')
-          ..write('propietarioId: $propietarioId, ')
+          ..write('residenteId: $residenteId, ')
           ..write('fechaSync: $fechaSync, ')
           ..write('syncStatus: $syncStatus, ')
           ..write('createdAt: $createdAt, ')
@@ -5909,13 +5907,13 @@ class Pago extends DataClass implements Insertable<Pago> {
     id,
     clientPaymentId,
     tenantId,
-    cuotaId,
+    cobroId,
     serverId,
     solicitudId,
     monto,
     fechaPago,
     cobradorId,
-    propietarioId,
+    residenteId,
     fechaSync,
     syncStatus,
     createdAt,
@@ -5928,13 +5926,13 @@ class Pago extends DataClass implements Insertable<Pago> {
           other.id == this.id &&
           other.clientPaymentId == this.clientPaymentId &&
           other.tenantId == this.tenantId &&
-          other.cuotaId == this.cuotaId &&
+          other.cobroId == this.cobroId &&
           other.serverId == this.serverId &&
           other.solicitudId == this.solicitudId &&
           other.monto == this.monto &&
           other.fechaPago == this.fechaPago &&
           other.cobradorId == this.cobradorId &&
-          other.propietarioId == this.propietarioId &&
+          other.residenteId == this.residenteId &&
           other.fechaSync == this.fechaSync &&
           other.syncStatus == this.syncStatus &&
           other.createdAt == this.createdAt &&
@@ -5945,13 +5943,13 @@ class PagosCompanion extends UpdateCompanion<Pago> {
   final Value<String> id;
   final Value<String> clientPaymentId;
   final Value<String> tenantId;
-  final Value<String?> cuotaId;
+  final Value<String?> cobroId;
   final Value<String?> serverId;
   final Value<String?> solicitudId;
   final Value<int> monto;
   final Value<String> fechaPago;
   final Value<String> cobradorId;
-  final Value<String> propietarioId;
+  final Value<String> residenteId;
   final Value<DateTime?> fechaSync;
   final Value<String> syncStatus;
   final Value<DateTime> createdAt;
@@ -5961,13 +5959,13 @@ class PagosCompanion extends UpdateCompanion<Pago> {
     this.id = const Value.absent(),
     this.clientPaymentId = const Value.absent(),
     this.tenantId = const Value.absent(),
-    this.cuotaId = const Value.absent(),
+    this.cobroId = const Value.absent(),
     this.serverId = const Value.absent(),
     this.solicitudId = const Value.absent(),
     this.monto = const Value.absent(),
     this.fechaPago = const Value.absent(),
     this.cobradorId = const Value.absent(),
-    this.propietarioId = const Value.absent(),
+    this.residenteId = const Value.absent(),
     this.fechaSync = const Value.absent(),
     this.syncStatus = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -5978,13 +5976,13 @@ class PagosCompanion extends UpdateCompanion<Pago> {
     required String id,
     required String clientPaymentId,
     required String tenantId,
-    this.cuotaId = const Value.absent(),
+    this.cobroId = const Value.absent(),
     this.serverId = const Value.absent(),
     this.solicitudId = const Value.absent(),
     required int monto,
     required String fechaPago,
     required String cobradorId,
-    required String propietarioId,
+    required String residenteId,
     this.fechaSync = const Value.absent(),
     required String syncStatus,
     required DateTime createdAt,
@@ -5996,7 +5994,7 @@ class PagosCompanion extends UpdateCompanion<Pago> {
        monto = Value(monto),
        fechaPago = Value(fechaPago),
        cobradorId = Value(cobradorId),
-       propietarioId = Value(propietarioId),
+       residenteId = Value(residenteId),
        syncStatus = Value(syncStatus),
        createdAt = Value(createdAt),
        updatedAt = Value(updatedAt);
@@ -6004,13 +6002,13 @@ class PagosCompanion extends UpdateCompanion<Pago> {
     Expression<String>? id,
     Expression<String>? clientPaymentId,
     Expression<String>? tenantId,
-    Expression<String>? cuotaId,
+    Expression<String>? cobroId,
     Expression<String>? serverId,
     Expression<String>? solicitudId,
     Expression<int>? monto,
     Expression<String>? fechaPago,
     Expression<String>? cobradorId,
-    Expression<String>? propietarioId,
+    Expression<String>? residenteId,
     Expression<DateTime>? fechaSync,
     Expression<String>? syncStatus,
     Expression<DateTime>? createdAt,
@@ -6021,13 +6019,13 @@ class PagosCompanion extends UpdateCompanion<Pago> {
       if (id != null) 'id': id,
       if (clientPaymentId != null) 'client_payment_id': clientPaymentId,
       if (tenantId != null) 'tenant_id': tenantId,
-      if (cuotaId != null) 'cuota_id': cuotaId,
+      if (cobroId != null) 'cobro_id': cobroId,
       if (serverId != null) 'server_id': serverId,
       if (solicitudId != null) 'solicitud_id': solicitudId,
       if (monto != null) 'monto': monto,
       if (fechaPago != null) 'fecha_pago': fechaPago,
       if (cobradorId != null) 'cobrador_id': cobradorId,
-      if (propietarioId != null) 'propietario_id': propietarioId,
+      if (residenteId != null) 'residente_id': residenteId,
       if (fechaSync != null) 'fecha_sync': fechaSync,
       if (syncStatus != null) 'sync_status': syncStatus,
       if (createdAt != null) 'created_at': createdAt,
@@ -6040,13 +6038,13 @@ class PagosCompanion extends UpdateCompanion<Pago> {
     Value<String>? id,
     Value<String>? clientPaymentId,
     Value<String>? tenantId,
-    Value<String?>? cuotaId,
+    Value<String?>? cobroId,
     Value<String?>? serverId,
     Value<String?>? solicitudId,
     Value<int>? monto,
     Value<String>? fechaPago,
     Value<String>? cobradorId,
-    Value<String>? propietarioId,
+    Value<String>? residenteId,
     Value<DateTime?>? fechaSync,
     Value<String>? syncStatus,
     Value<DateTime>? createdAt,
@@ -6057,13 +6055,13 @@ class PagosCompanion extends UpdateCompanion<Pago> {
       id: id ?? this.id,
       clientPaymentId: clientPaymentId ?? this.clientPaymentId,
       tenantId: tenantId ?? this.tenantId,
-      cuotaId: cuotaId ?? this.cuotaId,
+      cobroId: cobroId ?? this.cobroId,
       serverId: serverId ?? this.serverId,
       solicitudId: solicitudId ?? this.solicitudId,
       monto: monto ?? this.monto,
       fechaPago: fechaPago ?? this.fechaPago,
       cobradorId: cobradorId ?? this.cobradorId,
-      propietarioId: propietarioId ?? this.propietarioId,
+      residenteId: residenteId ?? this.residenteId,
       fechaSync: fechaSync ?? this.fechaSync,
       syncStatus: syncStatus ?? this.syncStatus,
       createdAt: createdAt ?? this.createdAt,
@@ -6084,8 +6082,8 @@ class PagosCompanion extends UpdateCompanion<Pago> {
     if (tenantId.present) {
       map['tenant_id'] = Variable<String>(tenantId.value);
     }
-    if (cuotaId.present) {
-      map['cuota_id'] = Variable<String>(cuotaId.value);
+    if (cobroId.present) {
+      map['cobro_id'] = Variable<String>(cobroId.value);
     }
     if (serverId.present) {
       map['server_id'] = Variable<String>(serverId.value);
@@ -6102,8 +6100,8 @@ class PagosCompanion extends UpdateCompanion<Pago> {
     if (cobradorId.present) {
       map['cobrador_id'] = Variable<String>(cobradorId.value);
     }
-    if (propietarioId.present) {
-      map['propietario_id'] = Variable<String>(propietarioId.value);
+    if (residenteId.present) {
+      map['residente_id'] = Variable<String>(residenteId.value);
     }
     if (fechaSync.present) {
       map['fecha_sync'] = Variable<DateTime>(fechaSync.value);
@@ -6129,13 +6127,13 @@ class PagosCompanion extends UpdateCompanion<Pago> {
           ..write('id: $id, ')
           ..write('clientPaymentId: $clientPaymentId, ')
           ..write('tenantId: $tenantId, ')
-          ..write('cuotaId: $cuotaId, ')
+          ..write('cobroId: $cobroId, ')
           ..write('serverId: $serverId, ')
           ..write('solicitudId: $solicitudId, ')
           ..write('monto: $monto, ')
           ..write('fechaPago: $fechaPago, ')
           ..write('cobradorId: $cobradorId, ')
-          ..write('propietarioId: $propietarioId, ')
+          ..write('residenteId: $residenteId, ')
           ..write('fechaSync: $fechaSync, ')
           ..write('syncStatus: $syncStatus, ')
           ..write('createdAt: $createdAt, ')
@@ -6149,10 +6147,10 @@ class PagosCompanion extends UpdateCompanion<Pago> {
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
-  late final $ConjuntosTable conjuntos = $ConjuntosTable(this);
+  late final $ProyectosTable proyectos = $ProyectosTable(this);
   late final $EtapasTable etapas = $EtapasTable(this);
   late final $CasasTable casas = $CasasTable(this);
-  late final $PropietariosTable propietarios = $PropietariosTable(this);
+  late final $ResidentesTable residentes = $ResidentesTable(this);
   late final $TenenciasTable tenencias = $TenenciasTable(this);
   late final $UsuariosTable usuarios = $UsuariosTable(this);
   late final $AsignacionesEtapaTable asignacionesEtapa =
@@ -6160,31 +6158,31 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $TarifasTable tarifas = $TarifasTable(this);
   late final $MontosPredefinidosTable montosPredefinidos =
       $MontosPredefinidosTable(this);
-  late final $CuentasCarteraTable cuentasCartera = $CuentasCarteraTable(this);
-  late final $CuotasTable cuotas = $CuotasTable(this);
+  late final $PlanesDeCobroTable planesDeCobro = $PlanesDeCobroTable(this);
+  late final $CobrosTable cobros = $CobrosTable(this);
   late final $PagosTable pagos = $PagosTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities => [
-    conjuntos,
+    proyectos,
     etapas,
     casas,
-    propietarios,
+    residentes,
     tenencias,
     usuarios,
     asignacionesEtapa,
     tarifas,
     montosPredefinidos,
-    cuentasCartera,
-    cuotas,
+    planesDeCobro,
+    cobros,
     pagos,
   ];
 }
 
-typedef $$ConjuntosTableCreateCompanionBuilder =
-    ConjuntosCompanion Function({
+typedef $$ProyectosTableCreateCompanionBuilder =
+    ProyectosCompanion Function({
       required String id,
       required String nombre,
       required String tenantId,
@@ -6192,8 +6190,8 @@ typedef $$ConjuntosTableCreateCompanionBuilder =
       required DateTime updatedAt,
       Value<int> rowid,
     });
-typedef $$ConjuntosTableUpdateCompanionBuilder =
-    ConjuntosCompanion Function({
+typedef $$ProyectosTableUpdateCompanionBuilder =
+    ProyectosCompanion Function({
       Value<String> id,
       Value<String> nombre,
       Value<String> tenantId,
@@ -6202,9 +6200,9 @@ typedef $$ConjuntosTableUpdateCompanionBuilder =
       Value<int> rowid,
     });
 
-class $$ConjuntosTableFilterComposer
-    extends Composer<_$AppDatabase, $ConjuntosTable> {
-  $$ConjuntosTableFilterComposer({
+class $$ProyectosTableFilterComposer
+    extends Composer<_$AppDatabase, $ProyectosTable> {
+  $$ProyectosTableFilterComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -6237,9 +6235,9 @@ class $$ConjuntosTableFilterComposer
   );
 }
 
-class $$ConjuntosTableOrderingComposer
-    extends Composer<_$AppDatabase, $ConjuntosTable> {
-  $$ConjuntosTableOrderingComposer({
+class $$ProyectosTableOrderingComposer
+    extends Composer<_$AppDatabase, $ProyectosTable> {
+  $$ProyectosTableOrderingComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -6272,9 +6270,9 @@ class $$ConjuntosTableOrderingComposer
   );
 }
 
-class $$ConjuntosTableAnnotationComposer
-    extends Composer<_$AppDatabase, $ConjuntosTable> {
-  $$ConjuntosTableAnnotationComposer({
+class $$ProyectosTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ProyectosTable> {
+  $$ProyectosTableAnnotationComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -6297,32 +6295,32 @@ class $$ConjuntosTableAnnotationComposer
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 }
 
-class $$ConjuntosTableTableManager
+class $$ProyectosTableTableManager
     extends
         RootTableManager<
           _$AppDatabase,
-          $ConjuntosTable,
-          Conjunto,
-          $$ConjuntosTableFilterComposer,
-          $$ConjuntosTableOrderingComposer,
-          $$ConjuntosTableAnnotationComposer,
-          $$ConjuntosTableCreateCompanionBuilder,
-          $$ConjuntosTableUpdateCompanionBuilder,
-          (Conjunto, BaseReferences<_$AppDatabase, $ConjuntosTable, Conjunto>),
-          Conjunto,
+          $ProyectosTable,
+          Proyecto,
+          $$ProyectosTableFilterComposer,
+          $$ProyectosTableOrderingComposer,
+          $$ProyectosTableAnnotationComposer,
+          $$ProyectosTableCreateCompanionBuilder,
+          $$ProyectosTableUpdateCompanionBuilder,
+          (Proyecto, BaseReferences<_$AppDatabase, $ProyectosTable, Proyecto>),
+          Proyecto,
           PrefetchHooks Function()
         > {
-  $$ConjuntosTableTableManager(_$AppDatabase db, $ConjuntosTable table)
+  $$ProyectosTableTableManager(_$AppDatabase db, $ProyectosTable table)
     : super(
         TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
-              $$ConjuntosTableFilterComposer($db: db, $table: table),
+              $$ProyectosTableFilterComposer($db: db, $table: table),
           createOrderingComposer: () =>
-              $$ConjuntosTableOrderingComposer($db: db, $table: table),
+              $$ProyectosTableOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
-              $$ConjuntosTableAnnotationComposer($db: db, $table: table),
+              $$ProyectosTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
@@ -6331,7 +6329,7 @@ class $$ConjuntosTableTableManager
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
-              }) => ConjuntosCompanion(
+              }) => ProyectosCompanion(
                 id: id,
                 nombre: nombre,
                 tenantId: tenantId,
@@ -6347,7 +6345,7 @@ class $$ConjuntosTableTableManager
                 required DateTime createdAt,
                 required DateTime updatedAt,
                 Value<int> rowid = const Value.absent(),
-              }) => ConjuntosCompanion.insert(
+              }) => ProyectosCompanion.insert(
                 id: id,
                 nombre: nombre,
                 tenantId: tenantId,
@@ -6363,25 +6361,25 @@ class $$ConjuntosTableTableManager
       );
 }
 
-typedef $$ConjuntosTableProcessedTableManager =
+typedef $$ProyectosTableProcessedTableManager =
     ProcessedTableManager<
       _$AppDatabase,
-      $ConjuntosTable,
-      Conjunto,
-      $$ConjuntosTableFilterComposer,
-      $$ConjuntosTableOrderingComposer,
-      $$ConjuntosTableAnnotationComposer,
-      $$ConjuntosTableCreateCompanionBuilder,
-      $$ConjuntosTableUpdateCompanionBuilder,
-      (Conjunto, BaseReferences<_$AppDatabase, $ConjuntosTable, Conjunto>),
-      Conjunto,
+      $ProyectosTable,
+      Proyecto,
+      $$ProyectosTableFilterComposer,
+      $$ProyectosTableOrderingComposer,
+      $$ProyectosTableAnnotationComposer,
+      $$ProyectosTableCreateCompanionBuilder,
+      $$ProyectosTableUpdateCompanionBuilder,
+      (Proyecto, BaseReferences<_$AppDatabase, $ProyectosTable, Proyecto>),
+      Proyecto,
       PrefetchHooks Function()
     >;
 typedef $$EtapasTableCreateCompanionBuilder =
     EtapasCompanion Function({
       required String id,
       required String nombre,
-      required String conjuntoId,
+      required String proyectoId,
       required DateTime createdAt,
       Value<int> rowid,
     });
@@ -6389,7 +6387,7 @@ typedef $$EtapasTableUpdateCompanionBuilder =
     EtapasCompanion Function({
       Value<String> id,
       Value<String> nombre,
-      Value<String> conjuntoId,
+      Value<String> proyectoId,
       Value<DateTime> createdAt,
       Value<int> rowid,
     });
@@ -6413,8 +6411,8 @@ class $$EtapasTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get conjuntoId => $composableBuilder(
-    column: $table.conjuntoId,
+  ColumnFilters<String> get proyectoId => $composableBuilder(
+    column: $table.proyectoId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6443,8 +6441,8 @@ class $$EtapasTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get conjuntoId => $composableBuilder(
-    column: $table.conjuntoId,
+  ColumnOrderings<String> get proyectoId => $composableBuilder(
+    column: $table.proyectoId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -6469,8 +6467,8 @@ class $$EtapasTableAnnotationComposer
   GeneratedColumn<String> get nombre =>
       $composableBuilder(column: $table.nombre, builder: (column) => column);
 
-  GeneratedColumn<String> get conjuntoId => $composableBuilder(
-    column: $table.conjuntoId,
+  GeneratedColumn<String> get proyectoId => $composableBuilder(
+    column: $table.proyectoId,
     builder: (column) => column,
   );
 
@@ -6508,13 +6506,13 @@ class $$EtapasTableTableManager
               ({
                 Value<String> id = const Value.absent(),
                 Value<String> nombre = const Value.absent(),
-                Value<String> conjuntoId = const Value.absent(),
+                Value<String> proyectoId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => EtapasCompanion(
                 id: id,
                 nombre: nombre,
-                conjuntoId: conjuntoId,
+                proyectoId: proyectoId,
                 createdAt: createdAt,
                 rowid: rowid,
               ),
@@ -6522,13 +6520,13 @@ class $$EtapasTableTableManager
               ({
                 required String id,
                 required String nombre,
-                required String conjuntoId,
+                required String proyectoId,
                 required DateTime createdAt,
                 Value<int> rowid = const Value.absent(),
               }) => EtapasCompanion.insert(
                 id: id,
                 nombre: nombre,
-                conjuntoId: conjuntoId,
+                proyectoId: proyectoId,
                 createdAt: createdAt,
                 rowid: rowid,
               ),
@@ -6730,8 +6728,8 @@ typedef $$CasasTableProcessedTableManager =
       Casa,
       PrefetchHooks Function()
     >;
-typedef $$PropietariosTableCreateCompanionBuilder =
-    PropietariosCompanion Function({
+typedef $$ResidentesTableCreateCompanionBuilder =
+    ResidentesCompanion Function({
       required String id,
       required String nombre,
       required String telefono,
@@ -6741,8 +6739,8 @@ typedef $$PropietariosTableCreateCompanionBuilder =
       required DateTime updatedAt,
       Value<int> rowid,
     });
-typedef $$PropietariosTableUpdateCompanionBuilder =
-    PropietariosCompanion Function({
+typedef $$ResidentesTableUpdateCompanionBuilder =
+    ResidentesCompanion Function({
       Value<String> id,
       Value<String> nombre,
       Value<String> telefono,
@@ -6753,9 +6751,9 @@ typedef $$PropietariosTableUpdateCompanionBuilder =
       Value<int> rowid,
     });
 
-class $$PropietariosTableFilterComposer
-    extends Composer<_$AppDatabase, $PropietariosTable> {
-  $$PropietariosTableFilterComposer({
+class $$ResidentesTableFilterComposer
+    extends Composer<_$AppDatabase, $ResidentesTable> {
+  $$ResidentesTableFilterComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -6798,9 +6796,9 @@ class $$PropietariosTableFilterComposer
   );
 }
 
-class $$PropietariosTableOrderingComposer
-    extends Composer<_$AppDatabase, $PropietariosTable> {
-  $$PropietariosTableOrderingComposer({
+class $$ResidentesTableOrderingComposer
+    extends Composer<_$AppDatabase, $ResidentesTable> {
+  $$ResidentesTableOrderingComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -6843,9 +6841,9 @@ class $$PropietariosTableOrderingComposer
   );
 }
 
-class $$PropietariosTableAnnotationComposer
-    extends Composer<_$AppDatabase, $PropietariosTable> {
-  $$PropietariosTableAnnotationComposer({
+class $$ResidentesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ResidentesTable> {
+  $$ResidentesTableAnnotationComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -6874,35 +6872,35 @@ class $$PropietariosTableAnnotationComposer
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 }
 
-class $$PropietariosTableTableManager
+class $$ResidentesTableTableManager
     extends
         RootTableManager<
           _$AppDatabase,
-          $PropietariosTable,
-          Propietario,
-          $$PropietariosTableFilterComposer,
-          $$PropietariosTableOrderingComposer,
-          $$PropietariosTableAnnotationComposer,
-          $$PropietariosTableCreateCompanionBuilder,
-          $$PropietariosTableUpdateCompanionBuilder,
+          $ResidentesTable,
+          Residente,
+          $$ResidentesTableFilterComposer,
+          $$ResidentesTableOrderingComposer,
+          $$ResidentesTableAnnotationComposer,
+          $$ResidentesTableCreateCompanionBuilder,
+          $$ResidentesTableUpdateCompanionBuilder,
           (
-            Propietario,
-            BaseReferences<_$AppDatabase, $PropietariosTable, Propietario>,
+            Residente,
+            BaseReferences<_$AppDatabase, $ResidentesTable, Residente>,
           ),
-          Propietario,
+          Residente,
           PrefetchHooks Function()
         > {
-  $$PropietariosTableTableManager(_$AppDatabase db, $PropietariosTable table)
+  $$ResidentesTableTableManager(_$AppDatabase db, $ResidentesTable table)
     : super(
         TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
-              $$PropietariosTableFilterComposer($db: db, $table: table),
+              $$ResidentesTableFilterComposer($db: db, $table: table),
           createOrderingComposer: () =>
-              $$PropietariosTableOrderingComposer($db: db, $table: table),
+              $$ResidentesTableOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
-              $$PropietariosTableAnnotationComposer($db: db, $table: table),
+              $$ResidentesTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
@@ -6913,7 +6911,7 @@ class $$PropietariosTableTableManager
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
-              }) => PropietariosCompanion(
+              }) => ResidentesCompanion(
                 id: id,
                 nombre: nombre,
                 telefono: telefono,
@@ -6933,7 +6931,7 @@ class $$PropietariosTableTableManager
                 required DateTime createdAt,
                 required DateTime updatedAt,
                 Value<int> rowid = const Value.absent(),
-              }) => PropietariosCompanion.insert(
+              }) => ResidentesCompanion.insert(
                 id: id,
                 nombre: nombre,
                 telefono: telefono,
@@ -6951,27 +6949,24 @@ class $$PropietariosTableTableManager
       );
 }
 
-typedef $$PropietariosTableProcessedTableManager =
+typedef $$ResidentesTableProcessedTableManager =
     ProcessedTableManager<
       _$AppDatabase,
-      $PropietariosTable,
-      Propietario,
-      $$PropietariosTableFilterComposer,
-      $$PropietariosTableOrderingComposer,
-      $$PropietariosTableAnnotationComposer,
-      $$PropietariosTableCreateCompanionBuilder,
-      $$PropietariosTableUpdateCompanionBuilder,
-      (
-        Propietario,
-        BaseReferences<_$AppDatabase, $PropietariosTable, Propietario>,
-      ),
-      Propietario,
+      $ResidentesTable,
+      Residente,
+      $$ResidentesTableFilterComposer,
+      $$ResidentesTableOrderingComposer,
+      $$ResidentesTableAnnotationComposer,
+      $$ResidentesTableCreateCompanionBuilder,
+      $$ResidentesTableUpdateCompanionBuilder,
+      (Residente, BaseReferences<_$AppDatabase, $ResidentesTable, Residente>),
+      Residente,
       PrefetchHooks Function()
     >;
 typedef $$TenenciasTableCreateCompanionBuilder =
     TenenciasCompanion Function({
       required String id,
-      required String propietarioId,
+      required String residenteId,
       required String casaId,
       required DateTime fechaInicio,
       Value<DateTime?> fechaFin,
@@ -6981,7 +6976,7 @@ typedef $$TenenciasTableCreateCompanionBuilder =
 typedef $$TenenciasTableUpdateCompanionBuilder =
     TenenciasCompanion Function({
       Value<String> id,
-      Value<String> propietarioId,
+      Value<String> residenteId,
       Value<String> casaId,
       Value<DateTime> fechaInicio,
       Value<DateTime?> fechaFin,
@@ -7003,8 +6998,8 @@ class $$TenenciasTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get propietarioId => $composableBuilder(
-    column: $table.propietarioId,
+  ColumnFilters<String> get residenteId => $composableBuilder(
+    column: $table.residenteId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -7043,8 +7038,8 @@ class $$TenenciasTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get propietarioId => $composableBuilder(
-    column: $table.propietarioId,
+  ColumnOrderings<String> get residenteId => $composableBuilder(
+    column: $table.residenteId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -7081,8 +7076,8 @@ class $$TenenciasTableAnnotationComposer
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
-  GeneratedColumn<String> get propietarioId => $composableBuilder(
-    column: $table.propietarioId,
+  GeneratedColumn<String> get residenteId => $composableBuilder(
+    column: $table.residenteId,
     builder: (column) => column,
   );
 
@@ -7130,7 +7125,7 @@ class $$TenenciasTableTableManager
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
-                Value<String> propietarioId = const Value.absent(),
+                Value<String> residenteId = const Value.absent(),
                 Value<String> casaId = const Value.absent(),
                 Value<DateTime> fechaInicio = const Value.absent(),
                 Value<DateTime?> fechaFin = const Value.absent(),
@@ -7138,7 +7133,7 @@ class $$TenenciasTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => TenenciasCompanion(
                 id: id,
-                propietarioId: propietarioId,
+                residenteId: residenteId,
                 casaId: casaId,
                 fechaInicio: fechaInicio,
                 fechaFin: fechaFin,
@@ -7148,7 +7143,7 @@ class $$TenenciasTableTableManager
           createCompanionCallback:
               ({
                 required String id,
-                required String propietarioId,
+                required String residenteId,
                 required String casaId,
                 required DateTime fechaInicio,
                 Value<DateTime?> fechaFin = const Value.absent(),
@@ -7156,7 +7151,7 @@ class $$TenenciasTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => TenenciasCompanion.insert(
                 id: id,
-                propietarioId: propietarioId,
+                residenteId: residenteId,
                 casaId: casaId,
                 fechaInicio: fechaInicio,
                 fechaFin: fechaFin,
@@ -7191,7 +7186,7 @@ typedef $$UsuariosTableCreateCompanionBuilder =
       required String email,
       required String nombre,
       required String rol,
-      Value<String?> propietarioId,
+      Value<String?> residenteId,
       required String tenantId,
       required bool activo,
       required DateTime createdAt,
@@ -7204,7 +7199,7 @@ typedef $$UsuariosTableUpdateCompanionBuilder =
       Value<String> email,
       Value<String> nombre,
       Value<String> rol,
-      Value<String?> propietarioId,
+      Value<String?> residenteId,
       Value<String> tenantId,
       Value<bool> activo,
       Value<DateTime> createdAt,
@@ -7241,8 +7236,8 @@ class $$UsuariosTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get propietarioId => $composableBuilder(
-    column: $table.propietarioId,
+  ColumnFilters<String> get residenteId => $composableBuilder(
+    column: $table.residenteId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -7296,8 +7291,8 @@ class $$UsuariosTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get propietarioId => $composableBuilder(
-    column: $table.propietarioId,
+  ColumnOrderings<String> get residenteId => $composableBuilder(
+    column: $table.residenteId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -7343,8 +7338,8 @@ class $$UsuariosTableAnnotationComposer
   GeneratedColumn<String> get rol =>
       $composableBuilder(column: $table.rol, builder: (column) => column);
 
-  GeneratedColumn<String> get propietarioId => $composableBuilder(
-    column: $table.propietarioId,
+  GeneratedColumn<String> get residenteId => $composableBuilder(
+    column: $table.residenteId,
     builder: (column) => column,
   );
 
@@ -7393,7 +7388,7 @@ class $$UsuariosTableTableManager
                 Value<String> email = const Value.absent(),
                 Value<String> nombre = const Value.absent(),
                 Value<String> rol = const Value.absent(),
-                Value<String?> propietarioId = const Value.absent(),
+                Value<String?> residenteId = const Value.absent(),
                 Value<String> tenantId = const Value.absent(),
                 Value<bool> activo = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
@@ -7404,7 +7399,7 @@ class $$UsuariosTableTableManager
                 email: email,
                 nombre: nombre,
                 rol: rol,
-                propietarioId: propietarioId,
+                residenteId: residenteId,
                 tenantId: tenantId,
                 activo: activo,
                 createdAt: createdAt,
@@ -7417,7 +7412,7 @@ class $$UsuariosTableTableManager
                 required String email,
                 required String nombre,
                 required String rol,
-                Value<String?> propietarioId = const Value.absent(),
+                Value<String?> residenteId = const Value.absent(),
                 required String tenantId,
                 required bool activo,
                 required DateTime createdAt,
@@ -7428,7 +7423,7 @@ class $$UsuariosTableTableManager
                 email: email,
                 nombre: nombre,
                 rol: rol,
-                propietarioId: propietarioId,
+                residenteId: residenteId,
                 tenantId: tenantId,
                 activo: activo,
                 createdAt: createdAt,
@@ -7674,7 +7669,7 @@ typedef $$TarifasTableCreateCompanionBuilder =
     TarifasCompanion Function({
       required String id,
       required String tenantId,
-      required String conjuntoId,
+      required String proyectoId,
       required String frecuencia,
       required int monto,
       required String fechaVigencia,
@@ -7687,7 +7682,7 @@ typedef $$TarifasTableUpdateCompanionBuilder =
     TarifasCompanion Function({
       Value<String> id,
       Value<String> tenantId,
-      Value<String> conjuntoId,
+      Value<String> proyectoId,
       Value<String> frecuencia,
       Value<int> monto,
       Value<String> fechaVigencia,
@@ -7716,8 +7711,8 @@ class $$TarifasTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get conjuntoId => $composableBuilder(
-    column: $table.conjuntoId,
+  ColumnFilters<String> get proyectoId => $composableBuilder(
+    column: $table.proyectoId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -7771,8 +7766,8 @@ class $$TarifasTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get conjuntoId => $composableBuilder(
-    column: $table.conjuntoId,
+  ColumnOrderings<String> get proyectoId => $composableBuilder(
+    column: $table.proyectoId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -7822,8 +7817,8 @@ class $$TarifasTableAnnotationComposer
   GeneratedColumn<String> get tenantId =>
       $composableBuilder(column: $table.tenantId, builder: (column) => column);
 
-  GeneratedColumn<String> get conjuntoId => $composableBuilder(
-    column: $table.conjuntoId,
+  GeneratedColumn<String> get proyectoId => $composableBuilder(
+    column: $table.proyectoId,
     builder: (column) => column,
   );
 
@@ -7880,7 +7875,7 @@ class $$TarifasTableTableManager
               ({
                 Value<String> id = const Value.absent(),
                 Value<String> tenantId = const Value.absent(),
-                Value<String> conjuntoId = const Value.absent(),
+                Value<String> proyectoId = const Value.absent(),
                 Value<String> frecuencia = const Value.absent(),
                 Value<int> monto = const Value.absent(),
                 Value<String> fechaVigencia = const Value.absent(),
@@ -7891,7 +7886,7 @@ class $$TarifasTableTableManager
               }) => TarifasCompanion(
                 id: id,
                 tenantId: tenantId,
-                conjuntoId: conjuntoId,
+                proyectoId: proyectoId,
                 frecuencia: frecuencia,
                 monto: monto,
                 fechaVigencia: fechaVigencia,
@@ -7904,7 +7899,7 @@ class $$TarifasTableTableManager
               ({
                 required String id,
                 required String tenantId,
-                required String conjuntoId,
+                required String proyectoId,
                 required String frecuencia,
                 required int monto,
                 required String fechaVigencia,
@@ -7915,7 +7910,7 @@ class $$TarifasTableTableManager
               }) => TarifasCompanion.insert(
                 id: id,
                 tenantId: tenantId,
-                conjuntoId: conjuntoId,
+                proyectoId: proyectoId,
                 frecuencia: frecuencia,
                 monto: monto,
                 fechaVigencia: fechaVigencia,
@@ -7950,7 +7945,7 @@ typedef $$MontosPredefinidosTableCreateCompanionBuilder =
     MontosPredefinidosCompanion Function({
       required String id,
       required String tenantId,
-      required String conjuntoId,
+      required String proyectoId,
       required int monto,
       required String descripcion,
       required bool activo,
@@ -7963,7 +7958,7 @@ typedef $$MontosPredefinidosTableUpdateCompanionBuilder =
     MontosPredefinidosCompanion Function({
       Value<String> id,
       Value<String> tenantId,
-      Value<String> conjuntoId,
+      Value<String> proyectoId,
       Value<int> monto,
       Value<String> descripcion,
       Value<bool> activo,
@@ -7992,8 +7987,8 @@ class $$MontosPredefinidosTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get conjuntoId => $composableBuilder(
-    column: $table.conjuntoId,
+  ColumnFilters<String> get proyectoId => $composableBuilder(
+    column: $table.proyectoId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -8047,8 +8042,8 @@ class $$MontosPredefinidosTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get conjuntoId => $composableBuilder(
-    column: $table.conjuntoId,
+  ColumnOrderings<String> get proyectoId => $composableBuilder(
+    column: $table.proyectoId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -8098,8 +8093,8 @@ class $$MontosPredefinidosTableAnnotationComposer
   GeneratedColumn<String> get tenantId =>
       $composableBuilder(column: $table.tenantId, builder: (column) => column);
 
-  GeneratedColumn<String> get conjuntoId => $composableBuilder(
-    column: $table.conjuntoId,
+  GeneratedColumn<String> get proyectoId => $composableBuilder(
+    column: $table.proyectoId,
     builder: (column) => column,
   );
 
@@ -8166,7 +8161,7 @@ class $$MontosPredefinidosTableTableManager
               ({
                 Value<String> id = const Value.absent(),
                 Value<String> tenantId = const Value.absent(),
-                Value<String> conjuntoId = const Value.absent(),
+                Value<String> proyectoId = const Value.absent(),
                 Value<int> monto = const Value.absent(),
                 Value<String> descripcion = const Value.absent(),
                 Value<bool> activo = const Value.absent(),
@@ -8177,7 +8172,7 @@ class $$MontosPredefinidosTableTableManager
               }) => MontosPredefinidosCompanion(
                 id: id,
                 tenantId: tenantId,
-                conjuntoId: conjuntoId,
+                proyectoId: proyectoId,
                 monto: monto,
                 descripcion: descripcion,
                 activo: activo,
@@ -8190,7 +8185,7 @@ class $$MontosPredefinidosTableTableManager
               ({
                 required String id,
                 required String tenantId,
-                required String conjuntoId,
+                required String proyectoId,
                 required int monto,
                 required String descripcion,
                 required bool activo,
@@ -8201,7 +8196,7 @@ class $$MontosPredefinidosTableTableManager
               }) => MontosPredefinidosCompanion.insert(
                 id: id,
                 tenantId: tenantId,
-                conjuntoId: conjuntoId,
+                proyectoId: proyectoId,
                 monto: monto,
                 descripcion: descripcion,
                 activo: activo,
@@ -8239,12 +8234,12 @@ typedef $$MontosPredefinidosTableProcessedTableManager =
       MontosPredefinido,
       PrefetchHooks Function()
     >;
-typedef $$CuentasCarteraTableCreateCompanionBuilder =
-    CuentasCarteraCompanion Function({
+typedef $$PlanesDeCobroTableCreateCompanionBuilder =
+    PlanesDeCobroCompanion Function({
       required String id,
-      required String propietarioId,
+      required String residenteId,
       required String tenantId,
-      required String conjuntoId,
+      required String proyectoId,
       required String frecuencia,
       required String fechaActivacion,
       required bool activa,
@@ -8252,12 +8247,12 @@ typedef $$CuentasCarteraTableCreateCompanionBuilder =
       required DateTime updatedAt,
       Value<int> rowid,
     });
-typedef $$CuentasCarteraTableUpdateCompanionBuilder =
-    CuentasCarteraCompanion Function({
+typedef $$PlanesDeCobroTableUpdateCompanionBuilder =
+    PlanesDeCobroCompanion Function({
       Value<String> id,
-      Value<String> propietarioId,
+      Value<String> residenteId,
       Value<String> tenantId,
-      Value<String> conjuntoId,
+      Value<String> proyectoId,
       Value<String> frecuencia,
       Value<String> fechaActivacion,
       Value<bool> activa,
@@ -8266,9 +8261,9 @@ typedef $$CuentasCarteraTableUpdateCompanionBuilder =
       Value<int> rowid,
     });
 
-class $$CuentasCarteraTableFilterComposer
-    extends Composer<_$AppDatabase, $CuentasCarteraTable> {
-  $$CuentasCarteraTableFilterComposer({
+class $$PlanesDeCobroTableFilterComposer
+    extends Composer<_$AppDatabase, $PlanesDeCobroTable> {
+  $$PlanesDeCobroTableFilterComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -8280,8 +8275,8 @@ class $$CuentasCarteraTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get propietarioId => $composableBuilder(
-    column: $table.propietarioId,
+  ColumnFilters<String> get residenteId => $composableBuilder(
+    column: $table.residenteId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -8290,8 +8285,8 @@ class $$CuentasCarteraTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get conjuntoId => $composableBuilder(
-    column: $table.conjuntoId,
+  ColumnFilters<String> get proyectoId => $composableBuilder(
+    column: $table.proyectoId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -8321,9 +8316,9 @@ class $$CuentasCarteraTableFilterComposer
   );
 }
 
-class $$CuentasCarteraTableOrderingComposer
-    extends Composer<_$AppDatabase, $CuentasCarteraTable> {
-  $$CuentasCarteraTableOrderingComposer({
+class $$PlanesDeCobroTableOrderingComposer
+    extends Composer<_$AppDatabase, $PlanesDeCobroTable> {
+  $$PlanesDeCobroTableOrderingComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -8335,8 +8330,8 @@ class $$CuentasCarteraTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get propietarioId => $composableBuilder(
-    column: $table.propietarioId,
+  ColumnOrderings<String> get residenteId => $composableBuilder(
+    column: $table.residenteId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -8345,8 +8340,8 @@ class $$CuentasCarteraTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get conjuntoId => $composableBuilder(
-    column: $table.conjuntoId,
+  ColumnOrderings<String> get proyectoId => $composableBuilder(
+    column: $table.proyectoId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -8376,9 +8371,9 @@ class $$CuentasCarteraTableOrderingComposer
   );
 }
 
-class $$CuentasCarteraTableAnnotationComposer
-    extends Composer<_$AppDatabase, $CuentasCarteraTable> {
-  $$CuentasCarteraTableAnnotationComposer({
+class $$PlanesDeCobroTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PlanesDeCobroTable> {
+  $$PlanesDeCobroTableAnnotationComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -8388,16 +8383,16 @@ class $$CuentasCarteraTableAnnotationComposer
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
-  GeneratedColumn<String> get propietarioId => $composableBuilder(
-    column: $table.propietarioId,
+  GeneratedColumn<String> get residenteId => $composableBuilder(
+    column: $table.residenteId,
     builder: (column) => column,
   );
 
   GeneratedColumn<String> get tenantId =>
       $composableBuilder(column: $table.tenantId, builder: (column) => column);
 
-  GeneratedColumn<String> get conjuntoId => $composableBuilder(
-    column: $table.conjuntoId,
+  GeneratedColumn<String> get proyectoId => $composableBuilder(
+    column: $table.proyectoId,
     builder: (column) => column,
   );
 
@@ -8421,58 +8416,56 @@ class $$CuentasCarteraTableAnnotationComposer
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 }
 
-class $$CuentasCarteraTableTableManager
+class $$PlanesDeCobroTableTableManager
     extends
         RootTableManager<
           _$AppDatabase,
-          $CuentasCarteraTable,
-          CuentasCarteraData,
-          $$CuentasCarteraTableFilterComposer,
-          $$CuentasCarteraTableOrderingComposer,
-          $$CuentasCarteraTableAnnotationComposer,
-          $$CuentasCarteraTableCreateCompanionBuilder,
-          $$CuentasCarteraTableUpdateCompanionBuilder,
+          $PlanesDeCobroTable,
+          PlanesDeCobroData,
+          $$PlanesDeCobroTableFilterComposer,
+          $$PlanesDeCobroTableOrderingComposer,
+          $$PlanesDeCobroTableAnnotationComposer,
+          $$PlanesDeCobroTableCreateCompanionBuilder,
+          $$PlanesDeCobroTableUpdateCompanionBuilder,
           (
-            CuentasCarteraData,
+            PlanesDeCobroData,
             BaseReferences<
               _$AppDatabase,
-              $CuentasCarteraTable,
-              CuentasCarteraData
+              $PlanesDeCobroTable,
+              PlanesDeCobroData
             >,
           ),
-          CuentasCarteraData,
+          PlanesDeCobroData,
           PrefetchHooks Function()
         > {
-  $$CuentasCarteraTableTableManager(
-    _$AppDatabase db,
-    $CuentasCarteraTable table,
-  ) : super(
+  $$PlanesDeCobroTableTableManager(_$AppDatabase db, $PlanesDeCobroTable table)
+    : super(
         TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
-              $$CuentasCarteraTableFilterComposer($db: db, $table: table),
+              $$PlanesDeCobroTableFilterComposer($db: db, $table: table),
           createOrderingComposer: () =>
-              $$CuentasCarteraTableOrderingComposer($db: db, $table: table),
+              $$PlanesDeCobroTableOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
-              $$CuentasCarteraTableAnnotationComposer($db: db, $table: table),
+              $$PlanesDeCobroTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
-                Value<String> propietarioId = const Value.absent(),
+                Value<String> residenteId = const Value.absent(),
                 Value<String> tenantId = const Value.absent(),
-                Value<String> conjuntoId = const Value.absent(),
+                Value<String> proyectoId = const Value.absent(),
                 Value<String> frecuencia = const Value.absent(),
                 Value<String> fechaActivacion = const Value.absent(),
                 Value<bool> activa = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
-              }) => CuentasCarteraCompanion(
+              }) => PlanesDeCobroCompanion(
                 id: id,
-                propietarioId: propietarioId,
+                residenteId: residenteId,
                 tenantId: tenantId,
-                conjuntoId: conjuntoId,
+                proyectoId: proyectoId,
                 frecuencia: frecuencia,
                 fechaActivacion: fechaActivacion,
                 activa: activa,
@@ -8483,20 +8476,20 @@ class $$CuentasCarteraTableTableManager
           createCompanionCallback:
               ({
                 required String id,
-                required String propietarioId,
+                required String residenteId,
                 required String tenantId,
-                required String conjuntoId,
+                required String proyectoId,
                 required String frecuencia,
                 required String fechaActivacion,
                 required bool activa,
                 required DateTime createdAt,
                 required DateTime updatedAt,
                 Value<int> rowid = const Value.absent(),
-              }) => CuentasCarteraCompanion.insert(
+              }) => PlanesDeCobroCompanion.insert(
                 id: id,
-                propietarioId: propietarioId,
+                residenteId: residenteId,
                 tenantId: tenantId,
-                conjuntoId: conjuntoId,
+                proyectoId: proyectoId,
                 frecuencia: frecuencia,
                 fechaActivacion: fechaActivacion,
                 activa: activa,
@@ -8512,27 +8505,27 @@ class $$CuentasCarteraTableTableManager
       );
 }
 
-typedef $$CuentasCarteraTableProcessedTableManager =
+typedef $$PlanesDeCobroTableProcessedTableManager =
     ProcessedTableManager<
       _$AppDatabase,
-      $CuentasCarteraTable,
-      CuentasCarteraData,
-      $$CuentasCarteraTableFilterComposer,
-      $$CuentasCarteraTableOrderingComposer,
-      $$CuentasCarteraTableAnnotationComposer,
-      $$CuentasCarteraTableCreateCompanionBuilder,
-      $$CuentasCarteraTableUpdateCompanionBuilder,
+      $PlanesDeCobroTable,
+      PlanesDeCobroData,
+      $$PlanesDeCobroTableFilterComposer,
+      $$PlanesDeCobroTableOrderingComposer,
+      $$PlanesDeCobroTableAnnotationComposer,
+      $$PlanesDeCobroTableCreateCompanionBuilder,
+      $$PlanesDeCobroTableUpdateCompanionBuilder,
       (
-        CuentasCarteraData,
-        BaseReferences<_$AppDatabase, $CuentasCarteraTable, CuentasCarteraData>,
+        PlanesDeCobroData,
+        BaseReferences<_$AppDatabase, $PlanesDeCobroTable, PlanesDeCobroData>,
       ),
-      CuentasCarteraData,
+      PlanesDeCobroData,
       PrefetchHooks Function()
     >;
-typedef $$CuotasTableCreateCompanionBuilder =
-    CuotasCompanion Function({
+typedef $$CobrosTableCreateCompanionBuilder =
+    CobrosCompanion Function({
       required String id,
-      required String propietarioId,
+      required String residenteId,
       required String tenantId,
       Value<String?> tarifaId,
       required String concepto,
@@ -8547,10 +8540,10 @@ typedef $$CuotasTableCreateCompanionBuilder =
       required DateTime updatedAt,
       Value<int> rowid,
     });
-typedef $$CuotasTableUpdateCompanionBuilder =
-    CuotasCompanion Function({
+typedef $$CobrosTableUpdateCompanionBuilder =
+    CobrosCompanion Function({
       Value<String> id,
-      Value<String> propietarioId,
+      Value<String> residenteId,
       Value<String> tenantId,
       Value<String?> tarifaId,
       Value<String> concepto,
@@ -8566,9 +8559,9 @@ typedef $$CuotasTableUpdateCompanionBuilder =
       Value<int> rowid,
     });
 
-class $$CuotasTableFilterComposer
-    extends Composer<_$AppDatabase, $CuotasTable> {
-  $$CuotasTableFilterComposer({
+class $$CobrosTableFilterComposer
+    extends Composer<_$AppDatabase, $CobrosTable> {
+  $$CobrosTableFilterComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -8580,8 +8573,8 @@ class $$CuotasTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get propietarioId => $composableBuilder(
-    column: $table.propietarioId,
+  ColumnFilters<String> get residenteId => $composableBuilder(
+    column: $table.residenteId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -8646,9 +8639,9 @@ class $$CuotasTableFilterComposer
   );
 }
 
-class $$CuotasTableOrderingComposer
-    extends Composer<_$AppDatabase, $CuotasTable> {
-  $$CuotasTableOrderingComposer({
+class $$CobrosTableOrderingComposer
+    extends Composer<_$AppDatabase, $CobrosTable> {
+  $$CobrosTableOrderingComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -8660,8 +8653,8 @@ class $$CuotasTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get propietarioId => $composableBuilder(
-    column: $table.propietarioId,
+  ColumnOrderings<String> get residenteId => $composableBuilder(
+    column: $table.residenteId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -8726,9 +8719,9 @@ class $$CuotasTableOrderingComposer
   );
 }
 
-class $$CuotasTableAnnotationComposer
-    extends Composer<_$AppDatabase, $CuotasTable> {
-  $$CuotasTableAnnotationComposer({
+class $$CobrosTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CobrosTable> {
+  $$CobrosTableAnnotationComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -8738,8 +8731,8 @@ class $$CuotasTableAnnotationComposer
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
-  GeneratedColumn<String> get propietarioId => $composableBuilder(
-    column: $table.propietarioId,
+  GeneratedColumn<String> get residenteId => $composableBuilder(
+    column: $table.residenteId,
     builder: (column) => column,
   );
 
@@ -8790,36 +8783,36 @@ class $$CuotasTableAnnotationComposer
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 }
 
-class $$CuotasTableTableManager
+class $$CobrosTableTableManager
     extends
         RootTableManager<
           _$AppDatabase,
-          $CuotasTable,
-          Cuota,
-          $$CuotasTableFilterComposer,
-          $$CuotasTableOrderingComposer,
-          $$CuotasTableAnnotationComposer,
-          $$CuotasTableCreateCompanionBuilder,
-          $$CuotasTableUpdateCompanionBuilder,
-          (Cuota, BaseReferences<_$AppDatabase, $CuotasTable, Cuota>),
-          Cuota,
+          $CobrosTable,
+          Cobro,
+          $$CobrosTableFilterComposer,
+          $$CobrosTableOrderingComposer,
+          $$CobrosTableAnnotationComposer,
+          $$CobrosTableCreateCompanionBuilder,
+          $$CobrosTableUpdateCompanionBuilder,
+          (Cobro, BaseReferences<_$AppDatabase, $CobrosTable, Cobro>),
+          Cobro,
           PrefetchHooks Function()
         > {
-  $$CuotasTableTableManager(_$AppDatabase db, $CuotasTable table)
+  $$CobrosTableTableManager(_$AppDatabase db, $CobrosTable table)
     : super(
         TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
-              $$CuotasTableFilterComposer($db: db, $table: table),
+              $$CobrosTableFilterComposer($db: db, $table: table),
           createOrderingComposer: () =>
-              $$CuotasTableOrderingComposer($db: db, $table: table),
+              $$CobrosTableOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
-              $$CuotasTableAnnotationComposer($db: db, $table: table),
+              $$CobrosTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
-                Value<String> propietarioId = const Value.absent(),
+                Value<String> residenteId = const Value.absent(),
                 Value<String> tenantId = const Value.absent(),
                 Value<String?> tarifaId = const Value.absent(),
                 Value<String> concepto = const Value.absent(),
@@ -8833,9 +8826,9 @@ class $$CuotasTableTableManager
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
-              }) => CuotasCompanion(
+              }) => CobrosCompanion(
                 id: id,
-                propietarioId: propietarioId,
+                residenteId: residenteId,
                 tenantId: tenantId,
                 tarifaId: tarifaId,
                 concepto: concepto,
@@ -8853,7 +8846,7 @@ class $$CuotasTableTableManager
           createCompanionCallback:
               ({
                 required String id,
-                required String propietarioId,
+                required String residenteId,
                 required String tenantId,
                 Value<String?> tarifaId = const Value.absent(),
                 required String concepto,
@@ -8867,9 +8860,9 @@ class $$CuotasTableTableManager
                 required DateTime createdAt,
                 required DateTime updatedAt,
                 Value<int> rowid = const Value.absent(),
-              }) => CuotasCompanion.insert(
+              }) => CobrosCompanion.insert(
                 id: id,
-                propietarioId: propietarioId,
+                residenteId: residenteId,
                 tenantId: tenantId,
                 tarifaId: tarifaId,
                 concepto: concepto,
@@ -8892,18 +8885,18 @@ class $$CuotasTableTableManager
       );
 }
 
-typedef $$CuotasTableProcessedTableManager =
+typedef $$CobrosTableProcessedTableManager =
     ProcessedTableManager<
       _$AppDatabase,
-      $CuotasTable,
-      Cuota,
-      $$CuotasTableFilterComposer,
-      $$CuotasTableOrderingComposer,
-      $$CuotasTableAnnotationComposer,
-      $$CuotasTableCreateCompanionBuilder,
-      $$CuotasTableUpdateCompanionBuilder,
-      (Cuota, BaseReferences<_$AppDatabase, $CuotasTable, Cuota>),
-      Cuota,
+      $CobrosTable,
+      Cobro,
+      $$CobrosTableFilterComposer,
+      $$CobrosTableOrderingComposer,
+      $$CobrosTableAnnotationComposer,
+      $$CobrosTableCreateCompanionBuilder,
+      $$CobrosTableUpdateCompanionBuilder,
+      (Cobro, BaseReferences<_$AppDatabase, $CobrosTable, Cobro>),
+      Cobro,
       PrefetchHooks Function()
     >;
 typedef $$PagosTableCreateCompanionBuilder =
@@ -8911,13 +8904,13 @@ typedef $$PagosTableCreateCompanionBuilder =
       required String id,
       required String clientPaymentId,
       required String tenantId,
-      Value<String?> cuotaId,
+      Value<String?> cobroId,
       Value<String?> serverId,
       Value<String?> solicitudId,
       required int monto,
       required String fechaPago,
       required String cobradorId,
-      required String propietarioId,
+      required String residenteId,
       Value<DateTime?> fechaSync,
       required String syncStatus,
       required DateTime createdAt,
@@ -8929,13 +8922,13 @@ typedef $$PagosTableUpdateCompanionBuilder =
       Value<String> id,
       Value<String> clientPaymentId,
       Value<String> tenantId,
-      Value<String?> cuotaId,
+      Value<String?> cobroId,
       Value<String?> serverId,
       Value<String?> solicitudId,
       Value<int> monto,
       Value<String> fechaPago,
       Value<String> cobradorId,
-      Value<String> propietarioId,
+      Value<String> residenteId,
       Value<DateTime?> fechaSync,
       Value<String> syncStatus,
       Value<DateTime> createdAt,
@@ -8966,8 +8959,8 @@ class $$PagosTableFilterComposer extends Composer<_$AppDatabase, $PagosTable> {
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get cuotaId => $composableBuilder(
-    column: $table.cuotaId,
+  ColumnFilters<String> get cobroId => $composableBuilder(
+    column: $table.cobroId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -8996,8 +8989,8 @@ class $$PagosTableFilterComposer extends Composer<_$AppDatabase, $PagosTable> {
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get propietarioId => $composableBuilder(
-    column: $table.propietarioId,
+  ColumnFilters<String> get residenteId => $composableBuilder(
+    column: $table.residenteId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -9046,8 +9039,8 @@ class $$PagosTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get cuotaId => $composableBuilder(
-    column: $table.cuotaId,
+  ColumnOrderings<String> get cobroId => $composableBuilder(
+    column: $table.cobroId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -9076,8 +9069,8 @@ class $$PagosTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get propietarioId => $composableBuilder(
-    column: $table.propietarioId,
+  ColumnOrderings<String> get residenteId => $composableBuilder(
+    column: $table.residenteId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -9122,8 +9115,8 @@ class $$PagosTableAnnotationComposer
   GeneratedColumn<String> get tenantId =>
       $composableBuilder(column: $table.tenantId, builder: (column) => column);
 
-  GeneratedColumn<String> get cuotaId =>
-      $composableBuilder(column: $table.cuotaId, builder: (column) => column);
+  GeneratedColumn<String> get cobroId =>
+      $composableBuilder(column: $table.cobroId, builder: (column) => column);
 
   GeneratedColumn<String> get serverId =>
       $composableBuilder(column: $table.serverId, builder: (column) => column);
@@ -9144,8 +9137,8 @@ class $$PagosTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumn<String> get propietarioId => $composableBuilder(
-    column: $table.propietarioId,
+  GeneratedColumn<String> get residenteId => $composableBuilder(
+    column: $table.residenteId,
     builder: (column) => column,
   );
 
@@ -9195,13 +9188,13 @@ class $$PagosTableTableManager
                 Value<String> id = const Value.absent(),
                 Value<String> clientPaymentId = const Value.absent(),
                 Value<String> tenantId = const Value.absent(),
-                Value<String?> cuotaId = const Value.absent(),
+                Value<String?> cobroId = const Value.absent(),
                 Value<String?> serverId = const Value.absent(),
                 Value<String?> solicitudId = const Value.absent(),
                 Value<int> monto = const Value.absent(),
                 Value<String> fechaPago = const Value.absent(),
                 Value<String> cobradorId = const Value.absent(),
-                Value<String> propietarioId = const Value.absent(),
+                Value<String> residenteId = const Value.absent(),
                 Value<DateTime?> fechaSync = const Value.absent(),
                 Value<String> syncStatus = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
@@ -9211,13 +9204,13 @@ class $$PagosTableTableManager
                 id: id,
                 clientPaymentId: clientPaymentId,
                 tenantId: tenantId,
-                cuotaId: cuotaId,
+                cobroId: cobroId,
                 serverId: serverId,
                 solicitudId: solicitudId,
                 monto: monto,
                 fechaPago: fechaPago,
                 cobradorId: cobradorId,
-                propietarioId: propietarioId,
+                residenteId: residenteId,
                 fechaSync: fechaSync,
                 syncStatus: syncStatus,
                 createdAt: createdAt,
@@ -9229,13 +9222,13 @@ class $$PagosTableTableManager
                 required String id,
                 required String clientPaymentId,
                 required String tenantId,
-                Value<String?> cuotaId = const Value.absent(),
+                Value<String?> cobroId = const Value.absent(),
                 Value<String?> serverId = const Value.absent(),
                 Value<String?> solicitudId = const Value.absent(),
                 required int monto,
                 required String fechaPago,
                 required String cobradorId,
-                required String propietarioId,
+                required String residenteId,
                 Value<DateTime?> fechaSync = const Value.absent(),
                 required String syncStatus,
                 required DateTime createdAt,
@@ -9245,13 +9238,13 @@ class $$PagosTableTableManager
                 id: id,
                 clientPaymentId: clientPaymentId,
                 tenantId: tenantId,
-                cuotaId: cuotaId,
+                cobroId: cobroId,
                 serverId: serverId,
                 solicitudId: solicitudId,
                 monto: monto,
                 fechaPago: fechaPago,
                 cobradorId: cobradorId,
-                propietarioId: propietarioId,
+                residenteId: residenteId,
                 fechaSync: fechaSync,
                 syncStatus: syncStatus,
                 createdAt: createdAt,
@@ -9284,14 +9277,14 @@ typedef $$PagosTableProcessedTableManager =
 class $AppDatabaseManager {
   final _$AppDatabase _db;
   $AppDatabaseManager(this._db);
-  $$ConjuntosTableTableManager get conjuntos =>
-      $$ConjuntosTableTableManager(_db, _db.conjuntos);
+  $$ProyectosTableTableManager get proyectos =>
+      $$ProyectosTableTableManager(_db, _db.proyectos);
   $$EtapasTableTableManager get etapas =>
       $$EtapasTableTableManager(_db, _db.etapas);
   $$CasasTableTableManager get casas =>
       $$CasasTableTableManager(_db, _db.casas);
-  $$PropietariosTableTableManager get propietarios =>
-      $$PropietariosTableTableManager(_db, _db.propietarios);
+  $$ResidentesTableTableManager get residentes =>
+      $$ResidentesTableTableManager(_db, _db.residentes);
   $$TenenciasTableTableManager get tenencias =>
       $$TenenciasTableTableManager(_db, _db.tenencias);
   $$UsuariosTableTableManager get usuarios =>
@@ -9302,10 +9295,10 @@ class $AppDatabaseManager {
       $$TarifasTableTableManager(_db, _db.tarifas);
   $$MontosPredefinidosTableTableManager get montosPredefinidos =>
       $$MontosPredefinidosTableTableManager(_db, _db.montosPredefinidos);
-  $$CuentasCarteraTableTableManager get cuentasCartera =>
-      $$CuentasCarteraTableTableManager(_db, _db.cuentasCartera);
-  $$CuotasTableTableManager get cuotas =>
-      $$CuotasTableTableManager(_db, _db.cuotas);
+  $$PlanesDeCobroTableTableManager get planesDeCobro =>
+      $$PlanesDeCobroTableTableManager(_db, _db.planesDeCobro);
+  $$CobrosTableTableManager get cobros =>
+      $$CobrosTableTableManager(_db, _db.cobros);
   $$PagosTableTableManager get pagos =>
       $$PagosTableTableManager(_db, _db.pagos);
 }

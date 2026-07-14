@@ -7,7 +7,7 @@ import 'bloc.dart';
 
 /// Pantalla de cobro donde el cobrador selecciona cuotas y registra el pago offline.
 class PaymentScreen extends StatelessWidget {
-  final Propietario propietario;
+  final Residente propietario;
   final String casaDireccion;
   final String etapaNombre;
   final String cobradorId;
@@ -26,7 +26,7 @@ class PaymentScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) => CobroBloc()
-        ..add(CargarPropietario(
+        ..add(CargarResidente(
           propietario: propietario,
           casaDireccion: casaDireccion,
           etapaNombre: etapaNombre,
@@ -43,7 +43,7 @@ class PaymentScreen extends StatelessWidget {
 }
 
 class _PaymentScreenBody extends StatefulWidget {
-  final Propietario propietario;
+  final Residente propietario;
   final String casaDireccion;
   final String etapaNombre;
   final String cobradorId;
@@ -142,7 +142,7 @@ class _PaymentScreenBodyState extends State<_PaymentScreenBody> {
             const SizedBox(height: 16),
             FilledButton(
               onPressed: () => context.read<CobroBloc>().add(
-                    CargarPropietario(
+                    CargarResidente(
                       propietario: widget.propietario,
                       casaDireccion: widget.casaDireccion,
                       etapaNombre: widget.etapaNombre,
@@ -206,7 +206,7 @@ class _PaymentScreenBodyState extends State<_PaymentScreenBody> {
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   children: [
-                    _DetalleRow(icon: Icons.person, label: 'Propietario', value: state.propietarioNombre, colorScheme: colorScheme),
+                    _DetalleRow(icon: Icons.person, label: 'Residente', value: state.propietarioNombre, colorScheme: colorScheme),
                     const Divider(height: 16),
                     _DetalleRow(icon: Icons.receipt, label: 'Monto', value: '\$${fmt.format(state.montoTotal)}', colorScheme: colorScheme),
                     const Divider(height: 16),
@@ -287,7 +287,7 @@ class _PaymentScreenBodyState extends State<_PaymentScreenBody> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Info del propietario
-                _PropietarioHeader(
+                _ResidenteHeader(
                   nombre: p.nombre,
                   telefono: p.telefono,
                   casaDireccion: state.casaDireccion,
@@ -298,7 +298,7 @@ class _PaymentScreenBodyState extends State<_PaymentScreenBody> {
 
                 // Cuotas pendientes
                 Text(
-                  'Cuotas pendientes',
+                  'Cobros pendientes',
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w600,
                     color: colorScheme.primary,
@@ -314,7 +314,7 @@ class _PaymentScreenBodyState extends State<_PaymentScreenBody> {
                       padding: const EdgeInsets.all(24),
                       child: Center(
                         child: Text(
-                          'No hay cuotas pendientes',
+                          'No hay cobros pendientes',
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: colorScheme.outline,
                           ),
@@ -324,13 +324,13 @@ class _PaymentScreenBodyState extends State<_PaymentScreenBody> {
                   )
                 else
                   ...state.cuotas.map(
-                    (cuota) => _CuotaTile(
+                    (cuota) => _CobroTile(
                       cuota: cuota,
-                      isSelected: state.selectedCuotaIds.contains(cuota.cuota.id),
+                      isSelected: state.selectedCobroIds.contains(cuota.cuota.id),
                       onToggle: () {
                         context
                             .read<CobroBloc>()
-                            .add(AlternarCuota(cuota.cuota.id));
+                            .add(AlternarCobro(cuota.cuota.id));
                       },
                       colorScheme: colorScheme,
                       theme: theme,
@@ -452,9 +452,9 @@ class _PaymentScreenBodyState extends State<_PaymentScreenBody> {
           children: [
             Text('Propietario: ${state.propietario.nombre}'),
             const SizedBox(height: 8),
-            if (state.selectedCuotaIds.isNotEmpty) ...[
+            if (state.selectedCobroIds.isNotEmpty) ...[
               Text(
-                'Cuotas a pagar: ${state.selectedCuotaIds.length}',
+                'Cobros a pagar: ${state.selectedCobroIds.length}',
               ),
               const SizedBox(height: 4),
             ],
@@ -498,14 +498,14 @@ class _PaymentScreenBodyState extends State<_PaymentScreenBody> {
 // HEADER DEL PROPIETARIO
 // ════════════════════════════════════════════════════════════
 
-class _PropietarioHeader extends StatelessWidget {
+class _ResidenteHeader extends StatelessWidget {
   final String nombre;
   final String telefono;
   final String casaDireccion;
   final String etapaNombre;
   final ColorScheme colorScheme;
 
-  const _PropietarioHeader({
+  const _ResidenteHeader({
     required this.nombre,
     required this.telefono,
     required this.casaDireccion,
@@ -586,15 +586,15 @@ class _PropietarioHeader extends StatelessWidget {
 // TILE DE CUOTA SELECCIONABLE
 // ════════════════════════════════════════════════════════════
 
-class _CuotaTile extends StatelessWidget {
-  final CuotaConSeleccion cuota;
+class _CobroTile extends StatelessWidget {
+  final CobroConSeleccion cuota;
   final bool isSelected;
   final VoidCallback onToggle;
   final ColorScheme colorScheme;
   final ThemeData theme;
   final NumberFormat fmt;
 
-  const _CuotaTile({
+  const _CobroTile({
     required this.cuota,
     required this.isSelected,
     required this.onToggle,

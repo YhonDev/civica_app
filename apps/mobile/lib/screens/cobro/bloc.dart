@@ -3,7 +3,7 @@ import 'package:equatable/equatable.dart';
 import 'package:drift/drift.dart';
 
 import '../../core/database/app_database.dart';
-import '../../core/database/daos/cuota_dao.dart';
+import '../../core/database/daos/cobro_dao.dart';
 import '../../core/database/daos/pago_dao.dart';
 
 // ════════════════════════════════════════════════════════════
@@ -18,12 +18,12 @@ abstract class CobroEvent extends Equatable {
 }
 
 /// Carga los datos del propietario y sus cuotas pendientes.
-class CargarPropietario extends CobroEvent {
-  final Propietario propietario;
+class CargarResidente extends CobroEvent {
+  final Residente propietario;
   final String casaDireccion;
   final String etapaNombre;
 
-  const CargarPropietario({
+  const CargarResidente({
     required this.propietario,
     required this.casaDireccion,
     required this.etapaNombre,
@@ -34,13 +34,13 @@ class CargarPropietario extends CobroEvent {
 }
 
 /// Selecciona o deselecciona una cuota para pagar.
-class AlternarCuota extends CobroEvent {
-  final String cuotaId;
+class AlternarCobro extends CobroEvent {
+  final String cobroId;
 
-  const AlternarCuota(this.cuotaId);
+  const AlternarCobro(this.cobroId);
 
   @override
-  List<Object?> get props => [cuotaId];
+  List<Object?> get props => [cobroId];
 }
 
 /// Cambia el monto ingresado manualmente.
@@ -90,11 +90,11 @@ class CobroLoading extends CobroState {
 }
 
 class CobroLoaded extends CobroState {
-  final Propietario propietario;
+  final Residente propietario;
   final String casaDireccion;
   final String etapaNombre;
-  final List<CuotaConSeleccion> cuotas;
-  final Set<String> selectedCuotaIds;
+  final List<CobroConSeleccion> cuotas;
+  final Set<String> selectedCobroIds;
   final int montoManual; // en centavos, 0 si no se ingresó manual
   final String? errorMessage; // error sin perder la carga
 
@@ -103,24 +103,24 @@ class CobroLoaded extends CobroState {
     required this.casaDireccion,
     required this.etapaNombre,
     required this.cuotas,
-    this.selectedCuotaIds = const {},
+    this.selectedCobroIds = const {},
     this.montoManual = 0,
     this.errorMessage,
   });
 
   /// Monto total: suma de cuotas seleccionadas + monto manual adicional
   int get montoTotal {
-    final deCuotas = cuotas
-        .where((c) => selectedCuotaIds.contains(c.cuota.id))
+    final deCobros = cuotas
+        .where((c) => selectedCobroIds.contains(c.cuota.id))
         .fold(0, (sum, c) => sum + c.cuota.monto - c.cuota.montoPagado);
-    return deCuotas + montoManual;
+    return deCobros + montoManual;
   }
 
   bool get puedePagar => montoTotal > 0;
 
   CobroLoaded copyWith({
-    List<CuotaConSeleccion>? cuotas,
-    Set<String>? selectedCuotaIds,
+    List<CobroConSeleccion>? cuotas,
+    Set<String>? selectedCobroIds,
     int? montoManual,
     String? errorMessage,
   }) {
@@ -129,7 +129,7 @@ class CobroLoaded extends CobroState {
       casaDireccion: casaDireccion,
       etapaNombre: etapaNombre,
       cuotas: cuotas ?? this.cuotas,
-      selectedCuotaIds: selectedCuotaIds ?? this.selectedCuotaIds,
+      selectedCobroIds: selectedCobroIds ?? this.selectedCobroIds,
       montoManual: montoManual ?? this.montoManual,
       errorMessage: errorMessage,
     );
@@ -138,7 +138,7 @@ class CobroLoaded extends CobroState {
   @override
   List<Object?> get props => [
         propietario.id,
-        selectedCuotaIds,
+        selectedCobroIds,
         montoManual,
         cuotas,
         errorMessage,
@@ -186,10 +186,10 @@ class CobroError extends CobroState {
 // MODELO AUXILIAR
 // ════════════════════════════════════════════════════════════
 
-class CuotaConSeleccion extends Equatable {
-  final Cuota cuota;
+class CobroConSeleccion extends Equatable {
+  final Cobro cuota;
 
-  const CuotaConSeleccion({required this.cuota});
+  const CobroConSeleccion({required this.cuota});
 
   int get saldoPendiente => cuota.monto - cuota.montoPagado;
 
@@ -222,24 +222,24 @@ class CuotaConSeleccion extends Equatable {
 // ════════════════════════════════════════════════════════════
 
 class CobroBloc extends Bloc<CobroEvent, CobroState> {
-  final CuotaDao _cuotaDao;
+  final CobroDao _cuotaDao;
   final PagoDao _pagoDao;
 
   CobroBloc({
-    CuotaDao? cuotaDao,
+    CobroDao? cuotaDao,
     PagoDao? pagoDao,
-  })  : _cuotaDao = cuotaDao ?? CuotaDao(AppDatabase.instance),
+  })  : _cuotaDao = cuotaDao ?? CobroDao(AppDatabase.instance),
         _pagoDao = pagoDao ?? PagoDao(AppDatabase.instance),
         super(CobroInitial()) {
-    on<CargarPropietario>(_onCargarPropietario);
-    on<AlternarCuota>(_onAlternarCuota);
+    on<CargarResidente>(_onCargarResidente);
+    on<AlternarCobro>(_onAlternarCobro);
     on<CambiarMontoManual>(_onCambiarMontoManual);
     on<RegistrarPago>(_onRegistrarPago);
     on<LimpiarCobro>(_onLimpiar);
   }
 
-  Future<void> _onCargarPropietario(
-    CargarPropietario event,
+  Future<void> _onCargarResidente(
+    CargarResidente event,
     Emitter<CobroState> emit,
   ) async {
     emit(CobroLoading());
@@ -249,28 +249,28 @@ class CobroBloc extends Bloc<CobroEvent, CobroState> {
         propietario: event.propietario,
         casaDireccion: event.casaDireccion,
         etapaNombre: event.etapaNombre,
-        cuotas: cuotas.map((c) => CuotaConSeleccion(cuota: c)).toList(),
+        cuotas: cuotas.map((c) => CobroConSeleccion(cuota: c)).toList(),
       ));
     } catch (e) {
       emit(CobroError('Error al cargar datos: $e'));
     }
   }
 
-  void _onAlternarCuota(
-    AlternarCuota event,
+  void _onAlternarCobro(
+    AlternarCobro event,
     Emitter<CobroState> emit,
   ) {
     final s = state;
     if (s is! CobroLoaded) return;
 
-    final selected = Set<String>.from(s.selectedCuotaIds);
-    if (selected.contains(event.cuotaId)) {
-      selected.remove(event.cuotaId);
+    final selected = Set<String>.from(s.selectedCobroIds);
+    if (selected.contains(event.cobroId)) {
+      selected.remove(event.cobroId);
     } else {
-      selected.add(event.cuotaId);
+      selected.add(event.cobroId);
     }
 
-    emit(s.copyWith(selectedCuotaIds: selected, errorMessage: null));
+    emit(s.copyWith(selectedCobroIds: selected, errorMessage: null));
   }
 
   void _onCambiarMontoManual(
@@ -308,23 +308,23 @@ class CobroBloc extends Bloc<CobroEvent, CobroState> {
         monto: s.montoTotal,
         fechaPago: now.toIso8601String(),
         cobradorId: event.cobradorId,
-        propietarioId: s.propietario.id,
+        residenteId: s.propietario.id,
         syncStatus: 'PENDIENTE_SYNC',
         createdAt: now,
         updatedAt: now,
       ));
 
       // Actualizar estado de cuotas seleccionadas
-      for (final cuotaId in s.selectedCuotaIds) {
+      for (final cobroId in s.selectedCobroIds) {
         final cuotaCon =
-            s.cuotas.firstWhere((c) => c.cuota.id == cuotaId);
+            s.cuotas.firstWhere((c) => c.cuota.id == cobroId);
         final nuevoPagado =
             cuotaCon.cuota.montoPagado + cuotaCon.saldoPendiente;
         final nuevoEstado =
             nuevoPagado >= cuotaCon.cuota.monto ? 'PAGADA' : 'PARCIAL';
 
         await _cuotaDao.actualizarEstado(
-          cuotaId: cuotaId,
+          cobroId: cobroId,
           estado: nuevoEstado,
           montoPagado: nuevoPagado,
         );

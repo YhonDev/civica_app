@@ -14,7 +14,7 @@ class CobradorDashboardData extends Equatable {
   final int pendientes;
   final int vencidas;
   final int montoEsperado;
-  final List<Map<String, dynamic>> viviendas;
+  final List<Map<String, dynamic>> casas;
   final Map<String, dynamic>? proximaVivienda;
   final List<Map<String, dynamic>> ultimosCobros;
 
@@ -26,7 +26,7 @@ class CobradorDashboardData extends Equatable {
     required this.pendientes,
     required this.vencidas,
     required this.montoEsperado,
-    required this.viviendas,
+    required this.casas,
     this.proximaVivienda,
     required this.ultimosCobros,
   });
@@ -41,7 +41,7 @@ class CobradorDashboardData extends Equatable {
       pendientes: stats['pendientes'] as int? ?? 0,
       vencidas: stats['vencidas'] as int? ?? 0,
       montoEsperado: stats['montoEsperado'] as int? ?? 0,
-      viviendas: List<Map<String, dynamic>>.from(json['viviendas'] as List? ?? []),
+      casas: List<Map<String, dynamic>>.from(json['casas'] as List? ?? []),
       proximaVivienda: json['proximaVivienda'] as Map<String, dynamic>?,
       ultimosCobros: List<Map<String, dynamic>>.from(json['ultimosCobros'] as List? ?? []),
     );
@@ -50,7 +50,7 @@ class CobradorDashboardData extends Equatable {
   @override
   List<Object?> get props => [
     cobradorNombre, totalViviendas, cobradosHoy, montoCobradoHoy,
-    pendientes, vencidas, montoEsperado, viviendas, proximaVivienda, ultimosCobros,
+    pendientes, vencidas, montoEsperado, casas, proximaVivienda, ultimosCobros,
   ];
 }
 

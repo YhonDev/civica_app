@@ -103,7 +103,7 @@ class _MiEstadoScreenState extends State<MiEstadoScreen>
               id: m['id'] as String,
               tipo: m['tipo'] as String,
               descripcion: m['descripcion'] as String,
-              usuario: isPago ? 'Pago recibido' : 'Cuota mensual',
+              usuario: isPago ? 'Pago recibido' : 'Cobro mensual',
               timestamp: date,
               hace: '\$${m['monto']} · $formattedDate',
               monto: m['monto'] as int,
@@ -167,7 +167,7 @@ class _MiEstadoScreenState extends State<MiEstadoScreen>
   @override
   Widget build(BuildContext context) {
     final user = context.watch<AuthCubit>().state.usuario;
-    final nombre = user?['nombre'] as String? ?? 'Propietario';
+    final nombre = user?['nombre'] as String? ?? 'Residente';
     final parts = nombre.split(' ');
     final displayName = parts.length >= 2 ? '${parts[0]} ${parts[1]}' : nombre;
 
@@ -430,7 +430,7 @@ class _MiEstadoScreenState extends State<MiEstadoScreen>
       setState(() => _loading = true);
       try {
         await _solicitudesRepo.crearSolicitud(
-          cuotaId: item['cuotaId'],
+          cobroId: item['cobroId'],
           tipo: 'SOLICITUD_COBRO',
           descripcion: result.isEmpty ? 'Solicita cobro en casa.' : result,
           propietarioId: user['id'],
@@ -686,7 +686,7 @@ class _MiEstadoScreenState extends State<MiEstadoScreen>
       TicketData(
         numero: 'TK-${item.id.hashCode.abs().toString().padLeft(6, '0')}',
         fecha: item.timestamp,
-        propietario: context.read<AuthCubit>().state.usuario?['nombre'] as String? ?? 'Propietario',
+        propietario: context.read<AuthCubit>().state.usuario?['nombre'] as String? ?? 'Residente',
         casa: 'Casa 101',
         monto: item.monto ?? 0,
         metodo: 'Efectivo',

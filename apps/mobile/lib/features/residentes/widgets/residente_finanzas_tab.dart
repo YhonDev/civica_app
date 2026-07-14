@@ -3,21 +3,21 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/network/api_client.dart';
-import '../models/propietarios_models.dart';
-import '../propietarios_repository.dart';
+import '../models/residentes_models.dart';
+import '../residentes_repository.dart';
 import 'package:intl/intl.dart';
 
-class PropietarioFinanzasScreen extends StatefulWidget {
-  final PropietarioItem propietario;
+class ResidenteFinanzasScreen extends StatefulWidget {
+  final ResidenteItem propietario;
 
-  const PropietarioFinanzasScreen({super.key, required this.propietario});
+  const ResidenteFinanzasScreen({super.key, required this.propietario});
 
   @override
-  State<PropietarioFinanzasScreen> createState() => _PropietarioFinanzasScreenState();
+  State<ResidenteFinanzasScreen> createState() => _ResidenteFinanzasScreenState();
 }
 
-class _PropietarioFinanzasScreenState extends State<PropietarioFinanzasScreen> {
-  final PropietariosRepository _repo = PropietariosRepository();
+class _ResidenteFinanzasScreenState extends State<ResidenteFinanzasScreen> {
+  final ResidentesRepository _repo = ResidentesRepository();
   bool _isLoading = true;
   List<dynamic> _cuotas = [];
 
@@ -31,7 +31,7 @@ class _PropietarioFinanzasScreenState extends State<PropietarioFinanzasScreen> {
     setState(() => _isLoading = true);
     try {
       final response = await ApiClient.instance.get<List<dynamic>>(
-        '/cuotas/propietario/${widget.propietario.id}',
+        '/cobros/residente/${widget.propietario.id}',
       );
       if (mounted) {
         setState(() {
@@ -79,7 +79,7 @@ class _PropietarioFinanzasScreenState extends State<PropietarioFinanzasScreen> {
               if (success) {
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Cuota eliminada. La deuda ha desaparecido.')),
+                    const SnackBar(content: Text('Cobro eliminado. La deuda ha desaparecido.')),
                   );
                 }
                 _loadDeudas();
@@ -147,7 +147,7 @@ class _PropietarioFinanzasScreenState extends State<PropietarioFinanzasScreen> {
           final monto = (cuota['monto'] ?? 0) / 100.0;
           final montoPagado = (cuota['montoPagado'] ?? 0) / 100.0;
           final saldo = monto - montoPagado;
-          final concepto = cuota['concepto'] ?? 'Cuota';
+          final concepto = cuota['concepto'] ?? 'Cobro';
           final mesStr = cuota['periodoInicio'] != null 
               ? DateFormat('MMMM yyyy', 'es').format(DateTime.parse(cuota['periodoInicio'])) 
               : '';

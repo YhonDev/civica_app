@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
-import '../models/propietarios_models.dart';
+import '../models/residentes_models.dart';
 
 import 'package:go_router/go_router.dart';
 
-class PropietarioCard extends StatelessWidget {
-  final PropietarioItem propietario;
+class ResidenteCard extends StatelessWidget {
+  final ResidenteItem propietario;
   final VoidCallback? onUpdate;
 
-  const PropietarioCard({
+  const ResidenteCard({
     super.key,
     required this.propietario,
     this.onUpdate,

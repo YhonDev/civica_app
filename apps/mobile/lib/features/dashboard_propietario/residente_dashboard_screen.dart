@@ -21,16 +21,16 @@ import 'widgets/timeline_paged_list.dart';
 ///   2. Infinite-scroll timeline of pagos + solicitudes
 ///
 /// Replaces MiEstadoScreen as the PROPIETARIO home route.
-class PropietarioDashboardScreen extends StatefulWidget {
-  const PropietarioDashboardScreen({super.key});
+class ResidenteDashboardScreen extends StatefulWidget {
+  const ResidenteDashboardScreen({super.key});
 
   @override
-  State<PropietarioDashboardScreen> createState() =>
-      _PropietarioDashboardScreenState();
+  State<ResidenteDashboardScreen> createState() =>
+      _ResidenteDashboardScreenState();
 }
 
-class _PropietarioDashboardScreenState
-    extends State<PropietarioDashboardScreen> {
+class _ResidenteDashboardScreenState
+    extends State<ResidenteDashboardScreen> {
   // ── Summary state ─────────────────────────────────
   bool _loadingSummary = true;
   int _saldo = 0;
@@ -105,7 +105,7 @@ class _PropietarioDashboardScreenState
 
     try {
       final response = await ApiClient.instance.get<Map<String, dynamic>>(
-        '/dashboard/propietario/timeline',
+        '/dashboard/residente/timeline',
         queryParameters: {'offset': _offset, 'limit': _pageSize},
       );
       final data = response.data!;
@@ -155,7 +155,7 @@ class _PropietarioDashboardScreenState
   @override
   Widget build(BuildContext context) {
     final user = context.watch<AuthCubit>().state.usuario;
-    final nombre = user?['nombre'] as String? ?? 'Propietario';
+    final nombre = user?['nombre'] as String? ?? 'Residente';
     final parts = nombre.split(' ');
     final displayName = parts.length >= 2 ? '${parts[0]} ${parts[1]}' : nombre;
 
@@ -507,7 +507,7 @@ class _PropietarioDashboardScreenState
     if (result != null) {
       try {
         await _solicitudesRepo.crearSolicitud(
-          cuotaId: item['cuotaId'],
+          cobroId: item['cobroId'],
           tipo: 'SOLICITUD_COBRO',
           descripcion: result.isEmpty ? 'Solicita cobro en casa.' : result,
           propietarioId: user['id'],

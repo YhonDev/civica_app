@@ -2,29 +2,29 @@ import 'package:drift/drift.dart';
 
 import '../app_database.dart';
 
-/// DAO para operaciones con propietarios en SQLite local.
+/// DAO para operaciones con residentes en SQLite local.
 /// Usado por búsqueda offline y registro inline.
-class PropietarioDao extends DatabaseAccessor<AppDatabase> {
-  PropietarioDao(super.db);
+class ResidenteDao extends DatabaseAccessor<AppDatabase> {
+  ResidenteDao(super.db);
 
-  /// Inserta o reemplaza un lote de propietarios (desde sync).
-  Future<void> upsertPropietarios(List<PropietariosCompanion> propietarios) {
+  /// Inserta o reemplaza un lote de residentes (desde sync).
+  Future<void> upsertResidentes(List<ResidentesCompanion> residentes) {
     return batch((batch) {
-      for (final p in propietarios) {
-        batch.insert(db.propietarios, p, mode: InsertMode.insertOrReplace);
+      for (final p in residentes) {
+        batch.insert(db.residentes, p, mode: InsertMode.insertOrReplace);
       }
     });
   }
 
-  /// Busca propietarios por nombre (LIKE) o teléfono.
-  Future<List<Propietario>> buscar({
+  /// Busca residentes por nombre (LIKE) o teléfono.
+  Future<List<Residente>> buscar({
     required String tenantId,
     String? nombre,
     String? telefono,
     String? etapaId,
     String? casaId,
   }) {
-    final query = db.select(db.propietarios)
+    final query = db.select(db.residentes)
       ..where((t) => t.tenantId.equals(tenantId));
 
     if (nombre != null && nombre.isNotEmpty) {
@@ -38,15 +38,15 @@ class PropietarioDao extends DatabaseAccessor<AppDatabase> {
     return query.get();
   }
 
-  /// Busca propietarios que tengan tenencias en una etapa o casa específica.
-  Future<List<Propietario>> buscarPorEtapaOCasa({
+  /// Busca residentes que tengan tenencias en una etapa o casa específica.
+  Future<List<Residente>> buscarPorEtapaOCasa({
     required String tenantId,
     String? etapaId,
     String? casaId,
   }) {
     // NOTA: drift no soporta JOINs en DAO puro sin queries SQL.
-    // Esta implementación hace dos pasos: primero obtiene propietarioIds
-    // desde tenencias filtradas, luego busca los propietarios.
+    // Esta implementación hace dos pasos: primero obtiene residenteIds
+    // desde tenencias filtradas, luego busca los residentes.
     return _buscarConJoin(
       tenantId: tenantId,
       etapaId: etapaId,
@@ -54,7 +54,7 @@ class PropietarioDao extends DatabaseAccessor<AppDatabase> {
     );
   }
 
-  Future<List<Propietario>> _buscarConJoin({
+  Future<List<Residente>> _buscarConJoin({
     required String tenantId,
     String? etapaId,
     String? casaId,
@@ -75,8 +75,8 @@ class PropietarioDao extends DatabaseAccessor<AppDatabase> {
 
     final sql = '''
       SELECT DISTINCT p.*
-      FROM propietarios p
-      INNER JOIN tenencias t ON t.propietario_id = p.id
+      FROM residentes p
+      INNER JOIN tenencias t ON t.residente_id = p.id
       INNER JOIN casas c ON c.id = t.casa_id
       WHERE ${whereClauses.join(' AND ')}
       ORDER BY p.nombre ASC
@@ -85,7 +85,7 @@ class PropietarioDao extends DatabaseAccessor<AppDatabase> {
     final result = await db.customSelect(sql, variables: variables).get();
 
     return result.map((row) {
-      return Propietario(
+      return Residente(
         id: row.read<String>('id'),
         nombre: row.read<String>('nombre'),
         telefono: row.read<String>('telefono'),
@@ -97,15 +97,15 @@ class PropietarioDao extends DatabaseAccessor<AppDatabase> {
     }).toList();
   }
 
-  /// Obtiene un propietario por ID.
-  Future<Propietario?> getById(String id) {
-    return (db.select(db.propietarios)..where((t) => t.id.equals(id)))
+  /// Obtiene un residente por ID.
+  Future<Residente?> getById(String id) {
+    return (db.select(db.residentes)..where((t) => t.id.equals(id)))
         .getSingleOrNull();
   }
 
-  /// Busca propietarios combinando filtros de texto (nombre/tel) con etapa/casa.
+  /// Busca residentes combinando filtros de texto (nombre/tel) con etapa/casa.
   /// Retorna datos planos con info de la etapa y casa asociadas.
-  Future<List<PropietarioConInfo>> buscarCompleto({
+  Future<List<ResidenteConInfo>> buscarCompleto({
     required String tenantId,
     String? nombre,
     String? telefono,
@@ -138,8 +138,8 @@ class PropietarioDao extends DatabaseAccessor<AppDatabase> {
              c.id AS casa_id,
              e.nombre AS etapa_nombre,
              e.id AS etapa_id
-      FROM propietarios p
-      INNER JOIN tenencias t ON t.propietario_id = p.id
+      FROM residentes p
+      INNER JOIN tenencias t ON t.residente_id = p.id
       INNER JOIN casas c ON c.id = t.casa_id
       INNER JOIN etapas e ON e.id = c.etapa_id
       WHERE ${where.join(' AND ')}
@@ -149,8 +149,8 @@ class PropietarioDao extends DatabaseAccessor<AppDatabase> {
     final result = await db.customSelect(sql, variables: vars).get();
 
     return result.map((row) {
-      return PropietarioConInfo(
-        propietario: Propietario(
+      return ResidenteConInfo(
+        residente: Residente(
           id: row.read<String>('id'),
           nombre: row.read<String>('nombre'),
           telefono: row.read<String>('telefono'),
@@ -167,29 +167,29 @@ class PropietarioDao extends DatabaseAccessor<AppDatabase> {
     }).toList();
   }
 
-  /// Inserta un nuevo propietario (para registro inline offline).
-  Future<void> insert(PropietariosCompanion propietario) {
-    return db.into(db.propietarios).insert(propietario);
+  /// Inserta un nuevo residente (para registro inline offline).
+  Future<void> insert(ResidentesCompanion residente) {
+    return db.into(db.residentes).insert(residente);
   }
 
-  /// Inserta un propietario y su tenencia en una transacción batch.
+  /// Inserta un residente y su tenencia en una transacción batch.
   /// Crea ambos registros atómicamente para mantener la consistencia.
   Future<void> insertConTenencia({
-    required PropietariosCompanion propietario,
+    required ResidentesCompanion residente,
     required String casaId,
     DateTime? fechaInicio,
   }) async {
     final tenenciaId =
-        'TEN_${DateTime.now().microsecondsSinceEpoch}_${propietario.id.value.substring(0, 4)}';
+        'TEN_${DateTime.now().microsecondsSinceEpoch}_${residente.id.value.substring(0, 4)}';
     final inicio = fechaInicio ?? DateTime.now();
 
     await batch((batch) {
-      batch.insert(db.propietarios, propietario);
+      batch.insert(db.residentes, residente);
       batch.insert(
         db.tenencias,
         TenenciasCompanion.insert(
           id: tenenciaId,
-          propietarioId: propietario.id.value,
+          residenteId: residente.id.value,
           casaId: casaId,
           fechaInicio: inicio,
           createdAt: DateTime.now(),
@@ -199,17 +199,17 @@ class PropietarioDao extends DatabaseAccessor<AppDatabase> {
   }
 }
 
-/// Resultado del método [PropietarioDao.buscarCompleto].
-/// Contiene datos del propietario junto con su casa y etapa asociadas.
-class PropietarioConInfo {
-  final Propietario propietario;
+/// Resultado del método [ResidenteDao.buscarCompleto].
+/// Contiene datos del residente junto con su casa y etapa asociadas.
+class ResidenteConInfo {
+  final Residente residente;
   final String casaDireccion;
   final String casaId;
   final String etapaNombre;
   final String etapaId;
 
-  const PropietarioConInfo({
-    required this.propietario,
+  const ResidenteConInfo({
+    required this.residente,
     required this.casaDireccion,
     required this.casaId,
     required this.etapaNombre,

@@ -4,10 +4,10 @@ import '../../core/network/api_exceptions.dart';
 class TarifasRepository {
   final ApiClient _api = ApiClient.instance;
 
-  Future<Map<String, dynamic>> getTarifasVigentes(String conjuntoId) async {
+  Future<Map<String, dynamic>> getTarifasVigentes(String proyectoId) async {
     try {
       final response = await _api.get('/tarifas/vigentes', queryParameters: {
-        'conjuntoId': conjuntoId,
+        'proyectoId': proyectoId,
       });
       return response.data as Map<String, dynamic>;
     } catch (e) {

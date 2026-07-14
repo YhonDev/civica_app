@@ -25,7 +25,7 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
 
   List<Map<String, dynamic>> _cuotas = [];
   bool _loadingCuotas = true;
-  String? _cuotaIdSeleccionada;
+  String? _cobroIdSeleccionada;
   bool _enviando = false;
 
   @override
@@ -39,7 +39,7 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
   Future<void> _loadCuotas() async {
     try {
       final user = context.read<AuthCubit>().state.usuario;
-      final propietarioId = user?['propietarioId'] as String?;
+      final propietarioId = user?['residenteId'] as String?;
       if (propietarioId == null) {
         setState(() {
           _loadingCuotas = false;
@@ -47,7 +47,7 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
         return;
       }
 
-      final response = await ApiClient.instance.get<List<dynamic>>('/cuotas/propietario/$propietarioId');
+      final response = await ApiClient.instance.get<List<dynamic>>('/cobros/residente/$propietarioId');
       if (mounted) {
         setState(() {
           _cuotas = response.data!.map((item) => item as Map<String, dynamic>).toList();
@@ -85,7 +85,7 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
   }
 
   void _enviarSolicitud() async {
-    if (!_formKey.currentState!.validate() || _cuotaIdSeleccionada == null) {
+    if (!_formKey.currentState!.validate() || _cobroIdSeleccionada == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Por favor, selecciona un período y escribe la descripción.'),
@@ -100,7 +100,7 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
     });
 
     try {
-      final selectedCuota = _cuotas.firstWhere((c) => c['id'] == _cuotaIdSeleccionada);
+      final selectedCuota = _cuotas.firstWhere((c) => c['id'] == _cobroIdSeleccionada);
       final isPagada = selectedCuota['estado'] == 'PAGADA';
       final date = DateTime.parse(selectedCuota['periodoInicio'] as String);
       final periodName = DateFormat('MMMM yyyy', 'es').format(date);
@@ -110,11 +110,11 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
       final tipo = '$prefix $capitalizedPeriod';
 
       final user = context.read<AuthCubit>().state.usuario;
-      final propietarioId = user?['propietarioId'] as String? ?? '00000000-0000-0000-0000-000000000000'; // fallback temporal
+      final propietarioId = user?['residenteId'] as String? ?? '00000000-0000-0000-0000-000000000000'; // fallback temporal
       
       final repo = SolicitudesRepository();
       await repo.crearSolicitud(
-        cuotaId: _cuotaIdSeleccionada!,
+        cobroId: _cobroIdSeleccionada!,
         tipo: tipo,
         descripcion: _descripcionController.text.trim(),
         propietarioId: propietarioId,
@@ -208,7 +208,7 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
                         ),
                       )
                     : DropdownButtonFormField<String>(
-                        initialValue: _cuotaIdSeleccionada,
+                        initialValue: _cobroIdSeleccionada,
                         decoration: const InputDecoration(
                           hintText: 'Selecciona una cuota',
                           contentPadding: EdgeInsets.symmetric(
@@ -227,7 +227,7 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
                         }).toList(),
                         onChanged: (value) {
                           setState(() {
-                            _cuotaIdSeleccionada = value;
+                            _cobroIdSeleccionada = value;
                           });
                         },
                         validator: (value) =>

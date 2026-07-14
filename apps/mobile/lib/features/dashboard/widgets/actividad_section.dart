@@ -21,7 +21,7 @@ class ActividadSection extends StatelessWidget {
   Widget build(BuildContext context) {
     // Only count activities with today's date (or all recent activities since they are the ones loaded)
     final pagosList = actividad.where((a) => a.tipo == 'PAGO' || a.tipo == 'pago' || a.tipo == 'pago_registrado').toList();
-    final propietariosList = actividad.where((a) => a.tipo == 'PROPIETARIO' || a.tipo == 'propietario').toList();
+    final propietariosList = actividad.where((a) => a.tipo == 'PROPIETARIO' || a.tipo == 'residente').toList();
     final solicitudesList = actividad.where((a) => a.tipo == 'SOLICITUD' || a.tipo == 'solicitud').toList();
 
     double recaudoHoy = 0.0;
@@ -172,7 +172,7 @@ class ActividadSection extends StatelessWidget {
                   context,
                   SolicitudData(
                     id: item.id,
-                    cuotaId: '',
+                    cobroId: '',
                     nroRecibo: 'TK-${item.id.hashCode.abs().toString().padLeft(6, '0')}',
                     tipo: orig.descripcion,
                     descripcion: 'Solicito revisión del pago ya que el monto fue diferente.',

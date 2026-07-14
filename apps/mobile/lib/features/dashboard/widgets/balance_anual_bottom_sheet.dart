@@ -192,7 +192,7 @@ class BalanceAnualBottomSheet extends StatelessWidget {
                       childrenPadding: const EdgeInsets.all(AppSpacing.md),
                       children: [
                         _buildDetailRow(
-                          'Cuotas Pendientes',
+                          'Cobros Pendientes',
                           NumberFormat.decimalPattern('es_CO')
                               .format(mes.pendientes),
                         ),

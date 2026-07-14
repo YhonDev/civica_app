@@ -3,15 +3,15 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
-import '../models/propietarios_models.dart';
-import '../propietarios_repository.dart';
+import '../models/residentes_models.dart';
+import '../residentes_repository.dart';
 
-class PropietarioPerfilTab extends StatefulWidget {
-  final PropietarioItem propietario;
+class ResidentePerfilTab extends StatefulWidget {
+  final ResidenteItem propietario;
   final VoidCallback onUpdate;
   final VoidCallback onDeleteSuccess;
 
-  const PropietarioPerfilTab({
+  const ResidentePerfilTab({
     super.key,
     required this.propietario,
     required this.onUpdate,
@@ -19,11 +19,11 @@ class PropietarioPerfilTab extends StatefulWidget {
   });
 
   @override
-  State<PropietarioPerfilTab> createState() => _PropietarioPerfilTabState();
+  State<ResidentePerfilTab> createState() => _ResidentePerfilTabState();
 }
 
-class _PropietarioPerfilTabState extends State<PropietarioPerfilTab> {
-  final PropietariosRepository _repo = PropietariosRepository();
+class _ResidentePerfilTabState extends State<ResidentePerfilTab> {
+  final ResidentesRepository _repo = ResidentesRepository();
   bool _isDeleting = false;
 
   @override
@@ -65,7 +65,7 @@ class _PropietarioPerfilTabState extends State<PropietarioPerfilTab> {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
-              'Propietario',
+              'Residente',
               style: AppTypography.caption.copyWith(
                 color: AppColors.textSecondary,
               ),
@@ -179,7 +179,7 @@ class _PropietarioPerfilTabState extends State<PropietarioPerfilTab> {
     );
   }
 
-  void _confirmDelete(BuildContext context, PropietarioItem propietario) {
+  void _confirmDelete(BuildContext context, ResidenteItem propietario) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(

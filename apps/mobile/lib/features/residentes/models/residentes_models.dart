@@ -1,11 +1,11 @@
 import 'package:equatable/equatable.dart';
 
-class PropietarioResumen extends Equatable {
+class ResidenteResumen extends Equatable {
   final int totalPropiedades;
   final int ocupadas;
   final int vacantes;
 
-  const PropietarioResumen({
+  const ResidenteResumen({
     required this.totalPropiedades,
     required this.ocupadas,
     required this.vacantes,
@@ -15,7 +15,7 @@ class PropietarioResumen extends Equatable {
   List<Object?> get props => [totalPropiedades, ocupadas, vacantes];
 }
 
-class PropietarioItem extends Equatable {
+class ResidenteItem extends Equatable {
   final String id;
   final String nombre;
   final String telefono;
@@ -29,7 +29,7 @@ class PropietarioItem extends Equatable {
   final String estadoFinanciero; // 'Al Día', 'Mora', 'Pendiente'
   final double saldoPendiente;
 
-  const PropietarioItem({
+  const ResidenteItem({
     required this.id,
     required this.nombre,
     required this.telefono,

@@ -7,17 +7,17 @@ import '../../screens/auth/auth_cubit.dart';
 import '../../features/shell/scaffold_with_bottom_nav.dart';
 import '../../features/dashboard/dashboard_screen.dart';
 import '../../features/dashboard_cobrador/jornada_screen.dart';
-import '../../features/dashboard_cobrador/viviendas_explorer_screen.dart';
+import '../../features/dashboard_cobrador/casas_explorer_screen.dart';
 import '../../features/dashboard_propietario/mi_estado_screen.dart';
-import '../../features/dashboard_propietario/propietario_dashboard_screen.dart';
+import '../../features/dashboard_propietario/residente_dashboard_screen.dart';
 import '../../features/cartera/cartera_screen.dart';
-import '../../features/propietarios/nuevo_propietario_screen.dart';
-import '../../features/propietarios/nuevo_cobrador_screen.dart';
-import '../../features/propietarios/proyecto_detail_screen.dart';
-import '../../features/propietarios/etapas_screen.dart';
-import '../../features/propietarios/manzanas_screen.dart';
-import '../../features/propietarios/casas_screen.dart';
-import '../../features/propietarios/proyecto_ajustes_screen.dart';
+import '../../features/residentes/nuevo_residente_screen.dart';
+import '../../features/residentes/nuevo_cobrador_screen.dart';
+import '../../features/residentes/proyecto_detail_screen.dart';
+import '../../features/residentes/etapas_screen.dart';
+import '../../features/residentes/manzanas_screen.dart';
+import '../../features/residentes/casas_screen.dart';
+import '../../features/residentes/proyecto_ajustes_screen.dart';
 import '../../features/mas/mas_screen.dart';
 import '../../features/mas/configuracion_screen.dart';
 import '../../features/historial/historial_screen.dart';
@@ -25,18 +25,18 @@ import '../../features/dashboard/estado_admin_screen.dart';
 import '../../features/dashboard/actividad_admin_screen.dart';
 import '../../features/solicitudes/solicitudes_screen.dart';
 import '../../features/solicitudes/nueva_solicitud_screen.dart';
-import '../../features/propietarios/comunidad_screen.dart';
-import '../../features/propietarios/propietarios_screen.dart';
-import '../../features/propietarios/models/propietarios_models.dart';
-import '../../features/propietarios/propietario_detail_screen.dart';
-import '../../features/propietarios/editar_propietario_screen.dart';
-import '../../features/propietarios/cobradores_screen.dart';
-import '../../features/propietarios/urbanizacion_screen.dart';
-import '../../features/propietarios/widgets/propietario_finanzas_tab.dart';
-import '../../features/propietarios/widgets/propietario_historial_tab.dart';
-import '../../features/propietarios/propietario_inmueble_screen.dart';
+import '../../features/residentes/comunidad_screen.dart';
+import '../../features/residentes/residentes_screen.dart';
+import '../../features/residentes/models/residentes_models.dart';
+import '../../features/residentes/residente_detail_screen.dart';
+import '../../features/residentes/editar_residente_screen.dart';
+import '../../features/residentes/cobradores_screen.dart';
+import '../../features/residentes/urbanizacion_screen.dart';
+import '../../features/residentes/widgets/residente_finanzas_tab.dart';
+import '../../features/residentes/widgets/residente_historial_tab.dart';
+import '../../features/residentes/residente_inmueble_screen.dart';
 
-import '../../features/propietarios/tarifas_screen.dart';
+import '../../features/residentes/tarifas_screen.dart';
 
 /// GoRouter configuration — role-aware.
 ///
@@ -107,9 +107,9 @@ final GoRouter appRouter = GoRouter(
 
         // Viviendas Explorer (Cobrador)
         GoRoute(
-          path: '/viviendas',
-          name: 'viviendas',
-          builder: (_, __) => const ViviendasExplorerScreen(),
+          path: '/casas',
+          name: 'casas',
+          builder: (_, __) => const CasasExplorerScreen(),
         ),
 
         // Módulo Comunidad (Hub) y sub-rutas
@@ -119,47 +119,47 @@ final GoRouter appRouter = GoRouter(
           builder: (_, __) => const ComunidadScreen(),
           routes: [
             GoRoute(
-              path: 'propietarios',
-              name: 'comunidad-propietarios',
-              builder: (_, __) => const PropietariosScreen(),
+              path: 'residentes',
+              name: 'comunidad-residentes',
+              builder: (_, __) => const ResidentesScreen(),
               routes: [
                 GoRoute(
                   path: 'detalle',
-                  name: 'comunidad-propietario-detalle',
+                  name: 'comunidad-residente-detalle',
                   builder: (_, state) {
-                    final propietario = state.extra as PropietarioItem;
-                    return PropietarioDetailScreen(propietario: propietario);
+                    final propietario = state.extra as ResidenteItem;
+                    return ResidenteDetailScreen(propietario: propietario);
                   },
                   routes: [
                     GoRoute(
                       path: 'finanzas',
                       builder: (_, state) {
-                        final propietario = state.extra as PropietarioItem;
-                        return PropietarioFinanzasScreen(propietario: propietario);
+                        final propietario = state.extra as ResidenteItem;
+                        return ResidenteFinanzasScreen(propietario: propietario);
                       },
                     ),
                     GoRoute(
                       path: 'historial',
                       builder: (_, state) {
-                        final propietario = state.extra as PropietarioItem;
-                        return PropietarioHistorialScreen(propietario: propietario);
+                        final propietario = state.extra as ResidenteItem;
+                        return ResidenteHistorialScreen(propietario: propietario);
                       },
                     ),
                     GoRoute(
                       path: 'inmueble',
                       builder: (_, state) {
-                        final propietario = state.extra as PropietarioItem;
-                        return PropietarioInmuebleScreen(propietario: propietario);
+                        final propietario = state.extra as ResidenteItem;
+                        return ResidenteInmuebleScreen(propietario: propietario);
                       },
                     ),
                   ],
                 ),
                 GoRoute(
                   path: 'editar',
-                  name: 'comunidad-propietario-editar',
+                  name: 'comunidad-residente-editar',
                   builder: (_, state) {
-                    final propietario = state.extra as PropietarioItem;
-                    return EditarPropietarioScreen(propietario: propietario);
+                    final propietario = state.extra as ResidenteItem;
+                    return EditarResidenteScreen(propietario: propietario);
                   },
                 ),
               ],
@@ -258,9 +258,9 @@ final GoRouter appRouter = GoRouter(
       builder: (_, __) => const NuevaSolicitudScreen(),
     ),
     GoRoute(
-      path: '/nuevo-propietario',
-      name: 'nuevo-propietario',
-      builder: (_, __) => const NuevoPropietarioScreen(),
+      path: '/nuevo-residente',
+      name: 'nuevo-residente',
+      builder: (_, __) => const NuevoResidenteScreen(),
     ),
     GoRoute(
       path: '/nuevo-cobrador',
@@ -276,7 +276,7 @@ Widget _dashboardForRol(String? rol) {
     case 'COBRADOR':
       return const JornadaScreen();
     case 'PROPIETARIO':
-      return const PropietarioDashboardScreen();
+      return const ResidenteDashboardScreen();
     default:
       return const DashboardScreen();
   }

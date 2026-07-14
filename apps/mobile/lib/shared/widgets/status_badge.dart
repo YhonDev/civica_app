@@ -18,8 +18,8 @@ enum StatusType {
 
 /// A reusable status badge with icon + text + semantic color.
 ///
-/// Used in: EstadoCuentaCard, CuotaCard, CarteraScreen (Cobrador/Admin),
-/// HistorialScreen, PropietarioCard.
+/// Used in: EstadoCuentaCard, CobroCard, CarteraScreen (Cobrador/Admin),
+/// HistorialScreen, ResidenteCard.
 ///
 /// Layout:
 /// ┌──────────────┐

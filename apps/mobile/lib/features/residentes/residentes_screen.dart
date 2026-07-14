@@ -3,24 +3,24 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
-import 'propietarios_repository.dart';
-import 'models/propietarios_models.dart';
-import 'widgets/propietario_card.dart';
+import 'residentes_repository.dart';
+import 'models/residentes_models.dart';
+import 'widgets/residente_card.dart';
 import '../../shared/widgets/empty_state.dart';
 import '../dashboard/widgets/skeleton_loading.dart';
-class PropietariosScreen extends StatefulWidget {
-  const PropietariosScreen({super.key});
+class ResidentesScreen extends StatefulWidget {
+  const ResidentesScreen({super.key});
 
   @override
-  State<PropietariosScreen> createState() => _PropietariosScreenState();
+  State<ResidentesScreen> createState() => _ResidentesScreenState();
 }
 
-class _PropietariosScreenState extends State<PropietariosScreen> {
-  final PropietariosRepository _repository = PropietariosRepository();
+class _ResidentesScreenState extends State<ResidentesScreen> {
+  final ResidentesRepository _repository = ResidentesRepository();
   final TextEditingController _searchController = TextEditingController();
 
   bool _isLoading = true;
-  List<PropietarioItem> _allPropietarios = [];
+  List<ResidenteItem> _allPropietarios = [];
   
   String _activeFilter = 'Todos';
   String _searchQuery = '';
@@ -61,7 +61,7 @@ class _PropietariosScreenState extends State<PropietariosScreen> {
     }
   }
 
-  List<PropietarioItem> get _filteredPropietarios {
+  List<ResidenteItem> get _filteredPropietarios {
     return _allPropietarios.where((p) {
       final matchesFilter = _activeFilter == 'Todos' || p.estadoFinanciero == _activeFilter;
       final matchesSearch = _searchQuery.isEmpty ||
@@ -210,7 +210,7 @@ class _PropietariosScreenState extends State<PropietariosScreen> {
                       (context, index) {
                         return Padding(
                           padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                          child: PropietarioCard(
+                          child: ResidenteCard(
                             propietario: filteredList[index],
                             onUpdate: _loadData,
                           ),

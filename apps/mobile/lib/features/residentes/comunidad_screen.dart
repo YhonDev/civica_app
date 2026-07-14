@@ -39,8 +39,8 @@ class ComunidadScreen extends StatelessWidget {
               const SizedBox(height: AppSpacing.md),
               ActionCard(
                 icon: Icons.people_rounded,
-                title: 'Propietarios',
-                onTap: () => context.go('/comunidad/propietarios'),
+                title: 'Residentes',
+                onTap: () => context.go('/comunidad/residentes'),
               ),
               const SizedBox(height: AppSpacing.sm),
               ActionCard(

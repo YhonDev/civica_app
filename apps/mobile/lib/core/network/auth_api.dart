@@ -75,7 +75,7 @@ class AuthApi {
         'rol': rol,
         'tenantId': tenantId,
         // ignore: use_null_aware_elements
-        if (propietarioId != null) 'propietarioId': propietarioId,
+        if (propietarioId != null) 'residenteId': propietarioId,
       },
     );
 

@@ -100,7 +100,7 @@ class MasScreen extends StatelessWidget {
       case 'COBRADOR':
         return 'Cobrador';
       case 'PROPIETARIO':
-        return 'Propietario';
+        return 'Residente';
       default:
         return rol;
     }

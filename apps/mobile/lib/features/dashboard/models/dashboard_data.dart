@@ -16,15 +16,15 @@ class DashboardData extends Equatable {
   final List<ActividadItem> actividadReciente;
 
   // Nuevas métricas Comunidad
-  final int totalPropietarios;
-  final int nuevosPropietariosSemana;
+  final int totalResidentes;
+  final int nuevosResidentesSemana;
 
   // Nuevas métricas Cobros
   final List<CobroSemanaItem> cobrosPorSemana;
 
   // Centro de atencion
   final int solicitudesPendientes;
-  final int propietariosMora;
+  final int residentesMora;
   final int pagosRevision;
 
   // Nuevos campos reportes anuales
@@ -45,11 +45,11 @@ class DashboardData extends Equatable {
     required this.modalidades,
     required this.estadosCobro,
     required this.actividadReciente,
-    this.totalPropietarios = 0,
-    this.nuevosPropietariosSemana = 0,
+    this.totalResidentes = 0,
+    this.nuevosResidentesSemana = 0,
     this.cobrosPorSemana = const [],
     this.solicitudesPendientes = 0,
-    this.propietariosMora = 0,
+    this.residentesMora = 0,
     this.pagosRevision = 0,
     required this.acumuladoAnual,
     required this.metaAnual,
@@ -58,20 +58,20 @@ class DashboardData extends Equatable {
 
   /// Crea [DashboardData] desde la respuesta JSON del backend.
   ///
-  /// [totalPropietariosOverride] permite inyectar el total real de propietarios
+  /// [totalResidentesOverride] permite inyectar el total real de propietarios
   /// (obtenido del repository vía una segunda llamada API), ya que el JSON
   /// del endpoint /dashboard/administrador no incluye este dato.
   factory DashboardData.fromJson(
     Map<String, dynamic> json, {
-    int totalPropietariosOverride = 0,
+    int totalResidentesOverride = 0,
   }) {
     final resumen = json['resumen'] as Map<String, dynamic>? ?? {};
     final estadoCobrosMap = json['estadoCobros'] as Map<String, dynamic>? ?? {};
 
     final pagaron = int.tryParse(resumen['pagaron']?.toString() ?? '') ?? 0;
     final pendientes = int.tryParse(resumen['pendientes']?.toString() ?? '') ?? 0;
-    final propietariosMora =
-        int.tryParse(json['propietariosMora']?.toString() ?? '') ?? 0;
+    final residentesMora =
+        int.tryParse(json['residentesMora']?.toString() ?? '') ?? 0;
 
     final pagadosPct =
         double.tryParse(estadoCobrosMap['pagados']?.toString() ?? '') ?? 0;
@@ -116,19 +116,19 @@ class DashboardData extends Equatable {
         CobroEstadoItem(
           estado: 'En mora',
           porcentaje: moraPct < 0 ? 0 : moraPct,
-          cantidad: propietariosMora,
+          cantidad: residentesMora,
         ),
       ],
       actividadReciente: (json['actividad'] as List<dynamic>?)
               ?.map((e) => ActividadItem.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
-      totalPropietarios: totalPropietariosOverride,
-      nuevosPropietariosSemana:
-          int.tryParse(json['nuevosPropietariosSemana']?.toString() ?? '') ?? 0,
+      totalResidentes: totalResidentesOverride,
+      nuevosResidentesSemana:
+          int.tryParse(json['nuevosResidentesSemana']?.toString() ?? '') ?? 0,
       solicitudesPendientes:
           int.tryParse(json['solicitudesPendientes']?.toString() ?? '') ?? 0,
-      propietariosMora: propietariosMora,
+      residentesMora: residentesMora,
       pagosRevision:
           int.tryParse(estadoCobrosMap['revision']?.toString() ?? '') ?? 0,
       cobrosPorSemana: (json['cobrosPorSemana'] as List<dynamic>?)
@@ -161,11 +161,11 @@ class DashboardData extends Equatable {
         modalidades,
         estadosCobro,
         actividadReciente,
-        totalPropietarios,
-        nuevosPropietariosSemana,
+        totalResidentes,
+        nuevosResidentesSemana,
         cobrosPorSemana,
         solicitudesPendientes,
-        propietariosMora,
+        residentesMora,
         pagosRevision,
         acumuladoAnual,
         metaAnual,
@@ -203,7 +203,7 @@ class ModalidadItem extends Equatable {
 
   factory ModalidadItem.fromJson(Map<String, dynamic> json) {
     return ModalidadItem(
-      nombre: json['frecuencia'] as String? ?? '',
+      nombre: json['modalidad'] as String? ?? '',
       porcentaje: double.tryParse(json['porcentaje']?.toString() ?? '') ?? 0,
       valor: (double.tryParse(json['montoRecaudo']?.toString() ?? '') ?? 0) / 100,
     );

@@ -1,24 +1,24 @@
 import '../../core/network/api_client.dart';
 import '../../core/network/api_exceptions.dart';
-import '../propietarios/comunidad_repository.dart';
+import '../residentes/comunidad_repository.dart';
 import 'models/cartera_models.dart';
 
 class CarteraRepository {
   final ApiClient _api;
   final String? _role;
-  final String? _propietarioId;
+  final String? _residenteId;
 
-  CarteraRepository({ApiClient? apiClient, String? role, String? propietarioId})
+  CarteraRepository({ApiClient? apiClient, String? role, String? residenteId})
       : _api = apiClient ?? ApiClient.instance,
         _role = role,
-        _propietarioId = propietarioId;
+        _residenteId = residenteId;
 
   /// Returns the correct cuotas endpoint based on user role.
   String get _cuotasEndpoint {
-    if (_role == 'PROPIETARIO' && _propietarioId != null) {
-      return '/cuotas/propietario/$_propietarioId';
+    if (_role == 'PROPIETARIO' && _residenteId != null) {
+      return '/cobros/residente/$_residenteId';
     }
-    return '/cuotas';
+    return '/cobros';
   }
 
   /// Devuelve el resumen general de la cartera.
@@ -94,7 +94,7 @@ class CarteraRepository {
         final double pagado = (c['montoPagado'] ?? 0) / 100.0;
         final double saldo = monto - pagado;
 
-        final propietario = c['propietario'];
+        final propietario = c['residente'];
         String nombre = propietario?['nombre'] ?? 'Desconocido';
         
         String casaNombre = 'Sin casa';
@@ -120,7 +120,7 @@ class CarteraRepository {
         cobros.add(
           CobroItem(
             id: c['id'].toString(),
-            propietarioId: propId,
+            residenteId: propId,
             nombre: nombre,
             casa: casaNombre,
             etapa: etapaNombre,
@@ -139,14 +139,14 @@ class CarteraRepository {
 
   /// Register a payment online via POST /pagos.
   Future<Map<String, dynamic>> registrarPago({
-    required String propietarioId,
+    required String residenteId,
     required int montoCentavos,
   }) async {
     try {
       final clientPaymentId = 'online-${DateTime.now().millisecondsSinceEpoch}';
       final response = await _api.post('/pagos', data: {
         'clientPaymentId': clientPaymentId,
-        'propietarioId': propietarioId,
+        'residenteId': residenteId,
         'monto': montoCentavos,
         'fechaPago': DateTime.now().toIso8601String(),
       });

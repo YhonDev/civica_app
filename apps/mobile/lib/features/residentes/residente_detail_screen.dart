@@ -4,13 +4,13 @@ import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
-import 'models/propietarios_models.dart';
-import 'propietarios_repository.dart';
+import 'models/residentes_models.dart';
+import 'residentes_repository.dart';
 
-class PropietarioDetailScreen extends StatelessWidget {
-  final PropietarioItem propietario;
+class ResidenteDetailScreen extends StatelessWidget {
+  final ResidenteItem propietario;
 
-  const PropietarioDetailScreen({super.key, required this.propietario});
+  const ResidenteDetailScreen({super.key, required this.propietario});
 
   // ── Mock: upcoming payment dates based on modality ──────────────
   List<_ProximoCobro> _getProximosCobros() {
@@ -385,7 +385,7 @@ class PropietarioDetailScreen extends StatelessWidget {
           title: 'Finanzas',
           icon: Icons.account_balance_wallet_rounded,
           color: AppColors.primary,
-          route: '/comunidad/propietarios/detalle/finanzas',
+          route: '/comunidad/residentes/detalle/finanzas',
           extra: propietario,
         ),
         _buildModuleCard(
@@ -393,7 +393,7 @@ class PropietarioDetailScreen extends StatelessWidget {
           title: 'Historial',
           icon: Icons.receipt_long_rounded,
           color: AppColors.success,
-          route: '/comunidad/propietarios/detalle/historial',
+          route: '/comunidad/residentes/detalle/historial',
           extra: propietario,
         ),
         _buildModuleCard(
@@ -484,7 +484,7 @@ class PropietarioDetailScreen extends StatelessWidget {
     );
 
     if (confirmed == true && context.mounted) {
-      final repo = PropietariosRepository();
+      final repo = ResidentesRepository();
       final success = await repo.deletePropietario(propietario.id);
       if (success && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

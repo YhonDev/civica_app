@@ -1,6 +1,6 @@
 import '../../core/network/api_client.dart';
 import '../../core/network/api_exceptions.dart';
-import '../propietarios/comunidad_repository.dart';
+import '../residentes/comunidad_repository.dart';
 import 'models/dashboard_data.dart';
 
 class DashboardRepository {
@@ -21,17 +21,17 @@ class DashboardRepository {
       });
 
       // Obtener total de propietarios (dato no incluido en el dashboard endpoint)
-      int totalPropietarios = 0;
+      int totalResidentes = 0;
       try {
-        final propsResp = await _api.get('/propietarios', queryParameters: {'tenantId': tenantId});
-        totalPropietarios = (propsResp.data as List).length;
+        final propsResp = await _api.get('/residentes', queryParameters: {'tenantId': tenantId});
+        totalResidentes = (propsResp.data as List).length;
       } catch (_) {
         // Ignorar si falla, total 0
       }
 
       return DashboardData.fromJson(
         response.data as Map<String, dynamic>,
-        totalPropietariosOverride: totalPropietarios,
+        totalResidentesOverride: totalResidentes,
       );
     } catch (e) {
       throw e is ApiException ? e : Exception('Error al cargar dashboard: $e');

@@ -187,7 +187,7 @@ class SyncService {
               'clientPaymentId': pago.clientPaymentId,
               'monto': pago.monto,
               'fechaPago': pago.fechaPago,
-              'propietarioId': pago.propietarioId,
+              'residenteId': pago.residenteId,
               if (pago.solicitudId != null) 'solicitudId': pago.solicitudId,
             });
 

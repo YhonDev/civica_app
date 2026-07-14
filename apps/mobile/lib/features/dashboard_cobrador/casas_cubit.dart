@@ -84,21 +84,21 @@ class EtapaExplorer extends Equatable {
 // STATE
 // ════════════════════════════════════════════════════════════
 
-abstract class ViviendasState extends Equatable {
-  const ViviendasState();
+abstract class CasasState extends Equatable {
+  const CasasState();
   @override
   List<Object?> get props => [];
 }
 
-class ViviendasInitial extends ViviendasState {
+class ViviendasInitial extends CasasState {
   const ViviendasInitial();
 }
 
-class ViviendasLoading extends ViviendasState {
+class ViviendasLoading extends CasasState {
   const ViviendasLoading();
 }
 
-class ViviendasLoaded extends ViviendasState {
+class ViviendasLoaded extends CasasState {
   final List<EtapaExplorer> etapas;
 
   const ViviendasLoaded(this.etapas);
@@ -106,7 +106,7 @@ class ViviendasLoaded extends ViviendasState {
   List<Object?> get props => [etapas];
 }
 
-class ViviendasError extends ViviendasState {
+class ViviendasError extends CasasState {
   final String message;
   const ViviendasError(this.message);
   @override
@@ -117,24 +117,24 @@ class ViviendasError extends ViviendasState {
 // CUBIT
 // ════════════════════════════════════════════════════════════
 
-class ViviendasCubit extends Cubit<ViviendasState> {
+class CasasCubit extends Cubit<CasasState> {
   final ApiClient _api;
 
-  ViviendasCubit({ApiClient? api})
+  CasasCubit({ApiClient? api})
       : _api = api ?? ApiClient.instance,
         super(const ViviendasInitial());
 
   Future<void> loadViviendas() async {
     emit(const ViviendasLoading());
     try {
-      final response = await _api.get('/dashboard/cobrador/viviendas');
+      final response = await _api.get('/dashboard/cobrador/casas');
       final data = response.data as Map<String, dynamic>;
       final etapas = (data['etapas'] as List? ?? [])
           .map((e) => EtapaExplorer.fromJson(e as Map<String, dynamic>))
           .toList();
       emit(ViviendasLoaded(etapas));
     } catch (e) {
-      emit(ViviendasError('Error al cargar viviendas: $e'));
+      emit(ViviendasError('Error al cargar casas: $e'));
     }
   }
 

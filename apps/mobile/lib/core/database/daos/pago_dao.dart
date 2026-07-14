@@ -13,10 +13,10 @@ class PagoDao extends DatabaseAccessor<AppDatabase> {
     return db.into(db.pagos).insert(pago);
   }
 
-  /// Obtiene pagos de un propietario.
-  Future<List<Pago>> getByPropietario(String propietarioId) {
+  /// Obtiene pagos de un residente.
+  Future<List<Pago>> getByResidente(String residenteId) {
     return (db.select(db.pagos)
-          ..where((t) => t.propietarioId.equals(propietarioId))
+          ..where((t) => t.residenteId.equals(residenteId))
           ..orderBy([(t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc)]))
         .get();
   }

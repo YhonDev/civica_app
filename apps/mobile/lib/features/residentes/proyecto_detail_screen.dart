@@ -4,8 +4,8 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../shared/widgets/action_card.dart';
-import 'propietarios_repository.dart';
-import 'models/propietarios_models.dart';
+import 'residentes_repository.dart';
+import 'models/residentes_models.dart';
 
 class ProyectoDetailScreen extends StatefulWidget {
   final Map<String, dynamic> proyecto;
@@ -17,8 +17,8 @@ class ProyectoDetailScreen extends StatefulWidget {
 }
 
 class _ProyectoDetailScreenState extends State<ProyectoDetailScreen> {
-  final PropietariosRepository _repo = PropietariosRepository();
-  PropietarioResumen? _resumen;
+  final ResidentesRepository _repo = ResidentesRepository();
+  ResidenteResumen? _resumen;
   bool _isLoading = true;
 
   @override
@@ -160,7 +160,7 @@ class _ProyectoDetailScreenState extends State<ProyectoDetailScreen> {
     );
   }
 
-  Widget _buildResumenHeader(PropietarioResumen resumen) {
+  Widget _buildResumenHeader(ResidenteResumen resumen) {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.cardPadding),
       decoration: BoxDecoration(

@@ -89,7 +89,7 @@ class ConfiguracionScreen extends StatelessWidget {
                   const Divider(height: 1, indent: 56),
                   _InfoTile(
                     icon: Icons.business_outlined,
-                    label: 'Conjunto',
+                    label: 'Proyecto',
                     value: tenantId.isNotEmpty ? 'Portal del Prado' : '—',
                   ),
                 ],
@@ -194,7 +194,7 @@ class ConfiguracionScreen extends StatelessWidget {
       case 'COBRADOR':
         return 'Cobrador';
       case 'PROPIETARIO':
-        return 'Propietario';
+        return 'Residente';
       default:
         return rol;
     }

@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
-import 'models/propietarios_models.dart';
+import 'models/residentes_models.dart';
 
-class PropietarioInmuebleScreen extends StatelessWidget {
-  final PropietarioItem propietario;
+class ResidenteInmuebleScreen extends StatelessWidget {
+  final ResidenteItem propietario;
 
-  const PropietarioInmuebleScreen({super.key, required this.propietario});
+  const ResidenteInmuebleScreen({super.key, required this.propietario});
 
   @override
   Widget build(BuildContext context) {

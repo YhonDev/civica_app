@@ -5,7 +5,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../shared/widgets/status_badge.dart';
-import '../../shared/widgets/cuota_card.dart';
+import '../../shared/widgets/cobro_card.dart';
 import '../../shared/widgets/ticket_bottom_sheet.dart';
 import '../../shared/widgets/empty_state.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -51,7 +51,7 @@ class _HistorialScreenState extends State<HistorialScreen> {
   Future<void> _loadHistorial() async {
     try {
       final user = context.read<AuthCubit>().state.usuario;
-      final propietarioId = user?['propietarioId'] as String?;
+      final propietarioId = user?['residenteId'] as String?;
       if (propietarioId == null) {
         setState(() {
           _loading = false;
@@ -59,7 +59,7 @@ class _HistorialScreenState extends State<HistorialScreen> {
         return;
       }
 
-      final response = await ApiClient.instance.get<List<dynamic>>('/cuotas/propietario/$propietarioId');
+      final response = await ApiClient.instance.get<List<dynamic>>('/cobros/residente/$propietarioId');
       final listCuotas = response.data!.map((item) => item as Map<String, dynamic>).toList();
 
       final listSolicitudes = await _solicitudesRepo.getSolicitudes();
@@ -152,7 +152,7 @@ class _HistorialScreenState extends State<HistorialScreen> {
                             final pagosEsperados = c['pagosEsperados'] as int?;
                             final pagosRegistrados = c['pagosRegistrados'] as int?;
 
-                            final matchingList = _solicitudes.where((s) => s.cuotaId == c['id']).toList();
+                            final matchingList = _solicitudes.where((s) => s.cobroId == c['id']).toList();
                             final hasSolicitud = matchingList.isNotEmpty;
 
                             final StatusType status = hasSolicitud
@@ -171,7 +171,7 @@ class _HistorialScreenState extends State<HistorialScreen> {
 
                             final String? cobrador = c['estado'] == 'PAGADA' ? 'Administración' : null;
 
-                            return CuotaCard(
+                            return CobroCard(
                               periodo: period,
                               monto: monto,
                               montoPagado: montoPagado,
@@ -220,7 +220,7 @@ class _HistorialScreenState extends State<HistorialScreen> {
   }
 
   void _handleCuotaTap(Map<String, dynamic> c) {
-    final matchingList = _solicitudes.where((s) => s.cuotaId == c['id']).toList();
+    final matchingList = _solicitudes.where((s) => s.cobroId == c['id']).toList();
     final SolicitudData? matchingSolicitud = matchingList.isNotEmpty ? matchingList.first : null;
 
     if (matchingSolicitud != null) {
@@ -233,7 +233,7 @@ class _HistorialScreenState extends State<HistorialScreen> {
         TicketData(
           numero: 'TK-${c['id'].hashCode.abs().toString().padLeft(6, '0')}',
           fecha: date,
-          propietario: context.read<AuthCubit>().state.usuario?['nombre'] as String? ?? 'Propietario',
+          propietario: context.read<AuthCubit>().state.usuario?['nombre'] as String? ?? 'Residente',
           casa: 'Mi Casa',
           monto: monto,
           metodo: 'Efectivo',

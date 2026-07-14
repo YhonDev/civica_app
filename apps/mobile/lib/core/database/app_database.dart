@@ -12,7 +12,7 @@ part 'app_database.g.dart';
 // TABLE: conjuntos
 // ════════════════════════════════════════════════════════════
 
-class Conjuntos extends Table {
+class Proyectos extends Table {
   TextColumn get id => text()();
   TextColumn get nombre => text()();
   TextColumn get tenantId => text()();
@@ -30,7 +30,7 @@ class Conjuntos extends Table {
 class Etapas extends Table {
   TextColumn get id => text()();
   TextColumn get nombre => text()();
-  TextColumn get conjuntoId => text()();
+  TextColumn get proyectoId => text()();
   DateTimeColumn get createdAt => dateTime()();
 
   @override
@@ -55,7 +55,7 @@ class Casas extends Table {
 // TABLE: propietarios
 // ════════════════════════════════════════════════════════════
 
-class Propietarios extends Table {
+class Residentes extends Table {
   TextColumn get id => text()();
   TextColumn get nombre => text()();
   TextColumn get telefono => text()();
@@ -74,7 +74,7 @@ class Propietarios extends Table {
 
 class Tenencias extends Table {
   TextColumn get id => text()();
-  TextColumn get propietarioId => text()();
+  TextColumn get residenteId => text()();
   TextColumn get casaId => text()();
   DateTimeColumn get fechaInicio => dateTime()();
   DateTimeColumn? get fechaFin => dateTime().nullable()();
@@ -93,7 +93,7 @@ class Usuarios extends Table {
   TextColumn get email => text()();
   TextColumn get nombre => text()();
   TextColumn get rol => text()(); // ADMIN | COBRADOR | PROPIETARIO
-  TextColumn? get propietarioId => text().nullable()();
+  TextColumn? get residenteId => text().nullable()();
   TextColumn get tenantId => text()();
   BoolColumn get activo => boolean()();
   DateTimeColumn get createdAt => dateTime()();
@@ -125,7 +125,7 @@ class AsignacionesEtapa extends Table {
 class Tarifas extends Table {
   TextColumn get id => text()();
   TextColumn get tenantId => text()();
-  TextColumn get conjuntoId => text()();
+  TextColumn get proyectoId => text()();
   TextColumn get frecuencia => text()(); // SEMANAL | QUINCENAL | MENSUAL
   IntColumn get monto => integer()(); // centavos COP
   TextColumn get fechaVigencia => text()(); // ISO date
@@ -144,7 +144,7 @@ class Tarifas extends Table {
 class MontosPredefinidos extends Table {
   TextColumn get id => text()();
   TextColumn get tenantId => text()();
-  TextColumn get conjuntoId => text()();
+  TextColumn get proyectoId => text()();
   IntColumn get monto => integer()(); // centavos COP
   TextColumn get descripcion => text()();
   BoolColumn get activo => boolean()();
@@ -160,11 +160,11 @@ class MontosPredefinidos extends Table {
 // TABLE: cuentas_cartera
 // ════════════════════════════════════════════════════════════
 
-class CuentasCartera extends Table {
+class PlanesDeCobro extends Table {
   TextColumn get id => text()();
-  TextColumn get propietarioId => text()();
+  TextColumn get residenteId => text()();
   TextColumn get tenantId => text()();
-  TextColumn get conjuntoId => text()();
+  TextColumn get proyectoId => text()();
   TextColumn get frecuencia => text()(); // SEMANAL | QUINCENAL | MENSUAL
   TextColumn get fechaActivacion => text()(); // ISO date
   BoolColumn get activa => boolean()();
@@ -179,9 +179,9 @@ class CuentasCartera extends Table {
 // TABLE: cuotas
 // ════════════════════════════════════════════════════════════
 
-class Cuotas extends Table {
+class Cobros extends Table {
   TextColumn get id => text()();
-  TextColumn get propietarioId => text()();
+  TextColumn get residenteId => text()();
   TextColumn get tenantId => text()();
   TextColumn? get tarifaId => text().nullable()();
   TextColumn get concepto => text()();
@@ -207,13 +207,13 @@ class Pagos extends Table {
   TextColumn get id => text()();
   TextColumn get clientPaymentId => text()();
   TextColumn get tenantId => text()();
-  TextColumn? get cuotaId => text().nullable()();
+  TextColumn? get cobroId => text().nullable()();
   TextColumn? get serverId => text().nullable()(); // ID asignado por el servidor tras sync
   TextColumn? get solicitudId => text().nullable()(); // Request ID associated with this payment
   IntColumn get monto => integer()(); // centavos COP
   TextColumn get fechaPago => text()(); // ISO date
   TextColumn get cobradorId => text()();
-  TextColumn get propietarioId => text()();
+  TextColumn get residenteId => text()();
   DateTimeColumn? get fechaSync => dateTime().nullable()();
   TextColumn get syncStatus => text()(); // PENDIENTE_SYNC | SYNC_OK | CONFLICTO
   DateTimeColumn get createdAt => dateTime()();
@@ -230,17 +230,17 @@ class Pagos extends Table {
 /// Singleton que maneja la base de datos SQLite local.
 @DriftDatabase(
   tables: [
-    Conjuntos,
+    Proyectos,
     Etapas,
     Casas,
-    Propietarios,
+    Residentes,
     Tenencias,
     Usuarios,
     AsignacionesEtapa,
     Tarifas,
     MontosPredefinidos,
-    CuentasCartera,
-    Cuotas,
+    PlanesDeCobro,
+    Cobros,
     Pagos,
   ],
 )

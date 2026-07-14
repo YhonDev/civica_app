@@ -1,6 +1,6 @@
 import '../../core/network/api_client.dart';
 import '../../core/network/api_exceptions.dart';
-import '../propietarios/comunidad_repository.dart';
+import '../residentes/comunidad_repository.dart';
 import '../../shared/widgets/solicitud_card.dart';
 
 class SolicitudesRepository {
@@ -31,7 +31,7 @@ class SolicitudesRepository {
   }
 
   Future<void> crearSolicitud({
-    required String cuotaId,
+    required String cobroId,
     required String tipo,
     required String descripcion,
     required String propietarioId,
@@ -41,7 +41,7 @@ class SolicitudesRepository {
       // but if an admin creates it for a resident, they might need an admin route.
       // Assuming this is used properly by the backend
       await _api.post('/solicitudes', data: {
-        'cuotaId': cuotaId,
+        'cobroId': cobroId,
         'tipo': tipo,
         'descripcion': descripcion,
         // Backend handles tenantId and userId (propietarioId)
@@ -63,7 +63,7 @@ class SolicitudesRepository {
 
     return SolicitudData(
       id: json['id'] as String,
-      cuotaId: json['cuotaId'] as String? ?? '',
+      cobroId: json['cobroId'] as String? ?? '',
       nroRecibo: json['nroRecibo'] as String? ?? 'TK-000000',
       tipo: json['tipo'] as String,
       descripcion: json['descripcion'] as String,

@@ -3,21 +3,21 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/network/api_client.dart';
-import '../models/propietarios_models.dart';
-import '../propietarios_repository.dart';
+import '../models/residentes_models.dart';
+import '../residentes_repository.dart';
 import 'package:intl/intl.dart';
 
-class PropietarioHistorialScreen extends StatefulWidget {
-  final PropietarioItem propietario;
+class ResidenteHistorialScreen extends StatefulWidget {
+  final ResidenteItem propietario;
 
-  const PropietarioHistorialScreen({super.key, required this.propietario});
+  const ResidenteHistorialScreen({super.key, required this.propietario});
 
   @override
-  State<PropietarioHistorialScreen> createState() => _PropietarioHistorialScreenState();
+  State<ResidenteHistorialScreen> createState() => _ResidenteHistorialScreenState();
 }
 
-class _PropietarioHistorialScreenState extends State<PropietarioHistorialScreen> {
-  final PropietariosRepository _repo = PropietariosRepository();
+class _ResidenteHistorialScreenState extends State<ResidenteHistorialScreen> {
+  final ResidentesRepository _repo = ResidentesRepository();
   bool _isLoading = true;
   List<dynamic> _pagos = [];
 
@@ -32,7 +32,7 @@ class _PropietarioHistorialScreenState extends State<PropietarioHistorialScreen>
     try {
       final response = await ApiClient.instance.get<List<dynamic>>(
         '/pagos',
-        queryParameters: {'propietarioId': widget.propietario.id},
+        queryParameters: {'residenteId': widget.propietario.id},
       );
       if (mounted) {
         setState(() {

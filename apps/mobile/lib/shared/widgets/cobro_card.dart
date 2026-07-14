@@ -13,7 +13,7 @@ import 'status_badge.dart';
 ///
 /// Reusable in: Historial (Propietario), Cartera (Cobrador with "Cobrar" button),
 /// Cartera (Admin with detail actions).
-class CuotaCard extends StatelessWidget {
+class CobroCard extends StatelessWidget {
   final String periodo;
   final int monto; // pesos enteros
   final int montoPagado; // pesos enteros
@@ -29,7 +29,7 @@ class CuotaCard extends StatelessWidget {
   /// Optional action button (e.g., "Cobrar" for Cobrador role)
   final Widget? actionButton;
 
-  const CuotaCard({
+  const CobroCard({
     super.key,
     required this.periodo,
     required this.monto,

@@ -18,7 +18,7 @@ class _TarifasScreenState extends State<TarifasScreen> {
   final _comunidadRepo = ComunidadRepository();
   bool _loading = true;
   Map<String, dynamic> _tarifas = {};
-  String? _conjuntoId;
+  String? _proyectoId;
 
   @override
   void initState() {
@@ -30,9 +30,9 @@ class _TarifasScreenState extends State<TarifasScreen> {
     try {
       final proyectos = await _comunidadRepo.getProyectos();
       if (proyectos.isNotEmpty) {
-        _conjuntoId = proyectos.first['id'];
+        _proyectoId = proyectos.first['id'];
         
-        final response = await _repository.getTarifasVigentes(_conjuntoId!);
+        final response = await _repository.getTarifasVigentes(_proyectoId!);
         
         if (mounted) {
           setState(() {

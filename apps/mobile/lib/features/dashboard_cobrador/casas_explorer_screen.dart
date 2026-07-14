@@ -4,7 +4,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 
-import 'viviendas_cubit.dart';
+import 'casas_cubit.dart';
 
 /// Viviendas Explorer — Navegador jerárquico para el Cobrador.
 ///
@@ -13,18 +13,18 @@ import 'viviendas_cubit.dart';
 ///
 /// Cada casa muestra un semáforo de estado:
 ///   🟢 AL_DIA   🟠 Pendiente   🔵 Parcial   🔴 En mora
-class ViviendasExplorerScreen extends StatefulWidget {
-  const ViviendasExplorerScreen({super.key});
+class CasasExplorerScreen extends StatefulWidget {
+  const CasasExplorerScreen({super.key});
 
   @override
-  State<ViviendasExplorerScreen> createState() => _ViviendasExplorerScreenState();
+  State<CasasExplorerScreen> createState() => _CasasExplorerScreenState();
 }
 
-class _ViviendasExplorerScreenState extends State<ViviendasExplorerScreen> {
+class _CasasExplorerScreenState extends State<CasasExplorerScreen> {
   @override
   void initState() {
     super.initState();
-    context.read<ViviendasCubit>().loadViviendas();
+    context.read<CasasCubit>().loadViviendas();
   }
 
   @override
@@ -34,7 +34,7 @@ class _ViviendasExplorerScreenState extends State<ViviendasExplorerScreen> {
         title: const Text('Viviendas'),
         centerTitle: true,
       ),
-      body: BlocBuilder<ViviendasCubit, ViviendasState>(
+      body: BlocBuilder<CasasCubit, CasasState>(
         builder: (context, state) {
           if (state is ViviendasLoading || state is ViviendasInitial) {
             return _buildSkeletonLoading();
@@ -82,7 +82,7 @@ class _ViviendasExplorerScreenState extends State<ViviendasExplorerScreen> {
               Icon(Icons.map_outlined, size: 48, color: AppColors.textSecondary),
               const SizedBox(height: AppSpacing.md),
               Text(
-                'No hay viviendas asignadas',
+                'No hay casas asignadas',
                 style: AppTypography.subtitle.copyWith(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: AppSpacing.sm),
@@ -99,7 +99,7 @@ class _ViviendasExplorerScreenState extends State<ViviendasExplorerScreen> {
 
     return RefreshIndicator(
       color: AppColors.primary,
-      onRefresh: () => context.read<ViviendasCubit>().refresh(),
+      onRefresh: () => context.read<CasasCubit>().refresh(),
       child: ListView.builder(
         padding: const EdgeInsets.all(AppSpacing.screenPadding),
         itemCount: etapas.length,
@@ -114,7 +114,7 @@ class _ViviendasExplorerScreenState extends State<ViviendasExplorerScreen> {
   // ── Etapa Tile ────────────────────────────────────────────────────
 
   Widget _buildEtapaTile(EtapaExplorer etapa) {
-    // Contar total de casas y viviendas en mora
+    // Contar total de casas y casas en mora
     int totalCasas = 0;
     int enMora = 0;
     int pendientes = 0;
@@ -149,7 +149,7 @@ class _ViviendasExplorerScreenState extends State<ViviendasExplorerScreen> {
           style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w600),
         ),
         subtitle: Text(
-          '$totalCasas viviendas · $enMora en mora · $pendientes pendientes',
+          '$totalCasas casas · $enMora en mora · $pendientes pendientes',
           style: AppTypography.small.copyWith(color: AppColors.textSecondary),
         ),
         childrenPadding: const EdgeInsets.only(bottom: AppSpacing.md),
@@ -187,7 +187,7 @@ class _ViviendasExplorerScreenState extends State<ViviendasExplorerScreen> {
           style: AppTypography.body.copyWith(fontWeight: FontWeight.w500),
         ),
         subtitle: Text(
-          '${manzana.casas.length} viviendas',
+          '${manzana.casas.length} casas',
           style: AppTypography.small.copyWith(color: AppColors.textSecondary),
         ),
         children: manzana.casas
@@ -317,13 +317,13 @@ class _ViviendasExplorerScreenState extends State<ViviendasExplorerScreen> {
               Icon(Icons.cloud_off_rounded, size: 48, color: AppColors.error),
               const SizedBox(height: AppSpacing.md),
               Text(
-                'No se pudieron cargar las viviendas',
+                'No se pudieron cargar las casas',
                 style: AppTypography.subtitle.copyWith(fontWeight: FontWeight.w600),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: AppSpacing.md),
               FilledButton.icon(
-                onPressed: () => context.read<ViviendasCubit>().loadViviendas(),
+                onPressed: () => context.read<CasasCubit>().loadViviendas(),
                 icon: const Icon(Icons.refresh_rounded),
                 label: const Text('Reintentar'),
               ),

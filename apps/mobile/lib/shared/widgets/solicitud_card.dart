@@ -11,7 +11,7 @@ enum SolicitudEstado { pendiente, enRevision, resuelta, rechazada }
 /// Data model for a solicitud.
 class SolicitudData {
   final String id;
-  final String cuotaId;
+  final String cobroId;
   final String nroRecibo;
   final String tipo;
   final String descripcion;
@@ -23,7 +23,7 @@ class SolicitudData {
 
   const SolicitudData({
     required this.id,
-    required this.cuotaId,
+    required this.cobroId,
     required this.nroRecibo,
     required this.tipo,
     required this.descripcion,

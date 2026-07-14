@@ -13,7 +13,7 @@ import 'dashboard_cobrador_cubit.dart';
 ///
 /// Enfocada en la **ruta de trabajo**, no en propietarios.
 /// Muestra: stats de la jornada, próxima vivienda a visitar,
-/// lista de viviendas pendientes con semáforo 🟢🟠🔴.
+/// lista de casas pendientes con semáforo 🟢🟠🔴.
 class JornadaScreen extends StatefulWidget {
   const JornadaScreen({super.key});
 
@@ -159,7 +159,7 @@ class _JornadaScreenState extends State<JornadaScreen> {
               const SizedBox(height: AppSpacing.lg),
             ],
 
-            // ── Lista de viviendas pendientes ───────────────────────
+            // ── Lista de casas pendientes ───────────────────────
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -168,17 +168,17 @@ class _JornadaScreenState extends State<JornadaScreen> {
                   style: AppTypography.subtitle.copyWith(fontWeight: FontWeight.w600),
                 ),
                 Text(
-                  '${data.viviendas.length}',
+                  '${data.casas.length}',
                   style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
                 ),
               ],
             ),
             const SizedBox(height: AppSpacing.md),
 
-            if (data.viviendas.isEmpty)
+            if (data.casas.isEmpty)
               _buildEmptyState()
             else
-              ...data.viviendas.map((v) => Padding(
+              ...data.casas.map((v) => Padding(
                 padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                 child: _ViviendaCard(vivienda: v),
               )),
@@ -201,7 +201,7 @@ class _JornadaScreenState extends State<JornadaScreen> {
             Expanded(
               child: _StatCard(
                 icon: Icons.home_work_rounded,
-                label: 'Total viviendas',
+                label: 'Total casas',
                 value: '${data.totalViviendas}',
                 color: AppColors.primary,
               ),
@@ -331,7 +331,7 @@ class _JornadaScreenState extends State<JornadaScreen> {
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
-            'No hay viviendas pendientes de cobro.',
+            'No hay casas pendientes de cobro.',
             style: AppTypography.body.copyWith(color: AppColors.textSecondary),
             textAlign: TextAlign.center,
           ),

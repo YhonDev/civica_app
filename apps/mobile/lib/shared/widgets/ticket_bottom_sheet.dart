@@ -145,7 +145,7 @@ class TicketBottomSheet extends StatelessWidget {
               children: [
                 _DetailRow(label: 'Fecha', value: dateStr),
                 _DetailRow(label: 'Hora', value: timeStr),
-                _DetailRow(label: 'Propietario', value: ticket.propietario),
+                _DetailRow(label: 'Residente', value: ticket.propietario),
                 _DetailRow(label: 'Casa', value: ticket.casa),
                 _DetailRow(label: 'Método', value: ticket.metodo),
                 if (ticket.cobrador != null)
