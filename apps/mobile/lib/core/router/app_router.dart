@@ -7,7 +7,9 @@ import '../../screens/auth/auth_cubit.dart';
 import '../../features/shell/scaffold_with_bottom_nav.dart';
 import '../../features/dashboard/dashboard_screen.dart';
 import '../../features/dashboard_cobrador/jornada_screen.dart';
+import '../../features/dashboard_cobrador/viviendas_explorer_screen.dart';
 import '../../features/dashboard_propietario/mi_estado_screen.dart';
+import '../../features/dashboard_propietario/propietario_dashboard_screen.dart';
 import '../../features/cartera/cartera_screen.dart';
 import '../../features/propietarios/nuevo_propietario_screen.dart';
 import '../../features/propietarios/nuevo_cobrador_screen.dart';
@@ -101,6 +103,13 @@ final GoRouter appRouter = GoRouter(
             final rol = context.read<AuthCubit>().state.usuario?['rol'] as String?;
             return _carteraForRol(rol);
           },
+        ),
+
+        // Viviendas Explorer (Cobrador)
+        GoRoute(
+          path: '/viviendas',
+          name: 'viviendas',
+          builder: (_, __) => const ViviendasExplorerScreen(),
         ),
 
         // Módulo Comunidad (Hub) y sub-rutas
@@ -267,7 +276,7 @@ Widget _dashboardForRol(String? rol) {
     case 'COBRADOR':
       return const JornadaScreen();
     case 'PROPIETARIO':
-      return const MiEstadoScreen();
+      return const PropietarioDashboardScreen();
     default:
       return const DashboardScreen();
   }
@@ -278,8 +287,7 @@ Widget _carteraForRol(String? rol) {
   switch (rol) {
     case 'COBRADOR':
     case 'PROPIETARIO':
-      // TODO: Cobrar screen / Pagar screen when implemented
-      return const PlaceholderScreen('Cartera');
+      return const CarteraScreen();
     default:
       return const CarteraScreen();
   }

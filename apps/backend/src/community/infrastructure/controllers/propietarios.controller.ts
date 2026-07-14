@@ -14,6 +14,7 @@ import {
 import { DataSource } from 'typeorm';
 import { RegistrarPropietarioUseCase } from '../../application/use-cases/registrar-propietario.use-case';
 import { PropietarioRepository } from '../../infrastructure/propietario.repository';
+import { PropietarioDetailQuery } from '../../application/queries/propietario-detail.query';
 import { RegistrarPropietarioDto } from './dtos/propietarios.dto';
 import { EliminarPropietarioUseCase } from '../../application/use-cases/eliminar-propietario.use-case';
 import { ActualizarPropietarioUseCase } from '../../application/use-cases/actualizar-propietario.use-case';
@@ -36,8 +37,27 @@ export class PropietariosController {
     private readonly eliminarPropietarioUseCase: EliminarPropietarioUseCase,
     private readonly actualizarPropietarioUseCase: ActualizarPropietarioUseCase,
     private readonly propietarioRepository: PropietarioRepository,
+    private readonly propietarioDetailQuery: PropietarioDetailQuery,
     private readonly dataSource: DataSource,
   ) {}
+
+  @Get(':id/detalle')
+  @UseGuards(RolesGuard)
+  @Roles(RolUsuario.ADMIN, RolUsuario.COBRADOR, RolUsuario.PROPIETARIO)
+  async getDetalle(
+    @Param('id') id: string,
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: Usuario,
+  ) {
+    if (!user.tenantId) throw new UnauthorizedException();
+    
+    // El PROPIETARIO solo puede ver su propio detalle
+    if (user.rol === RolUsuario.PROPIETARIO && user.propietarioId !== id) {
+      throw new UnauthorizedException('No tienes permiso para ver este propietario');
+    }
+
+    return this.propietarioDetailQuery.execute(id, tenantId);
+  }
 
   @Post()
   @UseGuards(RolesGuard)

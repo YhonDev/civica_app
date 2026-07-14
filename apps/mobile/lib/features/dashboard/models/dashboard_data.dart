@@ -56,19 +56,44 @@ class DashboardData extends Equatable {
     required this.historialMeses,
   });
 
-  factory DashboardData.fromJson(Map<String, dynamic> json) {
+  /// Crea [DashboardData] desde la respuesta JSON del backend.
+  ///
+  /// [totalPropietariosOverride] permite inyectar el total real de propietarios
+  /// (obtenido del repository vía una segunda llamada API), ya que el JSON
+  /// del endpoint /dashboard/administrador no incluye este dato.
+  factory DashboardData.fromJson(
+    Map<String, dynamic> json, {
+    int totalPropietariosOverride = 0,
+  }) {
     final resumen = json['resumen'] as Map<String, dynamic>? ?? {};
     final estadoCobrosMap = json['estadoCobros'] as Map<String, dynamic>? ?? {};
- 
+
+    final pagaron = int.tryParse(resumen['pagaron']?.toString() ?? '') ?? 0;
+    final pendientes = int.tryParse(resumen['pendientes']?.toString() ?? '') ?? 0;
+    final propietariosMora =
+        int.tryParse(json['propietariosMora']?.toString() ?? '') ?? 0;
+
+    final pagadosPct =
+        double.tryParse(estadoCobrosMap['pagados']?.toString() ?? '') ?? 0;
+    final pendientesPct =
+        double.tryParse(estadoCobrosMap['pendientes']?.toString() ?? '') ?? 0;
+    final moraPct = 100 - pagadosPct - pendientesPct;
+
     return DashboardData(
       mes: int.tryParse(json['mes']?.toString() ?? '') ?? 0,
       anio: int.tryParse(json['anio']?.toString() ?? '') ?? 0,
-      recaudoMes: (double.tryParse(resumen['recaudoTotal']?.toString() ?? '') ?? 0) / 100,
-      metaMensual: (double.tryParse(resumen['metaMensual']?.toString() ?? '') ?? 0) / 100,
-      pagaron: int.tryParse(resumen['pagaron']?.toString() ?? '') ?? 0,
-      pendientes: int.tryParse(resumen['pendientes']?.toString() ?? '') ?? 0,
-      mora: (double.tryParse(resumen['moraTotal']?.toString() ?? '') ?? 0) / 100,
-      porcentaje: double.tryParse(resumen['porcentajeMeta']?.toString() ?? '') ?? 0,
+      recaudoMes:
+          (double.tryParse(resumen['recaudoTotal']?.toString() ?? '') ?? 0) /
+              100,
+      metaMensual:
+          (double.tryParse(resumen['metaMensual']?.toString() ?? '') ?? 0) /
+              100,
+      pagaron: pagaron,
+      pendientes: pendientes,
+      mora: (double.tryParse(resumen['moraTotal']?.toString() ?? '') ?? 0) /
+          100,
+      porcentaje:
+          double.tryParse(resumen['porcentajeMeta']?.toString() ?? '') ?? 0,
       evolucion: (json['evolucion'] as List<dynamic>?)
               ?.map((e) => EvolucionPunto.fromJson(e as Map<String, dynamic>))
               .toList() ??
@@ -80,29 +105,41 @@ class DashboardData extends Equatable {
       estadosCobro: [
         CobroEstadoItem(
           estado: 'Pagados',
-          porcentaje: double.tryParse(estadoCobrosMap['pagados']?.toString() ?? '') ?? 0,
-          cantidad: 0,
+          porcentaje: pagadosPct,
+          cantidad: pagaron,
         ),
         CobroEstadoItem(
           estado: 'Pendientes',
-          porcentaje: double.tryParse(estadoCobrosMap['pendientes']?.toString() ?? '') ?? 0,
-          cantidad: 0,
+          porcentaje: pendientesPct,
+          cantidad: pendientes,
         ),
         CobroEstadoItem(
-          estado: 'Revisión',
-          porcentaje: double.tryParse(estadoCobrosMap['revision']?.toString() ?? '') ?? 0,
-          cantidad: 0,
+          estado: 'En mora',
+          porcentaje: moraPct < 0 ? 0 : moraPct,
+          cantidad: propietariosMora,
         ),
       ],
       actividadReciente: (json['actividad'] as List<dynamic>?)
               ?.map((e) => ActividadItem.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
-      solicitudesPendientes: int.tryParse(json['solicitudesPendientes']?.toString() ?? '') ?? 0,
-      propietariosMora: int.tryParse(json['propietariosMora']?.toString() ?? '') ?? 0,
-      nuevosPropietariosSemana: int.tryParse(json['nuevosPropietariosSemana']?.toString() ?? '') ?? 0,
-      acumuladoAnual: (double.tryParse(json['acumuladoAnual']?.toString() ?? '') ?? 0) / 100,
-      metaAnual: (double.tryParse(json['metaAnual']?.toString() ?? '') ?? 0) / 100,
+      totalPropietarios: totalPropietariosOverride,
+      nuevosPropietariosSemana:
+          int.tryParse(json['nuevosPropietariosSemana']?.toString() ?? '') ?? 0,
+      solicitudesPendientes:
+          int.tryParse(json['solicitudesPendientes']?.toString() ?? '') ?? 0,
+      propietariosMora: propietariosMora,
+      pagosRevision:
+          int.tryParse(estadoCobrosMap['revision']?.toString() ?? '') ?? 0,
+      cobrosPorSemana: (json['cobrosPorSemana'] as List<dynamic>?)
+              ?.map((s) => CobroSemanaItem.fromJson(s as Map<String, dynamic>))
+              .toList() ??
+          [],
+      acumuladoAnual:
+          (double.tryParse(json['acumuladoAnual']?.toString() ?? '') ?? 0) /
+              100,
+      metaAnual:
+          (double.tryParse(json['metaAnual']?.toString() ?? '') ?? 0) / 100,
       historialMeses: (json['historialMeses'] as List<dynamic>?)
               ?.map((e) => MesHistorico.fromJson(e as Map<String, dynamic>))
               .toList() ??

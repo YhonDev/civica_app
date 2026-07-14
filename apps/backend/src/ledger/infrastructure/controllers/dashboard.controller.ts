@@ -10,7 +10,10 @@ import { DashboardQuery } from '../../application/queries/dashboard.query';
 import { CuotaRepository } from '../persistence/cuota.repository';
 import { PagoRepository } from '../persistence/pago.repository';
 import { CuentaCarteraRepository } from '../persistence/cuenta-cartera.repository';
+import { SolicitudRepository } from '../persistence/solicitud.repository';
 import { TarifaRepository } from '../persistence/tarifa.repository';
+import type { TimelineItemDto, TimelineResponse } from '../../application/dtos/dashboard.dto';
+import { PropietarioRepository } from '../../../community/infrastructure/propietario.repository';
 import { Periodo, type Frecuencia, pagosPorMes, calcularMontoParcial } from '../../../shared/common/value-objects';
 import { JwtAuthGuard } from '../../../shared/auth/jwt-auth.guard';
 import { RolesGuard } from '../../../shared/auth/guards/roles.guard';
@@ -28,7 +31,9 @@ export class DashboardController {
     private readonly cuotaRepository: CuotaRepository,
     private readonly pagoRepository: PagoRepository,
     private readonly cuentaCarteraRepository: CuentaCarteraRepository,
+    private readonly solicitudRepository: SolicitudRepository,
     private readonly tarifaRepository: TarifaRepository,
+    private readonly propietarioRepository: PropietarioRepository,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -59,7 +64,7 @@ export class DashboardController {
     );
     const etapaIds: string[] = asignaciones.map((a: any) => a.etapa_id);
 
-    // 2. Cuotas pendientes en esas etapas
+    // 2. Cuotas pendientes en esas etapas (ahora con relaciones cargadas: cuota→prop→tenencia→casa→manzana→etapa)
     const cuotas = etapaIds.length > 0
       ? await this.cuotaRepository.findPendientesConPropietarioByEtapas(tenantId, etapaIds)
       : [];
@@ -68,62 +73,235 @@ export class DashboardController {
     const { pagos: pagosHoy, total: totalHoy, count: countHoy } =
       await this.pagoRepository.findByCobradorToday(user.id);
 
-    // 4. Armar respuesta
-    const viviendas = cuotas.map((c) => {
+    // 4. Armar respuesta centrada en Viviendas (casas), no en Propietarios
+    //    Una casa puede tener múltiples cuotas pendientes; las agrupamos bajo la misma casa.
+    type AgrupacionVivienda = {
+      casaId: string;
+      casaDireccion: string;
+      manzanaNombre: string;
+      etapaNombre: string;
+      propietarioId: string;
+      propietarioNombre: string;
+      propietarioTelefono: string;
+      saldo: number;
+      peorEstado: string;
+      cuotas: Array<{ id: string; monto: number; estado: string; periodo: string }>;
+    };
+
+    const viviendasMap = new Map<string, AgrupacionVivienda>();
+
+    for (const c of cuotas) {
       const prop = c.propietario;
-      const tenencia = prop?.tenencias?.[0];
-      const casa = tenencia?.casa;
+      // Filtrar solo tenencias activas (sin fecha_fin)
+      const tenencia = prop?.tenencias?.find((t) => t.fechaFin === null);
+      if (!tenencia) continue; // sin ocupante actual, ignoramos
+
+      const casa = tenencia.casa;
       const manzana = casa?.manzana;
       const etapa = manzana?.etapa;
+      if (!casa) continue;
 
-      return {
-        id: c.id,
-        propietarioId: prop?.id ?? '',
-        propietarioNombre: prop?.nombre ?? 'Desconocido',
-        casaDireccion: casa ? `${casa.direccionInterna}${manzana ? `, Mz. ${manzana.nombre}` : ''}` : 'Sin dirección',
-        etapaNombre: etapa?.nombre ?? 'Sin etapa',
-        monto: Math.round(c.monto / 100),
-        montoPagado: Math.round(c.montoPagado / 100),
-        saldo: Math.round((c.monto - c.montoPagado) / 100),
-        estado: c.estado,
-        cuotaId: c.id,
-        fechaVencimiento: c.fechaVencimiento,
-      };
-    });
+      const casaId = casa.id;
+      const existing = viviendasMap.get(casaId);
 
-    // Agrupar por propietario: mostrar el saldo total por visita
-    const viviendasAgrupadas = new Map<string, typeof viviendas[0] & { saldoTotal: number }>();
-    for (const v of viviendas) {
-      const existing = viviendasAgrupadas.get(v.propietarioId);
+      const montoSaldo = Math.round((c.monto - c.montoPagado) / 100);
+
       if (existing) {
-        existing.saldoTotal += v.saldo;
+        existing.saldo += montoSaldo;
+        // El peor estado (VENCIDA > PARCIAL > PENDIENTE)
+        if (c.estado === 'VENCIDA') existing.peorEstado = 'VENCIDA';
+        else if (c.estado === 'PARCIAL' && existing.peorEstado !== 'VENCIDA') existing.peorEstado = 'PARCIAL';
+        existing.cuotas.push({
+          id: c.id,
+          monto: Math.round(c.monto / 100),
+          estado: c.estado,
+          periodo: c.periodoInicio.slice(0, 7),
+        });
       } else {
-        viviendasAgrupadas.set(v.propietarioId, { ...v, saldoTotal: v.saldo });
+        viviendasMap.set(casaId, {
+          casaId,
+          casaDireccion: casa.direccionInterna,
+          manzanaNombre: manzana?.nombre ?? '',
+          etapaNombre: etapa?.nombre ?? '',
+          propietarioId: prop?.id ?? '',
+          propietarioNombre: prop?.nombre ?? 'Desconocido',
+          propietarioTelefono: prop?.telefono ?? '',
+          saldo: montoSaldo,
+          peorEstado: c.estado,
+          cuotas: [{
+            id: c.id,
+            monto: Math.round(c.monto / 100),
+            estado: c.estado,
+            periodo: c.periodoInicio.slice(0, 7),
+          }],
+        });
       }
     }
 
-    const montoEsperado = Array.from(viviendasAgrupadas.values()).reduce(
-      (sum, v) => sum + v.saldoTotal, 0,
-    );
+    const viviendas = Array.from(viviendasMap.values());
 
-    const ultimosCobros = pagosHoy.slice(0, 10).map((p) => ({
-      id: p.id,
-      propietarioNombre: p.propietarioId,
-      monto: Math.round(p.monto / 100),
-      fecha: p.fechaPago,
-    }));
+    // Stats
+    const pendientes = viviendas.filter((v) => v.peorEstado !== 'VENCIDA').length;
+    const vencidasViviendas = viviendas.filter((v) => v.peorEstado === 'VENCIDA').length;
+    const montoEsperado = viviendas.reduce((sum, v) => sum + v.saldo, 0);
+
+    // Próxima vivienda (la primera con peor estado, orden priorizando vencidas > pendientes)
+    viviendas.sort((a, b) => {
+      const order = { VENCIDA: 0, PARCIAL: 1, PENDIENTE: 2 };
+      return (order[a.peorEstado as keyof typeof order] ?? 3) -
+             (order[b.peorEstado as keyof typeof order] ?? 3);
+    });
+    const proximaVivienda = viviendas.length > 0
+      ? {
+          etapaNombre: viviendas[0].etapaNombre,
+          manzanaNombre: viviendas[0].manzanaNombre,
+          casaDireccion: viviendas[0].casaDireccion,
+        }
+      : null;
+
+    // Últimos cobros: mapear a estructura legible con nombre del cobrador
+    const cobrosHoy = pagosHoy.slice(0, 10);
 
     return {
       cobrador: { nombre: user.nombre },
       stats: {
-        pendientes: viviendasAgrupadas.size,
-        montoEsperado,
+        totalViviendas: viviendas.length,
         cobradosHoy: countHoy,
         montoCobradoHoy: Math.round(totalHoy / 100),
+        pendientes,
+        vencidas: vencidasViviendas,
+        montoEsperado,
       },
-      viviendas: Array.from(viviendasAgrupadas.values()),
-      ultimosCobros,
+      viviendas,
+      proximaVivienda,
+      ultimosCobros: cobrosHoy.map((p) => ({
+        id: p.id,
+        monto: Math.round(p.monto / 100),
+        fecha: p.fechaPago,
+      })),
     };
+  }
+
+  @Get('dashboard/cobrador/viviendas')
+  @UseGuards(RolesGuard)
+  @Roles(RolUsuario.COBRADOR)
+  async getViviendasExplorer(
+    @CurrentUser() user: Usuario,
+    @CurrentTenant() tenantId: string,
+  ) {
+    // 1. Etapas asignadas al cobrador
+    const asignaciones = await this.dataSource.query(
+      'SELECT etapa_id FROM asignaciones_etapa WHERE usuario_id = $1',
+      [user.id],
+    );
+    const etapaIds: string[] = asignaciones.map((a: any) => a.etapa_id);
+
+    if (etapaIds.length === 0) {
+      return { etapas: [] };
+    }
+
+    // 2. Obtener la jerarquía completa: etapas → manzanas → casas con sus propietarios
+    const rows: any[] = await this.dataSource.query(
+      `SELECT
+        e.id AS etapa_id, e.nombre AS etapa_nombre,
+        m.id AS manzana_id, m.nombre AS manzana_nombre,
+        c.id AS casa_id, c.direccion_interna AS casa_direccion,
+        p.id AS prop_id, p.nombre AS prop_nombre, p.telefono AS prop_telefono,
+        t.id AS tenencia_id
+      FROM etapas e
+      JOIN manzanas m ON m.etapa_id = e.id
+      JOIN casas c ON c.manzana_id = m.id
+      LEFT JOIN tenencias t ON t.casa_id = c.id AND t.fecha_fin IS NULL
+      LEFT JOIN propietarios p ON p.id = t.propietario_id
+      WHERE e.id = ANY($1::uuid[])
+      ORDER BY e.nombre, m.nombre, c.direccion_interna`,
+      [etapaIds],
+    );
+
+    // 3. Obtener cuotas pendientes/vencidas para todas las casas en estas etapas
+    const cuotasRaw: any[] = await this.dataSource.query(
+      `SELECT
+        cu.id, cu.propietario_id, cu.monto, cu.monto_pagado,
+        cu.estado, cu.periodo_inicio
+      FROM cuotas cu
+      JOIN propietarios p ON p.id = cu.propietario_id
+      JOIN tenencias t ON t.propietario_id = p.id AND t.fecha_fin IS NULL
+      WHERE cu.tenant_id = $1
+        AND cu.estado IN ('PENDIENTE', 'PARCIAL', 'VENCIDA')
+        AND t.casa_id = ANY(
+          SELECT c2.id FROM casas c2
+          JOIN manzanas m2 ON m2.id = c2.manzana_id
+          WHERE m2.etapa_id = ANY($2::uuid[])
+        )`,
+      [tenantId, etapaIds],
+    );
+
+    // Indexar cuotas por propietarioId para acceso rápido
+    const cuotasPorProp = new Map<string, typeof cuotasRaw>();
+    for (const cu of cuotasRaw) {
+      const pid = cu.propietario_id;
+      if (!cuotasPorProp.has(pid)) cuotasPorProp.set(pid, []);
+      cuotasPorProp.get(pid)!.push(cu);
+    }
+
+    // 4. Calcular status de cada casa basado en cuotas
+    const statusPorCasa = new Map<string, { estado: string; saldo: number }>();
+    for (const [propId, cuotas] of cuotasPorProp) {
+      let saldoTotal = 0;
+      let peorEstado = 'PENDIENTE';
+      for (const cu of cuotas) {
+        const saldo = Math.round((cu.monto - cu.monto_pagado) / 100);
+        saldoTotal += saldo;
+        if (cu.estado === 'VENCIDA') peorEstado = 'VENCIDA';
+        else if (cu.estado === 'PARCIAL' && peorEstado !== 'VENCIDA') peorEstado = 'PARCIAL';
+      }
+      // Asociar el status al propietario (luego al propietario de cada casa)
+      statusPorCasa.set(propId, { estado: peorEstado, saldo: saldoTotal });
+    }
+
+    // 5. Armar árbol jerárquico: etapas → manzanas → casas
+    const etapasMap = new Map<string, any>();
+
+    for (const r of rows) {
+      if (!etapasMap.has(r.etapa_id)) {
+        etapasMap.set(r.etapa_id, {
+          id: r.etapa_id,
+          nombre: r.etapa_nombre,
+          manzanas: new Map<string, any>(),
+        });
+      }
+      const etapa = etapasMap.get(r.etapa_id);
+
+      if (!etapa.manzanas.has(r.manzana_id)) {
+        etapa.manzanas.set(r.manzana_id, {
+          id: r.manzana_id,
+          nombre: r.manzana_nombre,
+          casas: [],
+        });
+      }
+      const manzana = etapa.manzanas.get(r.manzana_id);
+
+      // Buscar status para esta casa (a través del propietario)
+      const propStatus = r.prop_id ? statusPorCasa.get(r.prop_id) : null;
+
+      manzana.casas.push({
+        id: r.casa_id,
+        direccion: r.casa_direccion,
+        propietarioNombre: r.prop_nombre ?? 'Sin propietario',
+        propietarioTelefono: r.prop_telefono ?? '',
+        estado: propStatus?.estado ?? 'AL_DIA',
+        saldo: propStatus?.saldo ?? 0,
+      });
+    }
+
+    // Convertir Maps a arrays
+    const etapas = Array.from(etapasMap.values()).map((e) => ({
+      id: e.id,
+      nombre: e.nombre,
+      manzanas: Array.from(e.manzanas.values()),
+    }));
+
+    return { etapas };
   }
 
   @Get('dashboard/propietario')
@@ -140,14 +318,30 @@ export class DashboardController {
         proximoCobro: null,
         ultimoPago: null,
         movimientos: [],
+        propietarioInfo: { nombre: '', casaDireccion: '', etapaNombre: '' },
       };
     }
 
-    const [cuotasRaw, pagos, cuenta] = await Promise.all([
+    const [cuotasRaw, pagos, cuenta, propietario] = await Promise.all([
       this.cuotaRepository.findByPropietario(user.propietarioId),
       this.pagoRepository.findByPropietario(user.propietarioId),
       this.cuentaCarteraRepository.findByPropietario(user.propietarioId),
+      this.propietarioRepository.findByIdWithRelations(user.propietarioId),
     ]);
+
+    // Build propietarioInfo from relations
+    const tenencia = propietario?.tenencias?.[0];
+    const casa = tenencia?.casa;
+    const manzana = casa?.manzana;
+    const etapa = manzana?.etapa;
+
+    const propietarioInfo = {
+      nombre: propietario?.nombre ?? '',
+      casaDireccion: casa
+        ? `${casa.direccionInterna}${manzana ? `, Mz. ${manzana.nombre}` : ''}`
+        : '',
+      etapaNombre: etapa?.nombre ?? '',
+    };
 
     const frecuencia: Frecuencia = cuenta?.frecuencia ?? 'MENSUAL';
     const hoy = new Date();
@@ -335,6 +529,57 @@ export class DashboardController {
       tarifaActual,
       ultimoPago,
       movimientos: movimientos.slice(0, 2),
+      propietarioInfo,
+    };
+  }
+
+  @Get('dashboard/propietario/timeline')
+  @UseGuards(RolesGuard)
+  @Roles(RolUsuario.PROPIETARIO)
+  async getPropietarioTimeline(
+    @CurrentUser() user: Usuario,
+    @Query('offset', new DefaultValuePipe(0), ParseIntPipe) offset: number,
+    @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
+  ): Promise<TimelineResponse> {
+    if (!user.propietarioId) {
+      return {
+        items: [],
+        hasMore: false,
+      };
+    }
+
+    const [pagos, solicitudes] = await Promise.all([
+      this.pagoRepository.findByPropietario(user.propietarioId),
+      this.solicitudRepository.findByUsuario(user.id),
+    ]);
+
+    const items: TimelineItemDto[] = [
+      ...pagos.map((p) => ({
+        id: p.id,
+        type: 'PAGO' as const,
+        date: p.fechaPago,
+        monto: Math.round(p.monto / 100),
+        description: 'Pago de cuota',
+        estado: 'PAGADO',
+      })),
+      ...solicitudes.map((s) => ({
+        id: s.id,
+        type: 'SOLICITUD' as const,
+        date: s.fecha instanceof Date ? s.fecha.toISOString() : String(s.fecha),
+        monto: null,
+        description: s.descripcion,
+        estado: s.estado,
+      })),
+    ];
+
+    // Sort by date descending (most recent first)
+    items.sort((a, b) => b.date.localeCompare(a.date));
+
+    const sliced = items.slice(offset, offset + limit);
+
+    return {
+      items: sliced,
+      hasMore: offset + limit < items.length,
     };
   }
 }

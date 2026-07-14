@@ -3,7 +3,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:civica_pago_mobile/core/network/api_client.dart';
 import 'package:civica_pago_mobile/features/cartera/cartera_repository.dart';
-import 'package:civica_pago_mobile/features/cartera/models/cartera_models.dart';
 import 'mock_http_adapter.dart';
 
 /// Mock cuotas con diferentes estados, montos y propietarios anidados.
@@ -222,6 +221,85 @@ void main() {
         () => repository.getCarteraResumen(),
         throwsA(isA<Exception>()),
       );
+    });
+  });
+
+  group('CarteraRepository — role-aware endpoint selection', () {
+    test('PROPIETARIO calls GET /cuotas/propietario/{id} for getCarteraResumen', () async {
+      final propRepo = CarteraRepository(
+        role: 'PROPIETARIO',
+        propietarioId: 'PROP_42',
+      );
+
+      mockAdapter.onGet('/cuotas/propietario/PROP_42', [
+        {
+          'id': 'CUO_R1',
+          'monto': 5000000,
+          'montoPagado': 0,
+          'estado': 'PENDIENTE',
+          'propietario': {
+            'id': 'PROP_42',
+            'nombre': 'Prop Test',
+            'tenencias': [],
+          },
+        },
+      ]);
+
+      final resumen = await propRepo.getCarteraResumen();
+
+      expect(mockAdapter.calls('GET', '/cuotas/propietario/PROP_42'), 1);
+      expect(mockAdapter.calls('GET', '/cuotas'), 0);
+      expect(resumen.cantidadPendientes, 1);
+    });
+
+    test('COBRADOR calls GET /cuotas for getCarteraResumen', () async {
+      final cobradorRepo = CarteraRepository(
+        role: 'COBRADOR',
+      );
+
+      mockAdapter.onGet('/cuotas', []);
+
+      await cobradorRepo.getCarteraResumen();
+
+      expect(mockAdapter.calls('GET', '/cuotas'), 1);
+    });
+
+    test('PROPIETARIO calls GET /cuotas/propietario/{id} for getCobros', () async {
+      final propRepo = CarteraRepository(
+        role: 'PROPIETARIO',
+        propietarioId: 'PROP_42',
+      );
+
+      mockAdapter.onGet('/cuotas/propietario/PROP_42', [
+        {
+          'id': 'CUO_R2',
+          'monto': 5000000,
+          'montoPagado': 2000000,
+          'estado': 'VENCIDA',
+          'propietario': {
+            'id': 'PROP_42',
+            'nombre': 'Prop Test',
+            'tenencias': [],
+          },
+        },
+      ]);
+
+      final cobros = await propRepo.getCobros();
+
+      expect(mockAdapter.calls('GET', '/cuotas/propietario/PROP_42'), 1);
+      expect(cobros.length, 1);
+      expect(cobros[0].nombre, 'Prop Test');
+    });
+
+    test('without role falls back to GET /cuotas (backward compatible)', () async {
+      final defaultRepo = CarteraRepository();
+
+      mockAdapter.onGet('/cuotas', _cuotasResponse());
+
+      final resumen = await defaultRepo.getCarteraResumen();
+
+      expect(mockAdapter.calls('GET', '/cuotas'), 1);
+      expect(resumen.cantidadPagados, 1);
     });
   });
 }

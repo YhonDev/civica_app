@@ -5,16 +5,28 @@ import 'models/cartera_models.dart';
 
 class CarteraRepository {
   final ApiClient _api;
+  final String? _role;
+  final String? _propietarioId;
 
-  CarteraRepository({ApiClient? apiClient})
-      : _api = apiClient ?? ApiClient.instance;
+  CarteraRepository({ApiClient? apiClient, String? role, String? propietarioId})
+      : _api = apiClient ?? ApiClient.instance,
+        _role = role,
+        _propietarioId = propietarioId;
+
+  /// Returns the correct cuotas endpoint based on user role.
+  String get _cuotasEndpoint {
+    if (_role == 'PROPIETARIO' && _propietarioId != null) {
+      return '/cuotas/propietario/$_propietarioId';
+    }
+    return '/cuotas';
+  }
 
   /// Devuelve el resumen general de la cartera.
   Future<CarteraResumen> getCarteraResumen() async {
     try {
       final tenantId = ComunidadRepository.currentTenantId;
 
-      final response = await _api.get('/cuotas', queryParameters: {
+      final response = await _api.get(_cuotasEndpoint, queryParameters: {
         'tenantId': tenantId,
       });
       final cuotas = response.data as List<dynamic>;
@@ -65,7 +77,7 @@ class CarteraRepository {
     try {
       final tenantId = ComunidadRepository.currentTenantId;
 
-      final response = await _api.get('/cuotas', queryParameters: {
+      final response = await _api.get(_cuotasEndpoint, queryParameters: {
         'tenantId': tenantId,
       });
       final cuotas = response.data as List<dynamic>;

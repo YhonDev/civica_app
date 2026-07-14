@@ -2,13 +2,16 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThan } from 'typeorm';
 import { Cuota } from '../../domain/cuota.entity';
+import { BaseTenantRepository } from '../../../shared/common/infrastructure/base-tenant.repository';
 
 @Injectable()
-export class CuotaRepository {
+export class CuotaRepository extends BaseTenantRepository<Cuota> {
   constructor(
     @InjectRepository(Cuota)
-    private readonly repo: Repository<Cuota>,
-  ) {}
+    protected readonly repo: Repository<Cuota>,
+  ) {
+    super(repo);
+  }
 
   async findByPropietario(
     propietarioId: string,
@@ -25,8 +28,7 @@ export class CuotaRepository {
   }
 
   async findByTenant(tenantId: string): Promise<Cuota[]> {
-    return this.repo.find({
-      where: { tenantId },
+    return super.findByTenant(tenantId, {
       relations: {
         propietario: {
           tenencias: {
@@ -100,18 +102,6 @@ export class CuotaRepository {
     return count > 0;
   }
 
-  async save(cuota: Cuota): Promise<Cuota> {
-    return this.repo.save(cuota);
-  }
-
-  async saveMany(cuotas: Cuota[]): Promise<Cuota[]> {
-    return this.repo.save(cuotas);
-  }
-
-  async delete(id: string): Promise<void> {
-    await this.repo.delete(id);
-  }
-
   // ── Dashboard queries ───────────────────────────────────
 
   async sumMontoByMonth(
@@ -119,10 +109,11 @@ export class CuotaRepository {
     year: number,
     month: number,
   ): Promise<number> {
-    const result = await this.repo
-      .createQueryBuilder('cuota')
+    const qb = this.repo.createQueryBuilder('cuota');
+    this.applyTenantFilter(qb, tenantId, 'cuota');
+    
+    const result = await qb
       .select('COALESCE(SUM(cuota.monto), 0)', 'total')
-      .where('cuota.tenantId = :tenantId', { tenantId })
       .andWhere('cuota.periodoInicio < :end', {
         end: month === 12
           ? `${year + 1}-01-01`
@@ -140,13 +131,14 @@ export class CuotaRepository {
     year: number,
     month: number,
   ): Promise<number> {
-    const result = await this.repo
-      .createQueryBuilder('cuota')
+    const qb = this.repo.createQueryBuilder('cuota');
+    this.applyTenantFilter(qb, tenantId, 'cuota');
+    
+    const result = await qb
       .select(
         'COUNT(DISTINCT cuota.propietarioId)',
         'count',
       )
-      .where('cuota.tenantId = :tenantId', { tenantId })
       .andWhere('cuota.periodoInicio < :end', {
         end: month === 12
           ? `${year + 1}-01-01`
@@ -163,13 +155,14 @@ export class CuotaRepository {
   }
 
   async sumSaldoVencidasByTenant(tenantId: string): Promise<number> {
-    const result = await this.repo
-      .createQueryBuilder('cuota')
+    const qb = this.repo.createQueryBuilder('cuota');
+    this.applyTenantFilter(qb, tenantId, 'cuota');
+    
+    const result = await qb
       .select(
         'COALESCE(SUM(cuota.monto - cuota.montoPagado), 0)',
         'total',
       )
-      .where('cuota.tenantId = :tenantId', { tenantId })
       .andWhere('cuota.estado = :estado', { estado: 'VENCIDA' })
       .getRawOne();
     return Number(result?.total ?? 0);
@@ -180,11 +173,12 @@ export class CuotaRepository {
     year: number,
     month: number,
   ): Promise<{ pagadas: number; pendientes: number }> {
-    const rows = await this.repo
-      .createQueryBuilder('cuota')
+    const qb = this.repo.createQueryBuilder('cuota');
+    this.applyTenantFilter(qb, tenantId, 'cuota');
+    
+    const rows = await qb
       .select('cuota.estado', 'estado')
       .addSelect('COUNT(*)', 'count')
-      .where('cuota.tenantId = :tenantId', { tenantId })
       .andWhere('cuota.periodoInicio < :end', {
         end: month === 12
           ? `${year + 1}-01-01`
@@ -221,8 +215,10 @@ export class CuotaRepository {
       pagadas: number;
     }>
   > {
-    const rows = await this.repo
-      .createQueryBuilder('cuota')
+    const qb = this.repo.createQueryBuilder('cuota');
+    this.applyTenantFilter(qb, tenantId, 'cuota');
+    
+    const rows = await qb
       .leftJoin(
         'tarifas',
         'tarifa',
@@ -234,7 +230,6 @@ export class CuotaRepository {
         "SUM(CASE WHEN cuota.estado = 'PAGADA' THEN 1 ELSE 0 END)",
         'pagadas',
       )
-      .where('cuota.tenantId = :tenantId', { tenantId })
       .andWhere('cuota.periodoInicio < :end', {
         end: month === 12
           ? `${year + 1}-01-01`
@@ -254,10 +249,11 @@ export class CuotaRepository {
   }
 
   async countPropietariosInMora(tenantId: string): Promise<number> {
-    const result = await this.repo
-      .createQueryBuilder('cuota')
+    const qb = this.repo.createQueryBuilder('cuota');
+    this.applyTenantFilter(qb, tenantId, 'cuota');
+    
+    const result = await qb
       .select('COUNT(DISTINCT cuota.propietarioId)', 'count')
-      .where('cuota.tenantId = :tenantId', { tenantId })
       .andWhere('cuota.estado = :estado', { estado: 'VENCIDA' })
       .getRawOne();
     return Number(result?.count ?? 0);
@@ -268,9 +264,10 @@ export class CuotaRepository {
     year: number,
     month: number,
   ): Promise<Array<{ semana: number; pendientes: number; enMora: number }>> {
-    // We estimate week from periodoInicio day since cuotas don't have per-day granularity
-    const rows = await this.repo
-      .createQueryBuilder('cuota')
+    const qb = this.repo.createQueryBuilder('cuota');
+    this.applyTenantFilter(qb, tenantId, 'cuota');
+    
+    const rows = await qb
       .select("CEIL(EXTRACT(DAY FROM cuota.periodoInicio::timestamp) / 7.0)", 'semana')
       .addSelect(
         "SUM(CASE WHEN cuota.estado IN ('PENDIENTE', 'PARCIAL') THEN 1 ELSE 0 END)",
@@ -280,7 +277,6 @@ export class CuotaRepository {
         "SUM(CASE WHEN cuota.estado = 'VENCIDA' THEN 1 ELSE 0 END)",
         'enMora',
       )
-      .where('cuota.tenantId = :tenantId', { tenantId })
       .andWhere('cuota.periodoInicio >= :start AND cuota.periodoInicio < :end', {
         start: `${year}-${String(month).padStart(2, '0')}-01`,
         end: month === 12
@@ -301,6 +297,9 @@ export class CuotaRepository {
   /**
    * Find pending cuotas (PENDIENTE, PARCIAL, VENCIDA) for propietarios
    * whose casas are in the given etapas. Used by COBRADOR dashboard.
+   *
+   * Navigates: cuota → propietario → tenencias → casa → manzana
+   * Filters by manzana.etapaId (casa does NOT have etapaId directly).
    */
   async findPendientesConPropietarioByEtapas(
     tenantId: string,
@@ -308,25 +307,28 @@ export class CuotaRepository {
   ): Promise<Cuota[]> {
     if (!etapaIds || etapaIds.length === 0) return [];
 
-    return this.repo
-      .createQueryBuilder('cuota')
-      .leftJoinAndSelect('cuota.propietario', 'propietario')
-      .leftJoin('propietario.tenencias', 'tenencia')
-      .leftJoin('tenencia.casa', 'casa')
-      .where('cuota.tenantId = :tenantId', { tenantId })
-      .andWhere('cuota.estado IN (:...estados)', {
-        estados: ['PENDIENTE', 'PARCIAL', 'VENCIDA'],
+    const qb = this.repo.createQueryBuilder('cuota');
+    this.applyTenantFilter(qb, tenantId, 'cuota');
+    qb.leftJoinAndSelect('cuota.propietario', 'propietario')
+    qb.leftJoinAndSelect('propietario.tenencias', 'tenencia')
+    qb.leftJoinAndSelect('tenencia.casa', 'casa')
+    qb.leftJoinAndSelect('casa.manzana', 'manzana')
+    qb.leftJoinAndSelect('manzana.etapa', 'etapa')
+    .andWhere('cuota.estado IN (:...estados)', {
+      estados: ['PENDIENTE', 'PARCIAL', 'VENCIDA'],
       })
-      .andWhere('casa.etapaId IN (:...etapaIds)', { etapaIds })
-      .orderBy('cuota.fechaVencimiento', 'ASC')
-      .getMany();
+    .andWhere('manzana.etapaId IN (:...etapaIds)', { etapaIds })
+    .orderBy('cuota.fechaVencimiento', 'ASC');
+
+    return qb.getMany();
   }
 
   async sumMontoByYear(tenantId: string, year: number): Promise<number> {
-    const result = await this.repo
-      .createQueryBuilder('cuota')
+    const qb = this.repo.createQueryBuilder('cuota');
+    this.applyTenantFilter(qb, tenantId, 'cuota');
+    
+    const result = await qb
       .select('COALESCE(SUM(cuota.monto), 0)', 'total')
-      .where('cuota.tenantId = :tenantId', { tenantId })
       .andWhere('cuota.periodoInicio >= :start AND cuota.periodoInicio < :end', {
         start: `${year}-01-01`,
         end: `${year + 1}-01-01`,
@@ -335,15 +337,21 @@ export class CuotaRepository {
     return Number(result?.total ?? 0);
   }
 
+  async saveMany(entities: Cuota[]): Promise<Cuota[]> {
+    return this.repo.save(entities);
+  }
+
+
   async sumSaldoVencidasByMonth(
     tenantId: string,
     year: number,
     month: number,
   ): Promise<number> {
-    const result = await this.repo
-      .createQueryBuilder('cuota')
+    const qb = this.repo.createQueryBuilder('cuota');
+    this.applyTenantFilter(qb, tenantId, 'cuota');
+    
+    const result = await qb
       .select('COALESCE(SUM(cuota.monto - cuota.montoPagado), 0)', 'total')
-      .where('cuota.tenantId = :tenantId', { tenantId })
       .andWhere('cuota.estado = :estado', { estado: 'VENCIDA' })
       .andWhere('cuota.periodoInicio >= :start AND cuota.periodoInicio < :end', {
         start: `${year}-${String(month).padStart(2, '0')}-01`,

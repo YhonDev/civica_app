@@ -8,7 +8,7 @@ export interface DashboardResumen {
 }
 
 export interface EvolucionDia {
-  dia: number;
+  dia: string;
   valor: number;
 }
 
@@ -85,6 +85,22 @@ export interface CobradorDashboardResponse {
   ultimosCobros: CobroHoyItem[];
 }
 
+// ── Propietario Timeline ─────────────────────────
+
+export interface TimelineItemDto {
+  id: string;
+  type: 'PAGO' | 'SOLICITUD';
+  date: string;
+  monto: number | null;
+  description: string;
+  estado: string;
+}
+
+export interface TimelineResponse {
+  items: TimelineItemDto[];
+  hasMore: boolean;
+}
+
 export interface DashboardResponse {
   mes: number;
   anio: number;
@@ -96,6 +112,8 @@ export interface DashboardResponse {
   solicitudesPendientes: number;
   nuevosPropietariosSemana: number;
   propietariosMora: number;
+  pagosRevision: number;
+  totalPropietarios: number;
   acumuladoAnual: number;
   metaAnual: number;
   historialMeses: MesHistorico[];

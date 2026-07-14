@@ -3,7 +3,7 @@
 
 CREATE TABLE actividad (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id       UUID NOT NULL REFERENCES conjuntos(id),
+  tenant_id       UUID NOT NULL,
   tipo            VARCHAR(50) NOT NULL,
   descripcion     TEXT NOT NULL,
   usuario_nombre  VARCHAR(255) NOT NULL,

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ScheduleModule } from '@nestjs/schedule';
 import { Tarifa } from './domain/tarifa.entity';
@@ -54,7 +54,7 @@ import { Reflector } from '@nestjs/core';
     TypeOrmModule.forFeature([Tarifa, MontoPagoPredefinido, Cuota, CuentaDeCartera, Pago, Solicitud]),
     ScheduleModule.forRoot(),
     NotificationsModule,
-    CommunityModule,
+    forwardRef(() => CommunityModule),
   ],
   controllers: [
     TarifasController,

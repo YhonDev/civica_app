@@ -97,10 +97,10 @@ class ScaffoldWithBottomNav extends StatelessWidget {
             route: '/cartera',
           ),
           _TabItem(
-            label: 'Propietarios',
-            icon: const Icon(Icons.people_outline_rounded),
-            iconActive: const Icon(Icons.people_rounded),
-            route: '/propietarios',
+            label: 'Viviendas',
+            icon: const Icon(Icons.home_work_outlined),
+            iconActive: const Icon(Icons.home_work_rounded),
+            route: '/viviendas',
           ),
           _TabItem(
             label: 'Actividad',

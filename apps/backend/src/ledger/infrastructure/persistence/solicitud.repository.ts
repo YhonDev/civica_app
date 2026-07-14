@@ -2,13 +2,16 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Solicitud, SolicitudEstado } from '../../domain/solicitud.entity';
+import { BaseTenantRepository } from '../../../shared/common/infrastructure/base-tenant.repository';
 
 @Injectable()
-export class SolicitudRepository {
+export class SolicitudRepository extends BaseTenantRepository<Solicitud> {
   constructor(
     @InjectRepository(Solicitud)
-    private readonly repo: Repository<Solicitud>,
-  ) {}
+    protected readonly repo: Repository<Solicitud>,
+  ) {
+    super(repo);
+  }
 
   async findByUsuario(usuarioId: string): Promise<Solicitud[]> {
     return this.repo.find({
@@ -18,8 +21,7 @@ export class SolicitudRepository {
   }
 
   async findByTenant(tenantId: string): Promise<Solicitud[]> {
-    return this.repo.find({
-      where: { tenantId },
+    return super.findByTenant(tenantId, {
       relations: { usuario: true },
       order: { fecha: 'DESC' },
     });
@@ -37,21 +39,17 @@ export class SolicitudRepository {
   }
 
   async findPendingByTenant(tenantId: string): Promise<Solicitud[]> {
-    return this.repo.find({
-      where: [
-        { tenantId, estado: SolicitudEstado.PENDIENTE },
-        { tenantId, estado: SolicitudEstado.EN_REVISION },
-      ],
+    const results = await super.findByTenant(tenantId, {
       relations: { usuario: true },
       order: { fecha: 'DESC' },
     });
+
+    return results.filter(s => 
+      s.estado === SolicitudEstado.PENDIENTE || s.estado === SolicitudEstado.EN_REVISION
+    );
   }
 
   async findById(id: string): Promise<Solicitud | null> {
     return this.repo.findOne({ where: { id } });
-  }
-
-  async save(solicitud: Solicitud): Promise<Solicitud> {
-    return this.repo.save(solicitud);
   }
 }

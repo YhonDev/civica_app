@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../../screens/auth/auth_cubit.dart';
 import 'cartera_repository.dart';
 import 'models/cartera_models.dart';
 import 'widgets/cartera_resumen_header.dart';
@@ -31,10 +33,37 @@ class _CarteraScreenState extends State<CarteraScreen> {
   // Filtro activo. Por defecto mostramos 'Pendiente' para que sea información útil inmediata.
   String _activeFilter = 'Pendiente';
   
+  /// User role — read from AuthCubit.
+  String? get _rol => context.read<AuthCubit>().state.usuario?['rol'] as String?;
+  
+  /// Whether the user can register payments (ADMIN and COBRADOR only).
+  bool get _canRegisterPago => _rol != 'PROPIETARIO';
+  
+  /// Dynamic subtitle based on role.
+  String get _subtitle {
+    switch (_rol) {
+      case 'ADMIN':
+        return 'Resumen general de tu comunidad';
+      case 'COBRADOR':
+        return 'Resumen de cobros';
+      case 'PROPIETARIO':
+        return 'Tus cuotas';
+      default:
+        return 'Administración de cobros y propietarios';
+    }
+  }
+  
   @override
   void initState() {
     super.initState();
-    _repository = widget.repository ?? CarteraRepository();
+    if (widget.repository != null) {
+      _repository = widget.repository!;
+    } else {
+      final user = context.read<AuthCubit>().state.usuario;
+      final rol = user?['rol'] as String?;
+      final propietarioId = user?['propietarioId'] as String?;
+      _repository = CarteraRepository(role: rol, propietarioId: propietarioId);
+    }
     _loadData();
   }
 
@@ -90,7 +119,7 @@ class _CarteraScreenState extends State<CarteraScreen> {
                   ),
                   const SizedBox(height: AppSpacing.xs),
                   Text(
-                    'Administración de cobros y propietarios',
+                    _subtitle,
                     style: AppTypography.body.copyWith(
                       color: AppColors.textSecondary,
                     ),
@@ -164,7 +193,7 @@ class _CarteraScreenState extends State<CarteraScreen> {
                           padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                           child: CobroCard(
                             cobro: cobro,
-                            onRegistrarPago: cobro.estado != 'Pagado'
+                            onRegistrarPago: _canRegisterPago && cobro.estado != 'Pagado'
                                 ? () => RegistrarPagoBottomSheet.show(
                                       context,
                                       cobro: cobro,

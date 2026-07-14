@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Conjunto } from './domain/conjunto.entity';
 import { Etapa } from './domain/etapa.entity';
@@ -8,6 +8,7 @@ import { Propietario } from './domain/propietario.entity';
 import { Tenencia } from './domain/tenencia.entity';
 import { ConjuntoRepository } from './infrastructure/conjunto.repository';
 import { PropietarioRepository } from './infrastructure/propietario.repository';
+import { PropietarioDetailQuery } from './application/queries/propietario-detail.query';
 import { CrearConjuntoUseCase } from './application/use-cases/crear-conjunto.use-case';
 import { CrearEtapaUseCase } from './application/use-cases/crear-etapa.use-case';
 import { CrearManzanaUseCase } from './application/use-cases/crear-manzana.use-case';
@@ -18,6 +19,7 @@ import { ActualizarPropietarioUseCase } from './application/use-cases/actualizar
 import { AgregarTenenciaUseCase } from './application/use-cases/agregar-tenencia.use-case';
 import { ConjuntosController } from './infrastructure/controllers/conjuntos.controller';
 import { PropietariosController } from './infrastructure/controllers/propietarios.controller';
+import { LedgerModule } from '../ledger/ledger.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { ActividadInterceptor } from '../shared/common/decorators/registrar-actividad.decorator';
 import { Reflector } from '@nestjs/core';
@@ -25,6 +27,7 @@ import { Reflector } from '@nestjs/core';
 @Module({
   imports: [
     TypeOrmModule.forFeature([Conjunto, Etapa, Manzana, Casa, Propietario, Tenencia]),
+    forwardRef(() => LedgerModule),
     NotificationsModule,
   ],
   controllers: [ConjuntosController, PropietariosController],
@@ -32,6 +35,8 @@ import { Reflector } from '@nestjs/core';
     // Repositories
     ConjuntoRepository,
     PropietarioRepository,
+    // Queries
+    PropietarioDetailQuery,
     // Use cases
     CrearConjuntoUseCase,
     CrearEtapaUseCase,

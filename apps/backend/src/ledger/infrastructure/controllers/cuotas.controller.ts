@@ -20,7 +20,9 @@ import { JwtAuthGuard } from '../../../shared/auth/jwt-auth.guard';
 import { RolesGuard } from '../../../shared/auth/guards/roles.guard';
 import { Roles } from '../../../shared/auth/decorators/roles.decorator';
 import { CurrentTenant } from '../../../shared/tenant/current-tenant.decorator';
-import { RolUsuario } from '../../../iam/domain/usuario.entity';
+import { RolUsuario, Usuario } from '../../../iam/domain/usuario.entity';
+import { CurrentUser } from '../../../shared/tenant/current-user.decorator';
+import { ForbiddenException } from '@nestjs/common';
 
 @Controller('cuotas')
 @UseGuards(JwtAuthGuard)
@@ -45,18 +47,23 @@ export class CuotasController {
 
   @Get()
   @UseGuards(RolesGuard)
-  @Roles(RolUsuario.ADMIN)
+  @Roles(RolUsuario.ADMIN, RolUsuario.COBRADOR)
   async listar(@CurrentTenant() tenantId: string) {
     return this.cuotaRepository.findByTenant(tenantId);
   }
 
   @Get('propietario/:propietarioId')
   @UseGuards(RolesGuard)
-  @Roles(RolUsuario.ADMIN)
+  @Roles(RolUsuario.ADMIN, RolUsuario.PROPIETARIO)
   async listarPorPropietario(
     @Param('propietarioId') propietarioId: string,
     @Query() query: ListarCuotasQueryDto,
+    @CurrentUser() user: Usuario,
   ) {
+    // Self-access guard: propietarios can only view their own cuotas
+    if (user.rol === RolUsuario.PROPIETARIO && user.propietarioId !== propietarioId) {
+      throw new ForbiddenException('No tiene permiso para ver las cuotas de otro propietario');
+    }
     const [cuotas, cuenta] = await Promise.all([
       this.cuotaRepository.findByPropietario(
         propietarioId,

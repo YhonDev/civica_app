@@ -2,13 +2,16 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Pago } from '../../domain/pago.entity';
+import { BaseTenantRepository } from '../../../shared/common/infrastructure/base-tenant.repository';
 
 @Injectable()
-export class PagoRepository {
+export class PagoRepository extends BaseTenantRepository<Pago> {
   constructor(
     @InjectRepository(Pago)
-    private readonly repo: Repository<Pago>,
-  ) {}
+    protected readonly repo: Repository<Pago>,
+  ) {
+    super(repo);
+  }
 
   async findById(id: string): Promise<Pago | null> {
     return this.repo.findOne({ where: { id } });
@@ -39,16 +42,8 @@ export class PagoRepository {
     return this.repo.count({ where: { cuotaId } });
   }
 
-  async save(pago: Pago): Promise<Pago> {
-    return this.repo.save(pago);
-  }
-
   async saveMany(pagos: Pago[]): Promise<Pago[]> {
     return this.repo.save(pagos);
-  }
-
-  async delete(id: string): Promise<void> {
-    await this.repo.delete(id);
   }
 
   // ── Dashboard queries ───────────────────────────────────
@@ -58,10 +53,11 @@ export class PagoRepository {
     year: number,
     month: number,
   ): Promise<number> {
-    const result = await this.repo
-      .createQueryBuilder('pago')
+    const qb = this.repo.createQueryBuilder('pago');
+    this.applyTenantFilter(qb, tenantId, 'pago');
+    
+    const result = await qb
       .select('COALESCE(SUM(pago.monto), 0)', 'total')
-      .where('pago.tenantId = :tenantId', { tenantId })
       .andWhere(
         'pago.fecha_pago >= :start AND pago.fecha_pago < :end',
         {
@@ -80,10 +76,11 @@ export class PagoRepository {
     year: number,
     month: number,
   ): Promise<number> {
-    const result = await this.repo
-      .createQueryBuilder('pago')
+    const qb = this.repo.createQueryBuilder('pago');
+    this.applyTenantFilter(qb, tenantId, 'pago');
+    
+    const result = await qb
       .select('COUNT(DISTINCT pago.propietarioId)', 'count')
-      .where('pago.tenantId = :tenantId', { tenantId })
       .andWhere(
         'pago.fecha_pago >= :start AND pago.fecha_pago < :end',
         {
@@ -102,14 +99,15 @@ export class PagoRepository {
     year: number,
     month: number,
   ): Promise<Array<{ dia: number; valor: number }>> {
-    const rows = await this.repo
-      .createQueryBuilder('pago')
+    const qb = this.repo.createQueryBuilder('pago');
+    this.applyTenantFilter(qb, tenantId, 'pago');
+    
+    const rows = await qb
       .select(
         "EXTRACT(DAY FROM pago.fecha_pago::timestamp)",
         'dia',
       )
       .addSelect('SUM(pago.monto)', 'valor')
-      .where('pago.tenantId = :tenantId', { tenantId })
       .andWhere(
         'pago.fecha_pago >= :start AND pago.fecha_pago < :end',
         {
@@ -134,12 +132,13 @@ export class PagoRepository {
     year: number,
     month: number,
   ): Promise<Array<{ semana: number; pagados: number; monto: number }>> {
-    const result = await this.repo
-      .createQueryBuilder('pago')
+    const qb = this.repo.createQueryBuilder('pago');
+    this.applyTenantFilter(qb, tenantId, 'pago');
+    
+    const result = await qb
       .select("CEIL(EXTRACT(DAY FROM pago.fecha_pago::timestamp) / 7.0)", 'semana')
       .addSelect('COUNT(*)', 'pagados')
       .addSelect('COALESCE(SUM(pago.monto), 0)', 'monto')
-      .where('pago.tenantId = :tenantId', { tenantId })
       .andWhere(
         'pago.fecha_pago >= :start AND pago.fecha_pago < :end',
         {
@@ -186,10 +185,11 @@ export class PagoRepository {
   }
 
   async sumMontoByYear(tenantId: string, year: number): Promise<number> {
-    const result = await this.repo
-      .createQueryBuilder('pago')
+    const qb = this.repo.createQueryBuilder('pago');
+    this.applyTenantFilter(qb, tenantId, 'pago');
+    
+    const result = await qb
       .select('COALESCE(SUM(pago.monto), 0)', 'total')
-      .where('pago.tenantId = :tenantId', { tenantId })
       .andWhere('pago.fecha_pago >= :start AND pago.fecha_pago < :end', {
         start: `${year}-01-01`,
         end: `${year + 1}-01-01`,

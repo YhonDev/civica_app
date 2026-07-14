@@ -39,6 +39,7 @@ describe('DashboardQuery', () => {
 
   const mockPropietarioRepo = {
     countNuevosByWeek: jest.fn(),
+    countByTenant: jest.fn(),
   };
 
   const TENANT = 'tenant-1';
@@ -93,7 +94,7 @@ describe('DashboardQuery', () => {
       { semana: 2, pendientes: 5, enMora: 2 },
       { semana: 3, pendientes: 3, enMora: 1 },
     ]);
-
+    mockPropietarioRepo.countByTenant.mockResolvedValue(100);
     // ── Historial (12 calls each) ──
     mockCuotaRepo.sumSaldoVencidasByMonth.mockResolvedValue(3000);
     // pagoRepo.sumMontoByMonth already returns 50000 for all calls (main + historial)
@@ -158,9 +159,9 @@ describe('DashboardQuery', () => {
       const result = await query.execute(MES, ANIO, TENANT);
 
       expect(result.evolucion).toEqual([
-        { dia: 1, valor: 5000 },
-        { dia: 5, valor: 12000 },
-        { dia: 15, valor: 8000 },
+        { dia: '1', valor: 5000 },
+        { dia: '5', valor: 12000 },
+        { dia: '15', valor: 8000 },
       ]);
       // Regression: key must be "valor", never "monto"
       for (const item of result.evolucion) {
@@ -478,7 +479,7 @@ describe('DashboardQuery', () => {
 
       const result = await query.execute(MES, ANIO, TENANT);
 
-      expect(result.evolucion[0]).toEqual({ dia: 1, valor: 9999.5 });
+      expect(result.evolucion[0]).toEqual({ dia: '1', valor: 9999.5 });
     });
   });
 

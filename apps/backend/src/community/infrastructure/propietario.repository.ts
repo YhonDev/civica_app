@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Propietario } from '../domain/propietario.entity';
+import { BaseTenantRepository } from '../../shared/common/infrastructure/base-tenant.repository';
 
 interface BuscarPorFiltrosParams {
   etapaId?: string;
@@ -10,17 +11,22 @@ interface BuscarPorFiltrosParams {
 }
 
 @Injectable()
-export class PropietarioRepository {
+export class PropietarioRepository extends BaseTenantRepository<Propietario> {
   constructor(
     @InjectRepository(Propietario)
-    private readonly repo: Repository<Propietario>,
-  ) {}
+    protected readonly repo: Repository<Propietario>,
+  ) {
+    super(repo);
+  }
 
   async findByTenant(tenantId: string): Promise<Propietario[]> {
-    return this.repo.find({
-      where: { tenantId },
+    return super.findByTenant(tenantId, {
       order: { nombre: 'ASC' },
     });
+  }
+
+  async countByTenant(tenantId: string): Promise<number> {
+    return super.countByTenant(tenantId);
   }
 
   async findById(id: string): Promise<Propietario | null> {
@@ -33,12 +39,12 @@ export class PropietarioRepository {
    */
   async buscarPorFiltros(params: BuscarPorFiltrosParams): Promise<Propietario[]> {
     const qb = this.repo.createQueryBuilder('propietario');
+    this.applyTenantFilter(qb, params.tenantId, 'propietario');
     qb.leftJoinAndSelect('propietario.tenencias', 'tenencia');
     qb.leftJoinAndSelect('tenencia.casa', 'casa');
     qb.leftJoinAndSelect('casa.manzana', 'manzana');
     qb.leftJoinAndSelect('manzana.etapa', 'etapa');
     qb.leftJoinAndSelect('propietario.cuotas', 'cuotas');
-    qb.where('propietario.tenantId = :tenantId', { tenantId: params.tenantId });
 
     if (params.casaId) {
       qb.andWhere('tenencia.casaId = :casaId', { casaId: params.casaId });
@@ -64,6 +70,21 @@ export class PropietarioRepository {
     });
   }
 
+  async findByIdWithRelations(id: string): Promise<Propietario | null> {
+    return this.repo.findOne({
+      where: { id },
+      relations: {
+        tenencias: {
+          casa: {
+            manzana: {
+              etapa: true,
+            },
+          },
+        },
+      },
+    });
+  }
+
   /**
    * Busca propietarios cuyas casas estén en una o más etapas específicas.
    * Usado por COBRADORES que solo ven propietarios de sus etapas asignadas.
@@ -74,12 +95,12 @@ export class PropietarioRepository {
     }
 
     const qb = this.repo.createQueryBuilder('propietario');
+    this.applyTenantFilter(qb, tenantId, 'propietario');
     qb.leftJoinAndSelect('propietario.tenencias', 'tenencia');
     qb.leftJoinAndSelect('tenencia.casa', 'casa');
     qb.leftJoinAndSelect('casa.manzana', 'manzana');
     qb.leftJoinAndSelect('manzana.etapa', 'etapa');
     qb.leftJoinAndSelect('propietario.cuotas', 'cuotas');
-    qb.where('propietario.tenantId = :tenantId', { tenantId });
 
     const subQuery = qb
       .subQuery()
@@ -94,21 +115,14 @@ export class PropietarioRepository {
     return qb.getMany();
   }
 
-  async save(propietario: Propietario): Promise<Propietario> {
-    return this.repo.save(propietario);
-  }
-
-  async delete(id: string): Promise<void> {
-    await this.repo.delete(id);
-  }
-
   async countNuevosByWeek(tenantId: string): Promise<number> {
     const unaSemanaAtras = new Date();
     unaSemanaAtras.setDate(unaSemanaAtras.getDate() - 7);
-    const result = await this.repo
-      .createQueryBuilder('propietario')
+    const qb = this.repo.createQueryBuilder('propietario');
+    this.applyTenantFilter(qb, tenantId, 'propietario');
+    
+    const result = await qb
       .select('COUNT(*)', 'count')
-      .where('propietario.tenantId = :tenantId', { tenantId })
       .andWhere('propietario.createdAt >= :fecha', { fecha: unaSemanaAtras })
       .getRawOne();
     return Number(result?.count ?? 0);
