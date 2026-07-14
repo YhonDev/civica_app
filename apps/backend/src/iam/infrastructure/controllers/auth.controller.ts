@@ -22,7 +22,7 @@ export class AuthController {
       nombre: dto.nombre,
       rol: dto.rol,
       tenantId: dto.tenantId,
-      propietarioId: dto.propietarioId,
+      residenteId: dto.residenteId,
     });
   }
 

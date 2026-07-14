@@ -32,7 +32,7 @@ export class MontosController {
   async crear(@Body() dto: CrearMontoDto, @CurrentTenant() tenantId: string) {
     return this.configurarMontoUseCase.execute({
       tenantId,
-      conjuntoId: dto.conjuntoId,
+      proyectoId: dto.proyectoId,
       montoPesos: dto.monto,
       descripcion: dto.descripcion,
     });
@@ -40,7 +40,7 @@ export class MontosController {
 
   @Get()
   async listar(@Query() query: ListarMontosQueryDto) {
-    return this.montoRepository.findAllByConjunto(query.conjuntoId);
+    return this.montoRepository.findAllByConjunto(query.proyectoId);
   }
 
   @Delete(':id')

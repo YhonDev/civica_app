@@ -26,7 +26,7 @@ export class SolicitudesController {
 
   @Post()
   @UseGuards(RolesGuard)
-  @Roles(RolUsuario.PROPIETARIO, RolUsuario.ADMIN)
+  @Roles(RolUsuario.RESIDENTE, RolUsuario.ADMIN)
   async crear(
     @Body() dto: { cuotaId: string; tipo: string; descripcion: string },
     @CurrentUser() user: Usuario,
@@ -44,7 +44,7 @@ export class SolicitudesController {
 
   @Get()
   @UseGuards(RolesGuard)
-  @Roles(RolUsuario.PROPIETARIO, RolUsuario.ADMIN)
+  @Roles(RolUsuario.RESIDENTE, RolUsuario.ADMIN)
   async listar(@CurrentUser() user: Usuario) {
     return this.solicitudRepo.findByUsuario(user.id);
   }

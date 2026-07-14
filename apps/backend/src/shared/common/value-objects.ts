@@ -66,7 +66,12 @@ export class DireccionInterna {
 
 // ── Ledger VOs ──────────────────────────────────────────
 
-export type Frecuencia = 'SEMANAL' | 'QUINCENAL' | 'MENSUAL';
+export type ModalidadRecaudo = 'SEMANAL' | 'QUINCENAL' | 'MENSUAL';
+
+/**
+ * @deprecated Usar ModalidadRecaudo — se eliminará después de la migración completa.
+ */
+export type Frecuencia = ModalidadRecaudo;
 
 /** Valor inicial para seeds — en runtime siempre consultar tarifas vigentes en BD. */
 export const CUOTA_MENSUAL_CIVICA_DEFAULT_PESOS = 40_000;
@@ -79,9 +84,9 @@ export const CUOTA_MENSUAL_CIVICA_PESOS = CUOTA_MENSUAL_CIVICA_DEFAULT_PESOS;
 /** @deprecated Usar CUOTA_MENSUAL_CIVICA_DEFAULT_CENTAVOS (solo seeds). */
 export const CUOTA_MENSUAL_CIVICA_CENTAVOS = CUOTA_MENSUAL_CIVICA_DEFAULT_CENTAVOS;
 
-/** Pagos por mes según la modalidad de pago del propietario. */
-export function pagosPorMes(frecuencia: Frecuencia): number {
-  switch (frecuencia) {
+/** Pagos por mes según la modalidad de recaudo del residente. */
+export function pagosPorMes(modalidad: ModalidadRecaudo): number {
+  switch (modalidad) {
     case 'SEMANAL':
       return 4;
     case 'QUINCENAL':
@@ -92,21 +97,21 @@ export function pagosPorMes(frecuencia: Frecuencia): number {
 }
 
 /**
- * Convierte un monto de cualquier frecuencia al equivalente mensual.
+ * Convierte un monto de cualquier modalidad al equivalente mensual.
  * Ej: $10.000 semanal → $40.000 mensual.
  */
 export function montoMensualDesde(
-  frecuencia: Frecuencia,
+  modalidad: ModalidadRecaudo,
   montoCentavos: number,
 ): number {
-  return montoCentavos * pagosPorMes(frecuencia);
+  return montoCentavos * pagosPorMes(modalidad);
 }
 
 /**
  * Calcula los montos de tarifa para las 3 modalidades a partir de la cuota mensual.
  * La cuota cívica mensual se divide: /4 semanal, /2 quincenal, /1 mensual.
  */
-export function tarifasDerivadas(montoMensualCentavos: number): Record<Frecuencia, number> {
+export function tarifasDerivadas(montoMensualCentavos: number): Record<ModalidadRecaudo, number> {
   return {
     MENSUAL: montoMensualCentavos,
     QUINCENAL: Math.round(montoMensualCentavos / 2),
@@ -115,23 +120,23 @@ export function tarifasDerivadas(montoMensualCentavos: number): Record<Frecuenci
 }
 
 /**
- * Monto de cada abono parcial según la frecuencia de pago.
+ * Monto de cada abono parcial según la modalidad de recaudo.
  * La cuota mensual completa se divide en 4, 2 o 1 pagos.
  */
 export function calcularMontoParcial(
   montoMensualCentavos: number,
-  frecuencia: Frecuencia,
+  modalidad: ModalidadRecaudo,
 ): Money {
-  const divisor = pagosPorMes(frecuencia);
+  const divisor = pagosPorMes(modalidad);
   return Money.ofCOP(Math.round(montoMensualCentavos / divisor));
 }
 
 /** @deprecated Usar calcularMontoParcial — la cuota almacena el monto mensual completo. */
 export function calcularMontoCuota(
   montoMensualCentavos: number,
-  frecuencia: Frecuencia,
+  modalidad: ModalidadRecaudo,
 ): Money {
-  return calcularMontoParcial(montoMensualCentavos, frecuencia);
+  return calcularMontoParcial(montoMensualCentavos, modalidad);
 }
 
 export class Money {
@@ -181,7 +186,13 @@ export class Money {
   }
 }
 
-export type EstadoCuota = 'PENDIENTE' | 'PARCIAL' | 'PAGADA' | 'VENCIDA';
+/**
+ * Estados posibles de un cobro (antes EstadoCuota).
+ */
+export type EstadoCobro = 'PENDIENTE' | 'PARCIAL' | 'PAGADA' | 'VENCIDA' | 'EN_REVISION' | 'ANULADO';
+
+/** @deprecated Usar EstadoCobro */
+export type EstadoCuota = EstadoCobro;
 
 export type SyncStatus = 'PENDIENTE_SYNC' | 'SYNC_OK' | 'CONFLICTO';
 
@@ -257,7 +268,7 @@ export class Periodo {
   }
 
   /**
-   * Período de la cuota mensual (siempre del día 1 al 1 del mes siguiente).
+   * Período del cobro mensual (siempre del día 1 al 1 del mes siguiente).
    * Un solo registro por mes; los abonos parciales se acumulan en montoPagado.
    */
   static calcularCuotaMensual(desde: Date): Periodo {
@@ -269,11 +280,11 @@ export class Periodo {
    * SEMANAL: cada sábado | QUINCENAL: cerca del 15 y fin de mes | MENSUAL: fin de mes.
    */
   static fechasCobroParciales(
-    frecuencia: Frecuencia,
+    modalidad: ModalidadRecaudo,
     year: number,
     month: number,
   ): string[] {
-    switch (frecuencia) {
+    switch (modalidad) {
       case 'SEMANAL': {
         const fechas: string[] = [];
         const ultimoDia = toLocalDate(year, month + 1, 0).getDate();
@@ -313,12 +324,12 @@ export class Periodo {
 
   /**
    * Calcula el siguiente período de cobro parcial (solo referencia de calendario).
-   * La cuota en BD siempre es mensual.
+   * El cobro en BD siempre es mensual.
    */
-  static calcularSiguiente(frecuencia: Frecuencia, desde: Date): Periodo {
+  static calcularSiguiente(modalidad: ModalidadRecaudo, desde: Date): Periodo {
     const base = normalizeDate(desde);
 
-    switch (frecuencia) {
+    switch (modalidad) {
       case 'SEMANAL':
         return Periodo.calcularSemanal(base);
       case 'QUINCENAL':
@@ -372,17 +383,17 @@ export class Periodo {
   /**
    * Fecha límite: solo el mes actual y el próximo mes son visibles/generables.
    */
-  static limiteGeneracion(_frecuencia?: Frecuencia, hoy = new Date()): Date {
+  static limiteGeneracion(_modalidad?: ModalidadRecaudo, hoy = new Date()): Date {
     const ref = normalizeDate(hoy);
     return toLocalDate(ref.getFullYear(), ref.getMonth() + 1, 1);
   }
 
   /**
-   * Determina si una cuota mensual debe mostrarse (mes actual o próximo).
+   * Determina si un cobro mensual debe mostrarse (mes actual o próximo).
    */
   static esVisible(
     periodoInicio: string,
-    _frecuencia?: Frecuencia,
+    _modalidad?: ModalidadRecaudo,
     hoy = new Date(),
   ): boolean {
     const inicio = parseLocalDate(periodoInicio);
@@ -406,8 +417,8 @@ export class Periodo {
     return `Cuota de Vigilancia`;
   }
 
-  /** @deprecated Usar formatConceptoCuotaMensual para registros de cuota. */
-  static formatConcepto(frecuencia: Frecuencia, periodo: Periodo): string {
+  /** @deprecated Usar formatConceptoCuotaMensual para registros de cobro. */
+  static formatConcepto(_modalidad: ModalidadRecaudo, periodo: Periodo): string {
     return Periodo.formatConceptoCuotaMensual(periodo);
   }
 
@@ -416,19 +427,19 @@ export class Periodo {
    */
   static calcularCuotaProrrateada(
     fechaRegistro: Date,
-    frecuencia: Frecuencia,
+    modalidad: ModalidadRecaudo,
     tarifaMensualCentavos: number,
   ): number {
     const year = fechaRegistro.getFullYear();
     const month = fechaRegistro.getMonth();
-    const fechasMes = Periodo.fechasCobroParciales(frecuencia, year, month);
+    const fechasMes = Periodo.fechasCobroParciales(modalidad, year, month);
     
     // Contar cuántas fechas son mayores o iguales a la fecha de registro
     const registroStr = formatDate(fechaRegistro);
     const fechasRestantes = fechasMes.filter(f => f >= registroStr).length;
 
     // totalPagos será 4, 2 o 1
-    const totalPagos = pagosPorMes(frecuencia);
+    const totalPagos = pagosPorMes(modalidad);
 
     return Math.round((tarifaMensualCentavos / totalPagos) * fechasRestantes);
   }
@@ -438,14 +449,14 @@ export class Periodo {
    */
   static obtenerProximoPago(
     fechaBase: Date,
-    frecuencia: Frecuencia,
+    modalidad: ModalidadRecaudo,
     tarifaMensualCentavos: number
   ): { fecha: string; monto: number } | null {
     const year = fechaBase.getFullYear();
     const month = fechaBase.getMonth();
     
     // Buscar en el mes actual
-    let fechas = Periodo.fechasCobroParciales(frecuencia, year, month);
+    let fechas = Periodo.fechasCobroParciales(modalidad, year, month);
     let baseStr = formatDate(fechaBase);
     let proximas = fechas.filter(f => f >= baseStr);
 
@@ -453,13 +464,13 @@ export class Periodo {
     if (proximas.length === 0) {
       const mesSiguiente = month === 11 ? 0 : month + 1;
       const anoSiguiente = month === 11 ? year + 1 : year;
-      fechas = Periodo.fechasCobroParciales(frecuencia, anoSiguiente, mesSiguiente);
+      fechas = Periodo.fechasCobroParciales(modalidad, anoSiguiente, mesSiguiente);
       proximas = fechas; 
     }
 
     if (proximas.length === 0) return null; // No debería pasar
 
-    const totalPagos = pagosPorMes(frecuencia);
+    const totalPagos = pagosPorMes(modalidad);
     const montoParcial = Math.round(tarifaMensualCentavos / totalPagos);
 
     return {

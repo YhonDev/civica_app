@@ -1,29 +1,29 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Tenencia } from '../../domain/tenencia.entity';
-import { PropietarioRepository } from '../../infrastructure/propietario.repository';
+import { ResidenteRepository } from '../../infrastructure/residente.repository';
 
 @Injectable()
 export class AgregarTenenciaUseCase {
   constructor(
-    private readonly propietarioRepository: PropietarioRepository,
+    private readonly residenteRepository: ResidenteRepository,
   ) {}
 
   async execute(params: {
-    propietarioId: string;
+    residenteId: string;
     casaId: string;
     fechaInicio: Date;
   }): Promise<Tenencia> {
-    const propietario = await this.propietarioRepository.findWithTenencia(
-      params.propietarioId,
+    const residente = await this.residenteRepository.findWithTenencia(
+      params.residenteId,
     );
-    if (!propietario) {
+    if (!residente) {
       throw new NotFoundException(
-        `Propietario con ID ${params.propietarioId} no encontrado`,
+        `Residente con ID ${params.residenteId} no encontrado`,
       );
     }
 
-    const tenencia = propietario.agregarTenencia(params.casaId, params.fechaInicio);
-    await this.propietarioRepository.save(propietario);
+    const tenencia = residente.agregarTenencia(params.casaId, params.fechaInicio);
+    await this.residenteRepository.save(residente);
     return tenencia;
   }
 }

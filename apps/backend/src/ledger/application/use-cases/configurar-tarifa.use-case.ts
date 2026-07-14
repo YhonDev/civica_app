@@ -4,7 +4,7 @@ import { TarifaDerivacionService } from '../services/tarifa-derivacion.service';
 import { Frecuencia } from '../../../shared/common/value-objects';
 
 interface ConfigurarTarifaParams {
-  conjuntoId: string;
+  proyectoId: string;
   tenantId: string;
   frecuencia: Frecuencia;
   montoPesos: number;
@@ -18,7 +18,7 @@ export class ConfigurarTarifaUseCase {
   ) {}
 
   async execute(params: ConfigurarTarifaParams): Promise<Tarifa> {
-    const { conjuntoId, tenantId, frecuencia, montoPesos, fechaVigencia } =
+    const { proyectoId, tenantId, frecuencia, montoPesos, fechaVigencia } =
       params;
 
     if (montoPesos <= 0) {
@@ -33,7 +33,7 @@ export class ConfigurarTarifaUseCase {
     const montoCentavos = Math.round(montoPesos * 100);
 
     const creadas = await this.tarifaDerivacionService.crearVersiones(
-      conjuntoId,
+      proyectoId,
       tenantId,
       frecuencia,
       montoCentavos,

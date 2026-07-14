@@ -54,8 +54,8 @@ export interface CobroSemanaItem {
 
 export interface ViviendaCobroItem {
   id: string;
-  propietarioId: string;
-  propietarioNombre: string;
+  residenteId: string;
+  residenteNombre: string;
   casaDireccion: string;
   etapaNombre: string;
   monto: number;
@@ -68,7 +68,7 @@ export interface ViviendaCobroItem {
 
 export interface CobroHoyItem {
   id: string;
-  propietarioNombre: string;
+  residenteNombre: string;
   monto: number;
   fecha: string;
 }
@@ -110,10 +110,10 @@ export interface DashboardResponse {
   estadoCobros: EstadoCobros;
   actividad: ActividadItem[];
   solicitudesPendientes: number;
-  nuevosPropietariosSemana: number;
-  propietariosMora: number;
+  nuevosResidentesSemana: number;
+  residentesMora: number;
   pagosRevision: number;
-  totalPropietarios: number;
+  totalResidentes: number;
   acumuladoAnual: number;
   metaAnual: number;
   historialMeses: MesHistorico[];

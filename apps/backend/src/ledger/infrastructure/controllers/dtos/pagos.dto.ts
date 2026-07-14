@@ -14,7 +14,7 @@ export class RegistrarPagoDto {
 
   @IsString()
   @IsNotEmpty()
-  propietarioId: string;
+  residenteId: string;
 
   @IsOptional()
   @IsString()

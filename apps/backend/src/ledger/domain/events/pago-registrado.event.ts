@@ -8,7 +8,7 @@ export class PagoRegistradoEvent {
   constructor(
     public readonly pagoId: string,
     public readonly clientPaymentId: string,
-    public readonly propietarioId: string,
+    public readonly residenteId: string,
     public readonly monto: number, // centavos COP
     public readonly cuotasAfectadas: string[], // cuota IDs
     public readonly fechaRegistro: Date,

@@ -1,9 +1,9 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { Pago } from '../../domain/pago.entity';
-import { Cuota } from '../../domain/cuota.entity';
+import { Cobro } from '../../domain/cobro.entity';
 import { PagoRepository } from '../../infrastructure/persistence/pago.repository';
-import { CuotaRepository } from '../../infrastructure/persistence/cuota.repository';
-import { CuentaCarteraRepository } from '../../infrastructure/persistence/cuenta-cartera.repository';
+import { CobroRepository } from '../../infrastructure/persistence/cobro.repository';
+import { PlanDeCobroRepository } from '../../infrastructure/persistence/plan-de-cobro.repository';
 import { Money } from '../../../shared/common/value-objects';
 import { PagoRegistradoEvent } from '../../domain/events/pago-registrado.event';
 
@@ -16,18 +16,18 @@ export interface RegistrarPagoInput {
   monto: number; // centavos COP
   fechaPago: string; // ISO date
   cobradorId: string;
-  propietarioId: string;
+  residenteId: string;
   solicitudId?: string; // Optional request ID to close when paying
 }
 
 export interface RegistrarPagoResult {
   pago: Pago;
-  cuotasAfectadas: Cuota[];
+  cobrosAfectados: Cobro[];
   event: PagoRegistradoEvent;
 }
 
 /**
- * Registers a payment and distributes it across pending cuotas using FIFO.
+ * Registers a payment and distributes it across pending cobros using FIFO.
  */
 @Injectable()
 export class RegistrarPagoUseCase {
@@ -35,8 +35,8 @@ export class RegistrarPagoUseCase {
 
   constructor(
     private readonly pagoRepo: PagoRepository,
-    private readonly cuotaRepo: CuotaRepository,
-    private readonly cuentaCarteraRepo: CuentaCarteraRepository,
+    private readonly cobroRepo: CobroRepository,
+    private readonly planDeCobroRepo: PlanDeCobroRepository,
     private readonly solicitudRepo: SolicitudRepository,
   ) {}
 
@@ -52,90 +52,85 @@ export class RegistrarPagoUseCase {
         `Pago idempotente detectado: ${input.clientPaymentId} ya existe (${existingPago.id}). Retornando pago existente.`,
       );
 
-      const cuotasAfectadas = existingPago.cuotaId
-        ? await this.cuotaRepo.findByPropietario(input.propietarioId)
+      const cobrosAfectados = existingPago.cobroId
+        ? await this.cobroRepo.findByResidente(input.residenteId)
         : [];
 
       // Build event from existing pago
       const event = new PagoRegistradoEvent(
         existingPago.id,
         existingPago.clientPaymentId,
-        existingPago.propietarioId,
+        existingPago.residenteId,
         existingPago.monto,
-        existingPago.cuotaId ? [existingPago.cuotaId] : [],
+        existingPago.cobroId ? [existingPago.cobroId] : [],
         existingPago.createdAt,
       );
 
-      return { pago: existingPago, cuotasAfectadas, event };
+      return { pago: existingPago, cobrosAfectados, event };
     }
 
-    // 2. Validate: propietario must have an active account
-    const cuenta = await this.cuentaCarteraRepo.findByPropietario(
-      input.propietarioId,
+    // 2. Validate: residente must have an active plan
+    const plan = await this.planDeCobroRepo.findByResidente(
+      input.residenteId,
     );
 
-    if (!cuenta) {
+    if (!plan) {
       throw new BadRequestException(
-        `El propietario ${input.propietarioId} no tiene una CuentaDeCartera activa.`,
+        `El residente ${input.residenteId} no tiene un PlanDeCobro activo.`,
       );
     }
 
-    if (!cuenta.activa) {
+    if (!plan.activa) {
       throw new BadRequestException(
-        `La CuentaDeCartera del propietario ${input.propietarioId} está desactivada.`,
+        `El PlanDeCobro del residente ${input.residenteId} está desactivado.`,
       );
     }
 
     // 3. FIFO Distribution Loop
     let remaining = input.monto;
-    const cuotasAfectadas: Cuota[] = [];
+    const cobrosAfectados: Cobro[] = [];
 
     while (remaining > 0) {
-      const cuota = await this.cuotaRepo.findMasAntiguaConSaldo(
-        input.propietarioId,
+      const cobro = await this.cobroRepo.findMasAntiguoConSaldo(
+        input.residenteId,
       );
 
-      if (!cuota) {
-        // No more cuotas with saldo — excess is lost (MVP decision)
+      if (!cobro) {
         if (remaining > 0) {
           this.logger.warn(
-            `Pago ${input.clientPaymentId}: excedente de ${remaining} centavos no aplicado — sin cuotas pendientes.`,
+            `Pago ${input.clientPaymentId}: excedente de ${remaining} centavos no aplicado — sin cobros pendientes.`,
           );
         }
         break;
       }
 
-      const excess = cuota.aplicarPago(Money.ofCOP(remaining));
-
-      // Persist immediately so findMasAntiguaConSaldo sees the updated state
-      // on the next loop iteration (FIFO correctness).
-      await this.cuotaRepo.save(cuota);
-
-      cuotasAfectadas.push(cuota);
+      const excess = cobro.aplicarPago(Money.ofCOP(remaining));
+      await this.cobroRepo.save(cobro);
+      cobrosAfectados.push(cobro);
       remaining = excess.amount;
     }
 
-    if (cuotasAfectadas.length === 0) {
+    if (cobrosAfectados.length === 0) {
       throw new BadRequestException(
-        `No hay cuotas pendientes para el propietario ${input.propietarioId}. Todos los saldos están pagados.`,
+        `No hay cobros pendientes para el residente ${input.residenteId}. Todos los saldos están pagados.`,
       );
     }
 
-    // 4. Create Pago record (linked to first affected cuota)
-    const firstCuotaId = cuotasAfectadas[0]?.id;
+    // 4. Create Pago record (linked to first affected cobro)
+    const firstCobroId = cobrosAfectados[0]?.id;
     const pago = Pago.crear(
       input.clientPaymentId,
       input.tenantId,
       Money.ofCOP(input.monto),
       input.fechaPago,
       input.cobradorId,
-      input.propietarioId,
-      firstCuotaId,
+      input.residenteId,
+      firstCobroId,
     );
 
-    // 5. Persist — save pago + all affected cuotas in one transaction
+    // 5. Persist
     await this.pagoRepo.save(pago);
-    await this.cuotaRepo.saveMany(cuotasAfectadas);
+    await this.cobroRepo.saveMany(cobrosAfectados);
 
     if (input.solicitudId) {
       const solicitud = await this.solicitudRepo.findById(input.solicitudId);
@@ -148,20 +143,20 @@ export class RegistrarPagoUseCase {
       }
     }
 
-    // 6. Build event (not emitted yet — future enhancement)
+    // 6. Build event
     const event = new PagoRegistradoEvent(
       pago.id,
       pago.clientPaymentId,
-      pago.propietarioId,
+      pago.residenteId,
       pago.monto,
-      cuotasAfectadas.map((c) => c.id),
+      cobrosAfectados.map((c) => c.id),
       new Date(),
     );
 
     this.logger.log(
-      `Pago registrado: ${pago.id} | ${input.monto} centavos → ${cuotasAfectadas.length} cuota(s) afectada(s)`,
+      `Pago registrado: ${pago.id} | ${input.monto} centavos → ${cobrosAfectados.length} cobro(s) afectado(s)`,
     );
 
-    return { pago, cuotasAfectadas, event };
+    return { pago, cobrosAfectados, event };
   }
 }

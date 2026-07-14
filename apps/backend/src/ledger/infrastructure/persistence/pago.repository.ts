@@ -24,22 +24,22 @@ export class PagoRepository extends BaseTenantRepository<Pago> {
     return this.repo.findOne({ where: { tenantId, clientPaymentId } });
   }
 
-  async findByPropietario(propietarioId: string): Promise<Pago[]> {
+  async findByPropietario(residenteId: string): Promise<Pago[]> {
     return this.repo.find({
-      where: { propietarioId },
+      where: { residenteId },
       order: { createdAt: 'DESC' },
     });
   }
 
-  async findByCuota(cuotaId: string): Promise<Pago[]> {
+  async findByCobro(cobroId: string): Promise<Pago[]> {
     return this.repo.find({
-      where: { cuotaId },
+      where: { cobroId },
       order: { createdAt: 'DESC' },
     });
   }
 
-  async countByCuota(cuotaId: string): Promise<number> {
-    return this.repo.count({ where: { cuotaId } });
+  async countByCobro(cobroId: string): Promise<number> {
+    return this.repo.count({ where: { cobroId } });
   }
 
   async saveMany(pagos: Pago[]): Promise<Pago[]> {
@@ -71,7 +71,7 @@ export class PagoRepository extends BaseTenantRepository<Pago> {
     return Number(result?.total ?? 0);
   }
 
-  async countDistinctPropietariosByMonth(
+  async countDistinctResidentesByMonth(
     tenantId: string,
     year: number,
     month: number,
@@ -80,7 +80,7 @@ export class PagoRepository extends BaseTenantRepository<Pago> {
     this.applyTenantFilter(qb, tenantId, 'pago');
     
     const result = await qb
-      .select('COUNT(DISTINCT pago.propietarioId)', 'count')
+      .select('COUNT(DISTINCT pago.residenteId)', 'count')
       .andWhere(
         'pago.fecha_pago >= :start AND pago.fecha_pago < :end',
         {

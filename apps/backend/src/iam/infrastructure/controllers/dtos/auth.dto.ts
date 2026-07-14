@@ -22,7 +22,7 @@ export class RegisterDto {
   @MinLength(2, { message: 'El nombre debe tener al menos 2 caracteres' })
   nombre: string;
 
-  @IsEnum(RolUsuario, { message: 'El rol debe ser ADMIN, COBRADOR o PROPIETARIO' })
+  @IsEnum(RolUsuario, { message: 'El rol debe ser ADMIN, COBRADOR o RESIDENTE' })
   rol: RolUsuario;
 
   @IsString()
@@ -31,7 +31,7 @@ export class RegisterDto {
 
   @IsString()
   @IsOptional()
-  propietarioId?: string;
+  residenteId?: string;
 }
 
 export class LoginDto {

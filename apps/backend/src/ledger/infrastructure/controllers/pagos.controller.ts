@@ -53,7 +53,7 @@ export class PagosController {
       clientPaymentId: dto.clientPaymentId,
       monto: dto.monto,
       fechaPago: dto.fechaPago,
-      propietarioId: dto.propietarioId,
+      residenteId: dto.residenteId,
       cobradorId: user.id,
       tenantId,
       solicitudId: dto.solicitudId,
@@ -74,8 +74,8 @@ export class PagosController {
   @Get()
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN)
-  async listByPropietario(@Query('propietarioId') propietarioId: string) {
-    return this.pagoRepo.findByPropietario(propietarioId);
+  async listByResidente(@Query('residenteId') residenteId: string) {
+    return this.pagoRepo.findByPropietario(residenteId);
   }
 
   @Delete(':id')

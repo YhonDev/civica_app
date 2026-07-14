@@ -23,7 +23,7 @@ describe('Beta1 Cuotas Role Gating', () => {
 
   // Shared IDs
   let tenantId: string;
-  let conjuntoId: string;
+  let proyectoId: string;
   let etapaId: string;
   let manzanaId: string;
   let casaAId: string;
@@ -58,7 +58,7 @@ describe('Beta1 Cuotas Role Gating', () => {
 
     // Generate IDs
     tenantId = randomUUID();
-    conjuntoId = randomUUID();
+    proyectoId = randomUUID();
     etapaId = randomUUID();
     manzanaId = randomUUID();
     casaAId = randomUUID();
@@ -74,11 +74,11 @@ describe('Beta1 Cuotas Role Gating', () => {
     // Seed community
     await dataSource.query(
       `INSERT INTO conjuntos (id, nombre, tenant_id) VALUES ($1, $2, $3)`,
-      [conjuntoId, 'Conjunto Role Test', tenantId],
+      [proyectoId, 'Conjunto Role Test', tenantId],
     );
     await dataSource.query(
-      `INSERT INTO etapas (id, nombre, conjunto_id) VALUES ($1, $2, $3)`,
-      [etapaId, 'Etapa Role Test', conjuntoId],
+      `INSERT INTO etapas (id, nombre, proyecto_id) VALUES ($1, $2, $3)`,
+      [etapaId, 'Etapa Role Test', proyectoId],
     );
     await dataSource.query(
       `INSERT INTO manzanas (id, nombre, etapa_id) VALUES ($1, $2, $3)`,
@@ -105,11 +105,11 @@ describe('Beta1 Cuotas Role Gating', () => {
 
     // Tenencias
     await dataSource.query(
-      `INSERT INTO tenencias (id, propietario_id, casa_id, fecha_inicio) VALUES ($1, $2, $3, $4)`,
+      `INSERT INTO tenencias (id, residente_id, casa_id, fecha_inicio) VALUES ($1, $2, $3, $4)`,
       [randomUUID(), propietarioAId, casaAId, '2026-01-01'],
     );
     await dataSource.query(
-      `INSERT INTO tenencias (id, propietario_id, casa_id, fecha_inicio) VALUES ($1, $2, $3, $4)`,
+      `INSERT INTO tenencias (id, residente_id, casa_id, fecha_inicio) VALUES ($1, $2, $3, $4)`,
       [randomUUID(), propietarioBId, casaBId, '2026-01-01'],
     );
 
@@ -120,22 +120,22 @@ describe('Beta1 Cuotas Role Gating', () => {
     const propBHash = bcryptHashSync('propB123', 10);
 
     await dataSource.query(
-      `INSERT INTO usuarios (id, email, password_hash, nombre, rol, propietario_id, tenant_id, activo)
+      `INSERT INTO usuarios (id, email, password_hash, nombre, rol, residente_id, tenant_id, activo)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
       [adminUserId, 'admin-role@test.com', adminHash, 'Admin Role', 'ADMIN', null, tenantId, true],
     );
     await dataSource.query(
-      `INSERT INTO usuarios (id, email, password_hash, nombre, rol, propietario_id, tenant_id, activo)
+      `INSERT INTO usuarios (id, email, password_hash, nombre, rol, residente_id, tenant_id, activo)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
       [cobradorUserId, 'cobrador-role@test.com', cobradorHash, 'Cobrador Role', 'COBRADOR', null, tenantId, true],
     );
     await dataSource.query(
-      `INSERT INTO usuarios (id, email, password_hash, nombre, rol, propietario_id, tenant_id, activo)
+      `INSERT INTO usuarios (id, email, password_hash, nombre, rol, residente_id, tenant_id, activo)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
       [propietarioAUserId, 'propA-role@test.com', propAHash, 'Prop A Role', 'PROPIETARIO', propietarioAId, tenantId, true],
     );
     await dataSource.query(
-      `INSERT INTO usuarios (id, email, password_hash, nombre, rol, propietario_id, tenant_id, activo)
+      `INSERT INTO usuarios (id, email, password_hash, nombre, rol, residente_id, tenant_id, activo)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
       [propietarioBUserId, 'propB-role@test.com', propBHash, 'Prop B Role', 'PROPIETARIO', propietarioBId, tenantId, true],
     );
@@ -148,16 +148,16 @@ describe('Beta1 Cuotas Role Gating', () => {
 
     // Tarifa + cuenta cartera
     await dataSource.query(
-      `INSERT INTO tarifas (id, tenant_id, conjunto_id, frecuencia, monto, fecha_vigencia) VALUES ($1, $2, $3, $4, $5, $6)`,
-      [tarifaId, tenantId, conjuntoId, 'MENSUAL', 4000000, '2026-01-01'],
+      `INSERT INTO tarifas (id, tenant_id, proyecto_id, frecuencia, monto, fecha_vigencia) VALUES ($1, $2, $3, $4, $5, $6)`,
+      [tarifaId, tenantId, proyectoId, 'MENSUAL', 4000000, '2026-01-01'],
     );
     await dataSource.query(
-      `INSERT INTO cuentas_cartera (id, propietario_id, tenant_id, conjunto_id, frecuencia, fecha_activacion) VALUES ($1, $2, $3, $4, $5, $6)`,
-      [randomUUID(), propietarioAId, tenantId, conjuntoId, 'MENSUAL', '2026-01-01'],
+      `INSERT INTO cuentas_cartera (id, residente_id, tenant_id, proyecto_id, frecuencia, fecha_activacion) VALUES ($1, $2, $3, $4, $5, $6)`,
+      [randomUUID(), propietarioAId, tenantId, proyectoId, 'MENSUAL', '2026-01-01'],
     );
     await dataSource.query(
-      `INSERT INTO cuentas_cartera (id, propietario_id, tenant_id, conjunto_id, frecuencia, fecha_activacion) VALUES ($1, $2, $3, $4, $5, $6)`,
-      [randomUUID(), propietarioBId, tenantId, conjuntoId, 'MENSUAL', '2026-01-01'],
+      `INSERT INTO cuentas_cartera (id, residente_id, tenant_id, proyecto_id, frecuencia, fecha_activacion) VALUES ($1, $2, $3, $4, $5, $6)`,
+      [randomUUID(), propietarioBId, tenantId, proyectoId, 'MENSUAL', '2026-01-01'],
     );
 
     // Cuotas for both propietarios
@@ -167,12 +167,12 @@ describe('Beta1 Cuotas Role Gating', () => {
     const nextMonthStr = `${nextMonthDate.getFullYear()}-${String(nextMonthDate.getMonth() + 1).padStart(2, '0')}-15`;
 
     await dataSource.query(
-      `INSERT INTO cuotas (id, propietario_id, tenant_id, tarifa_id, concepto, monto, monto_pagado, periodo_inicio, periodo_fin, fecha_vencimiento, estado)
+      `INSERT INTO cuotas (id, residente_id, tenant_id, tarifa_id, concepto, monto, monto_pagado, periodo_inicio, periodo_fin, fecha_vencimiento, estado)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
       [randomUUID(), propietarioAId, tenantId, tarifaId, 'Cuota Test A', 4000000, 0, thisMonthStart, nextMonthStr, nextMonthStr, 'PENDIENTE'],
     );
     await dataSource.query(
-      `INSERT INTO cuotas (id, propietario_id, tenant_id, tarifa_id, concepto, monto, monto_pagado, periodo_inicio, periodo_fin, fecha_vencimiento, estado)
+      `INSERT INTO cuotas (id, residente_id, tenant_id, tarifa_id, concepto, monto, monto_pagado, periodo_inicio, periodo_fin, fecha_vencimiento, estado)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
       [randomUUID(), propietarioBId, tenantId, tarifaId, 'Cuota Test B', 4000000, 0, thisMonthStart, nextMonthStr, nextMonthStr, 'PENDIENTE'],
     );
@@ -210,12 +210,12 @@ describe('Beta1 Cuotas Role Gating', () => {
     await dataSource.query(`DELETE FROM tarifas WHERE tenant_id = $1`, [tenantId]);
     await dataSource.query(`DELETE FROM asignaciones_etapa WHERE tenant_id = $1`, [tenantId]);
     await dataSource.query(`DELETE FROM usuarios WHERE tenant_id = $1`, [tenantId]);
-    await dataSource.query(`DELETE FROM tenencias WHERE propietario_id IN ($1, $2)`, [propietarioAId, propietarioBId]);
+    await dataSource.query(`DELETE FROM tenencias WHERE residente_id IN ($1, $2)`, [propietarioAId, propietarioBId]);
     await dataSource.query(`DELETE FROM propietarios WHERE tenant_id = $1`, [tenantId]);
     await dataSource.query(`DELETE FROM casas WHERE id IN ($1, $2)`, [casaAId, casaBId]);
     await dataSource.query(`DELETE FROM manzanas WHERE id = $1`, [manzanaId]);
     await dataSource.query(`DELETE FROM etapas WHERE id = $1`, [etapaId]);
-    await dataSource.query(`DELETE FROM conjuntos WHERE id = $1`, [conjuntoId]);
+    await dataSource.query(`DELETE FROM conjuntos WHERE id = $1`, [proyectoId]);
     await app.close();
   });
 

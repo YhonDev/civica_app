@@ -12,6 +12,8 @@ import { AsignacionEtapa } from './asignacion-etapa.entity';
 export enum RolUsuario {
   ADMIN = 'ADMIN',
   COBRADOR = 'COBRADOR',
+  RESIDENTE = 'RESIDENTE',
+  /** @deprecated Use RESIDENTE — kept for DB migration compat. */
   PROPIETARIO = 'PROPIETARIO',
 }
 
@@ -33,8 +35,8 @@ export class Usuario {
   @Column({ name: 'rol', type: 'varchar', length: 20, default: RolUsuario.COBRADOR })
   rol: RolUsuario;
 
-  @Column({ name: 'propietario_id', type: 'uuid', nullable: true })
-  propietarioId: string | null;
+  @Column({ name: 'residente_id', type: 'uuid', nullable: true })
+  residenteId: string | null;
 
   @Column({ name: 'tenant_id', type: 'uuid' })
   tenantId: string;
@@ -57,7 +59,7 @@ export class Usuario {
     nombre: string,
     rol: RolUsuario,
     tenantId: string,
-    propietarioId?: string,
+    residenteId?: string,
   ): Usuario {
     const usuario = new Usuario();
     usuario.email = email;
@@ -65,7 +67,7 @@ export class Usuario {
     usuario.nombre = nombre;
     usuario.rol = rol;
     usuario.tenantId = tenantId;
-    usuario.propietarioId = propietarioId ?? null;
+    usuario.residenteId = residenteId ?? null;
     usuario.activo = true;
     usuario.asignaciones = [];
     return usuario;

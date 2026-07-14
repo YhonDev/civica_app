@@ -7,13 +7,13 @@ import {
   DefaultValuePipe,
 } from '@nestjs/common';
 import { DashboardQuery } from '../../application/queries/dashboard.query';
-import { CuotaRepository } from '../persistence/cuota.repository';
+import { CobroRepository } from '../persistence/cobro.repository';
 import { PagoRepository } from '../persistence/pago.repository';
-import { CuentaCarteraRepository } from '../persistence/cuenta-cartera.repository';
+import { PlanDeCobroRepository } from '../persistence/plan-de-cobro.repository';
 import { SolicitudRepository } from '../persistence/solicitud.repository';
 import { TarifaRepository } from '../persistence/tarifa.repository';
 import type { TimelineItemDto, TimelineResponse } from '../../application/dtos/dashboard.dto';
-import { PropietarioRepository } from '../../../community/infrastructure/propietario.repository';
+import { ResidenteRepository } from '../../../community/infrastructure/residente.repository';
 import { Periodo, type Frecuencia, pagosPorMes, calcularMontoParcial } from '../../../shared/common/value-objects';
 import { JwtAuthGuard } from '../../../shared/auth/jwt-auth.guard';
 import { RolesGuard } from '../../../shared/auth/guards/roles.guard';
@@ -28,12 +28,12 @@ import { DataSource } from 'typeorm';
 export class DashboardController {
   constructor(
     private readonly dashboardQuery: DashboardQuery,
-    private readonly cuotaRepository: CuotaRepository,
+    private readonly cobroRepository: CobroRepository,
     private readonly pagoRepository: PagoRepository,
-    private readonly cuentaCarteraRepository: CuentaCarteraRepository,
+    private readonly planDeCobroRepository: PlanDeCobroRepository,
     private readonly solicitudRepository: SolicitudRepository,
     private readonly tarifaRepository: TarifaRepository,
-    private readonly propietarioRepository: PropietarioRepository,
+    private readonly residenteRepository: ResidenteRepository,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -64,25 +64,25 @@ export class DashboardController {
     );
     const etapaIds: string[] = asignaciones.map((a: any) => a.etapa_id);
 
-    // 2. Cuotas pendientes en esas etapas (ahora con relaciones cargadas: cuota→prop→tenencia→casa→manzana→etapa)
-    const cuotas = etapaIds.length > 0
-      ? await this.cuotaRepository.findPendientesConPropietarioByEtapas(tenantId, etapaIds)
+    // 2. Cobros pendientes en esas etapas
+    const cobros = etapaIds.length > 0
+      ? await this.cobroRepository.findPendientesByTenant(tenantId)
       : [];
 
     // 3. Pagos del cobrador hoy
     const { pagos: pagosHoy, total: totalHoy, count: countHoy } =
       await this.pagoRepository.findByCobradorToday(user.id);
 
-    // 4. Armar respuesta centrada en Viviendas (casas), no en Propietarios
+    // 4. Armar respuesta centrada en Viviendas (casas), no en Residentes
     //    Una casa puede tener múltiples cuotas pendientes; las agrupamos bajo la misma casa.
     type AgrupacionVivienda = {
       casaId: string;
       casaDireccion: string;
       manzanaNombre: string;
       etapaNombre: string;
-      propietarioId: string;
-      propietarioNombre: string;
-      propietarioTelefono: string;
+      residenteId: string;
+      residenteNombre: string;
+      residenteTelefono: string;
       saldo: number;
       peorEstado: string;
       cuotas: Array<{ id: string; monto: number; estado: string; periodo: string }>;
@@ -90,10 +90,10 @@ export class DashboardController {
 
     const viviendasMap = new Map<string, AgrupacionVivienda>();
 
-    for (const c of cuotas) {
-      const prop = c.propietario;
+    for (const c of cobros) {
+      const res = c.residente;
       // Filtrar solo tenencias activas (sin fecha_fin)
-      const tenencia = prop?.tenencias?.find((t) => t.fechaFin === null);
+      const tenencia = res?.tenencias?.find((t) => t.fechaFin === null);
       if (!tenencia) continue; // sin ocupante actual, ignoramos
 
       const casa = tenencia.casa;
@@ -123,9 +123,9 @@ export class DashboardController {
           casaDireccion: casa.direccionInterna,
           manzanaNombre: manzana?.nombre ?? '',
           etapaNombre: etapa?.nombre ?? '',
-          propietarioId: prop?.id ?? '',
-          propietarioNombre: prop?.nombre ?? 'Desconocido',
-          propietarioTelefono: prop?.telefono ?? '',
+          residenteId: res?.id ?? '',
+          residenteNombre: res?.nombre ?? 'Desconocido',
+          residenteTelefono: res?.telefono ?? '',
           saldo: montoSaldo,
           peorEstado: c.estado,
           cuotas: [{
@@ -200,7 +200,7 @@ export class DashboardController {
       return { etapas: [] };
     }
 
-    // 2. Obtener la jerarquía completa: etapas → manzanas → casas con sus propietarios
+    // 2. Obtener la jerarquía completa: etapas → manzanas → casas con sus residentes
     const rows: any[] = await this.dataSource.query(
       `SELECT
         e.id AS etapa_id, e.nombre AS etapa_nombre,
@@ -212,7 +212,7 @@ export class DashboardController {
       JOIN manzanas m ON m.etapa_id = e.id
       JOIN casas c ON c.manzana_id = m.id
       LEFT JOIN tenencias t ON t.casa_id = c.id AND t.fecha_fin IS NULL
-      LEFT JOIN propietarios p ON p.id = t.propietario_id
+      LEFT JOIN propietarios p ON p.id = t.residente_id
       WHERE e.id = ANY($1::uuid[])
       ORDER BY e.nombre, m.nombre, c.direccion_interna`,
       [etapaIds],
@@ -221,11 +221,11 @@ export class DashboardController {
     // 3. Obtener cuotas pendientes/vencidas para todas las casas en estas etapas
     const cuotasRaw: any[] = await this.dataSource.query(
       `SELECT
-        cu.id, cu.propietario_id, cu.monto, cu.monto_pagado,
+        cu.id, cu.residente_id, cu.monto, cu.monto_pagado,
         cu.estado, cu.periodo_inicio
       FROM cuotas cu
-      JOIN propietarios p ON p.id = cu.propietario_id
-      JOIN tenencias t ON t.propietario_id = p.id AND t.fecha_fin IS NULL
+      JOIN propietarios p ON p.id = cu.residente_id
+      JOIN tenencias t ON t.residente_id = p.id AND t.fecha_fin IS NULL
       WHERE cu.tenant_id = $1
         AND cu.estado IN ('PENDIENTE', 'PARCIAL', 'VENCIDA')
         AND t.casa_id = ANY(
@@ -236,17 +236,17 @@ export class DashboardController {
       [tenantId, etapaIds],
     );
 
-    // Indexar cuotas por propietarioId para acceso rápido
-    const cuotasPorProp = new Map<string, typeof cuotasRaw>();
+    // Indexar cuotas por residenteId para acceso rápido
+    const cuotasPorRes = new Map<string, typeof cuotasRaw>();
     for (const cu of cuotasRaw) {
-      const pid = cu.propietario_id;
-      if (!cuotasPorProp.has(pid)) cuotasPorProp.set(pid, []);
-      cuotasPorProp.get(pid)!.push(cu);
+      const pid = cu.residente_id;
+      if (!cuotasPorRes.has(pid)) cuotasPorRes.set(pid, []);
+      cuotasPorRes.get(pid)!.push(cu);
     }
 
     // 4. Calcular status de cada casa basado en cuotas
     const statusPorCasa = new Map<string, { estado: string; saldo: number }>();
-    for (const [propId, cuotas] of cuotasPorProp) {
+    for (const [resId, cuotas] of cuotasPorRes) {
       let saldoTotal = 0;
       let peorEstado = 'PENDIENTE';
       for (const cu of cuotas) {
@@ -255,8 +255,8 @@ export class DashboardController {
         if (cu.estado === 'VENCIDA') peorEstado = 'VENCIDA';
         else if (cu.estado === 'PARCIAL' && peorEstado !== 'VENCIDA') peorEstado = 'PARCIAL';
       }
-      // Asociar el status al propietario (luego al propietario de cada casa)
-      statusPorCasa.set(propId, { estado: peorEstado, saldo: saldoTotal });
+      // Asociar el status al residente (luego al residente de cada casa)
+      statusPorCasa.set(resId, { estado: peorEstado, saldo: saldoTotal });
     }
 
     // 5. Armar árbol jerárquico: etapas → manzanas → casas
@@ -281,16 +281,16 @@ export class DashboardController {
       }
       const manzana = etapa.manzanas.get(r.manzana_id);
 
-      // Buscar status para esta casa (a través del propietario)
-      const propStatus = r.prop_id ? statusPorCasa.get(r.prop_id) : null;
+      // Buscar status para esta casa (a través del residente)
+      const resStatus = r.prop_id ? statusPorCasa.get(r.prop_id) : null;
 
       manzana.casas.push({
         id: r.casa_id,
         direccion: r.casa_direccion,
-        propietarioNombre: r.prop_nombre ?? 'Sin propietario',
-        propietarioTelefono: r.prop_telefono ?? '',
-        estado: propStatus?.estado ?? 'AL_DIA',
-        saldo: propStatus?.saldo ?? 0,
+        residenteNombre: r.prop_nombre ?? 'Sin residente',
+        residenteTelefono: r.prop_telefono ?? '',
+        estado: resStatus?.estado ?? 'AL_DIA',
+        saldo: resStatus?.saldo ?? 0,
       });
     }
 
@@ -306,67 +306,67 @@ export class DashboardController {
 
   @Get('dashboard/propietario')
   @UseGuards(RolesGuard)
-  @Roles(RolUsuario.PROPIETARIO)
-  async getDashboardPropietario(
+  @Roles(RolUsuario.RESIDENTE)
+  async getDashboardResidente(
     @CurrentUser() user: Usuario,
     @CurrentTenant() tenantId: string,
   ) {
-    if (!user.propietarioId) {
+    if (!user.residenteId) {
       return {
         saldo: 0,
         status: 'AL_DIA',
         proximoCobro: null,
         ultimoPago: null,
         movimientos: [],
-        propietarioInfo: { nombre: '', casaDireccion: '', etapaNombre: '' },
+        residenteInfo: { nombre: '', casaDireccion: '', etapaNombre: '' },
       };
     }
 
-    const [cuotasRaw, pagos, cuenta, propietario] = await Promise.all([
-      this.cuotaRepository.findByPropietario(user.propietarioId),
-      this.pagoRepository.findByPropietario(user.propietarioId),
-      this.cuentaCarteraRepository.findByPropietario(user.propietarioId),
-      this.propietarioRepository.findByIdWithRelations(user.propietarioId),
+    const [cobrosRaw, pagos, cuenta, residente] = await Promise.all([
+      this.cobroRepository.findByResidente(user.residenteId),
+      this.pagoRepository.findByPropietario(user.residenteId),
+      this.planDeCobroRepository.findByResidente(user.residenteId),
+      this.residenteRepository.findByIdWithRelations(user.residenteId),
     ]);
 
-    // Build propietarioInfo from relations
-    const tenencia = propietario?.tenencias?.[0];
+    // Build residenteInfo from relations
+    const tenencia = residente?.tenencias?.[0];
     const casa = tenencia?.casa;
     const manzana = casa?.manzana;
     const etapa = manzana?.etapa;
 
-    const propietarioInfo = {
-      nombre: propietario?.nombre ?? '',
+    const residenteInfo = {
+      nombre: residente?.nombre ?? '',
       casaDireccion: casa
         ? `${casa.direccionInterna}${manzana ? `, Mz. ${manzana.nombre}` : ''}`
         : '',
       etapaNombre: etapa?.nombre ?? '',
     };
 
-    const frecuencia: Frecuencia = cuenta?.frecuencia ?? 'MENSUAL';
+    const frecuencia: Frecuencia = (cuenta?.modalidad as Frecuencia) ?? 'MENSUAL';
     const hoy = new Date();
 
     let tarifaMensual: any = null;
     let tarifaPropia: any = null;
     if (cuenta) {
       const vigentes = await this.tarifaRepository.findVigentesPorConjunto(
-        cuenta.conjuntoId,
+        cuenta.proyectoId,
         hoy,
       );
       tarifaMensual = vigentes.MENSUAL;
       tarifaPropia = vigentes[frecuencia];
     }
 
-    const cuotas = cuotasRaw.filter((c) =>
+    const cobros = cobrosRaw.filter((c) =>
       Periodo.esVisible(c.periodoInicio, frecuencia, hoy),
     );
 
     let saldo = 0;
     let hasVencida = false;
-    for (const cuota of cuotas) {
-      if (cuota.monto > cuota.montoPagado) {
-        saldo += (cuota.monto - cuota.montoPagado);
-        if (cuota.estado === 'VENCIDA') {
+    for (const cobro of cobros) {
+      if (cobro.monto > cobro.montoPagado) {
+        saldo += (cobro.monto - cobro.montoPagado);
+        if (cobro.estado === 'VENCIDA') {
           hasVencida = true;
         }
       }
@@ -401,14 +401,14 @@ export class DashboardController {
       }[];
     } | null = null;
 
-    const pendingCuotas = cuotas.filter((c) => c.monto > c.montoPagado);
-    if (pendingCuotas.length > 0) {
-      pendingCuotas.sort((a, b) =>
+    const pendingCobros = cobros.filter((c) => c.monto > c.montoPagado);
+    if (pendingCobros.length > 0) {
+      pendingCobros.sort((a, b) =>
         a.fechaVencimiento.localeCompare(b.fechaVencimiento),
       );
-      const next = pendingCuotas[0];
+      const next = pendingCobros[0];
       const pagosEsperados = pagosPorMes(frecuencia);
-      const pagosRegistrados = await this.pagoRepository.countByCuota(next.id);
+      const pagosRegistrados = await this.pagoRepository.countByCobro(next.id);
       const montoParcial = calcularMontoParcial(next.monto, frecuencia).amount;
 
       const desglose: any[] = [];
@@ -423,15 +423,15 @@ export class DashboardController {
 
       while (desglose.length < pagosEsperados) {
         const periodStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`;
-        const quotaForMonth = cuotas.find(c => c.periodoInicio === periodStr);
+        const cobroForMonth = cobros.find(c => c.periodoInicio === periodStr);
 
-        const quotaId = quotaForMonth ? quotaForMonth.id : null;
-        const quotaMonto = quotaForMonth ? quotaForMonth.monto : (tarifaMensual ? tarifaMensual.monto : 0);
-        const quotaMontoParcial = calcularMontoParcial(quotaMonto, frecuencia).amount;
+        const cobroId = cobroForMonth ? cobroForMonth.id : null;
+        const cobroMonto = cobroForMonth ? cobroForMonth.monto : (tarifaMensual ? tarifaMensual.monto : 0);
+        const cobroMontoParcial = calcularMontoParcial(cobroMonto, frecuencia).amount;
 
         let pRegistrados = 0;
-        if (quotaForMonth) {
-          pRegistrados = await this.pagoRepository.countByCuota(quotaForMonth.id);
+        if (cobroForMonth) {
+          pRegistrados = await this.pagoRepository.countByCobro(cobroForMonth.id);
         }
 
         const fechas = Periodo.fechasCobroParciales(frecuencia, currentYear, currentMonth);
@@ -441,10 +441,10 @@ export class DashboardController {
         for (let i = 0; i < remainingFechas.length; i++) {
           if (desglose.length >= pagosEsperados) break;
           desglose.push({
-            id: quotaId ? `${quotaId}-${pRegistrados + i + 1}` : `future-${periodStr}-${pRegistrados + i + 1}`,
-            cuotaId: quotaId,
+            id: cobroId ? `${cobroId}-${pRegistrados + i + 1}` : `future-${periodStr}-${pRegistrados + i + 1}`,
+            cobroId: cobroId,
             fecha: remainingFechas[i],
-            monto: Math.round(quotaMontoParcial / 100),
+            monto: Math.round(cobroMontoParcial / 100),
             numeroPago: pRegistrados + i + 1,
             mes: mesNombre,
           });
@@ -483,13 +483,13 @@ export class DashboardController {
     }
 
     const movimientos: any[] = [];
-    for (const cuota of cuotas) {
+    for (const cobro of cobros) {
       movimientos.push({
-        id: cuota.id,
+        id: cobro.id,
         tipo: 'cargo',
-        monto: Math.round(cuota.monto / 100),
-        fecha: cuota.periodoInicio,
-        descripcion: `Generación de cuota ${cuota.concepto}`,
+        monto: Math.round(cobro.monto / 100),
+        fecha: cobro.periodoInicio,
+        descripcion: `Generación de cobro ${cobro.concepto}`,
       });
     }
     for (const pago of pagos) {
@@ -529,19 +529,19 @@ export class DashboardController {
       tarifaActual,
       ultimoPago,
       movimientos: movimientos.slice(0, 2),
-      propietarioInfo,
+      residenteInfo,
     };
   }
 
   @Get('dashboard/propietario/timeline')
   @UseGuards(RolesGuard)
-  @Roles(RolUsuario.PROPIETARIO)
-  async getPropietarioTimeline(
+  @Roles(RolUsuario.RESIDENTE)
+  async getResidenteTimeline(
     @CurrentUser() user: Usuario,
     @Query('offset', new DefaultValuePipe(0), ParseIntPipe) offset: number,
     @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
   ): Promise<TimelineResponse> {
-    if (!user.propietarioId) {
+    if (!user.residenteId) {
       return {
         items: [],
         hasMore: false,
@@ -549,7 +549,7 @@ export class DashboardController {
     }
 
     const [pagos, solicitudes] = await Promise.all([
-      this.pagoRepository.findByPropietario(user.propietarioId),
+      this.pagoRepository.findByPropietario(user.residenteId),
       this.solicitudRepository.findByUsuario(user.id),
     ]);
 

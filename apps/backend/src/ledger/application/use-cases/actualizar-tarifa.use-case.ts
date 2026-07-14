@@ -39,7 +39,7 @@ export class ActualizarTarifaUseCase {
 
       const montoCentavos = Math.round(montoPesos * 100);
       const actualizadas = await this.tarifaDerivacionService.actualizarActivas(
-        tarifa.conjuntoId,
+        tarifa.proyectoId,
         tarifa.tenantId,
         tarifa.frecuencia,
         montoCentavos,

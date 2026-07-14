@@ -12,7 +12,7 @@ import { type Frecuencia } from '../../../../shared/common/value-objects';
 export class CrearTarifaDto {
   @IsString()
   @IsNotEmpty()
-  conjuntoId: string;
+  proyectoId: string;
 
   @IsEnum(['SEMANAL', 'QUINCENAL', 'MENSUAL'] as const, {
     message: 'La frecuencia debe ser SEMANAL, QUINCENAL o MENSUAL',
@@ -41,11 +41,11 @@ export class ActualizarTarifaDto {
 export class ListarTarifasQueryDto {
   @IsString()
   @IsOptional()
-  conjuntoId?: string;
+  proyectoId?: string;
 }
 
 export class TarifasVigentesQueryDto {
   @IsString()
-  @IsNotEmpty({ message: 'conjuntoId es requerido' })
-  conjuntoId: string;
+  @IsNotEmpty({ message: 'proyectoId es requerido' })
+  proyectoId: string;
 }

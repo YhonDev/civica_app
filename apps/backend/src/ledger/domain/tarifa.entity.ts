@@ -15,8 +15,8 @@ export class Tarifa {
   @Column({ name: 'tenant_id', type: 'uuid' })
   tenantId: string;
 
-  @Column({ name: 'conjunto_id', type: 'uuid' })
-  conjuntoId: string;
+  @Column({ name: 'proyecto_id', type: 'uuid' })
+  proyectoId: string;
 
   @Column({ name: 'frecuencia', type: 'varchar', length: 20 })
   frecuencia: Frecuencia;
@@ -37,14 +37,14 @@ export class Tarifa {
   updatedAt: Date;
 
   static crear(
-    conjuntoId: string,
+    proyectoId: string,
     tenantId: string,
     frecuencia: Frecuencia,
     monto: Money,
     fechaVigencia: string,
   ): Tarifa {
     const tarifa = new Tarifa();
-    tarifa.conjuntoId = conjuntoId;
+    tarifa.proyectoId = proyectoId;
     tarifa.tenantId = tenantId;
     tarifa.frecuencia = frecuencia;
     tarifa.monto = monto.amount;

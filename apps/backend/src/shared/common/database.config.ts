@@ -11,7 +11,7 @@ export function databaseConfig(): TypeOrmModuleOptions {
     password: process.env.DATABASE_PASSWORD || 'postgres',
     database: process.env.DATABASE_NAME || 'postgres',
     autoLoadEntities: true,
-    synchronize: process.env.NODE_ENV !== 'production',
+    synchronize: false,
     logging: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
     ...(sslMode && {
       ssl: {

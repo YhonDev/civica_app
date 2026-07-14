@@ -7,7 +7,7 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
-import { Propietario } from './propietario.entity';
+import { Residente } from './residente.entity';
 import { Casa } from './casa.entity';
 
 @Entity('tenencias')
@@ -15,8 +15,8 @@ export class Tenencia {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: 'propietario_id', type: 'uuid' })
-  propietarioId: string;
+  @Column({ name: 'residente_id', type: 'uuid' })
+  residenteId: string;
 
   @Column({ name: 'casa_id', type: 'uuid' })
   casaId: string;
@@ -31,12 +31,12 @@ export class Tenencia {
   @Column({ name: 'fecha_fin', type: 'date', nullable: true })
   fechaFin: Date | null;
 
-  @ManyToOne(() => Propietario, (propietario) => propietario.tenencias, {
+  @ManyToOne(() => Residente, (residente) => residente.tenencias, {
     onDelete: 'CASCADE',
   })
-  @JoinColumn({ name: 'propietario_id' })
+  @JoinColumn({ name: 'residente_id' })
   @Exclude()
-  propietario: Propietario;
+  residente: Residente;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
@@ -44,7 +44,7 @@ export class Tenencia {
   // --- Domain behavior ---
 
   static crear(
-    propietarioId: string,
+    residenteId: string,
     casaId: string,
     fechaInicio: Date,
   ): Tenencia {
@@ -53,7 +53,7 @@ export class Tenencia {
     }
 
     const tenencia = new Tenencia();
-    tenencia.propietarioId = propietarioId;
+    tenencia.residenteId = residenteId;
     tenencia.casaId = casaId;
     tenencia.fechaInicio = fechaInicio;
     tenencia.fechaFin = null;

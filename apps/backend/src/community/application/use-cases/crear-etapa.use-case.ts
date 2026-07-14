@@ -1,23 +1,23 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { Etapa } from '../../domain/etapa.entity';
-import { ConjuntoRepository } from '../../infrastructure/conjunto.repository';
+import { ProyectoRepository } from '../../infrastructure/proyecto.repository';
 
 @Injectable()
 export class CrearEtapaUseCase {
-  constructor(private readonly conjuntoRepository: ConjuntoRepository) {}
+  constructor(private readonly proyectoRepository: ProyectoRepository) {}
 
-  async execute(nombre: string, conjuntoId: string): Promise<Etapa> {
+  async execute(nombre: string, proyectoId: string): Promise<Etapa> {
     if (!nombre || nombre.trim().length < 2) {
       throw new BadRequestException('El nombre debe tener al menos 2 caracteres');
     }
 
-    const conjunto = await this.conjuntoRepository.findById(conjuntoId);
-    if (!conjunto) {
-      throw new NotFoundException(`Conjunto con ID ${conjuntoId} no encontrado`);
+    const proyecto = await this.proyectoRepository.findById(proyectoId);
+    if (!proyecto) {
+      throw new NotFoundException(`Proyecto con ID ${proyectoId} no encontrado`);
     }
 
-    const etapa = conjunto.agregarEtapa(nombre);
-    await this.conjuntoRepository.save(conjunto);
+    const etapa = proyecto.agregarEtapa(nombre);
+    await this.proyectoRepository.save(proyecto);
     return etapa;
   }
 }

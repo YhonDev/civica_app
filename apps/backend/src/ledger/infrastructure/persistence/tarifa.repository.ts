@@ -11,10 +11,10 @@ export class TarifaRepository {
     private readonly repo: Repository<Tarifa>,
   ) {}
 
-  async findAll(tenantId: string, conjuntoId?: string): Promise<Tarifa[]> {
+  async findAll(tenantId: string, proyectoId?: string): Promise<Tarifa[]> {
     const where: any = { tenantId };
-    if (conjuntoId) {
-      where.conjuntoId = conjuntoId;
+    if (proyectoId) {
+      where.proyectoId = proyectoId;
     }
     return this.repo.find({
       where,
@@ -27,14 +27,14 @@ export class TarifaRepository {
    * ordered by fechaVigencia DESC, limit 1.
    */
   async findVigente(
-    conjuntoId: string,
+    proyectoId: string,
     frecuencia: Frecuencia,
     fecha: Date,
   ): Promise<Tarifa | null> {
     const dateStr = fecha.toISOString().split('T')[0];
     const result = await this.repo
       .createQueryBuilder('tarifa')
-      .where('tarifa.conjuntoId = :conjuntoId', { conjuntoId })
+      .where('tarifa.proyectoId = :proyectoId', { proyectoId })
       .andWhere('tarifa.frecuencia = :frecuencia', { frecuencia })
       .andWhere('tarifa.fechaVigencia <= :fecha', { fecha: dateStr })
       .andWhere('tarifa.activa = :activa', { activa: true })
@@ -54,7 +54,7 @@ export class TarifaRepository {
    * Siempre consultar BD — el admin puede editar los montos.
    */
   async findVigentesPorConjunto(
-    conjuntoId: string,
+    proyectoId: string,
     fecha = new Date(),
   ): Promise<Record<Frecuencia, Tarifa | null>> {
     const frecuencias: Frecuencia[] = ['SEMANAL', 'QUINCENAL', 'MENSUAL'];
@@ -62,7 +62,7 @@ export class TarifaRepository {
 
     await Promise.all(
       frecuencias.map(async (frecuencia) => {
-        result[frecuencia] = await this.findVigente(conjuntoId, frecuencia, fecha);
+        result[frecuencia] = await this.findVigente(proyectoId, frecuencia, fecha);
       }),
     );
 
@@ -73,9 +73,9 @@ export class TarifaRepository {
     return this.repo.save(tarifa);
   }
 
-  async countActivasByConjunto(conjuntoId: string): Promise<number> {
+  async countActivasByConjunto(proyectoId: string): Promise<number> {
     return this.repo.count({
-      where: { conjuntoId, activa: true },
+      where: { proyectoId, activa: true },
     });
   }
 }

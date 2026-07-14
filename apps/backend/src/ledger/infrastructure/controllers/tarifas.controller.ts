@@ -41,7 +41,7 @@ export class TarifasController {
     @CurrentTenant() tenantId: string,
   ) {
     return this.configurarTarifaUseCase.execute({
-      conjuntoId: dto.conjuntoId,
+      proyectoId: dto.proyectoId,
       tenantId,
       frecuencia: dto.frecuencia,
       montoPesos: dto.monto,
@@ -51,24 +51,24 @@ export class TarifasController {
 
   @Get()
   @UseGuards(RolesGuard)
-  @Roles(RolUsuario.ADMIN, RolUsuario.PROPIETARIO)
+  @Roles(RolUsuario.ADMIN, RolUsuario.RESIDENTE)
   async listar(
     @Query() query: ListarTarifasQueryDto,
     @CurrentTenant() tenantId: string,
   ) {
-    return this.tarifaRepository.findAll(tenantId, query.conjuntoId);
+    return this.tarifaRepository.findAll(tenantId, query.proyectoId);
   }
 
   /** Tarifas vigentes hoy — siempre desde BD (editables por admin). */
   @Get('vigentes')
   @UseGuards(RolesGuard)
-  @Roles(RolUsuario.ADMIN, RolUsuario.PROPIETARIO)
+  @Roles(RolUsuario.ADMIN, RolUsuario.RESIDENTE)
   async vigentes(
     @Query() query: TarifasVigentesQueryDto,
     @CurrentTenant() tenantId: string,
   ) {
     const vigentes = await this.tarifaRepository.findVigentesPorConjunto(
-      query.conjuntoId,
+      query.proyectoId,
     );
 
     const toDto = (tarifa: typeof vigentes.MENSUAL) =>
@@ -83,7 +83,7 @@ export class TarifasController {
         : null;
 
     return {
-      conjuntoId: query.conjuntoId,
+      proyectoId: query.proyectoId,
       tenantId,
       tarifas: {
         MENSUAL: toDto(vigentes.MENSUAL),
@@ -98,7 +98,7 @@ export class TarifasController {
 
   @Get(':id')
   @UseGuards(RolesGuard)
-  @Roles(RolUsuario.ADMIN, RolUsuario.PROPIETARIO)
+  @Roles(RolUsuario.ADMIN, RolUsuario.RESIDENTE)
   async obtener(@Param('id') id: string) {
     const tarifa = await this.tarifaRepository.findById(id);
     if (!tarifa) {

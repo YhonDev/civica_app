@@ -18,8 +18,8 @@ export class Pago {
   @Column({ name: 'tenant_id', type: 'uuid' })
   tenantId: string;
 
-  @Column({ name: 'cuota_id', type: 'uuid', nullable: true })
-  cuotaId: string | null;
+  @Column({ name: 'cobro_id', type: 'uuid', nullable: true })
+  cobroId: string | null;
 
   @Column({ name: 'monto', type: 'integer' })
   monto: number; // en centavos COP
@@ -30,8 +30,8 @@ export class Pago {
   @Column({ name: 'cobrador_id', type: 'uuid' })
   cobradorId: string;
 
-  @Column({ name: 'propietario_id', type: 'uuid' })
-  propietarioId: string;
+  @Column({ name: 'residente_id', type: 'uuid' })
+  residenteId: string;
 
   @Column({ name: 'fecha_sync', type: 'timestamptz', nullable: true })
   fechaSync: Date | null;
@@ -51,8 +51,8 @@ export class Pago {
     monto: Money,
     fechaPago: string,
     cobradorId: string,
-    propietarioId: string,
-    cuotaId?: string,
+    residenteId: string,
+    cobroId?: string,
   ): Pago {
     const pago = new Pago();
     pago.clientPaymentId = clientPaymentId;
@@ -60,8 +60,8 @@ export class Pago {
     pago.monto = monto.amount;
     pago.fechaPago = fechaPago;
     pago.cobradorId = cobradorId;
-    pago.propietarioId = propietarioId;
-    pago.cuotaId = cuotaId ?? null;
+    pago.residenteId = residenteId;
+    pago.cobroId = cobroId ?? null;
     pago.fechaSync = null;
     pago.syncStatus = 'SYNC_OK';
     return pago;

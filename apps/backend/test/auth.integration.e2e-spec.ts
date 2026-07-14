@@ -15,7 +15,7 @@ describe('Auth & IAM Integration', () => {
 
   // ── Shared IDs for seed data ───────────────────────────────────
   let tenantId: string;
-  let conjuntoId: string;
+  let proyectoId: string;
   let etapaId: string;
   let casaId: string;
   let propietarioId: string;
@@ -48,7 +48,7 @@ describe('Auth & IAM Integration', () => {
 
     // ── Generate all IDs ────────────────────────────────────────
     tenantId = randomUUID();
-    conjuntoId = randomUUID();
+    proyectoId = randomUUID();
     etapaId = randomUUID();
     casaId = randomUUID();
     propietarioId = randomUUID();
@@ -60,11 +60,11 @@ describe('Auth & IAM Integration', () => {
     // ── Seed community data ─────────────────────────────────────
     await dataSource.query(
       `INSERT INTO conjuntos (id, nombre, tenant_id) VALUES ($1, $2, $3)`,
-      [conjuntoId, 'Conjunto Auth Test', tenantId],
+      [proyectoId, 'Conjunto Auth Test', tenantId],
     );
     await dataSource.query(
-      `INSERT INTO etapas (id, nombre, conjunto_id) VALUES ($1, $2, $3)`,
-      [etapaId, 'Etapa Auth Test', conjuntoId],
+      `INSERT INTO etapas (id, nombre, proyecto_id) VALUES ($1, $2, $3)`,
+      [etapaId, 'Etapa Auth Test', proyectoId],
     );
     await dataSource.query(
       `INSERT INTO casas (id, direccion_interna, etapa_id) VALUES ($1, $2, $3)`,
@@ -75,7 +75,7 @@ describe('Auth & IAM Integration', () => {
       [propietarioId, 'Propietario Auth Test', '555-9999', tenantId],
     );
     await dataSource.query(
-      `INSERT INTO tenencias (id, propietario_id, casa_id, fecha_inicio) VALUES ($1, $2, $3, $4)`,
+      `INSERT INTO tenencias (id, residente_id, casa_id, fecha_inicio) VALUES ($1, $2, $3, $4)`,
       [tenenciaId, propietarioId, casaId, '2026-01-01'],
     );
 
@@ -85,17 +85,17 @@ describe('Auth & IAM Integration', () => {
     const propHash = bcryptHashSync('prop123', 10);
 
     await dataSource.query(
-      `INSERT INTO usuarios (id, email, password_hash, nombre, rol, propietario_id, tenant_id, activo)
+      `INSERT INTO usuarios (id, email, password_hash, nombre, rol, residente_id, tenant_id, activo)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
       [adminUserId, 'admin@test.com', adminHash, 'Admin Test', 'ADMIN', null, tenantId, true],
     );
     await dataSource.query(
-      `INSERT INTO usuarios (id, email, password_hash, nombre, rol, propietario_id, tenant_id, activo)
+      `INSERT INTO usuarios (id, email, password_hash, nombre, rol, residente_id, tenant_id, activo)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
       [cobradorUserId, 'cobrador@test.com', cobradorHash, 'Cobrador Test', 'COBRADOR', null, tenantId, true],
     );
     await dataSource.query(
-      `INSERT INTO usuarios (id, email, password_hash, nombre, rol, propietario_id, tenant_id, activo)
+      `INSERT INTO usuarios (id, email, password_hash, nombre, rol, residente_id, tenant_id, activo)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
       [
         propietarioUserId,
@@ -113,12 +113,12 @@ describe('Auth & IAM Integration', () => {
   afterAll(async () => {
     // Clean up in dependency order to respect FK constraints
     await dataSource.query(`DELETE FROM asignaciones_etapa WHERE tenant_id = $1`, [tenantId]);
-    await dataSource.query(`DELETE FROM tenencias WHERE propietario_id = $1`, [propietarioId]);
+    await dataSource.query(`DELETE FROM tenencias WHERE residente_id = $1`, [propietarioId]);
     await dataSource.query(`DELETE FROM usuarios WHERE tenant_id = $1`, [tenantId]);
     await dataSource.query(`DELETE FROM propietarios WHERE tenant_id = $1`, [tenantId]);
     await dataSource.query(`DELETE FROM casas WHERE id = $1`, [casaId]);
     await dataSource.query(`DELETE FROM etapas WHERE id = $1`, [etapaId]);
-    await dataSource.query(`DELETE FROM conjuntos WHERE id = $1`, [conjuntoId]);
+    await dataSource.query(`DELETE FROM conjuntos WHERE id = $1`, [proyectoId]);
 
     await app.close();
   });

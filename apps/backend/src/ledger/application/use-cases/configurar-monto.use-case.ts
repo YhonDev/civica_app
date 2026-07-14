@@ -5,7 +5,7 @@ import { Money } from '../../../shared/common/value-objects';
 
 interface ConfigurarMontoParams {
   tenantId: string;
-  conjuntoId: string;
+  proyectoId: string;
   montoPesos: number;
   descripcion: string;
 }
@@ -17,7 +17,7 @@ export class ConfigurarMontoUseCase {
   ) {}
 
   async execute(params: ConfigurarMontoParams): Promise<MontoPagoPredefinido> {
-    const { tenantId, conjuntoId, montoPesos, descripcion } = params;
+    const { tenantId, proyectoId, montoPesos, descripcion } = params;
 
     if (montoPesos <= 0) {
       throw new BadRequestException('El monto debe ser mayor a cero');
@@ -31,7 +31,7 @@ export class ConfigurarMontoUseCase {
 
     // Validate max 5 active montos per conjunto
     const countActivos =
-      await this.montoRepository.countActivosByConjunto(conjuntoId);
+      await this.montoRepository.countActivosByConjunto(proyectoId);
     if (countActivos >= 5) {
       throw new BadRequestException(
         'Máximo 5 montos predefinidos activos por conjunto',
@@ -40,7 +40,7 @@ export class ConfigurarMontoUseCase {
 
     // Auto-assign orden: next number
     const existingMontos =
-      await this.montoRepository.findAllByConjunto(conjuntoId);
+      await this.montoRepository.findAllByConjunto(proyectoId);
     const nextOrden =
       existingMontos.length > 0
         ? Math.max(...existingMontos.map((m) => m.orden)) + 1
@@ -51,7 +51,7 @@ export class ConfigurarMontoUseCase {
 
     const montoPredefinido = MontoPagoPredefinido.crear(
       tenantId,
-      conjuntoId,
+      proyectoId,
       monto,
       descripcion,
       nextOrden,

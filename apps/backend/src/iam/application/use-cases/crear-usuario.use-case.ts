@@ -14,7 +14,7 @@ interface CrearUsuarioParams {
   nombre: string;
   rol: RolUsuario;
   tenantId: string;
-  propietarioId?: string;
+  residenteId?: string;
 }
 
 @Injectable()
@@ -68,7 +68,7 @@ export class CrearUsuarioUseCase {
       params.nombre,
       params.rol,
       params.tenantId,
-      params.propietarioId,
+      params.residenteId,
     );
 
     return this.usuarioRepository.save(usuario);

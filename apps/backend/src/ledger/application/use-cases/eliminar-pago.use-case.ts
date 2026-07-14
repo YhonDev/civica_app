@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PagoRepository } from '../../infrastructure/persistence/pago.repository';
-import { CuotaRepository } from '../../infrastructure/persistence/cuota.repository';
+import { CobroRepository } from '../../infrastructure/persistence/cobro.repository';
 
 @Injectable()
 export class EliminarPagoUseCase {
@@ -8,7 +8,7 @@ export class EliminarPagoUseCase {
 
   constructor(
     private readonly pagoRepo: PagoRepository,
-    private readonly cuotaRepo: CuotaRepository,
+    private readonly cobroRepo: CobroRepository,
   ) {}
 
   async execute(id: string, tenantId: string): Promise<void> {
@@ -18,43 +18,41 @@ export class EliminarPagoUseCase {
       throw new NotFoundException(`Pago ${id} no encontrado`);
     }
 
-    // Revertir el pago: restamos el monto pagado de las cuotas del propietario
-    // en orden LIFO (las más recientes primero, ya que el pago se aplicó FIFO a las más antiguas).
+    // Revertir el pago aplicando LIFO inverso
     let remainingToReverse = pago.monto;
-    const cuotas = await this.cuotaRepo.findByPropietario(pago.propietarioId);
+    const cobros = await this.cobroRepo.findByResidente(pago.residenteId);
     
-    // Sort cuotas by periodoInicio DESC (newest first)
-    cuotas.sort((a, b) => new Date(b.periodoInicio).getTime() - new Date(a.periodoInicio).getTime());
+    // Sort cobros by periodoInicio DESC (newest first)
+    cobros.sort((a, b) => new Date(b.periodoInicio).getTime() - new Date(a.periodoInicio).getTime());
 
-    const cuotasActualizadas = [];
+    const cobrosActualizados = [];
 
-    for (const cuota of cuotas) {
+    for (const cobro of cobros) {
       if (remainingToReverse <= 0) break;
       
-      if (cuota.montoPagado > 0) {
-        const amountToSubtract = Math.min(cuota.montoPagado, remainingToReverse);
-        cuota.montoPagado -= amountToSubtract;
+      if (cobro.montoPagado > 0) {
+        const amountToSubtract = Math.min(cobro.montoPagado, remainingToReverse);
+        cobro.montoPagado -= amountToSubtract;
         remainingToReverse -= amountToSubtract;
         
         // Recalcular estado
-        if (cuota.montoPagado === 0) {
-          // Evaluar si está vencida
-          if (new Date(cuota.fechaVencimiento).getTime() < new Date().getTime()) {
-            cuota.estado = 'VENCIDA';
+        if (cobro.montoPagado === 0) {
+          if (new Date(cobro.fechaVencimiento).getTime() < new Date().getTime()) {
+            cobro.estado = 'VENCIDA';
           } else {
-            cuota.estado = 'PENDIENTE';
+            cobro.estado = 'PENDIENTE';
           }
-        } else if (cuota.montoPagado < cuota.monto) {
-          cuota.estado = 'PARCIAL';
+        } else if (cobro.montoPagado < cobro.monto) {
+          cobro.estado = 'PARCIAL';
         }
         
-        cuotasActualizadas.push(cuota);
+        cobrosActualizados.push(cobro);
       }
     }
 
-    // Guardar cuotas revertidas
-    if (cuotasActualizadas.length > 0) {
-      await this.cuotaRepo.saveMany(cuotasActualizadas);
+    // Guardar cobros revertidos
+    if (cobrosActualizados.length > 0) {
+      await this.cobroRepo.saveMany(cobrosActualizados);
     }
 
     // Eliminar el pago

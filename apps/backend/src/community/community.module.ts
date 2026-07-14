@@ -1,24 +1,24 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Conjunto } from './domain/conjunto.entity';
+import { Proyecto } from './domain/proyecto.entity';
 import { Etapa } from './domain/etapa.entity';
 import { Casa } from './domain/casa.entity';
 import { Manzana } from './domain/manzana.entity';
-import { Propietario } from './domain/propietario.entity';
+import { Residente } from './domain/residente.entity';
 import { Tenencia } from './domain/tenencia.entity';
-import { ConjuntoRepository } from './infrastructure/conjunto.repository';
-import { PropietarioRepository } from './infrastructure/propietario.repository';
-import { PropietarioDetailQuery } from './application/queries/propietario-detail.query';
-import { CrearConjuntoUseCase } from './application/use-cases/crear-conjunto.use-case';
+import { ProyectoRepository } from './infrastructure/proyecto.repository';
+import { ResidenteRepository } from './infrastructure/residente.repository';
+import { ResidenteDetailQuery } from './application/queries/residente-detail.query';
+import { CrearProyectoUseCase } from './application/use-cases/crear-proyecto.use-case';
 import { CrearEtapaUseCase } from './application/use-cases/crear-etapa.use-case';
 import { CrearManzanaUseCase } from './application/use-cases/crear-manzana.use-case';
 import { RegistrarCasaUseCase } from './application/use-cases/registrar-casa.use-case';
-import { RegistrarPropietarioUseCase } from './application/use-cases/registrar-propietario.use-case';
-import { EliminarPropietarioUseCase } from './application/use-cases/eliminar-propietario.use-case';
-import { ActualizarPropietarioUseCase } from './application/use-cases/actualizar-propietario.use-case';
+import { RegistrarResidenteUseCase } from './application/use-cases/registrar-residente.use-case';
+import { EliminarResidenteUseCase } from './application/use-cases/eliminar-residente.use-case';
+import { ActualizarResidenteUseCase } from './application/use-cases/actualizar-residente.use-case';
 import { AgregarTenenciaUseCase } from './application/use-cases/agregar-tenencia.use-case';
-import { ConjuntosController } from './infrastructure/controllers/conjuntos.controller';
-import { PropietariosController } from './infrastructure/controllers/propietarios.controller';
+import { ProyectosController } from './infrastructure/controllers/proyectos.controller';
+import { ResidentesController } from './infrastructure/controllers/residentes.controller';
 import { LedgerModule } from '../ledger/ledger.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { ActividadInterceptor } from '../shared/common/decorators/registrar-actividad.decorator';
@@ -26,30 +26,30 @@ import { Reflector } from '@nestjs/core';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Conjunto, Etapa, Manzana, Casa, Propietario, Tenencia]),
+    TypeOrmModule.forFeature([Proyecto, Etapa, Manzana, Casa, Residente, Tenencia]),
     forwardRef(() => LedgerModule),
     NotificationsModule,
   ],
-  controllers: [ConjuntosController, PropietariosController],
+  controllers: [ProyectosController, ResidentesController],
   providers: [
     // Repositories
-    ConjuntoRepository,
-    PropietarioRepository,
+    ProyectoRepository,
+    ResidenteRepository,
     // Queries
-    PropietarioDetailQuery,
+    ResidenteDetailQuery,
     // Use cases
-    CrearConjuntoUseCase,
+    CrearProyectoUseCase,
     CrearEtapaUseCase,
     CrearManzanaUseCase,
     RegistrarCasaUseCase,
-    RegistrarPropietarioUseCase,
-    EliminarPropietarioUseCase,
-    ActualizarPropietarioUseCase,
+    RegistrarResidenteUseCase,
+    EliminarResidenteUseCase,
+    ActualizarResidenteUseCase,
     AgregarTenenciaUseCase,
     // Interceptors
     Reflector,
     ActividadInterceptor,
   ],
-  exports: [TypeOrmModule, ConjuntoRepository, PropietarioRepository],
+  exports: [TypeOrmModule, ProyectoRepository, ResidenteRepository],
 })
 export class CommunityModule {}

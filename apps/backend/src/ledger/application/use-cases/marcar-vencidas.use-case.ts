@@ -1,10 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { CuotaRepository } from '../../infrastructure/persistence/cuota.repository';
+import { CobroRepository } from '../../infrastructure/persistence/cobro.repository';
 
 /**
- * Marks overdue cuotas as VENCIDA.
+ * Marks overdue cobros as VENCIDA.
  *
- * Finds all cuotas in PENDIENTE or PARCIAL state whose fechaVencimiento
+ * Finds all cobros in PENDIENTE or PARCIAL state whose fechaVencimiento
  * has passed, and transitions them to VENCIDA.
  *
  * Called by the daily cron job MarcarVencidasJob.
@@ -13,19 +13,18 @@ import { CuotaRepository } from '../../infrastructure/persistence/cuota.reposito
 export class MarcarVencidasUseCase {
   private readonly logger = new Logger(MarcarVencidasUseCase.name);
 
-  constructor(private readonly cuotaRepo: CuotaRepository) {}
+  constructor(private readonly cobroRepo: CobroRepository) {}
 
   async execute(fechaHoy?: string): Promise<{ marcadas: number }> {
-    const hoy = fechaHoy ?? new Date().toISOString().split('T')[0];
-    const vencidas = await this.cuotaRepo.findVencidas(hoy);
+    const vencidas = await this.cobroRepo.findVencidas();
 
-    for (const cuota of vencidas) {
-      cuota.marcarVencida();
+    for (const cobro of vencidas) {
+      cobro.marcarVencida();
     }
 
     if (vencidas.length > 0) {
-      await this.cuotaRepo.saveMany(vencidas);
-      this.logger.log(`${vencidas.length} cuota(s) marcada(s) como VENCIDA(s)`);
+      await this.cobroRepo.saveMany(vencidas);
+      this.logger.log(`${vencidas.length} cobro(s) marcado(s) como VENCIDO(s)`);
     }
 
     return { marcadas: vencidas.length };

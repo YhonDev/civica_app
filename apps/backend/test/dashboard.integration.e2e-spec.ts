@@ -144,11 +144,11 @@ describe('Dashboard API Integration — Sprint 5 (Admin Dashboard)', () => {
       [conjuntoB, 'Otro Conjunto', tenantA],
     );
     await dataSource.query(
-      `INSERT INTO etapas (id, nombre, conjunto_id) VALUES ($1, $2, $3)`,
+      `INSERT INTO etapas (id, nombre, proyecto_id) VALUES ($1, $2, $3)`,
       [etapaA, 'Etapa Alfa', conjuntoA],
     );
     await dataSource.query(
-      `INSERT INTO etapas (id, nombre, conjunto_id) VALUES ($1, $2, $3)`,
+      `INSERT INTO etapas (id, nombre, proyecto_id) VALUES ($1, $2, $3)`,
       [etapaB, 'Etapa Beta', conjuntoB],
     );
     await dataSource.query(
@@ -191,12 +191,12 @@ describe('Dashboard API Integration — Sprint 5 (Admin Dashboard)', () => {
 
     // ── Tenencias ─────────────────────────────────────────
     await dataSource.query(
-      `INSERT INTO tenencias (id, propietario_id, casa_id, fecha_inicio)
+      `INSERT INTO tenencias (id, residente_id, casa_id, fecha_inicio)
        VALUES ($1, $2, $3, $4)`,
       [tenenciaAlDia, propietarioAlDia, casaA, '2026-01-01'],
     );
     await dataSource.query(
-      `INSERT INTO tenencias (id, propietario_id, casa_id, fecha_inicio)
+      `INSERT INTO tenencias (id, residente_id, casa_id, fecha_inicio)
        VALUES ($1, $2, $3, $4)`,
       [tenenciaMora, propietarioMora, casaB, '2026-01-01'],
     );
@@ -209,17 +209,17 @@ describe('Dashboard API Integration — Sprint 5 (Admin Dashboard)', () => {
     const propHash = bcryptHashSync('prop123', 10);
 
     await dataSource.query(
-      `INSERT INTO usuarios (id, email, password_hash, nombre, rol, propietario_id, tenant_id, activo)
+      `INSERT INTO usuarios (id, email, password_hash, nombre, rol, residente_id, tenant_id, activo)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
       [adminUserId, 'admin-dash@test.com', adminHash, 'Admin Dashboard', 'ADMIN', null, tenantA, true],
     );
     await dataSource.query(
-      `INSERT INTO usuarios (id, email, password_hash, nombre, rol, propietario_id, tenant_id, activo)
+      `INSERT INTO usuarios (id, email, password_hash, nombre, rol, residente_id, tenant_id, activo)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
       [cobradorUserId, 'cobrador-dash@test.com', cobradorHash, 'Cobrador Dashboard', 'COBRADOR', null, tenantA, true],
     );
     await dataSource.query(
-      `INSERT INTO usuarios (id, email, password_hash, nombre, rol, propietario_id, tenant_id, activo)
+      `INSERT INTO usuarios (id, email, password_hash, nombre, rol, residente_id, tenant_id, activo)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
       [propietarioUserId, 'prop-dash@test.com', propHash, 'Prop Dashboard', 'PROPIETARIO', propietarioAlDia, tenantA, true],
     );
@@ -240,24 +240,24 @@ describe('Dashboard API Integration — Sprint 5 (Admin Dashboard)', () => {
     // ── Tarifas ───────────────────────────────────────────
     // Montos en centavos: 40000 COP = 4000000 centavos
     await dataSource.query(
-      `INSERT INTO tarifas (id, tenant_id, conjunto_id, frecuencia, monto, fecha_vigencia)
+      `INSERT INTO tarifas (id, tenant_id, proyecto_id, frecuencia, monto, fecha_vigencia)
        VALUES ($1, $2, $3, $4, $5, $6)`,
       [tarifaMensualId, tenantA, conjuntoA, 'MENSUAL', 4000000, '2026-01-01'],
     );
     await dataSource.query(
-      `INSERT INTO tarifas (id, tenant_id, conjunto_id, frecuencia, monto, fecha_vigencia)
+      `INSERT INTO tarifas (id, tenant_id, proyecto_id, frecuencia, monto, fecha_vigencia)
        VALUES ($1, $2, $3, $4, $5, $6)`,
       [tarifaQuincenalId, tenantA, conjuntoA, 'QUINCENAL', 2000000, '2026-01-01'],
     );
 
     // ── Cuentas de Cartera ────────────────────────────────
     await dataSource.query(
-      `INSERT INTO cuentas_cartera (id, propietario_id, tenant_id, conjunto_id, frecuencia, fecha_activacion)
+      `INSERT INTO cuentas_cartera (id, residente_id, tenant_id, proyecto_id, frecuencia, fecha_activacion)
        VALUES ($1, $2, $3, $4, $5, $6)`,
       [randomUUID(), propietarioAlDia, tenantA, conjuntoA, 'MENSUAL', '2026-01-01'],
     );
     await dataSource.query(
-      `INSERT INTO cuentas_cartera (id, propietario_id, tenant_id, conjunto_id, frecuencia, fecha_activacion)
+      `INSERT INTO cuentas_cartera (id, residente_id, tenant_id, proyecto_id, frecuencia, fecha_activacion)
        VALUES ($1, $2, $3, $4, $5, $6)`,
       [randomUUID(), propietarioMora, tenantA, conjuntoA, 'MENSUAL', '2026-01-01'],
     );
@@ -268,7 +268,7 @@ describe('Dashboard API Integration — Sprint 5 (Admin Dashboard)', () => {
 
     // Cuota PAGADA (propietarioAlDia, current month)
     await dataSource.query(
-      `INSERT INTO cuotas (id, propietario_id, tenant_id, tarifa_id, concepto,
+      `INSERT INTO cuotas (id, residente_id, tenant_id, tarifa_id, concepto,
         monto, monto_pagado, periodo_inicio, periodo_fin, fecha_vencimiento, estado)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
       [cuotaPagadaId, propietarioAlDia, tenantA, tarifaMensualId,
@@ -281,7 +281,7 @@ describe('Dashboard API Integration — Sprint 5 (Admin Dashboard)', () => {
 
     // Cuota PENDIENTE (propietarioMora, current month)
     await dataSource.query(
-      `INSERT INTO cuotas (id, propietario_id, tenant_id, tarifa_id, concepto,
+      `INSERT INTO cuotas (id, residente_id, tenant_id, tarifa_id, concepto,
         monto, monto_pagado, periodo_inicio, periodo_fin, fecha_vencimiento, estado)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
       [cuotaPendienteId, propietarioMora, tenantA, tarifaMensualId,
@@ -295,7 +295,7 @@ describe('Dashboard API Integration — Sprint 5 (Admin Dashboard)', () => {
     // Cuota VENCIDA (propietarioMora, last month)
 
     await dataSource.query(
-      `INSERT INTO cuotas (id, propietario_id, tenant_id, tarifa_id, concepto,
+      `INSERT INTO cuotas (id, residente_id, tenant_id, tarifa_id, concepto,
         monto, monto_pagado, periodo_inicio, periodo_fin, fecha_vencimiento, estado)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
       [cuotaVencidaId, propietarioMora, tenantA, tarifaMensualId,
@@ -312,7 +312,7 @@ describe('Dashboard API Integration — Sprint 5 (Admin Dashboard)', () => {
     // Pago for cuotaPagadaId (propietarioAlDia pagó complete)
     const pagoDate = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     await dataSource.query(
-      `INSERT INTO pagos (id, client_payment_id, tenant_id, cuota_id, monto, fecha_pago, cobrador_id, propietario_id)
+      `INSERT INTO pagos (id, client_payment_id, tenant_id, cuota_id, monto, fecha_pago, cobrador_id, residente_id)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
       [randomUUID(), `dash-pago-${randomUUID()}`, tenantA, cuotaPagadaId,
         4000000, pagoDate, cobradorUserId, propietarioAlDia],
@@ -358,7 +358,7 @@ describe('Dashboard API Integration — Sprint 5 (Admin Dashboard)', () => {
     const adminBId = randomUUID();
     const adminBHash = bcryptHashSync('adminB123', 10);
     await dataSource.query(
-      `INSERT INTO usuarios (id, email, password_hash, nombre, rol, propietario_id, tenant_id, activo)
+      `INSERT INTO usuarios (id, email, password_hash, nombre, rol, residente_id, tenant_id, activo)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
       [adminBId, 'admin-b@test.com', adminBHash, 'Admin Tenant B', 'ADMIN', null, tenantB, true],
     );
@@ -395,12 +395,12 @@ describe('Dashboard API Integration — Sprint 5 (Admin Dashboard)', () => {
     await dataSource.query(`DELETE FROM tarifas WHERE tenant_id IN ($1, $2)`, [tenantA, tenantB]);
     await dataSource.query(`DELETE FROM asignaciones_etapa WHERE tenant_id IN ($1, $2)`, [tenantA, tenantB]);
     await dataSource.query(`DELETE FROM usuarios WHERE tenant_id IN ($1, $2)`, [tenantA, tenantB]);
-    await dataSource.query(`DELETE FROM tenencias WHERE propietario_id IN ($1, $2, $3)`,
+    await dataSource.query(`DELETE FROM tenencias WHERE residente_id IN ($1, $2, $3)`,
       [propietarioAlDia, propietarioMora, propietarioSinCuenta]);
     await dataSource.query(`DELETE FROM propietarios WHERE tenant_id IN ($1, $2)`, [tenantA, tenantB]);
     await dataSource.query(`DELETE FROM casas WHERE manzana_id IN ($1, $2)`, [manzanaA, manzanaB]);
     await dataSource.query(`DELETE FROM manzanas WHERE etapa_id IN ($1, $2)`, [etapaA, etapaB]);
-    await dataSource.query(`DELETE FROM etapas WHERE conjunto_id IN (SELECT id FROM conjuntos WHERE tenant_id IN ($1, $2))`, [tenantA, tenantB]);
+    await dataSource.query(`DELETE FROM etapas WHERE proyecto_id IN (SELECT id FROM conjuntos WHERE tenant_id IN ($1, $2))`, [tenantA, tenantB]);
     await dataSource.query(`DELETE FROM conjuntos WHERE tenant_id IN ($1, $2)`, [tenantA, tenantB]);
 
     await app.close();

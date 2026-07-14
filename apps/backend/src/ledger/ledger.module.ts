@@ -3,16 +3,17 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ScheduleModule } from '@nestjs/schedule';
 import { Tarifa } from './domain/tarifa.entity';
 import { MontoPagoPredefinido } from './domain/monto-pago-predefinido.entity';
-import { Cuota } from './domain/cuota.entity';
-import { CuentaDeCartera } from './domain/cuenta-de-cartera.entity';
+import { Cobro } from './domain/cobro.entity';
+import { PlanDeCobro } from './domain/plan-de-cobro.entity';
+import { PeriodoCobro } from './domain/periodo-cobro.entity';
 import { Pago } from './domain/pago.entity';
 import { Solicitud } from './domain/solicitud.entity';
 
 // Repositories
 import { TarifaRepository } from './infrastructure/persistence/tarifa.repository';
 import { MontoPagoPredefinidoRepository } from './infrastructure/persistence/monto-pago-predefinido.repository';
-import { CuentaCarteraRepository } from './infrastructure/persistence/cuenta-cartera.repository';
-import { CuotaRepository } from './infrastructure/persistence/cuota.repository';
+import { PlanDeCobroRepository } from './infrastructure/persistence/plan-de-cobro.repository';
+import { CobroRepository } from './infrastructure/persistence/cobro.repository';
 import { PagoRepository } from './infrastructure/persistence/pago.repository';
 import { SolicitudRepository } from './infrastructure/persistence/solicitud.repository';
 
@@ -20,10 +21,10 @@ import { SolicitudRepository } from './infrastructure/persistence/solicitud.repo
 import { ConfigurarTarifaUseCase } from './application/use-cases/configurar-tarifa.use-case';
 import { ActualizarTarifaUseCase } from './application/use-cases/actualizar-tarifa.use-case';
 import { ConfigurarMontoUseCase } from './application/use-cases/configurar-monto.use-case';
-import { GenerarCuotasUseCase } from './application/use-cases/generar-cuotas.use-case';
+import { GenerarCobrosUseCase } from './application/use-cases/generar-cobros.use-case';
 import { RegistrarPagoUseCase } from './application/use-cases/registrar-pago.use-case';
 import { EliminarPagoUseCase } from './application/use-cases/eliminar-pago.use-case';
-import { EliminarCuotaUseCase } from './application/use-cases/eliminar-cuota.use-case';
+import { EliminarCobroUseCase } from './application/use-cases/eliminar-cobro.use-case';
 import { MarcarVencidasUseCase } from './application/use-cases/marcar-vencidas.use-case';
 import { TarifaDerivacionService } from './application/services/tarifa-derivacion.service';
 
@@ -33,14 +34,14 @@ import { DashboardQuery } from './application/queries/dashboard.query';
 // Controllers
 import { TarifasController } from './infrastructure/controllers/tarifas.controller';
 import { MontosController } from './infrastructure/controllers/montos.controller';
-import { CuotasController } from './infrastructure/controllers/cuotas.controller';
-import { CuentasCarteraController } from './infrastructure/controllers/cuentas-cartera.controller';
+import { CobrosController } from './infrastructure/controllers/cobros.controller';
+import { PlanesDeCobroController } from './infrastructure/controllers/planes-de-cobro.controller';
 import { PagosController } from './infrastructure/controllers/pagos.controller';
 import { DashboardController } from './infrastructure/controllers/dashboard.controller';
 import { SolicitudesController } from './infrastructure/controllers/solicitudes.controller';
 
 // Jobs
-import { GenerarCuotasJob } from './infrastructure/jobs/generar-cuotas.job';
+import { GenerarCobrosJob } from './infrastructure/jobs/generar-cobros.job';
 import { MarcarVencidasJob } from './infrastructure/jobs/marcar-vencidas.job';
 
 // Shared
@@ -51,7 +52,7 @@ import { Reflector } from '@nestjs/core';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Tarifa, MontoPagoPredefinido, Cuota, CuentaDeCartera, Pago, Solicitud]),
+    TypeOrmModule.forFeature([Tarifa, MontoPagoPredefinido, Cobro, PlanDeCobro, PeriodoCobro, Pago, Solicitud]),
     ScheduleModule.forRoot(),
     NotificationsModule,
     forwardRef(() => CommunityModule),
@@ -59,8 +60,8 @@ import { Reflector } from '@nestjs/core';
   controllers: [
     TarifasController,
     MontosController,
-    CuotasController,
-    CuentasCarteraController,
+    CobrosController,
+    PlanesDeCobroController,
     PagosController,
     DashboardController,
     SolicitudesController,
@@ -69,8 +70,8 @@ import { Reflector } from '@nestjs/core';
     // Repositories
     TarifaRepository,
     MontoPagoPredefinidoRepository,
-    CuentaCarteraRepository,
-    CuotaRepository,
+    PlanDeCobroRepository,
+    CobroRepository,
     PagoRepository,
     SolicitudRepository,
 
@@ -78,10 +79,10 @@ import { Reflector } from '@nestjs/core';
     ConfigurarTarifaUseCase,
     ActualizarTarifaUseCase,
     ConfigurarMontoUseCase,
-    GenerarCuotasUseCase,
+    GenerarCobrosUseCase,
     RegistrarPagoUseCase,
     EliminarPagoUseCase,
-    EliminarCuotaUseCase,
+    EliminarCobroUseCase,
     MarcarVencidasUseCase,
 
     // Services
@@ -91,7 +92,7 @@ import { Reflector } from '@nestjs/core';
     DashboardQuery,
 
     // Jobs
-    GenerarCuotasJob,
+    GenerarCobrosJob,
     MarcarVencidasJob,
 
     // Interceptors
@@ -101,8 +102,8 @@ import { Reflector } from '@nestjs/core';
   exports: [
     TypeOrmModule,
     TarifaRepository,
-    CuotaRepository,
-    CuentaCarteraRepository,
+    CobroRepository,
+    PlanDeCobroRepository,
     PagoRepository,
     SolicitudRepository,
   ],

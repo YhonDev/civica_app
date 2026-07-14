@@ -58,17 +58,17 @@ export class UsuariosController {
   // ════════════════════════════════════════════════════════════
 
   /**
-   * Listar todos los propietarios con sus emails (solo Admin).
-   * Útil para el módulo Comunidad donde Admin ve credenciales.
+   * Listar todos los residentes con sus emails (solo Admin).
+   * Útil para el módulo Community donde Admin ve credenciales.
    * IMPORTANTE: Esta ruta DEBE estar ANTES de /:id/etapas
    * para evitar que NestJS la interprete como un :id.
    */
-  @Get('propietarios')
+  @Get('residentes')
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN)
-  async listarPropietarios(@CurrentTenant() tenantId: string) {
+  async listarResidentes(@CurrentTenant() tenantId: string) {
     const usuarios = await this.usuarioRepository.find({
-      where: { tenantId, rol: RolUsuario.PROPIETARIO },
+      where: { tenantId, rol: RolUsuario.RESIDENTE },
       order: { nombre: 'ASC' },
     });
 
@@ -77,7 +77,7 @@ export class UsuariosController {
       email: u.email,
       nombre: u.nombre,
       activo: u.activo,
-      propietarioId: u.propietarioId,
+      residenteId: u.residenteId,
       createdAt: u.createdAt,
     }));
   }

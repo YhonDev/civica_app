@@ -3,10 +3,10 @@ import { Cron } from '@nestjs/schedule';
 import { MarcarVencidasUseCase } from '../../application/use-cases/marcar-vencidas.use-case';
 
 /**
- * Cron job that marks overdue cuotas as VENCIDA daily.
+ * Cron job that marks overdue cobros as VENCIDA daily.
  *
- * Runs at 00:10 (10 minutes after cuota generation at 00:05)
- * to ensure new cuotas are generated before checking for overdue ones.
+ * Runs at 00:10 (10 minutes after cobro generation at 00:05)
+ * to ensure new cobros are generated before checking for overdue ones.
  */
 @Injectable()
 export class MarcarVencidasJob {
@@ -16,12 +16,12 @@ export class MarcarVencidasJob {
 
   @Cron('0 10 0 * * *')
   async handleCron() {
-    this.logger.log('⏰ Iniciando marcado de cuotas vencidas...');
+    this.logger.log('⏰ Iniciando marcado de cobros vencidos...');
 
     try {
       const result = await this.marcarVencidasUC.execute();
       this.logger.log(
-        `[MarcarVencidasJob] ${result.marcadas} cuota(s) marcada(s) como vencida(s)`,
+        `[MarcarVencidasJob] ${result.marcadas} cobro(s) marcado(s) como vencido(s)`,
       );
     } catch (error) {
       const message =

@@ -13,7 +13,7 @@ describe('Community API Integration', () => {
   let app: INestApplication;
   let dataSource: DataSource;
   let tenantId: string;
-  let conjuntoId: string;
+  let proyectoId: string;
   let etapaId: string;
   let casaId: string;
 
@@ -43,7 +43,7 @@ describe('Community API Integration', () => {
     const adminId = randomUUID();
     const adminHash = bcryptHashSync('admin123', 10);
     await dataSource.query(
-      `INSERT INTO usuarios (id, email, password_hash, nombre, rol, propietario_id, tenant_id, activo)
+      `INSERT INTO usuarios (id, email, password_hash, nombre, rol, residente_id, tenant_id, activo)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
       [adminId, 'admin-community@test.com', adminHash, 'Admin Community', 'ADMIN', null, tenantId, true],
     );
@@ -60,13 +60,13 @@ describe('Community API Integration', () => {
     // Clean up in dependency order to respect FK constraints
     await dataSource.query(`DELETE FROM asignaciones_etapa WHERE tenant_id = $1`, [tenantId]);
     await dataSource.query(
-      `DELETE FROM tenencias WHERE propietario_id IN (SELECT id FROM propietarios WHERE tenant_id = $1)`,
+      `DELETE FROM tenencias WHERE residente_id IN (SELECT id FROM propietarios WHERE tenant_id = $1)`,
       [tenantId],
     );
     await dataSource.query(`DELETE FROM propietarios WHERE tenant_id = $1`, [tenantId]);
     await dataSource.query(`DELETE FROM usuarios WHERE tenant_id = $1`, [tenantId]);
     await dataSource.query(`DELETE FROM casas WHERE etapa_id = $1`, [etapaId]);
-    await dataSource.query(`DELETE FROM etapas WHERE conjunto_id = $1`, [conjuntoId]);
+    await dataSource.query(`DELETE FROM etapas WHERE proyecto_id = $1`, [proyectoId]);
     await dataSource.query(`DELETE FROM conjuntos WHERE tenant_id = $1`, [tenantId]);
 
     await app.close();
@@ -83,20 +83,20 @@ describe('Community API Integration', () => {
     expect(res.body).toHaveProperty('id');
     expect(res.body.nombre).toBe('Residencial Test');
     expect(res.body.tenantId).toBe(tenantId);
-    conjuntoId = res.body.id;
+    proyectoId = res.body.id;
   });
 
   // ── S1.7.2 Create Etapa ─────────────────────────────────────────────
 
   it('should create an etapa linked to conjunto (POST /conjuntos/:id/etapas) → 201', async () => {
     const res = await request(app.getHttpServer())
-      .post(`/conjuntos/${conjuntoId}/etapas`)
+      .post(`/conjuntos/${proyectoId}/etapas`)
       .send({ nombre: 'Etapa 1' })
       .expect(201);
 
     expect(res.body).toHaveProperty('id');
     expect(res.body.nombre).toBe('Etapa 1');
-    expect(res.body.conjuntoId).toBe(conjuntoId);
+    expect(res.body.proyectoId).toBe(proyectoId);
     etapaId = res.body.id;
   });
 
@@ -166,10 +166,10 @@ describe('Community API Integration', () => {
 
     expect(Array.isArray(res.body)).toBe(true);
     expect(res.body.length).toBeGreaterThanOrEqual(1);
-    expect(res.body.some((c: { id: string }) => c.id === conjuntoId)).toBe(true);
+    expect(res.body.some((c: { id: string }) => c.id === proyectoId)).toBe(true);
 
     // Verify the conjunto includes nested etapas and casas
-    const created = res.body.find((c: { id: string }) => c.id === conjuntoId);
+    const created = res.body.find((c: { id: string }) => c.id === proyectoId);
     expect(created.etapas).toBeDefined();
     expect(created.etapas.length).toBeGreaterThanOrEqual(1);
     expect(created.etapas[0].casas).toBeDefined();

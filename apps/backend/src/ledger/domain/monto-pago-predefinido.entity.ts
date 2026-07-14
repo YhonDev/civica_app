@@ -15,8 +15,8 @@ export class MontoPagoPredefinido {
   @Column({ name: 'tenant_id', type: 'uuid' })
   tenantId: string;
 
-  @Column({ name: 'conjunto_id', type: 'uuid' })
-  conjuntoId: string;
+  @Column({ name: 'proyecto_id', type: 'uuid' })
+  proyectoId: string;
 
   @Column({ name: 'monto', type: 'integer' })
   monto: number; // en centavos COP
@@ -38,14 +38,14 @@ export class MontoPagoPredefinido {
 
   static crear(
     tenantId: string,
-    conjuntoId: string,
+    proyectoId: string,
     monto: Money,
     descripcion: string,
     orden: number,
   ): MontoPagoPredefinido {
     const mpp = new MontoPagoPredefinido();
     mpp.tenantId = tenantId;
-    mpp.conjuntoId = conjuntoId;
+    mpp.proyectoId = proyectoId;
     mpp.monto = monto.amount;
     mpp.descripcion = descripcion;
     mpp.activo = true;

@@ -8,7 +8,7 @@ import {
   JoinColumn,
   OneToMany,
 } from 'typeorm';
-import { Conjunto } from './conjunto.entity';
+import { Proyecto } from './proyecto.entity';
 import { Manzana } from './manzana.entity';
 
 @Entity('etapas')
@@ -19,13 +19,13 @@ export class Etapa {
   @Column({ name: 'nombre', type: 'varchar', length: 255 })
   nombre: string;
 
-  @Column({ name: 'conjunto_id', type: 'uuid' })
-  conjuntoId: string;
+  @Column({ name: 'proyecto_id', type: 'uuid' })
+  proyectoId: string;
 
-  @ManyToOne(() => Conjunto, (conjunto) => conjunto.etapas, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'conjunto_id' })
+  @ManyToOne(() => Proyecto, (proyecto) => proyecto.etapas, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'proyecto_id' })
   @Exclude()
-  conjunto: Conjunto;
+  proyecto: Proyecto;
 
   @OneToMany(() => Manzana, (manzana) => manzana.etapa, { cascade: true })
   manzanas: Manzana[];
@@ -35,11 +35,11 @@ export class Etapa {
 
   // --- Domain behavior ---
 
-  static crear(nombre: string, conjunto: Conjunto): Etapa {
+  static crear(nombre: string, proyecto: Proyecto): Etapa {
     const etapa = new Etapa();
     etapa.nombre = nombre;
-    etapa.conjunto = conjunto;
-    etapa.conjuntoId = conjunto.id;
+    etapa.proyecto = proyecto;
+    etapa.proyectoId = proyecto.id;
     etapa.manzanas = [];
     return etapa;
   }

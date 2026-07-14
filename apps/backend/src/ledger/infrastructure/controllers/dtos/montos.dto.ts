@@ -10,7 +10,7 @@ import {
 export class CrearMontoDto {
   @IsString()
   @IsNotEmpty()
-  conjuntoId: string;
+  proyectoId: string;
 
   @IsNumber()
   @Min(1, { message: 'El monto debe ser mayor a cero' })
@@ -25,5 +25,5 @@ export class CrearMontoDto {
 export class ListarMontosQueryDto {
   @IsString()
   @IsNotEmpty()
-  conjuntoId: string;
+  proyectoId: string;
 }

@@ -21,7 +21,7 @@ export class TarifaDerivacionService {
    * Desactiva futuras activas con la misma fecha de vigencia o posterior.
    */
   async crearVersiones(
-    conjuntoId: string,
+    proyectoId: string,
     tenantId: string,
     frecuenciaOrigen: Frecuencia,
     montoCentavos: number,
@@ -32,9 +32,9 @@ export class TarifaDerivacionService {
     const creadas: Tarifa[] = [];
 
     for (const frecuencia of ['SEMANAL', 'QUINCENAL', 'MENSUAL'] as Frecuencia[]) {
-      await this.desactivarFuturas(conjuntoId, tenantId, frecuencia, fechaVigencia);
+      await this.desactivarFuturas(proyectoId, tenantId, frecuencia, fechaVigencia);
       const tarifa = Tarifa.crear(
-        conjuntoId,
+        proyectoId,
         tenantId,
         frecuencia,
         Money.ofCOP(derivadas[frecuencia]),
@@ -51,7 +51,7 @@ export class TarifaDerivacionService {
    * Se usa cuando el admin modifica el valor de la cuota.
    */
   async actualizarActivas(
-    conjuntoId: string,
+    proyectoId: string,
     tenantId: string,
     frecuenciaOrigen: Frecuencia,
     montoCentavos: number,
@@ -60,7 +60,7 @@ export class TarifaDerivacionService {
     const derivadas = tarifasDerivadas(montoMensual);
     const actualizadas: Tarifa[] = [];
 
-    const todas = await this.tarifaRepository.findAll(tenantId, conjuntoId);
+    const todas = await this.tarifaRepository.findAll(tenantId, proyectoId);
 
     for (const frecuencia of ['SEMANAL', 'QUINCENAL', 'MENSUAL'] as Frecuencia[]) {
       const activa = todas.find((t) => t.activa && t.frecuencia === frecuencia);
@@ -74,12 +74,12 @@ export class TarifaDerivacionService {
   }
 
   private async desactivarFuturas(
-    conjuntoId: string,
+    proyectoId: string,
     tenantId: string,
     frecuencia: Frecuencia,
     fechaVigencia: string,
   ): Promise<void> {
-    const existentes = await this.tarifaRepository.findAll(tenantId, conjuntoId);
+    const existentes = await this.tarifaRepository.findAll(tenantId, proyectoId);
     for (const t of existentes) {
       if (
         t.activa &&
