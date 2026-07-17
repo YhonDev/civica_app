@@ -1,4 +1,5 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
+import { DataSource } from 'typeorm';
 import { Pago } from '../../domain/pago.entity';
 import { Cobro } from '../../domain/cobro.entity';
 import { PagoRepository } from '../../infrastructure/persistence/pago.repository';
@@ -34,6 +35,7 @@ export class RegistrarPagoUseCase {
   private readonly logger = new Logger(RegistrarPagoUseCase.name);
 
   constructor(
+    private readonly dataSource: DataSource,
     private readonly pagoRepo: PagoRepository,
     private readonly cobroRepo: CobroRepository,
     private readonly planDeCobroRepo: PlanDeCobroRepository,
@@ -86,62 +88,70 @@ export class RegistrarPagoUseCase {
       );
     }
 
-    // 3. FIFO Distribution Loop
-    let remaining = input.monto;
-    const cobrosAfectados: Cobro[] = [];
+    // 3. FIFO Distribution Loop — dentro de transacción con pessimistic locking
+    const { pago, cobrosAfectados } = await this.dataSource.transaction(
+      async (entityManager) => {
+        let remaining = input.monto;
+        const cobrosAfectados: Cobro[] = [];
 
-    while (remaining > 0) {
-      const cobro = await this.cobroRepo.findMasAntiguoConSaldo(
-        input.residenteId,
-      );
+        while (remaining > 0) {
+          // Usar PESSIMISTIC_WRITE para evitar race conditions
+          // entre pagos concurrentes al mismo residente
+          const cobro = await this.cobroRepo.findMasAntiguoConSaldoLocked(
+            entityManager,
+            input.residenteId,
+          );
 
-      if (!cobro) {
-        if (remaining > 0) {
-          this.logger.warn(
-            `Pago ${input.clientPaymentId}: excedente de ${remaining} centavos no aplicado — sin cobros pendientes.`,
+          if (!cobro) {
+            if (remaining > 0) {
+              this.logger.warn(
+                `Pago ${input.clientPaymentId}: excedente de ${remaining} centavos no aplicado — sin cobros pendientes.`,
+              );
+            }
+            break;
+          }
+
+          const excess = cobro.aplicarPago(Money.ofCOP(remaining));
+          await entityManager.save(cobro);
+          cobrosAfectados.push(cobro);
+          remaining = excess.amount;
+        }
+
+        if (cobrosAfectados.length === 0) {
+          throw new BadRequestException(
+            `No hay cobros pendientes para el residente ${input.residenteId}. Todos los saldos están pagados.`,
           );
         }
-        break;
-      }
 
-      const excess = cobro.aplicarPago(Money.ofCOP(remaining));
-      await this.cobroRepo.save(cobro);
-      cobrosAfectados.push(cobro);
-      remaining = excess.amount;
-    }
+        // 4. Create Pago record (linked to first affected cobro)
+        const firstCobroId = cobrosAfectados[0]?.id;
+        const pago = Pago.crear(
+          input.clientPaymentId,
+          input.tenantId,
+          Money.ofCOP(input.monto),
+          input.fechaPago,
+          input.cobradorId,
+          input.residenteId,
+          firstCobroId,
+        );
 
-    if (cobrosAfectados.length === 0) {
-      throw new BadRequestException(
-        `No hay cobros pendientes para el residente ${input.residenteId}. Todos los saldos están pagados.`,
-      );
-    }
+        // 5. Persist dentro de la misma transacción
+        await entityManager.save(pago);
 
-    // 4. Create Pago record (linked to first affected cobro)
-    const firstCobroId = cobrosAfectados[0]?.id;
-    const pago = Pago.crear(
-      input.clientPaymentId,
-      input.tenantId,
-      Money.ofCOP(input.monto),
-      input.fechaPago,
-      input.cobradorId,
-      input.residenteId,
-      firstCobroId,
+        if (input.solicitudId) {
+          const solicitud = await this.solicitudRepo.findById(input.solicitudId);
+          if (solicitud) {
+            solicitud.estado = SolicitudEstado.RESUELTA;
+            solicitud.pagoId = pago.id;
+            solicitud.respuesta = 'Pago registrado exitosamente.';
+            solicitud.fechaRespuesta = new Date();
+            await entityManager.save(solicitud);
+          }
+        }
+
+        return { pago, cobrosAfectados };
+      },
     );
-
-    // 5. Persist
-    await this.pagoRepo.save(pago);
-    await this.cobroRepo.saveMany(cobrosAfectados);
-
-    if (input.solicitudId) {
-      const solicitud = await this.solicitudRepo.findById(input.solicitudId);
-      if (solicitud) {
-        solicitud.estado = SolicitudEstado.RESUELTA;
-        solicitud.pagoId = pago.id;
-        solicitud.respuesta = 'Pago registrado exitosamente.';
-        solicitud.fechaRespuesta = new Date();
-        await this.solicitudRepo.save(solicitud);
-      }
-    }
 
     // 6. Build event
     const event = new PagoRegistradoEvent(

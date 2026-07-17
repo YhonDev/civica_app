@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, LessThan } from 'typeorm';
+import { Repository, LessThan, EntityManager } from 'typeorm';
 import { Cobro } from '../../domain/cobro.entity';
 import { BaseTenantRepository } from '../../../shared/common/infrastructure/base-tenant.repository';
 
@@ -78,7 +78,7 @@ export class CobroRepository extends BaseTenantRepository<Cobro> {
       .createQueryBuilder('cobro')
       .select('COALESCE(SUM(cobro.monto), 0)', 'total')
       .where('cobro.tenantId = :tenantId', { tenantId })
-      .andWhere("cobro.periodoInicio LIKE :anioPattern", { anioPattern: `${anio}-%` })
+      .andWhere('EXTRACT(YEAR FROM cobro.periodoInicio) = :anio', { anio })
       .getRawOne();
     return Number(result?.total ?? 0);
   }
@@ -134,7 +134,8 @@ export class CobroRepository extends BaseTenantRepository<Cobro> {
         'COUNT(cobro.id) AS pagados',
       ])
       .where('cobro.tenantId = :tenantId', { tenantId })
-      .andWhere("cobro.periodoInicio LIKE :anioMesPattern", { anioMesPattern: `${anio}-${String(mes).padStart(2, '0')}-%` })
+      .andWhere('EXTRACT(YEAR FROM cobro.periodoInicio) = :anio', { anio })
+      .andWhere('EXTRACT(MONTH FROM cobro.periodoInicio) = :mes', { mes })
       .andWhere("cobro.estado IN ('PAGADA', 'PARCIAL')")
       .groupBy('EXTRACT(WEEK FROM cobro.periodoInicio)')
       .orderBy('semana', 'ASC')
@@ -150,7 +151,8 @@ export class CobroRepository extends BaseTenantRepository<Cobro> {
         "COALESCE(SUM(CASE WHEN cobro.estado IN ('VENCIDA') THEN 1 ELSE 0 END), 0) AS enMora",
       ])
       .where('cobro.tenantId = :tenantId', { tenantId })
-      .andWhere("cobro.periodoInicio LIKE :anioMesPattern", { anioMesPattern: `${anio}-${String(mes).padStart(2, '0')}-%` })
+      .andWhere('EXTRACT(YEAR FROM cobro.periodoInicio) = :anio', { anio })
+      .andWhere('EXTRACT(MONTH FROM cobro.periodoInicio) = :mes', { mes })
       .andWhere("cobro.estado IN ('PENDIENTE', 'VENCIDA')")
       .groupBy('EXTRACT(WEEK FROM cobro.periodoInicio)')
       .orderBy('semana', 'ASC')
@@ -161,6 +163,22 @@ export class CobroRepository extends BaseTenantRepository<Cobro> {
     return this.repo.findOne({
       where: { residenteId, estado: 'PENDIENTE' },
       order: { fechaVencimiento: 'ASC' },
+    });
+  }
+
+  /**
+   * Finds the oldest cobro with pending balance, locking the row
+   * with PESSIMISTIC_WRITE to prevent concurrent payment race conditions.
+   * Must be called within an active database transaction.
+   */
+  async findMasAntiguoConSaldoLocked(
+    entityManager: EntityManager,
+    residenteId: string,
+  ): Promise<Cobro | null> {
+    return entityManager.findOne(Cobro, {
+      where: { residenteId, estado: 'PENDIENTE' },
+      order: { fechaVencimiento: 'ASC' },
+      lock: { mode: 'pessimistic_write' },
     });
   }
 
