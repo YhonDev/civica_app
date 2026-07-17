@@ -8,7 +8,7 @@ export function databaseConfig(): TypeOrmModuleOptions {
     host: process.env.DATABASE_HOST || '127.0.0.1',
     port: parseInt(process.env.DATABASE_PORT || '54322', 10),
     username: process.env.DATABASE_USER || 'postgres',
-    password: process.env.DATABASE_PASSWORD || 'postgres',
+    password: process.env.DATABASE_PASSWORD!,
     database: process.env.DATABASE_NAME || 'postgres',
     autoLoadEntities: true,
     synchronize: false,
