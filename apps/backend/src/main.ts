@@ -1,11 +1,25 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, ClassSerializerInterceptor } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import helmet from 'helmet';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // ─── Security Middleware ─────────────────────────────
+  // Helmet: protege contra vulnerabilidades HTTP comunes
+  app.use(helmet());
+
+  // CORS: solo orígenes permitidos (default: http://localhost:3000)
+  const corsOrigins = process.env.CORS_ORIGIN?.split(',') ?? ['http://localhost:3000'];
+  app.enableCors({
+    origin: corsOrigins,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+    credentials: true,
+  });
+
+  // ─── Validation ─────────────────────────────────────
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -14,11 +28,13 @@ async function bootstrap() {
     }),
   );
 
+  // ─── Serialization ──────────────────────────────────
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
 
-  // Habilitar los hooks de apagado para liberar el puerto inmediatamente en SIGINT/SIGTERM
+  // ─── Graceful Shutdown ──────────────────────────────
   app.enableShutdownHooks();
 
   await app.listen(process.env.PORT ?? 3000);
+  console.log(`Servidor iniciado en puerto ${process.env.PORT ?? 3000}`);
 }
 bootstrap();
