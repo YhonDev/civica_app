@@ -1,13 +1,14 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:civica_pago_mobile/core/network/api_client.dart';
 import 'package:civica_pago_mobile/main.dart';
 
 void main() {
   setUp(() async {
-    SharedPreferences.setMockInitialValues({});
-    ApiClient.init(baseUrl: 'http://localhost:3000');
+    ApiClient.init(
+      baseUrl: 'http://localhost:3000',
+      tokenStorage: TokenStorage(storage: InMemorySecureStorage()),
+    );
   });
 
   testWidgets('App smoke test — shows login when unauthenticated',

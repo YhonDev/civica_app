@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:civica_pago_mobile/core/network/api_client.dart';
 import 'package:civica_pago_mobile/features/solicitudes/solicitudes_repository.dart';
@@ -11,8 +10,10 @@ void main() {
   late SolicitudesRepository repository;
 
   setUp(() {
-    SharedPreferences.setMockInitialValues({});
-    ApiClient.init(baseUrl: 'http://test.local');
+    ApiClient.init(
+      baseUrl: 'http://test.local',
+      tokenStorage: TokenStorage(storage: InMemorySecureStorage()),
+    );
     mockAdapter = MockHttpAdapter();
     ApiClient.setHttpClientAdapter(mockAdapter);
     repository = SolicitudesRepository();
@@ -23,7 +24,7 @@ void main() {
       mockAdapter.onGet('/solicitudes/admin', [
         {
           'id': 'SOL_1',
-          'cuotaId': 'CUO_1',
+          'cobroId': 'CUO_1',
           'nroRecibo': 'TK-123456',
           'tipo': 'Revisión pago de Junio 2026',
           'descripcion': 'Error en el monto',
@@ -44,8 +45,8 @@ void main() {
       expect(solicitudes[0].tipo, 'Revisión pago de Junio 2026');
       expect(solicitudes[0].descripcion, 'Error en el monto');
       expect(solicitudes[0].estado, SolicitudEstado.enRevision);
-      expect(solicitudes[0].propietarioId, 'USR_1');
-      expect(solicitudes[0].propietarioNombre, 'Juan Pérez');
+      expect(solicitudes[0].residenteId, 'USR_1');
+      expect(solicitudes[0].residenteNombre, 'Juan Pérez');
       expect(solicitudes[0].respuesta, isNull);
     });
 
@@ -53,7 +54,7 @@ void main() {
       mockAdapter.onGet('/solicitudes/admin', [
         {
           'id': 'SOL_2',
-          'cuotaId': 'CUO_1',
+          'cobroId': 'CUO_1',
           'nroRecibo': 'TK-654321',
           'tipo': 'Revisión',
           'descripcion': 'Ok',
@@ -77,7 +78,7 @@ void main() {
       mockAdapter.onGet('/solicitudes/admin', [
         {
           'id': 'SOL_3',
-          'cuotaId': 'CUO_1',
+          'cobroId': 'CUO_1',
           'nroRecibo': 'TK-999999',
           'tipo': 'Otro',
           'descripcion': 'No procede',
@@ -101,7 +102,7 @@ void main() {
       mockAdapter.onGet('/solicitudes/pendientes', [
         {
           'id': 'SOL_P1',
-          'cuotaId': 'CUO_2',
+          'cobroId': 'CUO_2',
           'nroRecibo': 'TK-111111',
           'tipo': 'Revisión',
           'descripcion': 'Urgente',
@@ -118,7 +119,7 @@ void main() {
 
       expect(result.length, 1);
       expect(result[0].estado, SolicitudEstado.pendiente);
-      expect(result[0].propietarioNombre, 'Ana');
+      expect(result[0].residenteNombre, 'Ana');
     });
   });
 
@@ -127,10 +128,10 @@ void main() {
       mockAdapter.onPost('/solicitudes', {'id': 'NEW_SOL'});
 
       await repository.crearSolicitud(
-        cuotaId: 'CUO_1',
+        cobroId: 'CUO_1',
         tipo: 'Revisión pago de Junio 2026',
         descripcion: 'Error en monto',
-        propietarioId: 'USR_1',
+        residenteId: 'USR_1',
       );
 
       expect(mockAdapter.calls('POST', '/solicitudes'), 1);
@@ -156,7 +157,7 @@ void main() {
       mockAdapter.onGet('/solicitudes/admin', [
         {
           'id': 'SOL_UNKNOWN',
-          'cuotaId': 'CUO_1',
+          'cobroId': 'CUO_1',
           'nroRecibo': 'TK-000000',
           'tipo': 'Desconocido',
           'descripcion': 'Estado raro',
@@ -178,7 +179,7 @@ void main() {
       mockAdapter.onGet('/solicitudes/admin', [
         {
           'id': 'SOL_NO_DATE',
-          'cuotaId': 'CUO_1',
+          'cobroId': 'CUO_1',
           'nroRecibo': 'TK-111111',
           'tipo': 'Test',
           'descripcion': 'Sin fecha',

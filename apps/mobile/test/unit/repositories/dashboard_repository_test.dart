@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:civica_pago_mobile/core/network/api_client.dart';
 import 'package:civica_pago_mobile/features/dashboard/dashboard_repository.dart';
@@ -20,12 +19,12 @@ Map<String, dynamic> _dashboardResponse() {
       'moraTotal': 72000000,       // 720K
     },
     'evolucion': [
-      {'dia': 1, 'valor': 120000000},
-      {'dia': 5, 'valor': 350000000},
-      {'dia': 10, 'valor': 580000000},
+      {'dia': '1', 'valor': 120000000},
+      {'dia': '5', 'valor': 350000000},
+      {'dia': '10', 'valor': 580000000},
     ],
     'modalidades': [
-      {'frecuencia': 'MENSUAL', 'totalCuotas': 80, 'pagadas': 50, 'porcentaje': 62.5, 'montoRecaudo': 500000000},
+      {'modalidad': 'MENSUAL', 'totalCuotas': 80, 'pagadas': 50, 'porcentaje': 62.5, 'montoRecaudo': 500000000},
     ],
     'estadoCobros': {
       'pagados': 73.9,
@@ -43,8 +42,8 @@ Map<String, dynamic> _dashboardResponse() {
       },
     ],
     'solicitudesPendientes': 5,
-    'propietariosMora': 6,
-    'nuevosPropietariosSemana': 3,
+    'residentesMora': 6,
+    'nuevosResidentesSemana': 3,
     'acumuladoAnual': 3500000000,  // 35M
     'metaAnual': 12000000000,      // 120M
     'historialMeses': [
@@ -60,8 +59,10 @@ void main() {
   late DashboardRepository repository;
 
   setUp(() {
-    SharedPreferences.setMockInitialValues({});
-    ApiClient.init(baseUrl: 'http://test.local');
+    ApiClient.init(
+      baseUrl: 'http://test.local',
+      tokenStorage: TokenStorage(storage: InMemorySecureStorage()),
+    );
     mockAdapter = MockHttpAdapter();
     ApiClient.setHttpClientAdapter(mockAdapter);
     repository = DashboardRepository();
@@ -70,7 +71,7 @@ void main() {
   group('DashboardRepository.getDashboard', () {
     test('mapea todos los campos correctamente desde centavos a unidades', () async {
       mockAdapter.onGet('/dashboard/administrador', _dashboardResponse());
-      mockAdapter.onGet('/propietarios', [
+      mockAdapter.onGet('/residentes', [
         {'id': 'P1', 'nombre': 'Juan'},
         {'id': 'P2', 'nombre': 'María'},
       ]);
@@ -115,9 +116,9 @@ void main() {
 
       // Centro de atención
       expect(data.solicitudesPendientes, 5);
-      expect(data.propietariosMora, 6);
-      expect(data.nuevosPropietariosSemana, 3);
-      expect(data.totalPropietarios, 2);
+      expect(data.residentesMora, 6);
+      expect(data.nuevosResidentesSemana, 3);
+      expect(data.totalResidentes, 2);
 
       // Historial meses
       expect(data.historialMeses.length, 2);
@@ -137,7 +138,7 @@ void main() {
         'resumen': {},
         'estadoCobros': {},
       });
-      mockAdapter.onGet('/propietarios', []);
+      mockAdapter.onGet('/residentes', []);
 
       final data = await repository.getDashboard(1, 2026);
 
@@ -148,7 +149,7 @@ void main() {
       expect(data.modalidades, isEmpty);
       expect(data.actividadReciente, isEmpty);
       expect(data.historialMeses, isEmpty);
-      expect(data.totalPropietarios, 0);
+      expect(data.totalResidentes, 0);
     });
 
     test('resumen con campos nulos no causa error', () async {
@@ -158,7 +159,7 @@ void main() {
         'resumen': {},  // resumen vacío
         'estadoCobros': {},
       });
-      mockAdapter.onGet('/propietarios', []);
+      mockAdapter.onGet('/residentes', []);
 
       final data = await repository.getDashboard(6, 2026);
 
