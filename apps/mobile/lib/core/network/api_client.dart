@@ -1,13 +1,58 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import 'package:flutter/foundation.dart' show debugPrint, visibleForTesting;
 
 import 'api_exceptions.dart';
 
 // ──────────────────────────────────────────────
-// Token Storage — SharedPreferences wrapper
+// Secure Storage Interface (testeable)
+// ──────────────────────────────────────────────
+
+/// Abstraction over secure storage to enable dependency injection in tests.
+abstract class SecureStorage {
+  Future<String?> read(String key);
+  Future<void> write(String key, String value);
+  Future<void> delete(String key);
+}
+
+/// Production implementation backed by [FlutterSecureStorage].
+class FlutterSecureStorageAdapter implements SecureStorage {
+  final FlutterSecureStorage _storage = const FlutterSecureStorage();
+
+  @override
+  Future<String?> read(String key) => _storage.read(key: key);
+
+  @override
+  Future<void> write(String key, String value) =>
+      _storage.write(key: key, value: value);
+
+  @override
+  Future<void> delete(String key) => _storage.delete(key: key);
+}
+
+/// In-memory implementation for testing.
+@visibleForTesting
+class InMemorySecureStorage implements SecureStorage {
+  final _store = <String, String>{};
+
+  @override
+  Future<String?> read(String key) async => _store[key];
+
+  @override
+  Future<void> write(String key, String value) async {
+    _store[key] = value;
+  }
+
+  @override
+  Future<void> delete(String key) async {
+    _store.remove(key);
+  }
+}
+
+// ──────────────────────────────────────────────
+// Token Storage — SecureStorage wrapper
 // ──────────────────────────────────────────────
 
 class TokenStorage {
@@ -15,30 +60,32 @@ class TokenStorage {
   static const _refreshKey = 'refresh_token';
   static const _userKey = 'usuario_info';
 
+  final SecureStorage _storage;
+
+  TokenStorage({SecureStorage? storage})
+      : _storage = storage ?? FlutterSecureStorageAdapter();
+
   Future<String?> getAccessToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_accessKey);
+    return _storage.read(_accessKey);
   }
 
   Future<String?> getRefreshToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_refreshKey);
+    return _storage.read(_refreshKey);
   }
 
   Future<void> saveTokens(String access, String refresh) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_accessKey, access);
-    await prefs.setString(_refreshKey, refresh);
+    await Future.wait([
+      _storage.write(_accessKey, access),
+      _storage.write(_refreshKey, refresh),
+    ]);
   }
 
   Future<void> saveUser(Map<String, dynamic> user) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_userKey, jsonEncode(user));
+    await _storage.write(_userKey, jsonEncode(user));
   }
 
   Future<Map<String, dynamic>?> getUser() async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_userKey);
+    final raw = await _storage.read(_userKey);
     if (raw == null) return null;
     try {
       return jsonDecode(raw) as Map<String, dynamic>;
@@ -48,10 +95,11 @@ class TokenStorage {
   }
 
   Future<void> clearTokens() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_accessKey);
-    await prefs.remove(_refreshKey);
-    await prefs.remove(_userKey);
+    await Future.wait([
+      _storage.delete(_accessKey),
+      _storage.delete(_refreshKey),
+      _storage.delete(_userKey),
+    ]);
   }
 
   Future<bool> hasTokens() async {
@@ -212,10 +260,12 @@ class ApiClient {
 
   ApiClient._({
     required String baseUrl,
+    bool enableLogging = true,
     Duration connectTimeout = const Duration(seconds: 15),
     Duration receiveTimeout = const Duration(seconds: 15),
+    TokenStorage? storage,
   }) {
-    tokenStorage = TokenStorage();
+    tokenStorage = storage ?? TokenStorage();
 
     // Dio para refresh (sin interceptors para evitar loops)
     final dioForRefresh = Dio(_baseOptions(baseUrl, connectTimeout, receiveTimeout));
@@ -227,11 +277,15 @@ class ApiClient {
 
     _dio = Dio(_baseOptions(baseUrl, connectTimeout, receiveTimeout));
     _dio.interceptors.add(_authInterceptor);
-    _dio.interceptors.add(LogInterceptor(
-      requestBody: true,
-      responseBody: true,
-      logPrint: (o) => debugPrint('[API] $o'),
-    ));
+
+    // Solo agregar LogInterceptor en desarrollo para no exponer datos sensibles
+    if (enableLogging) {
+      _dio.interceptors.add(LogInterceptor(
+        requestBody: true,
+        responseBody: true,
+        logPrint: (o) => debugPrint('[API] $o'),
+      ));
+    }
   }
 
   BaseOptions _baseOptions(
@@ -251,13 +305,17 @@ class ApiClient {
   /// Debe llamarse una vez al iniciar la app (ej: en main).
   static void init({
     required String baseUrl,
+    bool enableLogging = true,
     Duration connectTimeout = const Duration(seconds: 15),
     Duration receiveTimeout = const Duration(seconds: 15),
+    TokenStorage? tokenStorage,
   }) {
     _instance = ApiClient._(
       baseUrl: baseUrl,
+      enableLogging: enableLogging,
       connectTimeout: connectTimeout,
       receiveTimeout: receiveTimeout,
+      storage: tokenStorage,
     );
   }
 
