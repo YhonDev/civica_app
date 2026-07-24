@@ -24,6 +24,14 @@ export class CobroRepository extends BaseTenantRepository<Cobro> {
     });
   }
 
+  async findByResidentes(residenteIds: string[]): Promise<Cobro[]> {
+    if (residenteIds.length === 0) return [];
+    return this.repo.createQueryBuilder('cobro')
+      .where('cobro.residenteId IN (:...residenteIds)', { residenteIds })
+      .orderBy('cobro.periodoInicio', 'DESC')
+      .getMany();
+  }
+
   async findPendientesByTenant(tenantId: string): Promise<Cobro[]> {
     return this.repo.find({
       where: { tenantId, estado: 'PENDIENTE' },
@@ -194,5 +202,46 @@ export class CobroRepository extends BaseTenantRepository<Cobro> {
         fechaVencimiento: LessThan(hoy),
       },
     });
+  }
+
+  async findAllWithFilters(
+    tenantId: string,
+    filters: { etapaId?: string; manzanaId?: string; status?: string },
+    allowedEtapaIds?: string[],
+  ): Promise<Cobro[]> {
+    const qb = this.repo.createQueryBuilder('cobro')
+      .leftJoinAndSelect('cobro.residente', 'residente')
+      .leftJoinAndSelect('residente.casaActual', 'casa')
+      .leftJoinAndSelect('casa.manzana', 'manzana')
+      .leftJoinAndSelect('manzana.etapa', 'etapa')
+      .where('cobro.tenantId = :tenantId', { tenantId });
+
+    if (allowedEtapaIds && allowedEtapaIds.length > 0) {
+      qb.andWhere('manzana.etapaId IN (:...allowedEtapaIds)', { allowedEtapaIds });
+    }
+
+    if (filters.etapaId) {
+      qb.andWhere('manzana.etapaId = :etapaId', { etapaId: filters.etapaId });
+    }
+
+    if (filters.manzanaId) {
+      qb.andWhere('casa.manzanaId = :manzanaId', { manzanaId: filters.manzanaId });
+    }
+
+    if (filters.status) {
+      const statusUpper = filters.status.toUpperCase();
+      if (statusUpper === 'MORA' || statusUpper === 'VENCIDO' || statusUpper === 'VENCIDA') {
+        qb.andWhere('cobro.estado = :status', { status: 'VENCIDA' });
+      } else if (statusUpper === 'PENDIENTE') {
+        qb.andWhere('cobro.estado = :status', { status: 'PENDIENTE' });
+      } else if (statusUpper === 'PAGADO' || statusUpper === 'PAGADA') {
+        qb.andWhere('cobro.estado = :status', { status: 'PAGADA' });
+      } else {
+        qb.andWhere('cobro.estado = :status', { status: statusUpper });
+      }
+    }
+
+    qb.orderBy('cobro.fechaVencimiento', 'ASC');
+    return qb.getMany();
   }
 }

@@ -2,11 +2,15 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
   Param,
   Query,
   Body,
   Delete,
   UseGuards,
+  NotFoundException,
+  BadRequestException,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { CurrentTenant } from '../../../shared/tenant/current-tenant.decorator';
@@ -24,6 +28,7 @@ import {
   CrearEtapaDto,
   CrearManzanaDto,
   RegistrarCasaDto,
+  ActualizarAjustesProyectoDto,
 } from './dtos/proyectos.dto';
 
 @Controller('proyectos')
@@ -41,8 +46,11 @@ export class ProyectosController {
   @Post()
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN)
-  async crear(@Body() dto: CrearProyectoDto) {
-    return this.crearProyectoUseCase.execute(dto.nombre, dto.tenantId);
+  async crear(
+    @Body() dto: CrearProyectoDto,
+    @CurrentTenant() tenantId: string,
+  ) {
+    return this.crearProyectoUseCase.execute(dto.nombre, tenantId);
   }
 
   @Post(':id/etapas')
@@ -78,7 +86,19 @@ export class ProyectosController {
   @Delete('etapas/:id')
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN)
-  async eliminarEtapa(@Param('id') id: string) {
+  async eliminarEtapa(@Param('id', ParseUUIDPipe) id: string) {
+    const tenenciasCount = await this.dataSource.query(
+      'SELECT COUNT(*) as count FROM tenencias t JOIN casas c ON t.casa_id = c.id JOIN manzanas m ON c.manzana_id = m.id WHERE m.etapa_id = $1',
+      [id],
+    );
+    const cobrosCount = await this.dataSource.query(
+      'SELECT COUNT(*) as count FROM cobros co JOIN casas c ON co.casa_id = c.id JOIN manzanas m ON c.manzana_id = m.id WHERE m.etapa_id = $1',
+      [id],
+    );
+    if (Number(tenenciasCount[0]?.count ?? 0) > 0 || Number(cobrosCount[0]?.count ?? 0) > 0) {
+      throw new BadRequestException('No se puede eliminar una etapa con tenencias o cobros activos');
+    }
+
     await this.dataSource.query('DELETE FROM etapas WHERE id = $1', [id]);
     return { success: true };
   }
@@ -86,7 +106,19 @@ export class ProyectosController {
   @Delete('manzanas/:id')
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN)
-  async eliminarManzana(@Param('id') id: string) {
+  async eliminarManzana(@Param('id', ParseUUIDPipe) id: string) {
+    const tenenciasCount = await this.dataSource.query(
+      'SELECT COUNT(*) as count FROM tenencias t JOIN casas c ON t.casa_id = c.id WHERE c.manzana_id = $1',
+      [id],
+    );
+    const cobrosCount = await this.dataSource.query(
+      'SELECT COUNT(*) as count FROM cobros co JOIN casas c ON co.casa_id = c.id WHERE c.manzana_id = $1',
+      [id],
+    );
+    if (Number(tenenciasCount[0]?.count ?? 0) > 0 || Number(cobrosCount[0]?.count ?? 0) > 0) {
+      throw new BadRequestException('No se puede eliminar una manzana con tenencias o cobros activos');
+    }
+
     await this.dataSource.query('DELETE FROM manzanas WHERE id = $1', [id]);
     return { success: true };
   }
@@ -94,7 +126,19 @@ export class ProyectosController {
   @Delete('casas/:id')
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN)
-  async eliminarCasa(@Param('id') id: string) {
+  async eliminarCasa(@Param('id', ParseUUIDPipe) id: string) {
+    const tenenciasCount = await this.dataSource.query(
+      'SELECT COUNT(*) as count FROM tenencias WHERE casa_id = $1',
+      [id],
+    );
+    const cobrosCount = await this.dataSource.query(
+      'SELECT COUNT(*) as count FROM cobros WHERE casa_id = $1',
+      [id],
+    );
+    if (Number(tenenciasCount[0]?.count ?? 0) > 0 || Number(cobrosCount[0]?.count ?? 0) > 0) {
+      throw new BadRequestException('No se puede eliminar una casa con tenencias o cobros activos');
+    }
+
     await this.dataSource.query('DELETE FROM casas WHERE id = $1', [id]);
     return { success: true };
   }
@@ -105,5 +149,59 @@ export class ProyectosController {
   async listar(@CurrentTenant() tenantId: string) {
     if (!tenantId) return [];
     return this.proyectoRepository.findByTenant(tenantId);
+  }
+
+  @Get(':id/ajustes')
+  @UseGuards(RolesGuard)
+  @Roles(RolUsuario.ADMIN)
+  async getAjustes(@Param('id') id: string) {
+    const proyecto = await this.proyectoRepository.findByIdPlano(id);
+    if (!proyecto) {
+      throw new NotFoundException(`Proyecto ${id} no encontrado`);
+    }
+    return {
+      id: proyecto.id,
+      nombre: proyecto.nombre,
+      recordatoriosAutomaticos: proyecto.recordatoriosAutomaticos,
+      permitePagosParciales: proyecto.permitePagosParciales,
+      modoMantenimiento: proyecto.modoMantenimiento,
+      fechaMantenimiento: proyecto.fechaMantenimiento,
+    };
+  }
+
+  @Patch(':id/ajustes')
+  @UseGuards(RolesGuard)
+  @Roles(RolUsuario.ADMIN)
+  async actualizarAjustes(
+    @Param('id') id: string,
+    @Body() dto: ActualizarAjustesProyectoDto,
+  ) {
+    const proyecto = await this.proyectoRepository.findByIdPlano(id);
+    if (!proyecto) {
+      throw new NotFoundException(`Proyecto ${id} no encontrado`);
+    }
+
+    if (dto.recordatoriosAutomaticos !== undefined) {
+      proyecto.recordatoriosAutomaticos = dto.recordatoriosAutomaticos;
+    }
+    if (dto.permitePagosParciales !== undefined) {
+      proyecto.permitePagosParciales = dto.permitePagosParciales;
+    }
+    if (dto.modoMantenimiento !== undefined) {
+      if (dto.modoMantenimiento) {
+        proyecto.activarMantenimiento();
+      } else {
+        proyecto.desactivarMantenimiento();
+      }
+    }
+
+    const guardado = await this.proyectoRepository.save(proyecto);
+    return {
+      id: guardado.id,
+      recordatoriosAutomaticos: guardado.recordatoriosAutomaticos,
+      permitePagosParciales: guardado.permitePagosParciales,
+      modoMantenimiento: guardado.modoMantenimiento,
+      fechaMantenimiento: guardado.fechaMantenimiento,
+    };
   }
 }

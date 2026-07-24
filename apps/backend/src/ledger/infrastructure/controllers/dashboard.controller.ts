@@ -41,12 +41,13 @@ export class DashboardController {
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN)
   async getDashboard(
-    @Query('mes', new DefaultValuePipe(new Date().getMonth() + 1), ParseIntPipe)
-    mes: number,
-    @Query('anio', new DefaultValuePipe(new Date().getFullYear()), ParseIntPipe)
-    anio: number,
+    @Query('mes') mesQuery?: string,
+    @Query('anio') anioQuery?: string,
     @CurrentTenant() tenantId: string,
   ) {
+    const hoy = new Date();
+    const mes = mesQuery ? parseInt(mesQuery, 10) : hoy.getMonth() + 1;
+    const anio = anioQuery ? parseInt(anioQuery, 10) : hoy.getFullYear();
     return this.dashboardQuery.execute(mes, anio, tenantId);
   }
 
@@ -79,6 +80,18 @@ export class DashboardController {
       tenantId,
     });
 
+    // Bulk query for cobros to prevent N+1 query
+    const residenteIds = residentes.map((r) => r.id);
+    const todosLosCobros = await this.cobroRepository.findByResidentes(residenteIds);
+
+    // Group cobros by residenteId in memory
+    const cobrosMap = new Map<string, Cobro[]>();
+    for (const c of todosLosCobros) {
+      const list = cobrosMap.get(c.residenteId) || [];
+      list.push(c);
+      cobrosMap.set(c.residenteId, list);
+    }
+
     const resultado = [];
 
     for (const r of residentes) {
@@ -99,7 +112,7 @@ export class DashboardController {
         continue;
       }
 
-      const cobros = await this.cobroRepository.findByResidente(r.id);
+      const cobros = cobrosMap.get(r.id) || [];
       let saldoPendiente = 0;
       let saldoVencido = 0;
       let tieneVencida = false;
@@ -499,7 +512,7 @@ export class DashboardController {
       );
       const next = pendingCobros[0];
       const pagosEsperados = pagosPorMes(modalidad);
-      const pagosRegistrados = await this.pagoRepository.countByCobro(next.id);
+      const pagosRegistrados = pagos.filter((p) => p.cobroId === next.id).length;
       const montoParcial = calcularMontoParcial(next.monto, modalidad).amount;
 
       const desglose: any[] = [];
@@ -522,7 +535,7 @@ export class DashboardController {
 
         let pRegistrados = 0;
         if (cobroForMonth) {
-          pRegistrados = await this.pagoRepository.countByCobro(cobroForMonth.id);
+          pRegistrados = pagos.filter((p) => p.cobroId === cobroForMonth.id).length;
         }
 
         const fechas = Periodo.fechasCobroParciales(modalidad, currentYear, currentMonth);
