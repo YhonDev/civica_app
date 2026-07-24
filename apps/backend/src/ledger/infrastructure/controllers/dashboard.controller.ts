@@ -50,6 +50,97 @@ export class DashboardController {
     return this.dashboardQuery.execute(mes, anio, tenantId);
   }
 
+  @Get('dashboard/cartera-consolidada')
+  @UseGuards(RolesGuard)
+  @Roles(RolUsuario.ADMIN, RolUsuario.COBRADOR)
+  async getCarteraConsolidada(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: Usuario,
+    @Query('etapaId') etapaId?: string,
+    @Query('manzanaId') manzanaId?: string,
+    @Query('estado') estado?: string,
+  ) {
+    let allowedEtapaIds: string[] | undefined;
+
+    if (user.rol === RolUsuario.COBRADOR) {
+      const asignaciones = await this.dataSource.query(
+        'SELECT etapa_id FROM asignaciones_etapa WHERE usuario_id = $1',
+        [user.id],
+      );
+      const stageIds: string[] = asignaciones.map((a: any) => a.etapa_id);
+      if (stageIds.length === 0) {
+        return [];
+      }
+      allowedEtapaIds = stageIds;
+    }
+
+    // Buscamos residentes con tenencias cargadas
+    const residentes = await this.residenteRepository.buscarPorFiltros({
+      tenantId,
+    });
+
+    const resultado = [];
+
+    for (const r of residentes) {
+      const tenenciaActiva = r.tenencias?.find((t) => !t.fechaFin) ?? r.tenencias?.[0];
+      const casa = tenenciaActiva?.casa;
+      const manzana = casa?.manzana;
+      const etapa = manzana?.etapa;
+
+      if (etapaId && etapa?.id !== etapaId) {
+        continue;
+      }
+
+      if (manzanaId && manzana?.id !== manzanaId) {
+        continue;
+      }
+
+      if (allowedEtapaIds && (!etapa?.id || !allowedEtapaIds.includes(etapa.id))) {
+        continue;
+      }
+
+      const cobros = await this.cobroRepository.findByResidente(r.id);
+      let saldoPendiente = 0;
+      let saldoVencido = 0;
+      let tieneVencida = false;
+      let tienePendiente = false;
+
+      for (const c of cobros) {
+        if (c.estado === 'PENDIENTE') {
+          saldoPendiente += c.monto;
+          tienePendiente = true;
+        } else if (c.estado === 'VENCIDA') {
+          saldoVencido += c.monto;
+          tieneVencida = true;
+        }
+      }
+
+      let estadoCalculado = 'AL_DIA';
+      if (tieneVencida) {
+        estadoCalculado = 'EN_MORA';
+      } else if (tienePendiente) {
+        estadoCalculado = 'PENDIENTE';
+      }
+
+      if (estado && estado !== 'TODOS' && estadoCalculado !== estado) {
+        continue;
+      }
+
+      resultado.push({
+        residenteId: r.id,
+        nombre: r.nombre,
+        telefono: r.telefono,
+        email: r.email,
+        estado: estadoCalculado,
+        saldoPendiente: Math.round(saldoPendiente / 100),
+        saldoVencido: Math.round(saldoVencido / 100),
+        totalAdeudado: Math.round((saldoPendiente + saldoVencido) / 100),
+      });
+    }
+
+    return resultado;
+  }
+
   @Get('dashboard/cobrador')
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.COBRADOR)

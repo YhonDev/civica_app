@@ -3,58 +3,70 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/database/app_database.dart';
+import '../../core/theme/app_spacing.dart';
+import '../../features/cartera/widgets/residente_inline_sheet.dart';
 import 'bloc.dart';
 
 /// Pantalla de cobro donde el cobrador selecciona cuotas y registra el pago offline.
 class PaymentScreen extends StatelessWidget {
-  final Residente propietario;
+  final Residente? propietario;
   final String casaDireccion;
   final String etapaNombre;
   final String cobradorId;
   final String? solicitudId;
+  final String? casaId;
 
   const PaymentScreen({
     super.key,
-    required this.propietario,
+    this.propietario,
     required this.casaDireccion,
     required this.etapaNombre,
     this.cobradorId = 'offline',
     this.solicitudId,
+    this.casaId,
   });
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => CobroBloc()
-        ..add(CargarResidente(
-          propietario: propietario,
-          casaDireccion: casaDireccion,
-          etapaNombre: etapaNombre,
-        )),
+      create: (_) {
+        final bloc = CobroBloc();
+        if (propietario != null) {
+          bloc.add(CargarResidente(
+            propietario: propietario!,
+            casaDireccion: casaDireccion,
+            etapaNombre: etapaNombre,
+          ));
+        }
+        return bloc;
+      },
       child: _PaymentScreenBody(
         propietario: propietario,
         casaDireccion: casaDireccion,
         etapaNombre: etapaNombre,
         cobradorId: cobradorId,
         solicitudId: solicitudId,
+        casaId: casaId,
       ),
     );
   }
 }
 
 class _PaymentScreenBody extends StatefulWidget {
-  final Residente propietario;
+  final Residente? propietario;
   final String casaDireccion;
   final String etapaNombre;
   final String cobradorId;
   final String? solicitudId;
+  final String? casaId;
 
   const _PaymentScreenBody({
-    required this.propietario,
+    this.propietario,
     required this.casaDireccion,
     required this.etapaNombre,
     this.cobradorId = 'offline',
     this.solicitudId,
+    this.casaId,
   });
 
   @override
@@ -63,6 +75,13 @@ class _PaymentScreenBody extends StatefulWidget {
 
 class _PaymentScreenBodyState extends State<_PaymentScreenBody> {
   final _montoController = TextEditingController();
+  Residente? _propietario;
+
+  @override
+  void initState() {
+    super.initState();
+    _propietario = widget.propietario;
+  }
 
   @override
   void dispose() {
@@ -121,12 +140,88 @@ class _PaymentScreenBodyState extends State<_PaymentScreenBody> {
     );
   }
 
+  void _mostrarRegistroInline() {
+    ResidenteInlineSheet.show(
+      context,
+      preselectedCasaId: widget.casaId,
+      onSuccess: (creado) {
+        final userMap = creado['usuario'] as Map<String, dynamic>;
+        final res = Residente(
+          id: userMap['id'] ?? '',
+          nombre: userMap['nombre'] ?? '',
+          telefono: userMap['telefono'] ?? '',
+          email: userMap['email'],
+          tenantId: userMap['tenantId'] ?? '00000000-0000-0000-0000-000000000001',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+        setState(() {
+          _propietario = res;
+        });
+        context.read<CobroBloc>().add(CargarResidente(
+              propietario: res,
+              casaDireccion: widget.casaDireccion,
+              etapaNombre: widget.etapaNombre,
+            ));
+      },
+    );
+  }
+
+  Widget _buildNoResidenteView(
+    BuildContext context,
+    ThemeData theme,
+    ColorScheme colorScheme,
+  ) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.house_rounded, size: 64, color: colorScheme.secondary),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              'Casa sin Residente',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'Esta casa no tiene un residente asignado. Registra un residente para poder realizar cobros.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.outline,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            FilledButton.icon(
+              onPressed: _mostrarRegistroInline,
+              icon: const Icon(Icons.person_add_rounded),
+              label: const Text('Registrar Residente'),
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildBody(
     BuildContext context,
     CobroState state,
     ThemeData theme,
     ColorScheme colorScheme,
   ) {
+    if (_propietario == null) {
+      return _buildNoResidenteView(context, theme, colorScheme);
+    }
+
     if (state is CobroLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -143,7 +238,7 @@ class _PaymentScreenBodyState extends State<_PaymentScreenBody> {
             FilledButton(
               onPressed: () => context.read<CobroBloc>().add(
                     CargarResidente(
-                      propietario: widget.propietario,
+                      propietario: _propietario!,
                       casaDireccion: widget.casaDireccion,
                       etapaNombre: widget.etapaNombre,
                     ),

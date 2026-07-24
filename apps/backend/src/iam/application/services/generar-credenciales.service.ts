@@ -6,16 +6,12 @@ import * as crypto from 'crypto';
  * siguiendo los patrones definidos en la Filosofía del Sistema.
  *
  * Patrones:
- * - RESIDENTE: username = "{manzana}_{casa}_residente", password = aleatorio
+ * - RESIDENTE: username = "{manzana}_{casa}_residente", password = "Casa{casa}Manzana{manzana}"
  * - COBRADOR:  username = "{nombre}{primerApellido}cobrador", password = "{nombre}{primerApellido}{añoActual}"
  * - ADMIN:     se crea manualmente, sin patrón automático
  */
 @Injectable()
 export class GenerarCredencialesService {
-  /**
-   * Genera username para un residente basado en su ubicación (manzana + casa).
-   * Ej: "manzanaA_casa23_residente"
-   */
   generarUsernameResidente(manzana: string, casa: string): string {
     const mz = manzana
       .toLowerCase()
@@ -26,6 +22,26 @@ export class GenerarCredencialesService {
       .replace(/\s+/g, '_')
       .replace(/[^a-z0-9_]/g, '');
     return `${mz}_${cs}_residente`;
+  }
+
+  /**
+   * Generar password temporal para un residente basado en su ubicación.
+   * Ej: "Casa1ManzanaA"
+   */
+  generarPasswordResidente(manzana: string, casa: string): string {
+    const mz = manzana
+      .toLowerCase()
+      .replace(/manzana/g, '')
+      .trim()
+      .toUpperCase()
+      .replace(/\s+/g, '');
+    const cs = casa
+      .toLowerCase()
+      .replace(/casa/g, '')
+      .trim()
+      .toUpperCase()
+      .replace(/\s+/g, '');
+    return `Casa${cs}Manzana${mz}`;
   }
 
   /**
