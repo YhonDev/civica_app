@@ -31,10 +31,10 @@ class _ResidenteDetailScreenState extends State<ResidenteDetailScreen> {
     _residente = widget.residente;
   }
 
-  Future<void> _recargarPropietario() async {
+  Future<void> _recargarResidente() async {
     setState(() => _cargando = true);
     try {
-      final lista = await _repo.getPropietarios();
+      final lista = await _repo.getResidentes();
       final actualizado = lista.where((p) => p.id == _residente.id).firstOrNull;
       if (actualizado != null && mounted) {
         setState(() => _residente = actualizado);
@@ -167,7 +167,7 @@ class _ResidenteDetailScreenState extends State<ResidenteDetailScreen> {
                 isAdmin: context.read<AuthCubit>().state.usuario?['rol'] == 'ADMIN',
                 onCredentialsUpdated: () {
                   // Recargar para mostrar el nuevo username
-                  _recargarPropietario();
+                  _recargarResidente();
                 },
               ),
               const SizedBox(height: AppSpacing.xl),
@@ -487,13 +487,15 @@ class _ResidenteDetailScreenState extends State<ResidenteDetailScreen> {
     String? routeName,
     Object? extra,
     VoidCallback? onTap,
+    String? subtitle,
+    bool isDanger = false,
   }) {
     return InkWell(
       onTap: onTap ?? () async {
-        if (routeName == 'comunidad-propietario-editar') {
+        if (routeName == 'comunidad-residente-editar') {
           final editado = await context.pushNamed<bool>(routeName!, extra: extra);
           if (editado == true) {
-            await _recargarPropietario();
+            await _recargarResidente();
           }
         } else if (routeName != null) {
           context.pushNamed(routeName, extra: extra);
@@ -531,7 +533,7 @@ class _ResidenteDetailScreenState extends State<ResidenteDetailScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Eliminar Propietario'),
+        title: const Text('Eliminar Residente'),
         content: Text('¿Estás seguro de eliminar a ${_residente.nombre}? Esta acción no se puede deshacer y eliminará sus deudas.'),
         actions: [
           TextButton(
@@ -548,15 +550,15 @@ class _ResidenteDetailScreenState extends State<ResidenteDetailScreen> {
     );
 
     if (confirmed == true && context.mounted) {
-      final success = await _repo.deletePropietario(_residente.id);
+      final success = await _repo.deleteResidente(_residente.id);
       if (success && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Propietario eliminado correctamente')),
+          const SnackBar(content: Text('Residente eliminado correctamente')),
         );
         context.pop(true);
       } else if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Error al eliminar el propietario')),
+          const SnackBar(content: Text('Error al eliminar el residente')),
         );
       }
     }

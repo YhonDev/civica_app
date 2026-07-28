@@ -73,7 +73,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
 
   Future<void> _loadDashboardData() async {
     try {
-      final response = await ApiClient.instance.get<Map<String, dynamic>>('/dashboard/propietario');
+      final response = await ApiClient.instance.get<Map<String, dynamic>>('/dashboard/residente');
       final data = response.data!;
 
       final listPendientes = await _solicitudesRepo.getMisSolicitudes();

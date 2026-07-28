@@ -179,12 +179,12 @@ class _ResidentePerfilTabState extends State<ResidentePerfilTab> {
     );
   }
 
-  void _confirmDelete(BuildContext context, ResidenteItem propietario) {
+  void _confirmDelete(BuildContext context, ResidenteItem residente) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Eliminar Propietario'),
-        content: Text('¿Está seguro de eliminar a ${propietario.nombre}? Esta acción liberará la casa y no se puede deshacer.'),
+        title: const Text('Eliminar Residente'),
+        content: Text('¿Está seguro de eliminar a ${residente.nombre}? Esta acción liberará la casa y no se puede deshacer.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -193,7 +193,7 @@ class _ResidentePerfilTabState extends State<ResidentePerfilTab> {
           FilledButton(
             onPressed: () {
               Navigator.pop(ctx);
-              _deletePropietario(propietario.id);
+              _deleteResidente(residente.id);
             },
             style: FilledButton.styleFrom(backgroundColor: AppColors.error),
             child: const Text('Eliminar'),
@@ -203,14 +203,14 @@ class _ResidentePerfilTabState extends State<ResidentePerfilTab> {
     );
   }
 
-  Future<void> _deletePropietario(String id) async {
+  Future<void> _deleteResidente(String id) async {
     setState(() => _isDeleting = true);
-    final success = await _repo.deletePropietario(id);
+    final success = await _repo.deleteResidente(id);
     if (mounted) {
       setState(() => _isDeleting = false);
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Propietario eliminado con éxito')),
+          const SnackBar(content: Text('Residente eliminado con éxito')),
         );
         widget.onDeleteSuccess();
       } else {

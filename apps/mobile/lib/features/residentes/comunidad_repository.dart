@@ -159,12 +159,12 @@ class ComunidadRepository {
       final proyectos = response.data as List<dynamic>;
       if (proyectos.isEmpty) return [];
       
-      // Obtener casas ocupadas a través de propietarios activos
+      // Obtener casas ocupadas a través de residentes activos
       final responseProps = await _api.get('/residentes');
-      final propietarios = responseProps.data as List<dynamic>;
+      final residentes = responseProps.data as List<dynamic>;
       
       final ocupadasSet = <String>{};
-      for (var p in propietarios) {
+      for (var p in residentes) {
         final tenencias = p['tenencias'] as List<dynamic>? ?? [];
         for (var t in tenencias) {
           if (t['casaId'] != null) {

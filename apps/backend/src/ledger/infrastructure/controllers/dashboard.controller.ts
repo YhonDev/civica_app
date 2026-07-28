@@ -409,7 +409,7 @@ export class DashboardController {
     return { etapas };
   }
 
-  @Get('dashboard/propietario')
+  @Get(['dashboard/residente', 'dashboard/propietario'])
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.RESIDENTE)
   async getDashboardResidente(
@@ -638,7 +638,7 @@ export class DashboardController {
     };
   }
 
-  @Get('dashboard/propietario/timeline')
+  @Get(['dashboard/residente/timeline', 'dashboard/propietario/timeline'])
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.RESIDENTE)
   async getResidenteTimeline(

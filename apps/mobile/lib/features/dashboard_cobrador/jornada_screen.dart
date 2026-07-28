@@ -11,7 +11,7 @@ import 'dashboard_cobrador_cubit.dart';
 
 /// Cobrador Jornada — Pantalla principal del Cobrador.
 ///
-/// Enfocada en la **ruta de trabajo**, no en propietarios.
+/// Enfocada en la **ruta de trabajo**, no en residentes.
 /// Muestra: stats de la jornada, próxima vivienda a visitar,
 /// lista de casas pendientes con semáforo 🟢🟠🔴.
 class JornadaScreen extends StatefulWidget {
@@ -573,14 +573,14 @@ class _ViviendaCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    // Propietario + teléfono
+                    // Residente + teléfono
                     Row(
                       children: [
                         Icon(Icons.person_rounded, size: 14, color: AppColors.textSecondary),
                         const SizedBox(width: 4),
                         Flexible(
                           child: Text(
-                            vivienda['propietarioNombre'] ?? 'Sin propietario',
+                            vivienda['propietarioNombre'] ?? 'Sin residente',
                             style: AppTypography.small.copyWith(
                               color: AppColors.textSecondary,
                             ),

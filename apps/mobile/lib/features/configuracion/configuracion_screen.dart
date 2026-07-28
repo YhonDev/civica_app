@@ -43,7 +43,7 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
     } catch (_) {}
 
     try {
-      final resProp = await ApiClient.instance.get<Map<String, dynamic>>('/dashboard/propietario');
+      final resProp = await ApiClient.instance.get<Map<String, dynamic>>('/dashboard/residente');
       if (mounted && resProp.data != null) {
         final resInfo = resProp.data!['residenteInfo'] as Map<String, dynamic>? ?? {};
         final dir = resInfo['casaDireccion'] as String?;

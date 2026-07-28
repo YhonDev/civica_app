@@ -20,7 +20,7 @@ class _ResidentesScreenState extends State<ResidentesScreen> {
   final TextEditingController _searchController = TextEditingController();
 
   bool _isLoading = true;
-  List<ResidenteItem> _allPropietarios = [];
+  List<ResidenteItem> _allResidentes = [];
   
   String _activeFilter = 'Todos';
   String _searchQuery = '';
@@ -46,11 +46,11 @@ class _ResidentesScreenState extends State<ResidentesScreen> {
     setState(() => _isLoading = true);
     
     try {
-      final propietarios = await _repository.getPropietarios();
+      final residentes = await _repository.getResidentes();
       
       if (mounted) {
         setState(() {
-          _allPropietarios = propietarios;
+          _allResidentes = residentes;
           _isLoading = false;
         });
       }
@@ -61,8 +61,8 @@ class _ResidentesScreenState extends State<ResidentesScreen> {
     }
   }
 
-  List<ResidenteItem> get _filteredPropietarios {
-    return _allPropietarios.where((p) {
+  List<ResidenteItem> get _filteredResidentes {
+    return _allResidentes.where((p) {
       final matchesFilter = _activeFilter == 'Todos' || p.estadoFinanciero == _activeFilter;
       final matchesSearch = _searchQuery.isEmpty ||
           p.nombre.toLowerCase().contains(_searchQuery) ||
@@ -88,19 +88,19 @@ class _ResidentesScreenState extends State<ResidentesScreen> {
 
   Widget _buildBody() {
     if (_isLoading) {
-      return const _PropietariosSkeleton();
+      return const _ResidentesSkeleton();
     }
 
-    final filteredList = _filteredPropietarios;
+    final filteredList = _filteredResidentes;
     
-    int total = _allPropietarios.length;
-    int alDia = _allPropietarios.where((p) => p.estadoFinanciero == 'Al día' || p.estadoFinanciero == 'Al Día').length;
-    int enMora = _allPropietarios.where((p) => p.estadoFinanciero == 'Mora').length;
+    int total = _allResidentes.length;
+    int alDia = _allResidentes.where((p) => p.estadoFinanciero == 'Al día' || p.estadoFinanciero == 'Al Día').length;
+    int enMora = _allResidentes.where((p) => p.estadoFinanciero == 'Mora').length;
 
     return RefreshIndicator(
       onRefresh: _loadData,
       child: CustomScrollView(
-        key: const PageStorageKey('propietarios_scroll'),
+        key: const PageStorageKey('residentes_scroll'),
         slivers: [
           const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.md)),
           
@@ -128,7 +128,7 @@ class _ResidentesScreenState extends State<ResidentesScreen> {
                     }
                   },
                   icon: const Icon(Icons.person_add_rounded, size: 18),
-                  label: const Text('Nuevo Propietario'),
+                  label: const Text('Nuevo Residente'),
                   style: FilledButton.styleFrom(
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                     backgroundColor: AppColors.info,
@@ -138,21 +138,6 @@ class _ResidentesScreenState extends State<ResidentesScreen> {
             ),
           ),
           
-          const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
-          
-          // Historial Title
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
-              child: Text(
-                'Historial',
-                style: AppTypography.subtitle.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ),
-          ),
           const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.md)),
           
           // Buscador
@@ -191,11 +176,11 @@ class _ResidentesScreenState extends State<ResidentesScreen> {
               ? SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.only(top: AppSpacing.xl),
-                    child: _allPropietarios.isEmpty 
+                    child: _allResidentes.isEmpty 
                       ? const EmptyState(
                           icon: Icons.person_off_rounded,
-                          title: 'Sin Propietarios',
-                          description: 'Aún no hay propietarios registrados.',
+                          title: 'Sin Residentes',
+                          description: 'Aún no hay residentes registrados.',
                         )
                       : const EmptyState(
                           icon: Icons.search_off_rounded,
@@ -212,7 +197,7 @@ class _ResidentesScreenState extends State<ResidentesScreen> {
                         return Padding(
                           padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                           child: ResidenteCard(
-                            propietario: filteredList[index],
+                            residente: filteredList[index],
                             onUpdate: _loadData,
                           ),
                         );
@@ -324,8 +309,8 @@ class _ResidentesScreenState extends State<ResidentesScreen> {
   }
 }
 
-class _PropietariosSkeleton extends StatelessWidget {
-  const _PropietariosSkeleton();
+class _ResidentesSkeleton extends StatelessWidget {
+  const _ResidentesSkeleton();
 
   @override
   Widget build(BuildContext context) {

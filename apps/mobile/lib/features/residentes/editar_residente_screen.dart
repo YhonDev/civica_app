@@ -18,7 +18,7 @@ class EditarResidenteScreen extends StatefulWidget {
 
 class _EditarResidenteScreenState extends State<EditarResidenteScreen> {
   final ComunidadRepository _comunidadRepo = ComunidadRepository();
-  final ResidentesRepository _propietariosRepo = ResidentesRepository();
+  final ResidentesRepository _residentesRepo = ResidentesRepository();
   bool _isLoading = true;
   bool _isSaving = false;
   List<Map<String, dynamic>> _etapasTree = [];
@@ -112,7 +112,7 @@ class _EditarResidenteScreenState extends State<EditarResidenteScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Editar Propietario'),
+        title: const Text('Editar Residente'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.pop(),
@@ -284,24 +284,24 @@ class _EditarResidenteScreenState extends State<EditarResidenteScreen> {
                     if (_emailCtrl.text.isNotEmpty) data['email'] = _emailCtrl.text;
                     if (_selectedCasaId != null) data['casaId'] = _selectedCasaId;
 
-                    final success = await _propietariosRepo.updatePropietario(widget.residente.id, data);
+                    final success = await _residentesRepo.updateResidente(widget.residente.id, data);
                     
                     if (mounted) {
                       if (success) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Propietario actualizado con éxito.')),
+                          const SnackBar(content: Text('Residente actualizado con éxito.')),
                         );
                         context.pop(true);
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Error al actualizar propietario')),
+                          const SnackBar(content: Text('Error al actualizar residente')),
                         );
                       }
                     }
                   } catch (e) {
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Error al actualizar propietario: $e')),
+                        SnackBar(content: Text('Error al actualizar residente: $e')),
                       );
                     }
                   } finally {

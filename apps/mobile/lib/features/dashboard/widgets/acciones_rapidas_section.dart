@@ -31,7 +31,7 @@ class AccionesRapidasSection extends StatelessWidget {
         const SizedBox(height: AppSpacing.md),
         ActionCard(
           icon: Icons.person_add_rounded,
-          title: 'Nuevo Propietario',
+          title: 'Nuevo Residente',
           onTap: () async {
             await context.push('/nuevo-residente');
           },

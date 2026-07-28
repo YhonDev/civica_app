@@ -59,7 +59,7 @@ class _SolicitudesScreenState extends State<SolicitudesScreen>
     final user = context.read<AuthCubit>().state.usuario;
     final rol = user?['rol'] as String? ?? '';
     _isAdmin = rol == 'ADMIN';
-    // Smart default: admin sees pending first, propietario sees all
+    // Smart default: admin sees pending first, residente sees all
     _filtroActivo = _isAdmin ? 'PENDIENTES' : 'TODAS';
   }
 

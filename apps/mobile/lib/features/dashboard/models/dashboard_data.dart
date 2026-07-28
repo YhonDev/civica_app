@@ -58,7 +58,7 @@ class DashboardData extends Equatable {
 
   /// Crea [DashboardData] desde la respuesta JSON del backend.
   ///
-  /// [totalResidentesOverride] permite inyectar el total real de propietarios
+  /// [totalResidentesOverride] permite inyectar el total real de residentes
   /// (obtenido del repository vía una segunda llamada API), ya que el JSON
   /// del endpoint /dashboard/administrador no incluye este dato.
   factory DashboardData.fromJson(

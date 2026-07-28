@@ -16,7 +16,7 @@ class DashboardRepository {
         'anio': anio,
       });
 
-      // Obtener total de propietarios (dato no incluido en el dashboard endpoint)
+      // Obtener total de residentes (dato no incluido en el dashboard endpoint)
       int totalResidentes = 0;
       try {
         final propsResp = await _api.get('/residentes');

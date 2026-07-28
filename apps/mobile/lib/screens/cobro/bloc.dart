@@ -17,20 +17,22 @@ abstract class CobroEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-/// Carga los datos del propietario y sus cuotas pendientes.
+/// Carga los datos del residente y sus cuotas pendientes.
 class CargarResidente extends CobroEvent {
-  final Residente propietario;
+  final Residente residente;
   final String casaDireccion;
   final String etapaNombre;
 
+  Residente get propietario => residente;
+
   const CargarResidente({
-    required this.propietario,
+    required this.residente,
     required this.casaDireccion,
     required this.etapaNombre,
   });
 
   @override
-  List<Object?> get props => [propietario.id];
+  List<Object?> get props => [residente.id];
 }
 
 /// Selecciona o deselecciona una cuota para pagar.
@@ -90,16 +92,18 @@ class CobroLoading extends CobroState {
 }
 
 class CobroLoaded extends CobroState {
-  final Residente propietario;
+  final Residente residente;
   final String casaDireccion;
   final String etapaNombre;
   final List<CobroConSeleccion> cuotas;
   final Set<String> selectedCobroIds;
-  final int montoManual; // en centavos, 0 si no se ingresó manual
-  final String? errorMessage; // error sin perder la carga
+  final int montoManual; // en centavos COP
+  final String? errorMessage;
+
+  Residente get propietario => residente;
 
   const CobroLoaded({
-    required this.propietario,
+    required this.residente,
     required this.casaDireccion,
     required this.etapaNombre,
     required this.cuotas,
@@ -125,7 +129,7 @@ class CobroLoaded extends CobroState {
     String? errorMessage,
   }) {
     return CobroLoaded(
-      propietario: propietario,
+      residente: residente,
       casaDireccion: casaDireccion,
       etapaNombre: etapaNombre,
       cuotas: cuotas ?? this.cuotas,
@@ -137,7 +141,7 @@ class CobroLoaded extends CobroState {
 
   @override
   List<Object?> get props => [
-        propietario.id,
+        residente.id,
         selectedCobroIds,
         montoManual,
         cuotas,
@@ -148,15 +152,17 @@ class CobroLoaded extends CobroState {
 class CobroSuccess extends CobroState {
   final String mensaje;
   final String pagoId;
-  final String propietarioNombre;
+  final String residenteNombre;
   final String cobradorId;
   final String fechaPago;
   final int montoTotal; // en centavos COP
 
+  String get propietarioNombre => residenteNombre;
+
   const CobroSuccess({
     required this.mensaje,
     required this.pagoId,
-    required this.propietarioNombre,
+    required this.residenteNombre,
     required this.cobradorId,
     required this.fechaPago,
     required this.montoTotal,
@@ -166,7 +172,7 @@ class CobroSuccess extends CobroState {
   List<Object?> get props => [
         mensaje,
         pagoId,
-        propietarioNombre,
+        residenteNombre,
         cobradorId,
         fechaPago,
         montoTotal,

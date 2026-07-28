@@ -82,7 +82,7 @@ void main() {
       await tester.pump();
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
       await pumpUntilSettled(tester);
-      expect(find.text('Nuevo Propietario'), findsOneWidget);
+      expect(find.text('Nuevo Residente'), findsOneWidget);
     });
   });
 
@@ -95,12 +95,12 @@ void main() {
       await pumpUntilSettled(tester);
       // Scroll down to find the button at the bottom of the SingleChildScrollView
       await tester.scrollUntilVisible(
-        find.text('Crear Propietario'),
+        find.text('Crear Residente'),
         200,
         scrollable: find.byType(Scrollable).first,
       );
       await tester.pumpAndSettle();
-      expect(find.text('Crear Propietario'), findsOneWidget);
+      expect(find.text('Crear Residente'), findsOneWidget);
     });
   });
 
@@ -115,7 +115,7 @@ void main() {
 
       // Scroll down to show the form fields + button
       await tester.scrollUntilVisible(
-        find.text('Crear Propietario'),
+        find.text('Crear Residente'),
         200,
         scrollable: find.byType(Scrollable).first,
       );
@@ -126,7 +126,7 @@ void main() {
       final telefonoField = find.widgetWithText(TextField, 'Teléfono');
       await tester.enterText(telefonoField, '3001234567');
 
-      await tester.tap(find.text('Crear Propietario'));
+      await tester.tap(find.text('Crear Residente'));
       await pumpUntilSettled(tester);
       await tester.pump();
       expect(find.text('Residente creado'), findsOneWidget);
@@ -146,7 +146,7 @@ void main() {
 
       // Scroll down to show the form fields + button
       await tester.scrollUntilVisible(
-        find.text('Crear Propietario'),
+        find.text('Crear Residente'),
         200,
         scrollable: find.byType(Scrollable).first,
       );
@@ -155,7 +155,7 @@ void main() {
       await tester.enterText(find.widgetWithText(TextField, 'Nombre completo'), 'Error Test');
       await tester.enterText(find.widgetWithText(TextField, 'Teléfono'), '3000000000');
 
-      await tester.tap(find.text('Crear Propietario'));
+      await tester.tap(find.text('Crear Residente'));
       await pumpUntilSettled(tester);
       await tester.pump();
       expect(find.textContaining('Error al crear'), findsOneWidget);

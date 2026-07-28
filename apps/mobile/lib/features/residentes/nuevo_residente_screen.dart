@@ -28,7 +28,7 @@ class NuevoResidenteScreen extends StatefulWidget {
 
 class _NuevoResidenteScreenState extends State<NuevoResidenteScreen> {
   final ComunidadRepository _comunidadRepo = ComunidadRepository();
-  final ResidentesRepository _propietariosRepo = ResidentesRepository();
+  final ResidentesRepository _residentesRepo = ResidentesRepository();
   bool _isLoading = true;
   bool _isSaving = false;
   List<Map<String, dynamic>> _etapasTree = [];
@@ -73,7 +73,7 @@ class _NuevoResidenteScreenState extends State<NuevoResidenteScreen> {
     setState(() => _isSaving = true);
 
     try {
-      final data = await _propietariosRepo.createPropietario(
+      final data = await _residentesRepo.createResidente(
         nombre: _nombreCtrl.text.trim(),
         telefono: _telefonoCtrl.text.trim(),
         email: _emailCtrl.text.trim(),
@@ -223,7 +223,7 @@ class _NuevoResidenteScreenState extends State<NuevoResidenteScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Nuevo Propietario'),
+        title: const Text('Nuevo Residente'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.pop(),
@@ -366,7 +366,7 @@ class _NuevoResidenteScreenState extends State<NuevoResidenteScreen> {
                 onPressed: _isSaving ? null : _guardar,
                 child: _isSaving 
                   ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : const Text('Crear Propietario'),
+                  : const Text('Crear Residente'),
               ),
             ),
           ],

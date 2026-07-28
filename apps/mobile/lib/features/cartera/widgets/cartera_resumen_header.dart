@@ -24,8 +24,8 @@ class CarteraResumenHeader extends StatelessWidget {
     final label2 = isResidente ? 'En Mora' : 'Mora';
     final label3 = isResidente ? 'Pagado' : 'Recaudado';
 
-    final unitCuota = isResidente ? 'cuotas' : 'propietarios';
-    final unitPago = isResidente ? 'pagos' : 'propietarios';
+    final unitCuota = isResidente ? 'cuotas' : 'residentes';
+    final unitPago = isResidente ? 'pagos' : 'residentes';
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.cardPadding),

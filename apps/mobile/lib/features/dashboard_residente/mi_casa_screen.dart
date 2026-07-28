@@ -32,7 +32,7 @@ class _MiCasaScreenState extends State<MiCasaScreen> {
 
   Future<void> _cargarDatosInmueble() async {
     try {
-      final response = await ApiClient.instance.get<Map<String, dynamic>>('/dashboard/propietario');
+      final response = await ApiClient.instance.get<Map<String, dynamic>>('/dashboard/residente');
       if (mounted && response.data != null) {
         final data = response.data!;
         final resInfo = data['residenteInfo'] as Map<String, dynamic>? ?? {};

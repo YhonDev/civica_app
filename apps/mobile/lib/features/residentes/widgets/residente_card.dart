@@ -7,17 +7,18 @@ import '../models/residentes_models.dart';
 import 'package:go_router/go_router.dart';
 
 class ResidenteCard extends StatelessWidget {
-  final ResidenteItem propietario;
+  final ResidenteItem residente;
   final VoidCallback? onUpdate;
 
-  const ResidenteCard({
+  ResidenteCard({
     super.key,
-    required this.propietario,
+    ResidenteItem? residente,
+    ResidenteItem? propietario,
     this.onUpdate,
-  });
+  }) : residente = residente ?? propietario!;
 
   Color get _statusColor {
-    switch (propietario.estadoFinanciero) {
+    switch (residente.estadoFinanciero) {
       case 'Al Día':
         return AppColors.success;
       case 'Mora':
@@ -40,7 +41,7 @@ class ResidenteCard extends StatelessWidget {
         onTap: () async {
           final result = await context.pushNamed<bool>(
             'comunidad-residente-detalle',
-            extra: propietario,
+            extra: residente,
           );
           if (result == true && onUpdate != null) {
             onUpdate!();
@@ -56,7 +57,7 @@ class ResidenteCard extends StatelessWidget {
                 radius: 24,
                 backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                 child: Text(
-                  propietario.nombre.split(' ').map((w) => w.isNotEmpty ? w[0] : '').take(2).join().toUpperCase(),
+                  residente.nombre.split(' ').map((w) => w.isNotEmpty ? w[0] : '').take(2).join().toUpperCase(),
                   style: AppTypography.subtitle.copyWith(
                     color: AppColors.primary,
                     fontWeight: FontWeight.w700,
@@ -69,7 +70,7 @@ class ResidenteCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      propietario.nombre,
+                      residente.nombre,
                       style: AppTypography.subtitle.copyWith(
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimary,
@@ -80,7 +81,7 @@ class ResidenteCard extends StatelessWidget {
                     const SizedBox(height: 2),
 
                     Text(
-                      '${propietario.casa} • ${propietario.etapa}',
+                      '${residente.casa} • ${residente.etapa}',
                       style: AppTypography.body.copyWith(
                         color: AppColors.textSecondary,
                       ),
@@ -96,7 +97,7 @@ class ResidenteCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  propietario.estadoFinanciero,
+                  residente.estadoFinanciero,
                   style: AppTypography.small.copyWith(
                     color: _statusColor,
                     fontWeight: FontWeight.w600,

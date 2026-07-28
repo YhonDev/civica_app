@@ -51,13 +51,13 @@ class ResidentesRepository {
     }
   }
 
-  /// Obtiene la lista completa de propietarios en la comunidad.
-  Future<List<ResidenteItem>> getPropietarios() async {
+  /// Obtiene la lista completa de residentes en la comunidad.
+  Future<List<ResidenteItem>> getResidentes() async {
     try {
       final response = await _api.get('/residentes');
       final List<dynamic> data = response.data;
       
-      final List<ResidenteItem> propietarios = [];
+      final List<ResidenteItem> residentes = [];
       
       for (var p in data) {
         double saldo = 0.0;
@@ -107,7 +107,7 @@ class ResidentesRepository {
           }
         }
 
-        propietarios.add(
+        residentes.add(
           ResidenteItem(
             id: p['id'].toString(),
             nombre: p['nombre'] ?? '',
@@ -128,15 +128,18 @@ class ResidentesRepository {
       }
 
       // Invertir la lista para que los más nuevos salgan arriba
-      return propietarios.reversed.toList();
+      return residentes.reversed.toList();
     } catch (e) {
-      throw e is ApiException ? e : Exception('Error al cargar propietarios: $e');
+      throw e is ApiException ? e : Exception('Error al cargar residentes: $e');
     }
   }
 
-  /// Crea un nuevo propietario en el backend.
+  @Deprecated('Usar getResidentes()')
+  Future<List<ResidenteItem>> getPropietarios() => getResidentes();
+
+  /// Crea un nuevo residente en el backend.
   /// Retorna el response completo (incluye credenciales generadas).
-  Future<Map<String, dynamic>> createPropietario({
+  Future<Map<String, dynamic>> createResidente({
     required String nombre,
     required String telefono,
     String? email,
@@ -164,33 +167,56 @@ class ResidentesRepository {
       final response = await _api.post<Map<String, dynamic>>('/residentes', data: payload);
       return response.data as Map<String, dynamic>;
     } catch (e) {
-      throw e is ApiException ? e : Exception('Error al crear propietario: $e');
+      throw e is ApiException ? e : Exception('Error al crear residente: $e');
     }
   }
 
-  Future<bool> deletePropietario(String id) async {
+  @Deprecated('Usar createResidente()')
+  Future<Map<String, dynamic>> createPropietario({
+    required String nombre,
+    required String telefono,
+    String? email,
+    String? casaId,
+    String? fechaInicio,
+    String modalidadPago = 'MENSUAL',
+  }) => createResidente(
+    nombre: nombre,
+    telefono: telefono,
+    email: email,
+    casaId: casaId,
+    fechaInicio: fechaInicio,
+    modalidadPago: modalidadPago,
+  );
+
+  Future<bool> deleteResidente(String id) async {
     try {
       await _api.delete('/residentes/$id');
       return true;
     } catch (e) {
       if (kDebugMode) {
-        print('Error al eliminar propietario: $e');
+        print('Error al eliminar residente: $e');
       }
       return false;
     }
   }
 
-  Future<bool> updatePropietario(String id, Map<String, dynamic> data) async {
+  @Deprecated('Usar deleteResidente()')
+  Future<bool> deletePropietario(String id) => deleteResidente(id);
+
+  Future<bool> updateResidente(String id, Map<String, dynamic> data) async {
     try {
       await _api.patch('/residentes/$id', data: data);
       return true;
     } catch (e) {
       if (kDebugMode) {
-        print('Error al actualizar propietario: $e');
+        print('Error al actualizar residente: $e');
       }
       return false;
     }
   }
+
+  @Deprecated('Usar updateResidente()')
+  Future<bool> updatePropietario(String id, Map<String, dynamic> data) => updateResidente(id, data);
 
   Future<bool> deleteCuota(String cobroId) async {
     try {
