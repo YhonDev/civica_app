@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
-import 'tarifas_repository.dart';
 import 'comunidad_repository.dart';
-import 'package:intl/intl.dart';
+import 'tarifas_repository.dart';
 
 class TarifasScreen extends StatefulWidget {
   const TarifasScreen({super.key});
@@ -31,7 +32,6 @@ class _TarifasScreenState extends State<TarifasScreen> {
       final proyectos = await _comunidadRepo.getProyectos();
       if (proyectos.isNotEmpty) {
         _proyectoId = proyectos.first['id'];
-        
         final response = await _repository.getTarifasVigentes(_proyectoId!);
         
         if (mounted) {
@@ -51,20 +51,31 @@ class _TarifasScreenState extends State<TarifasScreen> {
     }
   }
 
-  Future<void> _editarTarifa(String id, String frecuencia, int currentMonto) async {
+  Future<void> _editarTarifa(String id, String modalidad, int currentMonto) async {
     final controller = TextEditingController(text: currentMonto.toString());
     
     final result = await showDialog<int>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Editar Tarifa $frecuencia'),
-        content: TextField(
-          controller: controller,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(
-            labelText: 'Monto en pesos',
-            prefixText: '\$',
-          ),
+        title: const Text('Configurar Tarifa Base del Conjunto'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Establece la tarifa mensual general. El motor de recaudo del backend calculará y distribuirá automáticamente las cuotas según la modalidad asignada a cada casa.',
+              style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            TextField(
+              controller: controller,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Monto mensual base',
+                prefixText: '\$',
+              ),
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -101,42 +112,115 @@ class _TarifasScreenState extends State<TarifasScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final tarifaMensual = _tarifas['MENSUAL'];
+    final montoMensual = (tarifaMensual != null) ? (tarifaMensual['montoPesos'] as int? ?? 0) : 0;
+    
+    final montoQuincenalCalculado = (montoMensual / 2).round();
+    final montoSemanalCalculado = (montoMensual / 4).round();
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Configuración de Tarifas'),
+        title: const Text('Tarifas del Conjunto'),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : ListView(
               padding: const EdgeInsets.all(AppSpacing.screenPadding),
               children: [
+                // Explanatory Banner Card
+                Container(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline_rounded, color: AppColors.primary),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: Text(
+                          'El Administrador configura la Tarifa Base General. El motor de recaudo distribuye las cuotas automáticamente según la modalidad física de cada casa.',
+                          style: AppTypography.caption.copyWith(color: AppColors.textPrimary),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+
                 Text(
-                  'Tarifas Vigentes',
+                  'Tarifa Base Vigente',
                   style: AppTypography.title.copyWith(fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: AppSpacing.md),
-                if (_tarifas.containsKey('MENSUAL') && _tarifas['MENSUAL'] != null)
-                  _buildTarifaCard(_tarifas['MENSUAL']),
-                if (_tarifas.containsKey('QUINCENAL') && _tarifas['QUINCENAL'] != null)
-                  _buildTarifaCard(_tarifas['QUINCENAL']),
+
+                if (tarifaMensual != null)
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(Icons.account_balance_wallet_outlined, color: AppColors.primary),
+                                  const SizedBox(width: AppSpacing.sm),
+                                  Text(
+                                    'Tarifa General Mensual',
+                                    style: AppTypography.subtitle.copyWith(fontWeight: FontWeight.bold),
+                                  ),
+                                ],
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.edit_outlined),
+                                onPressed: () => _editarTarifa(tarifaMensual['id'], 'MENSUAL', montoMensual),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: AppSpacing.sm),
+                          Text(
+                            '\$ ${NumberFormat.decimalPattern('es_CO').format(montoMensual)} / mes',
+                            style: AppTypography.title.copyWith(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          const Divider(height: 24),
+
+                          Text(
+                            'Distribución automática del Motor de Recaudo:',
+                            style: AppTypography.caption.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.xs),
+                          _buildDesgloseRow('Modalidad Semanal (4 cuotas):', '\$ ${NumberFormat.decimalPattern('es_CO').format(montoSemanalCalculado)} / cuota'),
+                          _buildDesgloseRow('Modalidad Quincenal (2 cuotas):', '\$ ${NumberFormat.decimalPattern('es_CO').format(montoQuincenalCalculado)} / cuota'),
+                          _buildDesgloseRow('Modalidad Mensual (1 cuota):', '\$ ${NumberFormat.decimalPattern('es_CO').format(montoMensual)} / cuota'),
+                        ],
+                      ),
+                    ),
+                  ),
               ],
             ),
     );
   }
 
-  Widget _buildTarifaCard(Map<String, dynamic> tarifa) {
-    final montoStr = NumberFormat.currency(locale: 'es_CO', symbol: r'$', decimalDigits: 0).format(tarifa['montoPesos']);
-    
-    return Card(
-      margin: const EdgeInsets.only(bottom: AppSpacing.md),
-      child: ListTile(
-        leading: Icon(Icons.receipt_long, color: AppColors.primary),
-        title: Text('Frecuencia: ${tarifa['frecuencia']}'),
-        subtitle: Text('Monto: $montoStr'),
-        trailing: IconButton(
-          icon: const Icon(Icons.edit),
-          onPressed: () => _editarTarifa(tarifa['id'], tarifa['frecuencia'], tarifa['montoPesos']),
-        ),
+  Widget _buildDesgloseRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
+          Text(value, style: AppTypography.caption.copyWith(fontWeight: FontWeight.w600)),
+        ],
       ),
     );
   }

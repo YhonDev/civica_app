@@ -50,28 +50,28 @@ void main() {
 
   /// Cola de factories que producen Future<Response>.
   /// Cada factory puede retornar un valor o lanzar un error.
-  final _responseQueue = <Future<Response<Map<String, dynamic>>> Function()>[];
+  final responseQueue = <Future<Response<Map<String, dynamic>>> Function()>[];
 
   /// Callback syncPayment que consume la cola de factories.
-  Future<Response<Map<String, dynamic>>> _mockSyncPayment(
+  Future<Response<Map<String, dynamic>>> mockSyncPayment(
       Map<String, dynamic> data) async {
-    if (_responseQueue.isEmpty) {
+    if (responseQueue.isEmpty) {
       throw Exception('No hay más respuestas mockeadas en la cola');
     }
-    final fn = _responseQueue.removeAt(0);
+    final fn = responseQueue.removeAt(0);
     return fn();
   }
 
-  void _queueSuccess({String? serverId}) {
-    _responseQueue.add(() => Future.value(Response(
+  void queueSuccess({String? serverId}) {
+    responseQueue.add(() => Future.value(Response(
           requestOptions: RequestOptions(path: '/pagos'),
           statusCode: 201,
           data: serverId != null ? {'id': serverId} : <String, dynamic>{},
         )));
   }
 
-  void _queueConflict({String? serverId}) {
-    _responseQueue.add(() async {
+  void queueConflict({String? serverId}) {
+    responseQueue.add(() async {
       throw DioException(
         requestOptions: RequestOptions(path: '/pagos'),
         response: Response(
@@ -79,7 +79,7 @@ void main() {
           statusCode: 409,
           data: {
             'message': 'Conflicto',
-            if (serverId != null) 'serverId': serverId,
+            'serverId': ?serverId,
           },
         ),
         type: DioExceptionType.badResponse,
@@ -87,8 +87,8 @@ void main() {
     });
   }
 
-  void _queueNetworkError() {
-    _responseQueue.add(() async {
+  void queueNetworkError() {
+    responseQueue.add(() async {
       throw DioException(
         requestOptions: RequestOptions(path: '/pagos'),
         type: DioExceptionType.connectionError,
@@ -97,8 +97,8 @@ void main() {
     });
   }
 
-  void _queueAuthError() {
-    _responseQueue.add(() async {
+  void queueAuthError() {
+    responseQueue.add(() async {
       throw DioException(
         requestOptions: RequestOptions(path: '/pagos'),
         response: Response(
@@ -112,7 +112,7 @@ void main() {
   }
 
   /// Helper: inserta un pago offline pendiente de sync.
-  Future<String> _insertarPagoPendiente({
+  Future<String> insertarPagoPendiente({
     String? id,
     int monto = 50000,
   }) async {
@@ -125,7 +125,7 @@ void main() {
       monto: monto,
       fechaPago: now.toIso8601String(),
       cobradorId: 'COB_1',
-      propietarioId: 'PRO_1',
+      residenteId: 'PRO_1',
       syncStatus: 'PENDIENTE_SYNC',
       createdAt: now,
       updatedAt: now,
@@ -143,7 +143,7 @@ void main() {
     pagoDao = PagoDao(db);
     syncDao = SyncDao(db);
     mockDetector = MockDetector();
-    _responseQueue.clear();
+    responseQueue.clear();
   });
 
   tearDown(() async {
@@ -160,11 +160,11 @@ void main() {
         detector: mockDetector,
         pagoDao: pagoDao,
         syncDao: syncDao,
-        syncPayment: _mockSyncPayment,
+        syncPayment: mockSyncPayment,
       );
 
-      await _insertarPagoPendiente(id: 'PAG_OK');
-      _queueSuccess(serverId: 'SRV_1');
+      await insertarPagoPendiente(id: 'PAG_OK');
+      queueSuccess(serverId: 'SRV_1');
 
       final result = await syncService.requestSync();
 
@@ -185,7 +185,7 @@ void main() {
         detector: mockDetector,
         pagoDao: pagoDao,
         syncDao: syncDao,
-        syncPayment: _mockSyncPayment,
+        syncPayment: mockSyncPayment,
       );
 
       mockDetector.setOnline(false);
@@ -203,7 +203,7 @@ void main() {
         detector: mockDetector,
         pagoDao: pagoDao,
         syncDao: syncDao,
-        syncPayment: _mockSyncPayment,
+        syncPayment: mockSyncPayment,
       );
 
       final result = await syncService.requestSync();
@@ -222,11 +222,11 @@ void main() {
         detector: mockDetector,
         pagoDao: pagoDao,
         syncDao: syncDao,
-        syncPayment: _mockSyncPayment,
+        syncPayment: mockSyncPayment,
       );
 
-      await _insertarPagoPendiente(id: 'PAG_DEDUP');
-      _queueSuccess(serverId: 'SRV_1');
+      await insertarPagoPendiente(id: 'PAG_DEDUP');
+      queueSuccess(serverId: 'SRV_1');
 
       final future1 = syncService.requestSync();
       final result2 = await syncService.requestSync();
@@ -247,16 +247,16 @@ void main() {
         detector: mockDetector,
         pagoDao: pagoDao,
         syncDao: syncDao,
-        syncPayment: _mockSyncPayment,
+        syncPayment: mockSyncPayment,
       );
 
-      await _insertarPagoPendiente(id: 'PAG_1', monto: 10000);
-      await _insertarPagoPendiente(id: 'PAG_2', monto: 20000);
-      await _insertarPagoPendiente(id: 'PAG_3', monto: 30000);
+      await insertarPagoPendiente(id: 'PAG_1', monto: 10000);
+      await insertarPagoPendiente(id: 'PAG_2', monto: 20000);
+      await insertarPagoPendiente(id: 'PAG_3', monto: 30000);
 
-      _queueSuccess(serverId: 'SRV_1');
-      _queueSuccess(serverId: 'SRV_2');
-      _queueSuccess(serverId: 'SRV_3');
+      queueSuccess(serverId: 'SRV_1');
+      queueSuccess(serverId: 'SRV_2');
+      queueSuccess(serverId: 'SRV_3');
 
       final result = await syncService.requestSync();
 
@@ -273,25 +273,61 @@ void main() {
   // ──────────────────────────────────────────────────────────
 
   group('Manejo de errores', () {
-    test('debe manejar conflicto 409 y marcar como sincronizado', () async {
+    test('debe manejar conflicto 409 y marcar como conflicto', () async {
       final syncService = SyncService.forTesting(
         detector: mockDetector,
         pagoDao: pagoDao,
         syncDao: syncDao,
-        syncPayment: _mockSyncPayment,
+        syncPayment: mockSyncPayment,
       );
 
-      await _insertarPagoPendiente(id: 'PAG_CONF');
-      _queueConflict(serverId: 'SRV_CONF');
+      await insertarPagoPendiente(id: 'PAG_CONF');
+      queueConflict(serverId: 'SRV_CONF');
 
       final result = await syncService.requestSync();
 
       expect(result!.conflicts, 1);
       expect(result.synced, 0);
       expect(result.errors, 0);
+      expect(syncService.status, SyncStatus.conflicto);
 
       final pendientes = await pagoDao.getPendientesSync();
       expect(pendientes, isEmpty);
+
+      final conflictos = await pagoDao.getEnConflicto();
+      expect(conflictos.length, 1);
+      expect(conflictos.first.id, 'PAG_CONF');
+      expect(conflictos.first.syncStatus, 'CONFLICTO');
+
+      syncService.dispose();
+    });
+
+    test('debe continuar procesando cola tras error de red en pago anterior',
+        () async {
+      final syncService = SyncService.forTesting(
+        detector: mockDetector,
+        pagoDao: pagoDao,
+        syncDao: syncDao,
+        syncPayment: mockSyncPayment,
+      );
+
+      await insertarPagoPendiente(id: 'PAG_OK_1', monto: 10000);
+      await insertarPagoPendiente(id: 'PAG_NET_ERR', monto: 20000);
+      await insertarPagoPendiente(id: 'PAG_OK_2', monto: 30000);
+
+      queueSuccess(serverId: 'SRV_OK_1');
+      queueNetworkError();
+      queueSuccess(serverId: 'SRV_OK_2');
+
+      final result = await syncService.requestSync();
+
+      expect(result!.synced, 2);
+      expect(result.errors, 1);
+      expect(syncService.status, SyncStatus.partial);
+
+      final pendientes = await pagoDao.getPendientesSync();
+      expect(pendientes.length, 1);
+      expect(pendientes.first.id, 'PAG_NET_ERR');
 
       syncService.dispose();
     });
@@ -302,14 +338,14 @@ void main() {
         detector: mockDetector,
         pagoDao: pagoDao,
         syncDao: syncDao,
-        syncPayment: _mockSyncPayment,
+        syncPayment: mockSyncPayment,
       );
 
-      await _insertarPagoPendiente(id: 'PAG_OK_1', monto: 10000);
-      await _insertarPagoPendiente(id: 'PAG_NET_ERR', monto: 20000);
+      await insertarPagoPendiente(id: 'PAG_OK_1', monto: 10000);
+      await insertarPagoPendiente(id: 'PAG_NET_ERR', monto: 20000);
 
-      _queueSuccess(serverId: 'SRV_OK');
-      _queueNetworkError();
+      queueSuccess(serverId: 'SRV_OK');
+      queueNetworkError();
 
       final result = await syncService.requestSync();
 
@@ -329,11 +365,11 @@ void main() {
         detector: mockDetector,
         pagoDao: pagoDao,
         syncDao: syncDao,
-        syncPayment: _mockSyncPayment,
+        syncPayment: mockSyncPayment,
       );
 
-      await _insertarPagoPendiente(id: 'PAG_AUTH');
-      _queueAuthError();
+      await insertarPagoPendiente(id: 'PAG_AUTH');
+      queueAuthError();
 
       final result = await syncService.requestSync();
 
@@ -355,11 +391,11 @@ void main() {
         detector: mockDetector,
         pagoDao: pagoDao,
         syncDao: syncDao,
-        syncPayment: _mockSyncPayment,
+        syncPayment: mockSyncPayment,
       );
 
-      await _insertarPagoPendiente(id: 'PAG_RECON');
-      _queueSuccess(serverId: 'SRV_RECON');
+      await insertarPagoPendiente(id: 'PAG_RECON');
+      queueSuccess(serverId: 'SRV_RECON');
 
       mockDetector.setOnline(true);
       await Future.delayed(const Duration(milliseconds: 150));
@@ -381,11 +417,11 @@ void main() {
         detector: mockDetector,
         pagoDao: pagoDao,
         syncDao: syncDao,
-        syncPayment: _mockSyncPayment,
+        syncPayment: mockSyncPayment,
       );
 
-      await _insertarPagoPendiente(id: 'PAG_STREAM');
-      _queueSuccess(serverId: 'SRV_STREAM');
+      await insertarPagoPendiente(id: 'PAG_STREAM');
+      queueSuccess(serverId: 'SRV_STREAM');
 
       final results = <SyncResult>[];
       final sub = syncService.onSyncResult.listen(results.add);
@@ -406,11 +442,11 @@ void main() {
         detector: mockDetector,
         pagoDao: pagoDao,
         syncDao: syncDao,
-        syncPayment: _mockSyncPayment,
+        syncPayment: mockSyncPayment,
       );
 
-      await _insertarPagoPendiente(id: 'PAG_LAST');
-      _queueSuccess(serverId: 'SRV_LAST');
+      await insertarPagoPendiente(id: 'PAG_LAST');
+      queueSuccess(serverId: 'SRV_LAST');
 
       await syncService.requestSync();
 

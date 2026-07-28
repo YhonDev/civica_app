@@ -197,7 +197,7 @@ void main() {
       expect(cobros[0].saldo, 20000); // (50,000 - 30,000)
     });
 
-    test('cuota en estado PARCIAL no afecta resumen (solo PAGADA/VENCIDA/PENDIENTE)', () async {
+    test('cuota en estado PARCIAL se suma al resumen como pendiente y abono', () async {
       mockAdapter.onGet('/cobros', [
         {
           'id': 'CUO_PP',
@@ -210,13 +210,13 @@ void main() {
 
       final resumen = await repository.getCarteraResumen();
 
-      // PARCIAL no entra en ningún if → no se cuenta
+      // PARCIAL se mapea a Pendiente, por lo que suma al saldo pendiente y al total pagado
       expect(resumen.cantidadPagados, 0);
       expect(resumen.cantidadMora, 0);
-      expect(resumen.cantidadPendientes, 0);
-      expect(resumen.totalPagado, 0);
-      expect(resumen.totalMora, 0);
-      expect(resumen.totalPendiente, 0);
+      expect(resumen.cantidadPendientes, 1);
+      expect(resumen.totalPagado, 30000.0);
+      expect(resumen.totalMora, 0.0);
+      expect(resumen.totalPendiente, 20000.0);
     });
   });
 

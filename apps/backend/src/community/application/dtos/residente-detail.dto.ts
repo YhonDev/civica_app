@@ -8,6 +8,7 @@ export interface ResidenteDetailDto {
   casaActualId: string | null;
   modalidadPago: string;
   tenantId: string;
+  username: string | null;
   tenencias: {
     id: string;
     casaId: string;

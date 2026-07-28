@@ -10,6 +10,7 @@ import { CommunityModule } from './community/community.module';
 import { IamModule } from './iam/iam.module';
 import { LedgerModule } from './ledger/ledger.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { HealthController } from './shared/health/health.controller';
 
 @Module({
   imports: [
@@ -35,7 +36,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     LedgerModule,
     NotificationsModule,
   ],
-  controllers: [],
+  controllers: [HealthController],
   providers: [
     {
       provide: APP_GUARD,

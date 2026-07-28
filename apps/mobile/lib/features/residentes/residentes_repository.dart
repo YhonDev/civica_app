@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../../core/network/api_client.dart';
 import '../../core/network/api_exceptions.dart';
-import 'comunidad_repository.dart';
 import 'models/residentes_models.dart';
 
 class ResidentesRepository {
@@ -13,11 +12,9 @@ class ResidentesRepository {
   /// Obtiene el resumen de la comunidad.
   Future<ResidenteResumen> getResumen() async {
     try {
-      final tenantId = ComunidadRepository.currentTenantId;
-
       // 1. Obtener todas las casas a través de conjuntos
       int totalCasas = 0;
-      final responseConjuntos = await _api.get('/proyectos', queryParameters: {'tenantId': tenantId});
+      final responseConjuntos = await _api.get('/proyectos');
       final proyectos = responseConjuntos.data as List<dynamic>;
       
       for (var p in proyectos) {
@@ -29,7 +26,7 @@ class ResidentesRepository {
       }
 
       // 2. Obtener casas ocupadas a través de propietarios activos
-      final responseProps = await _api.get('/residentes', queryParameters: {'tenantId': tenantId});
+      final responseProps = await _api.get('/residentes');
       final propietarios = responseProps.data as List<dynamic>;
       
       final ocupadasSet = <String>{};
@@ -57,8 +54,7 @@ class ResidentesRepository {
   /// Obtiene la lista completa de propietarios en la comunidad.
   Future<List<ResidenteItem>> getPropietarios() async {
     try {
-      final tenantId = ComunidadRepository.currentTenantId;
-      final response = await _api.get('/residentes', queryParameters: {'tenantId': tenantId});
+      final response = await _api.get('/residentes');
       final List<dynamic> data = response.data;
       
       final List<ResidenteItem> propietarios = [];
@@ -87,6 +83,8 @@ class ResidentesRepository {
         String? manzanaId;
         String? etapaId;
         String? email = p['email'];
+        String? username = p['username'];
+        String? usuarioId = p['usuarioId']?.toString();
         String modalidadPago = p['modalidad_pago'] ?? p['modalidadPago'] ?? 'MENSUAL';
         
         final tenencias = p['tenencias'] as List<dynamic>? ?? [];
@@ -115,6 +113,8 @@ class ResidentesRepository {
             nombre: p['nombre'] ?? '',
             telefono: p['telefono'] ?? '',
             email: email,
+            username: username,
+            usuarioId: usuarioId,
             casa: '$manzanaNombre - $casaNombre',
             etapa: etapaNombre,
             casaId: casaId?.toString(),
@@ -135,7 +135,8 @@ class ResidentesRepository {
   }
 
   /// Crea un nuevo propietario en el backend.
-  Future<void> createPropietario({
+  /// Retorna el response completo (incluye credenciales generadas).
+  Future<Map<String, dynamic>> createPropietario({
     required String nombre,
     required String telefono,
     String? email,
@@ -144,11 +145,9 @@ class ResidentesRepository {
     String modalidadPago = 'MENSUAL',
   }) async {
     try {
-      final tenantId = ComunidadRepository.currentTenantId;
       final payload = {
         'nombre': nombre,
         'telefono': telefono,
-        'tenantId': tenantId,
         'modalidadPago': modalidadPago,
       };
 
@@ -162,7 +161,8 @@ class ResidentesRepository {
         payload['fechaInicio'] = fechaInicio;
       }
 
-      await _api.post('/residentes', data: payload);
+      final response = await _api.post<Map<String, dynamic>>('/residentes', data: payload);
+      return response.data as Map<String, dynamic>;
     } catch (e) {
       throw e is ApiException ? e : Exception('Error al crear propietario: $e');
     }
@@ -209,6 +209,28 @@ class ResidentesRepository {
     } catch (e) {
       if (kDebugMode) print('Error al eliminar pago: $e');
       return false;
+    }
+  }
+
+  /// Regenera la password de un usuario (residente o cobrador). Solo admin.
+  /// Retorna { username, password } con las nuevas credenciales.
+  Future<Map<String, String>> resetPassword({
+    String? residenteId,
+    String? usuarioId,
+  }) async {
+    try {
+      final payload = <String, dynamic>{};
+      if (residenteId != null) payload['residenteId'] = residenteId;
+      if (usuarioId != null) payload['usuarioId'] = usuarioId;
+
+      final response = await _api.post('/auth/reset-password', data: payload);
+      final data = response.data as Map<String, dynamic>;
+      return {
+        'username': data['username']?.toString() ?? '',
+        'password': data['password']?.toString() ?? '',
+      };
+    } catch (e) {
+      throw e is ApiException ? e : Exception('Error al resetear password: $e');
     }
   }
 }

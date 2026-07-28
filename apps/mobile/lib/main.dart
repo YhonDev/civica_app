@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kReleaseMode, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -11,6 +12,19 @@ import 'core/theme/app_colors.dart';
 import 'core/router/app_router.dart';
 import 'screens/auth/auth_cubit.dart';
 
+/// Detecta la URL base del backend según la plataforma:
+/// - Android emulator: 10.0.2.2 (localhost del host)
+/// - iOS simulator / otros: localhost
+/// Se puede sobrescribir con --dart-define=API_BASE_URL=...
+String _detectBaseUrl() {
+  const envUrl = String.fromEnvironment('API_BASE_URL');
+  if (envUrl.isNotEmpty) return envUrl;
+  if (defaultTargetPlatform == TargetPlatform.android) {
+    return 'http://10.0.2.2:3000';
+  }
+  return 'http://localhost:3000';
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -21,14 +35,17 @@ void main() async {
   await AppDatabase.init();
 
   // Cargar variables de entorno
-  await dotenv.load(fileName: ".env");
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (e) {
+    debugPrint("Variables de entorno (.env) no cargadas: $e");
+  }
 
   // Inicializar ApiClient con la URL del backend
+  // En release mode se desactiva el LogInterceptor para no exponer datos sensibles
   ApiClient.init(
-    baseUrl: const String.fromEnvironment(
-      'API_BASE_URL',
-      defaultValue: 'http://localhost:3000',
-    ),
+    baseUrl: _detectBaseUrl(),
+    enableLogging: !kReleaseMode,
   );
 
   // Inicializar detector de conectividad y servicio de sync

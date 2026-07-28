@@ -51,15 +51,15 @@ class _HistorialScreenState extends State<HistorialScreen> {
   Future<void> _loadHistorial() async {
     try {
       final user = context.read<AuthCubit>().state.usuario;
-      final propietarioId = user?['residenteId'] as String?;
-      if (propietarioId == null) {
+      final residenteId = user?['id'] as String?;
+      if (residenteId == null) {
         setState(() {
           _loading = false;
         });
         return;
       }
 
-      final response = await ApiClient.instance.get<List<dynamic>>('/cobros/residente/$propietarioId');
+      final response = await ApiClient.instance.get<List<dynamic>>('/cobros/residente/$residenteId');
       final listCuotas = response.data!.map((item) => item as Map<String, dynamic>).toList();
 
       final listSolicitudes = await _solicitudesRepo.getSolicitudes();
@@ -133,7 +133,7 @@ class _HistorialScreenState extends State<HistorialScreen> {
                             vertical: AppSpacing.sm,
                           ),
                           itemCount: _itemCount,
-                          separatorBuilder: (_, __) =>
+                          separatorBuilder: (_, _) =>
                               const SizedBox(height: AppSpacing.sm),
                           itemBuilder: (context, index) {
                             if (index == _visibleCount &&
@@ -233,7 +233,7 @@ class _HistorialScreenState extends State<HistorialScreen> {
         TicketData(
           numero: 'TK-${c['id'].hashCode.abs().toString().padLeft(6, '0')}',
           fecha: date,
-          propietario: context.read<AuthCubit>().state.usuario?['nombre'] as String? ?? 'Residente',
+          residente: context.read<AuthCubit>().state.usuario?['nombre'] as String? ?? 'Residente',
           casa: 'Mi Casa',
           monto: monto,
           metodo: 'Efectivo',

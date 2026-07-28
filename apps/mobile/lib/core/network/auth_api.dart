@@ -74,7 +74,7 @@ class AuthApi {
         'nombre': nombre,
         'rol': rol,
         'tenantId': tenantId,
-        if (residenteId != null) 'residenteId': residenteId,
+        'residenteId': ?residenteId,
       },
     );
 
@@ -83,7 +83,51 @@ class AuthApi {
 
   /// Cierra sesión y limpia tokens.
   Future<void> logout() async {
+    try {
+      // Revocar refresh token en el backend (no falla si ya expiró)
+      final refreshToken = await _client.tokenStorage.getRefreshToken();
+      if (refreshToken != null) {
+        await _client.post('/auth/logout', data: {'refreshToken': refreshToken});
+      }
+    } catch (_) {
+      // Ignorar errores de red en logout — siempre limpiar local
+    }
     await _client.logout();
+  }
+
+  /// Intenta refrescar la sesión con el refresh token guardado.
+  /// Retorna el usuario si el refresh fue exitoso, null si no.
+  Future<Map<String, dynamic>?> refreshSession() async {
+    try {
+      final refreshToken = await _client.tokenStorage.getRefreshToken();
+      if (refreshToken == null) return null;
+
+      final response = await _client.post<Map<String, dynamic>>(
+        '/auth/refresh',
+        data: {'refreshToken': refreshToken},
+      );
+
+      final data = response.data;
+      if (data == null) return null;
+
+      final newAccess = data['accessToken'] as String?;
+      final newRefresh = data['refreshToken'] as String?;
+      if (newAccess == null || newRefresh == null) return null;
+
+      await _client.tokenStorage.saveTokens(newAccess, newRefresh);
+
+      // Actualizar info del usuario si el backend la retornó
+      final usuario = data['usuario'] as Map<String, dynamic>?;
+      if (usuario != null) {
+        await _client.tokenStorage.saveUser(usuario);
+        return usuario;
+      }
+
+      // Fallback: usar lo que ya teníamos guardado
+      return await _client.tokenStorage.getUser();
+    } catch (_) {
+      return null;
+    }
   }
 
   /// Verifica si hay una sesión activa.

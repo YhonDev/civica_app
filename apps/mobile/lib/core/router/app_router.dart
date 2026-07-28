@@ -8,18 +8,18 @@ import '../../features/shell/scaffold_with_bottom_nav.dart';
 import '../../features/dashboard/dashboard_screen.dart';
 import '../../features/dashboard_cobrador/jornada_screen.dart';
 import '../../features/dashboard_cobrador/casas_explorer_screen.dart';
-import '../../features/dashboard_propietario/mi_estado_screen.dart';
-import '../../features/dashboard_propietario/residente_dashboard_screen.dart';
+import '../../features/dashboard_residente/residente_dashboard_screen.dart';
 import '../../features/cartera/cartera_screen.dart';
 import '../../features/residentes/nuevo_residente_screen.dart';
 import '../../features/residentes/nuevo_cobrador_screen.dart';
+import '../../features/residentes/cobrador_detail_screen.dart';
+import '../../features/residentes/models/cobradores_models.dart';
 import '../../features/residentes/proyecto_detail_screen.dart';
 import '../../features/residentes/etapas_screen.dart';
 import '../../features/residentes/manzanas_screen.dart';
 import '../../features/residentes/casas_screen.dart';
 import '../../features/residentes/proyecto_ajustes_screen.dart';
-import '../../features/mas/mas_screen.dart';
-import '../../features/mas/configuracion_screen.dart';
+import '../../features/configuracion/configuracion_screen.dart';
 import '../../features/historial/historial_screen.dart';
 import '../../features/dashboard/estado_admin_screen.dart';
 import '../../features/dashboard/actividad_admin_screen.dart';
@@ -34,9 +34,15 @@ import '../../features/residentes/cobradores_screen.dart';
 import '../../features/residentes/urbanizacion_screen.dart';
 import '../../features/residentes/widgets/residente_finanzas_tab.dart';
 import '../../features/residentes/widgets/residente_historial_tab.dart';
-import '../../features/residentes/residente_inmueble_screen.dart';
-
 import '../../features/residentes/tarifas_screen.dart';
+import '../../features/dashboard_residente/mi_casa_screen.dart';
+import '../../features/reportes/reportes_screen.dart';
+import '../../features/cartera/cartera_consolidada_screen.dart';
+import '../../features/residentes/asignar_etapas_screen.dart';
+import '../../features/residentes/montos_screen.dart';
+import '../../features/residentes/residente_inmueble_screen.dart';
+import '../../features/notificaciones/notificaciones_fallidas_screen.dart';
+import '../../features/sync/sync_queue_screen.dart';
 
 /// GoRouter configuration — role-aware.
 ///
@@ -44,7 +50,7 @@ import '../../features/residentes/tarifas_screen.dart';
 ///   Login → backend obtiene rol → Carga Dashboard correspondiente
 ///
 /// Routes / and /cartera adapt the shown screen based on the
-/// authenticated user's role (ADMIN, COBRADOR, PROPIETARIO).
+/// authenticated user's role (ADMIN, COBRADOR, RESIDENTE).
 final GoRouter appRouter = GoRouter(
   initialLocation: '/login',
   debugLogDiagnostics: false,
@@ -65,14 +71,14 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/login',
       name: 'login',
-      builder: (_, __) => const LoginScreen(),
+      builder: (_, _) => const LoginScreen(),
     ),
 
     // ── Shell with Bottom Navigation ───────────────────────────────────
     ShellRoute(
-      builder: (_, __, child) => ScaffoldWithBottomNav(child: child),
+      builder: (_, _, child) => ScaffoldWithBottomNav(child: child),
       routes: [
-        // Dashboard por rol (Admin, Cobrador, Propietario)
+        // Dashboard por rol (Admin, Cobrador, Residente)
         GoRoute(
           path: '/',
           name: 'dashboard',
@@ -109,47 +115,47 @@ final GoRouter appRouter = GoRouter(
         GoRoute(
           path: '/casas',
           name: 'casas',
-          builder: (_, __) => const CasasExplorerScreen(),
+          builder: (_, _) => const CasasExplorerScreen(),
         ),
 
         // Módulo Comunidad (Hub) y sub-rutas
         GoRoute(
           path: '/comunidad',
           name: 'comunidad',
-          builder: (_, __) => const ComunidadScreen(),
+          builder: (_, _) => const ComunidadScreen(),
           routes: [
             GoRoute(
               path: 'residentes',
               name: 'comunidad-residentes',
-              builder: (_, __) => const ResidentesScreen(),
+              builder: (_, _) => const ResidentesScreen(),
               routes: [
                 GoRoute(
                   path: 'detalle',
                   name: 'comunidad-residente-detalle',
                   builder: (_, state) {
-                    final propietario = state.extra as ResidenteItem;
-                    return ResidenteDetailScreen(propietario: propietario);
+                    final residente = state.extra as ResidenteItem;
+                    return ResidenteDetailScreen(residente: residente);
                   },
                   routes: [
                     GoRoute(
                       path: 'finanzas',
                       builder: (_, state) {
-                        final propietario = state.extra as ResidenteItem;
-                        return ResidenteFinanzasScreen(propietario: propietario);
+                        final residente = state.extra as ResidenteItem;
+                        return ResidenteFinanzasScreen(residente: residente);
                       },
                     ),
                     GoRoute(
                       path: 'historial',
                       builder: (_, state) {
-                        final propietario = state.extra as ResidenteItem;
-                        return ResidenteHistorialScreen(propietario: propietario);
+                        final residente = state.extra as ResidenteItem;
+                        return ResidenteHistorialScreen(residente: residente);
                       },
                     ),
                     GoRoute(
                       path: 'inmueble',
                       builder: (_, state) {
-                        final propietario = state.extra as ResidenteItem;
-                        return ResidenteInmuebleScreen(propietario: propietario);
+                        final residente = state.extra as ResidenteItem;
+                        return ResidenteInmuebleScreen(residente: residente);
                       },
                     ),
                   ],
@@ -158,8 +164,8 @@ final GoRouter appRouter = GoRouter(
                   path: 'editar',
                   name: 'comunidad-residente-editar',
                   builder: (_, state) {
-                    final propietario = state.extra as ResidenteItem;
-                    return EditarResidenteScreen(propietario: propietario);
+                    final residente = state.extra as ResidenteItem;
+                    return EditarResidenteScreen(residente: residente);
                   },
                 ),
               ],
@@ -167,17 +173,17 @@ final GoRouter appRouter = GoRouter(
             GoRoute(
               path: 'cobradores',
               name: 'comunidad-cobradores',
-              builder: (_, __) => const CobradoresScreen(),
+              builder: (_, _) => const CobradoresScreen(),
             ),
             GoRoute(
               path: 'tarifas',
               name: 'comunidad-tarifas',
-              builder: (_, __) => const TarifasScreen(),
+              builder: (_, _) => const TarifasScreen(),
             ),
             GoRoute(
               path: 'urbanizacion',
               name: 'comunidad-urbanizacion',
-              builder: (_, __) => const UrbanizacionScreen(),
+              builder: (_, _) => const UrbanizacionScreen(),
               routes: [
                 GoRoute(
                   path: 'proyecto-detalle',
@@ -199,17 +205,20 @@ final GoRouter appRouter = GoRouter(
                     GoRoute(
                       path: 'manzanas',
                       name: 'comunidad-proyecto-manzanas',
-                      builder: (_, __) => const ManzanasScreen(),
+                      builder: (_, _) => const ManzanasScreen(),
                     ),
                     GoRoute(
                       path: 'casas',
                       name: 'comunidad-proyecto-casas',
-                      builder: (_, __) => const CasasScreen(),
+                      builder: (_, _) => const CasasScreen(),
                     ),
                     GoRoute(
                       path: 'ajustes',
                       name: 'comunidad-proyecto-ajustes',
-                      builder: (_, __) => const ProyectoAjustesScreen(),
+                      builder: (_, state) {
+                        final proyectoId = state.extra as String? ?? '';
+                        return ProyectoAjustesScreen(proyectoId: proyectoId);
+                      },
                     ),
                   ],
                 ),
@@ -218,25 +227,57 @@ final GoRouter appRouter = GoRouter(
           ],
         ),
 
-        // Menú Más
+        // Configuración
+        GoRoute(
+          path: '/configuracion',
+          name: 'configuracion',
+          builder: (_, _) => const ConfiguracionScreen(),
+        ),
         GoRoute(
           path: '/mas',
-          name: 'mas',
-          builder: (_, __) => const MasScreen(),
-          routes: [
-            GoRoute(
-              path: 'configuracion',
-              name: 'mas-configuracion',
-              builder: (_, __) => const ConfiguracionScreen(),
-            ),
-          ],
+          redirect: (_, _) => '/configuracion',
         ),
 
-        // Historial (Propietario)
+        // Historial (Residente)
         GoRoute(
           path: '/historial',
           name: 'historial',
-          builder: (_, __) => const HistorialScreen(),
+          builder: (_, _) => const HistorialScreen(),
+        ),
+
+        // Mi Casa (Residente)
+        GoRoute(
+          path: '/mi-casa',
+          name: 'mi-casa',
+          builder: (_, _) => const MiCasaScreen(),
+        ),
+
+        // Reportes (Admin)
+        GoRoute(
+          path: '/reportes',
+          name: 'reportes',
+          builder: (_, _) => const ReportesScreen(),
+        ),
+
+        // Montos Predefinidos (Admin)
+        GoRoute(
+          path: '/montos',
+          name: 'montos',
+          builder: (_, _) => const MontosScreen(),
+        ),
+
+        // Sync Queue (Cobrador)
+        GoRoute(
+          path: '/sync-queue',
+          name: 'sync-queue',
+          builder: (_, _) => const SyncQueueScreen(),
+        ),
+
+        // Notificaciones Fallidas (Admin)
+        GoRoute(
+          path: '/notificaciones-fallidas',
+          name: 'notificaciones-fallidas',
+          builder: (_, _) => const NotificacionesFallidasScreen(),
         ),
       ],
     ),
@@ -245,27 +286,45 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/solicitudes',
       name: 'solicitudes',
-      builder: (_, __) => const SolicitudesScreen(),
+      builder: (_, _) => const SolicitudesScreen(),
     ),
     GoRoute(
       path: '/actividad-admin',
       name: 'actividad-admin',
-      builder: (_, __) => const ActividadAdminScreen(),
+      builder: (_, _) => const ActividadAdminScreen(),
     ),
     GoRoute(
       path: '/solicitud-nueva',
       name: 'solicitud-nueva',
-      builder: (_, __) => const NuevaSolicitudScreen(),
+      builder: (_, _) => const NuevaSolicitudScreen(),
     ),
     GoRoute(
       path: '/nuevo-residente',
       name: 'nuevo-residente',
-      builder: (_, __) => const NuevoResidenteScreen(),
+      builder: (_, _) => const NuevoResidenteScreen(),
     ),
     GoRoute(
       path: '/nuevo-cobrador',
       name: 'nuevo-cobrador',
-      builder: (_, __) => const NuevoCobradorScreen(),
+      builder: (_, _) => const NuevoCobradorScreen(),
+    ),
+    GoRoute(
+      path: '/asignar-etapas',
+      name: 'asignar-etapas',
+      builder: (_, state) {
+        final extra = state.extra as Map<String, dynamic>? ?? {};
+        return AsignarEtapasScreen(
+          cobradorId: extra['cobradorId'] ?? '',
+          cobradorNombre: extra['cobradorNombre'] ?? 'Cobrador',
+        );
+      },
+    ),
+    GoRoute(
+      path: '/cobrador-detalle',
+      name: 'cobrador-detalle',
+      builder: (_, state) => CobradorDetailScreen(
+        cobrador: state.extra as CobradorItem,
+      ),
     ),
   ],
 );
@@ -275,7 +334,7 @@ Widget _dashboardForRol(String? rol) {
   switch (rol) {
     case 'COBRADOR':
       return const JornadaScreen();
-    case 'PROPIETARIO':
+    case 'RESIDENTE':
       return const ResidenteDashboardScreen();
     default:
       return const DashboardScreen();
@@ -285,9 +344,8 @@ Widget _dashboardForRol(String? rol) {
 /// Returns the appropriate cartera/payment screen for the given role.
 Widget _carteraForRol(String? rol) {
   switch (rol) {
-    case 'COBRADOR':
-    case 'PROPIETARIO':
-      return const CarteraScreen();
+    case 'ADMIN':
+      return const CarteraConsolidadaScreen();
     default:
       return const CarteraScreen();
   }

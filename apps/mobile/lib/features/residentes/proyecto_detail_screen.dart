@@ -5,6 +5,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../shared/widgets/action_card.dart';
 import 'residentes_repository.dart';
+import 'comunidad_repository.dart';
 import 'models/residentes_models.dart';
 
 class ProyectoDetailScreen extends StatefulWidget {
@@ -18,21 +19,31 @@ class ProyectoDetailScreen extends StatefulWidget {
 
 class _ProyectoDetailScreenState extends State<ProyectoDetailScreen> {
   final ResidentesRepository _repo = ResidentesRepository();
+  final ComunidadRepository _comunidadRepo = ComunidadRepository();
   ResidenteResumen? _resumen;
+  late Map<String, dynamic> _proyecto;
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
+    _proyecto = widget.proyecto;
     _loadData();
   }
 
   Future<void> _loadData() async {
     try {
-      final res = await _repo.getResumen();
+      final results = await Future.wait([
+        _repo.getResumen(),
+        _comunidadRepo.getProyectos(),
+      ]);
+      final res = results[0] as ResidenteResumen;
+      final proyectos = results[1] as List<Map<String, dynamic>>;
+      final refreshed = proyectos.where((p) => p['id'] == _proyecto['id']).toList();
       if (mounted) {
         setState(() {
           _resumen = res;
+          if (refreshed.isNotEmpty) _proyecto = refreshed.first;
           _isLoading = false;
         });
       }
@@ -45,11 +56,11 @@ class _ProyectoDetailScreenState extends State<ProyectoDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final String nombre = widget.proyecto['nombre'] ?? 'Sin nombre';
-    final int etapas = widget.proyecto['etapas'] ?? 0;
-    final int manzanas = widget.proyecto['manzanas'] ?? 0;
-    final int casas = widget.proyecto['casas'] ?? 0;
-    final String id = widget.proyecto['id'] ?? '';
+    final String nombre = _proyecto['nombre'] ?? 'Sin nombre';
+    final int etapas = _proyecto['etapas'] ?? 0;
+    final int manzanas = _proyecto['manzanas'] ?? 0;
+    final int casas = _proyecto['casas'] ?? 0;
+    final String id = _proyecto['id'] ?? '';
     return Scaffold(
       appBar: AppBar(
         title: const Text('Gestión de Proyecto'),
@@ -134,19 +145,28 @@ class _ProyectoDetailScreenState extends State<ProyectoDetailScreen> {
             ActionCard(
               icon: Icons.account_tree_rounded,
               title: 'Gestión de Etapas',
-              onTap: () => context.push('/comunidad/urbanizacion/proyecto-detalle/etapas', extra: id),
+              onTap: () async {
+                await context.push('/comunidad/urbanizacion/proyecto-detalle/etapas', extra: id);
+                if (mounted) _loadData();
+              },
             ),
             const SizedBox(height: AppSpacing.sm),
             ActionCard(
               icon: Icons.grid_view_rounded,
               title: 'Gestión de Manzanas',
-              onTap: () => context.push('/comunidad/urbanizacion/proyecto-detalle/manzanas', extra: id),
+              onTap: () async {
+                await context.push('/comunidad/urbanizacion/proyecto-detalle/manzanas', extra: id);
+                if (mounted) _loadData();
+              },
             ),
             const SizedBox(height: AppSpacing.sm),
             ActionCard(
               icon: Icons.home_rounded,
               title: 'Gestión de Casas / Lotes',
-              onTap: () => context.push('/comunidad/urbanizacion/proyecto-detalle/casas', extra: id),
+              onTap: () async {
+                await context.push('/comunidad/urbanizacion/proyecto-detalle/casas', extra: id);
+                if (mounted) _loadData();
+              },
             ),
             const SizedBox(height: AppSpacing.sm),
             ActionCard(

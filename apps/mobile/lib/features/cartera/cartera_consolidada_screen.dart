@@ -128,7 +128,7 @@ class CarteraConsolidadaScreen extends StatelessWidget {
                               contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                             ),
-                            value: state.selectedEtapaId,
+                            initialValue: state.selectedEtapaId,
                             items: [
                               const DropdownMenuItem(value: null, child: Text('Todas')),
                               ...state.etapas.map((e) => DropdownMenuItem(
@@ -149,7 +149,7 @@ class CarteraConsolidadaScreen extends StatelessWidget {
                               contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                             ),
-                            value: state.selectedManzanaId,
+                            initialValue: state.selectedManzanaId,
                             items: [
                               const DropdownMenuItem(value: null, child: Text('Todas')),
                               ...state.manzanas.map((m) => DropdownMenuItem(
@@ -204,7 +204,7 @@ class CarteraConsolidadaScreen extends StatelessWidget {
                             : ListView.separated(
                                 padding: const EdgeInsets.all(AppSpacing.md),
                                 itemCount: state.filteredItems.length,
-                                separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
+                                separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
                                 itemBuilder: (context, index) {
                                   final item = state.filteredItems[index];
                                   StatusType statusType;

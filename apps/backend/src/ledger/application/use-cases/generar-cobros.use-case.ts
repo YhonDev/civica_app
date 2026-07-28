@@ -45,7 +45,7 @@ export class GenerarCobrosUseCase {
     return { generados };
   }
 
-  private async generarCobrosParaPlan(
+  async generarCobrosParaPlan(
     plan: import('../../domain/plan-de-cobro.entity').PlanDeCobro,
     mes: number,
     anio: number,
@@ -105,8 +105,14 @@ export class GenerarCobrosUseCase {
     const totalPagos = pagosPorMes(modalidad);
     const montoPorCobro = Math.round(valorMensualCentavos / totalPagos);
 
+    // Filtrar fechas de cobro que sean anteriores a la fecha de activación del plan
+    // Para evitar cobros retroactivos en el mes de ingreso.
+    const fechasFiltradas = fechasCobro.filter(
+      (fechaStr) => fechaStr >= plan.fechaActivacion,
+    );
+
     // 7. Crear los cobros individuales con periodoId asignado
-    const cobrosAGuardar: Cobro[] = fechasCobro.map((fechaStr) =>
+    const cobrosAGuardar: Cobro[] = fechasFiltradas.map((fechaStr) =>
       Cobro.crear(
         plan.residenteId,
         plan.tenantId,

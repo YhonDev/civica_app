@@ -185,28 +185,44 @@ class _LoginScreenState extends State<LoginScreen> {
                         runSpacing: 8,
                         alignment: WrapAlignment.center,
                         children: [
-                          ActionChip(
+                           ActionChip(
                             avatar: const Icon(Icons.admin_panel_settings_outlined, size: 16),
                             label: const Text('Admin'),
                             onPressed: () {
-                              _emailCtrl.text = 'admin';
-                              _passwordCtrl.text = 'Admin2026!';
+                              _emailCtrl.text = 'admin@vigivecino.com';
+                              _passwordCtrl.text = 'Admin123!';
                             },
                           ),
                           ActionChip(
-                            avatar: const Icon(Icons.engineering_outlined, size: 16),
-                            label: const Text('Cobrador (Juan)'),
+                            avatar: const Icon(Icons.directions_run_rounded, size: 16),
+                            label: const Text('Cobrador'),
                             onPressed: () {
-                              _emailCtrl.text = 'juanperezcobrador';
-                              _passwordCtrl.text = 'juanperez2026';
+                              _emailCtrl.text = 'robertomartinezcobrador';
+                              _passwordCtrl.text = 'robertomartinez2026';
                             },
                           ),
                           ActionChip(
                             avatar: const Icon(Icons.home_outlined, size: 16),
-                            label: const Text('Residente (Juan Pérez)'),
+                            label: const Text('Residente 1 (Semanal)'),
                             onPressed: () {
-                              _emailCtrl.text = 'manzanaA_casa101_residente';
-                              _passwordCtrl.text = 'A3bK7xP9mN';
+                              _emailCtrl.text = 'manzana_a_casa_1_residente';
+                              _passwordCtrl.text = 'Casa1ManzanaA';
+                            },
+                          ),
+                          ActionChip(
+                            avatar: const Icon(Icons.home_outlined, size: 16),
+                            label: const Text('Residente 2 (Quincenal)'),
+                            onPressed: () {
+                              _emailCtrl.text = 'manzana_a_casa_2_residente';
+                              _passwordCtrl.text = 'Casa2ManzanaA';
+                            },
+                          ),
+                          ActionChip(
+                            avatar: const Icon(Icons.home_outlined, size: 16),
+                            label: const Text('Residente 3 (Mensual)'),
+                            onPressed: () {
+                              _emailCtrl.text = 'manzana_a_casa_3_residente';
+                              _passwordCtrl.text = 'Casa3ManzanaA';
                             },
                           ),
                         ],

@@ -92,7 +92,7 @@ class EstadoCuentaCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        'Tarifa: \$ ${NumberFormat.decimalPattern('es_CO').format(tarifaActual!['cobroMensual'])}',
+                        'Tarifa: \$ ${NumberFormat.decimalPattern('es_CO').format((tarifaActual!['cobroMensual'] as num?)?.toInt() ?? 0)}',
                         style: AppTypography.caption.copyWith(
                           color: AppColors.primary,
                           fontWeight: FontWeight.w700,

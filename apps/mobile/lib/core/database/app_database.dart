@@ -6,6 +6,11 @@ import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
+import 'daos/residente_dao.dart';
+import 'daos/cobro_dao.dart';
+import 'daos/pago_dao.dart';
+import 'daos/actividad_dao.dart';
+
 part 'app_database.g.dart';
 
 // ════════════════════════════════════════════════════════════
@@ -38,12 +43,12 @@ class Etapas extends Table {
 }
 
 // ════════════════════════════════════════════════════════════
-// TABLE: casas
+// TABLE: manzanas
 // ════════════════════════════════════════════════════════════
 
-class Casas extends Table {
+class Manzanas extends Table {
   TextColumn get id => text()();
-  TextColumn get direccionInterna => text()();
+  TextColumn get nombre => text()();
   TextColumn get etapaId => text()();
   DateTimeColumn get createdAt => dateTime()();
 
@@ -52,7 +57,21 @@ class Casas extends Table {
 }
 
 // ════════════════════════════════════════════════════════════
-// TABLE: propietarios
+// TABLE: casas
+// ════════════════════════════════════════════════════════════
+
+class Casas extends Table {
+  TextColumn get id => text()();
+  TextColumn get direccionInterna => text()();
+  TextColumn get manzanaId => text()();
+  DateTimeColumn get createdAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+// ════════════════════════════════════════════════════════════
+// TABLE: residentes
 // ════════════════════════════════════════════════════════════
 
 class Residentes extends Table {
@@ -92,7 +111,7 @@ class Usuarios extends Table {
   TextColumn get id => text()();
   TextColumn get email => text()();
   TextColumn get nombre => text()();
-  TextColumn get rol => text()(); // ADMIN | COBRADOR | PROPIETARIO
+  TextColumn get rol => text()(); // ADMIN | COBRADOR | RESIDENTE
   TextColumn? get residenteId => text().nullable()();
   TextColumn get tenantId => text()();
   BoolColumn get activo => boolean()();
@@ -176,7 +195,23 @@ class PlanesDeCobro extends Table {
 }
 
 // ════════════════════════════════════════════════════════════
-// TABLE: cuotas
+// TABLE: meses_de_cobro
+// ════════════════════════════════════════════════════════════
+
+class MesesDeCobro extends Table {
+  TextColumn get id => text()();
+  TextColumn get tenantId => text()();
+  TextColumn get proyectoId => text()();
+  IntColumn get mes => integer()();
+  IntColumn get anio => integer()();
+  DateTimeColumn get createdAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+// ════════════════════════════════════════════════════════════
+// TABLE: cuotas (Cobros)
 // ════════════════════════════════════════════════════════════
 
 class Cobros extends Table {
@@ -184,13 +219,14 @@ class Cobros extends Table {
   TextColumn get residenteId => text()();
   TextColumn get tenantId => text()();
   TextColumn? get tarifaId => text().nullable()();
+  TextColumn? get mesDeCobroId => text().nullable()();
   TextColumn get concepto => text()();
   IntColumn get monto => integer()(); // centavos COP
   IntColumn get montoPagado => integer()();
   TextColumn get periodoInicio => text()(); // ISO date
   TextColumn get periodoFin => text()(); // ISO date
   TextColumn get fechaVencimiento => text()(); // ISO date
-  TextColumn get estado => text()(); // PENDIENTE | PARCIAL | PAGADA | VENCIDA
+  TextColumn get estado => text()(); // PROGRAMADA | PENDIENTE | SOLICITADA | EN_COBRO | PAGO_PARCIAL | PAGADA | VENCIDA
   BoolColumn get notificacionEnviada => boolean()();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
@@ -224,6 +260,43 @@ class Pagos extends Table {
 }
 
 // ════════════════════════════════════════════════════════════
+// TABLE: solicitudes
+// ════════════════════════════════════════════════════════════
+
+class Solicitudes extends Table {
+  TextColumn get id => text()();
+  TextColumn get tenantId => text()();
+  TextColumn get residenteId => text()();
+  TextColumn get casaId => text()();
+  TextColumn get tipo => text()(); // COBRO | REVISION
+  TextColumn get estado => text()(); // PENDIENTE | ATENDIDA | RECHAZADA
+  TextColumn? get observacion => text().nullable()();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+// ════════════════════════════════════════════════════════════
+// TABLE: actividades
+// ════════════════════════════════════════════════════════════
+
+class Actividades extends Table {
+  TextColumn get id => text()();
+  TextColumn get tenantId => text()();
+  TextColumn get tipo => text()(); // CASA_CREADA, RESIDENTE_ASIGNADO, PAGO_REGISTRADO, etc.
+  TextColumn get entidadId => text()(); // ID of the related entity
+  TextColumn get entidadTipo => text()(); // CASA, RESIDENTE, PAGO, CUOTA, etc.
+  TextColumn? get descripcion => text().nullable()();
+  TextColumn? get usuarioId => text().nullable()(); // Who performed it
+  DateTimeColumn get createdAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+// ════════════════════════════════════════════════════════════
 // DATABASE
 // ════════════════════════════════════════════════════════════
 
@@ -232,6 +305,7 @@ class Pagos extends Table {
   tables: [
     Proyectos,
     Etapas,
+    Manzanas,
     Casas,
     Residentes,
     Tenencias,
@@ -240,12 +314,21 @@ class Pagos extends Table {
     Tarifas,
     MontosPredefinidos,
     PlanesDeCobro,
+    MesesDeCobro,
     Cobros,
     Pagos,
+    Solicitudes,
+    Actividades,
   ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
+
+  // DAOs
+  ResidenteDao get residenteDao => ResidenteDao(this);
+  CobroDao get cobroDao => CobroDao(this);
+  PagoDao get pagoDao => PagoDao(this);
+  ActividadDao get actividadDao => ActividadDao(this);
 
   AppDatabase.forTesting(super.executor);
 
@@ -278,7 +361,27 @@ class AppDatabase extends _$AppDatabase {
 
 
   @override
-  final int schemaVersion = 1;
+  final int schemaVersion = 2;
+  
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+        onCreate: (Migrator m) async {
+          await m.createAll();
+        },
+        onUpgrade: (Migrator m, int from, int to) async {
+          if (from < 2) {
+            // Se sugiere recrear la BD en dev, o escribir la migración formal:
+            await m.createTable(manzanas);
+            await m.createTable(mesesDeCobro);
+            await m.createTable(solicitudes);
+            await m.createTable(actividades);
+            
+            // Alterar casas para agregar manzanaId y migrar datos
+            await m.addColumn(casas, casas.manzanaId);
+            await m.addColumn(cobros, cobros.mesDeCobroId);
+          }
+        },
+      );
 }
 
 LazyDatabase _openConnection() {

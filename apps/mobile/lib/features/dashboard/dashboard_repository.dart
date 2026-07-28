@@ -1,6 +1,5 @@
 import '../../core/network/api_client.dart';
 import '../../core/network/api_exceptions.dart';
-import '../residentes/comunidad_repository.dart';
 import 'models/dashboard_data.dart';
 
 class DashboardRepository {
@@ -11,19 +10,16 @@ class DashboardRepository {
 
   Future<DashboardData> getDashboard(int mes, int anio) async {
     try {
-      final tenantId = ComunidadRepository.currentTenantId;
-
       // Llamada principal al backend NestJS
       final response = await _api.get('/dashboard/administrador', queryParameters: {
         'mes': mes,
         'anio': anio,
-        'tenantId': tenantId,
       });
 
       // Obtener total de propietarios (dato no incluido en el dashboard endpoint)
       int totalResidentes = 0;
       try {
-        final propsResp = await _api.get('/residentes', queryParameters: {'tenantId': tenantId});
+        final propsResp = await _api.get('/residentes');
         totalResidentes = (propsResp.data as List).length;
       } catch (_) {
         // Ignorar si falla, total 0

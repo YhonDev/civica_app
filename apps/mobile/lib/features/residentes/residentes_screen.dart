@@ -66,7 +66,8 @@ class _ResidentesScreenState extends State<ResidentesScreen> {
       final matchesFilter = _activeFilter == 'Todos' || p.estadoFinanciero == _activeFilter;
       final matchesSearch = _searchQuery.isEmpty ||
           p.nombre.toLowerCase().contains(_searchQuery) ||
-          p.casa.toLowerCase().contains(_searchQuery);
+          p.casa.toLowerCase().contains(_searchQuery) ||
+          (p.username?.toLowerCase().contains(_searchQuery) ?? false);
       return matchesFilter && matchesSearch;
     }).toList();
   }
@@ -75,7 +76,7 @@ class _ResidentesScreenState extends State<ResidentesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Gestión de Propietarios'),
+        title: const Text('Gestión de Residentes'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.pop(),
@@ -121,7 +122,7 @@ class _ResidentesScreenState extends State<ResidentesScreen> {
                 alignment: Alignment.centerRight,
                 child: FilledButton.icon(
                   onPressed: () async {
-                    final result = await context.push<bool>('/nuevo-propietario');
+                    final result = await context.push<bool>('/nuevo-residente');
                     if (result == true) {
                       _loadData();
                     }
@@ -161,7 +162,7 @@ class _ResidentesScreenState extends State<ResidentesScreen> {
               child: TextField(
                 controller: _searchController,
                 decoration: InputDecoration(
-                  hintText: 'Buscar por nombre o casa...',
+                  hintText: 'Buscar por nombre, usuario o casa...',
                   hintStyle: AppTypography.body.copyWith(color: AppColors.textDisabled),
                   prefixIcon: Icon(Icons.search_rounded, color: AppColors.textDisabled),
                   filled: true,
@@ -238,7 +239,7 @@ class _ResidentesScreenState extends State<ResidentesScreen> {
       child: Column(
         children: [
           Text(
-            'Balance de Propietarios',
+            'Balance de Residentes',
             style: AppTypography.subtitle.copyWith(
               fontWeight: FontWeight.w700,
               color: AppColors.textPrimary,
@@ -351,8 +352,8 @@ class _PropietariosSkeleton extends StatelessWidget {
           Expanded(
             child: ListView.separated(
               itemCount: 4,
-              separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
-              itemBuilder: (_, __) => const SkeletonBox(
+              separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
+              itemBuilder: (_, _) => const SkeletonBox(
                 width: double.infinity,
                 height: 120,
                 borderRadius: 12,

@@ -51,10 +51,13 @@ void main() {
   group('CobroItem', () {
     const baseItem = CobroItem(
       id: 'C-1',
-      propietarioId: 'P-1',
+      residenteId: 'P-1',
       nombre: 'Juan Pérez',
       casa: 'Casa 14',
+      manzana: 'Manzana A',
       etapa: 'Etapa 1',
+      monto: 120000,
+      montoPagado: 0,
       saldo: 120000,
       estado: 'Pendiente',
       modalidad: 'Mensual',
@@ -62,10 +65,12 @@ void main() {
 
     test('constructor asigna campos', () {
       expect(baseItem.id, 'C-1');
-      expect(baseItem.propietarioId, 'P-1');
+      expect(baseItem.residenteId, 'P-1');
       expect(baseItem.nombre, 'Juan Pérez');
       expect(baseItem.casa, 'Casa 14');
       expect(baseItem.etapa, 'Etapa 1');
+      expect(baseItem.monto, 120000);
+      expect(baseItem.montoPagado, 0);
       expect(baseItem.saldo, 120000);
       expect(baseItem.estado, 'Pendiente');
       expect(baseItem.modalidad, 'Mensual');
@@ -74,13 +79,15 @@ void main() {
     test('todos los estados posibles', () {
       const pendiente = baseItem;
       const mora = CobroItem(
-        id: 'M-1', propietarioId: 'P-2', nombre: 'En Mora',
-        casa: 'Casa 5', etapa: 'Etapa 1', saldo: 360000,
+        id: 'M-1', residenteId: 'P-2', nombre: 'En Mora',
+        casa: 'Casa 5', manzana: 'Manzana B', etapa: 'Etapa 1',
+        monto: 360000, montoPagado: 0, saldo: 360000,
         estado: 'Mora', modalidad: 'Mensual',
       );
       const pagado = CobroItem(
-        id: 'PG-1', propietarioId: 'P-3', nombre: 'Pagado',
-        casa: 'Casa 10', etapa: 'Etapa 2', saldo: 0,
+        id: 'PG-1', residenteId: 'P-3', nombre: 'Pagado',
+        casa: 'Casa 10', manzana: 'Manzana B', etapa: 'Etapa 2',
+        monto: 120000, montoPagado: 120000, saldo: 0,
         estado: 'Pagado', modalidad: 'Semanal',
       );
 
@@ -91,39 +98,45 @@ void main() {
 
     test('saldo puede ser 0 (pagado)', () {
       const pagado = CobroItem(
-        id: 'PG-2', propietarioId: 'P-4', nombre: 'Pagado',
-        casa: 'Casa 20', etapa: 'Etapa 1', saldo: 0,
+        id: 'PG-2', residenteId: 'P-4', nombre: 'Pagado',
+        casa: 'Casa 20', manzana: 'Manzana C', etapa: 'Etapa 1',
+        monto: 100000, montoPagado: 100000, saldo: 0,
         estado: 'Pagado', modalidad: 'Quincenal',
       );
 
       expect(pagado.saldo, 0);
     });
 
-    test('propietarioId puede ser string vacío', () {
+    test('residenteId puede ser string vacío', () {
       final item = CobroItem(
         id: 'C-2',
-        propietarioId: '',
+        residenteId: '',
         nombre: 'Sin Propietario',
         casa: 'Casa 99',
+        manzana: 'Manzana A',
         etapa: 'Etapa 3',
+        monto: 50000,
+        montoPagado: 0,
         saldo: 50000,
         estado: 'Pendiente',
         modalidad: 'Mensual',
       );
 
-      expect(item.propietarioId, isEmpty);
+      expect(item.residenteId, isEmpty);
     });
 
     test('Equatable -> igualdad por valor', () {
       const a = baseItem;
       const b = CobroItem(
-        id: 'C-1', propietarioId: 'P-1', nombre: 'Juan Pérez',
-        casa: 'Casa 14', etapa: 'Etapa 1', saldo: 120000,
+        id: 'C-1', residenteId: 'P-1', nombre: 'Juan Pérez',
+        casa: 'Casa 14', manzana: 'Manzana A', etapa: 'Etapa 1',
+        monto: 120000, montoPagado: 0, saldo: 120000,
         estado: 'Pendiente', modalidad: 'Mensual',
       );
       const c = CobroItem(
-        id: 'C-2', propietarioId: 'P-2', nombre: 'Otro',
-        casa: 'Casa 5', etapa: 'Etapa 1', saldo: 0,
+        id: 'C-2', residenteId: 'P-2', nombre: 'Otro',
+        casa: 'Casa 5', manzana: 'Manzana B', etapa: 'Etapa 1',
+        monto: 100000, montoPagado: 100000, saldo: 0,
         estado: 'Pagado', modalidad: 'Mensual',
       );
 

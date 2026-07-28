@@ -19,6 +19,18 @@ export class Proyecto {
   @Column({ name: 'tenant_id', type: 'uuid' })
   tenantId: string;
 
+  @Column({ name: 'recordatorios_automaticos', type: 'boolean', default: true })
+  recordatoriosAutomaticos: boolean;
+
+  @Column({ name: 'permite_pagos_parciales', type: 'boolean', default: false })
+  permitePagosParciales: boolean;
+
+  @Column({ name: 'modo_mantenimiento', type: 'boolean', default: false })
+  modoMantenimiento: boolean;
+
+  @Column({ name: 'fecha_mantenimiento', type: 'timestamptz', nullable: true })
+  fechaMantenimiento: Date | null;
+
   @OneToMany(() => Etapa, (etapa) => etapa.proyecto, { cascade: true })
   etapas: Etapa[];
 
@@ -34,8 +46,22 @@ export class Proyecto {
     const proyecto = new Proyecto();
     proyecto.nombre = nombre;
     proyecto.tenantId = tenantId;
+    proyecto.recordatoriosAutomaticos = true;
+    proyecto.permitePagosParciales = false;
+    proyecto.modoMantenimiento = false;
+    proyecto.fechaMantenimiento = null;
     proyecto.etapas = [];
     return proyecto;
+  }
+
+  activarMantenimiento(): void {
+    this.modoMantenimiento = true;
+    this.fechaMantenimiento = new Date();
+  }
+
+  desactivarMantenimiento(): void {
+    this.modoMantenimiento = false;
+    this.fechaMantenimiento = null;
   }
 
   agregarEtapa(nombre: string): Etapa {

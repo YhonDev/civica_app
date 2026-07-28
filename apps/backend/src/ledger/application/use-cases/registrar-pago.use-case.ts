@@ -7,6 +7,9 @@ import { CobroRepository } from '../../infrastructure/persistence/cobro.reposito
 import { PlanDeCobroRepository } from '../../infrastructure/persistence/plan-de-cobro.repository';
 import { Money } from '../../../shared/common/value-objects';
 import { PagoRegistradoEvent } from '../../domain/events/pago-registrado.event';
+import { GenerarTicketUseCase } from './generar-ticket.use-case';
+import { TicketCobro } from '../../domain/ticket-cobro.entity';
+import { TicketRepository } from '../../infrastructure/persistence/ticket.repository';
 
 import { SolicitudRepository } from '../../infrastructure/persistence/solicitud.repository';
 import { SolicitudEstado } from '../../domain/solicitud.entity';
@@ -17,6 +20,7 @@ export interface RegistrarPagoInput {
   monto: number; // centavos COP
   fechaPago: string; // ISO date
   cobradorId: string;
+  cobradorNombre?: string;
   residenteId: string;
   solicitudId?: string; // Optional request ID to close when paying
 }
@@ -25,6 +29,7 @@ export interface RegistrarPagoResult {
   pago: Pago;
   cobrosAfectados: Cobro[];
   event: PagoRegistradoEvent;
+  ticket: TicketCobro;
 }
 
 /**
@@ -40,6 +45,8 @@ export class RegistrarPagoUseCase {
     private readonly cobroRepo: CobroRepository,
     private readonly planDeCobroRepo: PlanDeCobroRepository,
     private readonly solicitudRepo: SolicitudRepository,
+    private readonly generarTicketUC: GenerarTicketUseCase,
+    private readonly ticketRepo: TicketRepository,
   ) {}
 
   async execute(input: RegistrarPagoInput): Promise<RegistrarPagoResult> {
@@ -68,7 +75,10 @@ export class RegistrarPagoUseCase {
         existingPago.createdAt,
       );
 
-      return { pago: existingPago, cobrosAfectados, event };
+      // Look up the ticket that was generated on the original payment
+      const existingTicket = await this.ticketRepo.findByPago(existingPago.id);
+
+      return { pago: existingPago, cobrosAfectados, event, ticket: existingTicket as TicketCobro };
     }
 
     // 2. Validate: residente must have an active plan
@@ -163,10 +173,17 @@ export class RegistrarPagoUseCase {
       new Date(),
     );
 
+    // 7. Generate and persist ticket
+    const ticket = await this.generarTicketUC.execute({
+      pago,
+      cobrosAfectados,
+      cobradorNombre: input.cobradorNombre ?? 'Cobrador',
+    });
+
     this.logger.log(
-      `Pago registrado: ${pago.id} | ${input.monto} centavos → ${cobrosAfectados.length} cobro(s) afectado(s)`,
+      `Pago registrado: ${pago.id} | ${input.monto} centavos → ${cobrosAfectados.length} cobro(s) afectado(s) | Ticket: ${ticket.numero}`,
     );
 
-    return { pago, cobrosAfectados, event };
+    return { pago, cobrosAfectados, event, ticket };
   }
 }

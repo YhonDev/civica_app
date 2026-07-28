@@ -10,12 +10,31 @@ import { Cobro } from '../../domain/cobro.entity';
 import { PlanDeCobro } from '../../domain/plan-de-cobro.entity';
 import { Money } from '../../../shared/common/value-objects';
 
+import { GenerarTicketUseCase } from './generar-ticket.use-case';
+import { TicketRepository } from '../../infrastructure/persistence/ticket.repository';
+import { TicketCobro } from '../../domain/ticket-cobro.entity';
+
 describe('RegistrarPagoUseCase', () => {
   let useCase: RegistrarPagoUseCase;
 
   const mockPagoRepo = {
     findByIdempotentKey: jest.fn(),
     save: jest.fn(),
+  };
+
+  const mockTicketRepo = {
+    findByPago: jest.fn(),
+    save: jest.fn(),
+  };
+
+  const mockGenerarTicketUC = {
+    execute: jest.fn().mockImplementation(async (input) => {
+      const ticket = new TicketCobro();
+      ticket.id = 'ticket-1';
+      ticket.numero = 'TKT-2026-000001';
+      ticket.pagoId = input.pago.id;
+      return ticket;
+    }),
   };
 
   let pagoAutoId = 0;
@@ -102,6 +121,8 @@ describe('RegistrarPagoUseCase', () => {
         { provide: CobroRepository, useValue: mockCobroRepo },
         { provide: PlanDeCobroRepository, useValue: mockPlanRepo },
         { provide: SolicitudRepository, useValue: mockSolicitudRepo },
+        { provide: GenerarTicketUseCase, useValue: mockGenerarTicketUC },
+        { provide: TicketRepository, useValue: mockTicketRepo },
       ],
     }).compile();
 

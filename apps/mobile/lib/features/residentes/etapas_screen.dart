@@ -8,9 +8,9 @@ import '../../shared/widgets/empty_state.dart';
 import 'comunidad_repository.dart';
 
 class EtapasScreen extends StatefulWidget {
-  final String proyectoId; // Need this to fetch etapas
+  final String proyectoId;
 
-  const EtapasScreen({super.key, this.proyectoId = ComunidadRepository.currentTenantId}); // Using tenantId temporarily if not passed
+  const EtapasScreen({super.key, this.proyectoId = ''});
 
   @override
   State<EtapasScreen> createState() => _EtapasScreenState();
@@ -27,17 +27,18 @@ class _EtapasScreenState extends State<EtapasScreen> {
     _loadEtapas();
   }
 
+  /// Obtiene el proyecto por defecto si no se proporcionó un proyectoId.
+  Future<String> _getProyectoId() async {
+    if (widget.proyectoId.isNotEmpty) return widget.proyectoId;
+    final proys = await _repo.getProyectos();
+    if (proys.isNotEmpty) return proys.first['id'] as String;
+    throw Exception('No hay proyectos disponibles');
+  }
+
   Future<void> _loadEtapas() async {
     setState(() => _isLoading = true);
     try {
-      // Si no tenemos un id de proyecto, traemos el primero por defecto (ya que hay 1 solo por ahora)
-      String pId = widget.proyectoId;
-      if (pId == ComunidadRepository.currentTenantId) {
-         final proys = await _repo.getProyectos();
-         if (proys.isNotEmpty) {
-           pId = proys.first['id'];
-         }
-      }
+      final pId = await _getProyectoId();
       final etapas = await _repo.getEtapasPorProyecto(pId);
       setState(() {
         _etapas = etapas;
@@ -56,13 +57,7 @@ class _EtapasScreenState extends State<EtapasScreen> {
   Future<void> _crearEtapaAutomatica() async {
     setState(() => _isLoading = true);
     try {
-      String pId = widget.proyectoId;
-      if (pId == ComunidadRepository.currentTenantId) {
-         final proys = await _repo.getProyectos();
-         if (proys.isNotEmpty) {
-           pId = proys.first['id'];
-         }
-      }
+      final pId = await _getProyectoId();
       
       final maxNumber = _getMaxEtapaNumber();
       final nombre = 'Etapa ${maxNumber + 1}';
@@ -304,12 +299,7 @@ class _EtapasScreenState extends State<EtapasScreen> {
   Future<void> _crearMultiplesEtapas(int cantidad) async {
     setState(() => _isLoading = true);
     try {
-      String pId = widget.proyectoId;
-      if (pId == ComunidadRepository.currentTenantId) {
-         final proys = await _repo.getProyectos();
-         if (proys.isNotEmpty) pId = proys.first['id'];
-      }
-      
+      final pId = await _getProyectoId();
       int maxNumber = _getMaxEtapaNumber();
       for (int i = 0; i < cantidad; i++) {
         final nombre = 'Etapa ${maxNumber + i + 1}';

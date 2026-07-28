@@ -3,14 +3,9 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../screens/auth/auth_cubit.dart';
+import '../../shared/widgets/connectivity_banner.dart';
 
 /// Shell route widget that wraps all bottom-navigation screens.
-///
-/// Per ROLE_DASHBOARDS.md, the bottom nav adapts to the authenticated
-/// user's role:
-///   Admin:     Dashboard | Cartera | Propiet. | Más
-///   Cobrador:  Jornada   | Cobrar  |          | Más
-///   Propiet.:  Mi Estado | Pagar   |          | Más
 class ScaffoldWithBottomNav extends StatelessWidget {
   final Widget child;
 
@@ -33,14 +28,21 @@ class ScaffoldWithBottomNav extends StatelessWidget {
         }
 
         return Scaffold(
-          body: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 250),
-            switchInCurve: Curves.easeOutCubic,
-            switchOutCurve: Curves.easeInCubic,
-            child: KeyedSubtree(
-              key: ValueKey(currentLocation),
-              child: child,
-            ),
+          body: Column(
+            children: [
+              const ConnectivityBanner(),
+              Expanded(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 250),
+                  switchInCurve: Curves.easeOutCubic,
+                  switchOutCurve: Curves.easeInCubic,
+                  child: KeyedSubtree(
+                    key: ValueKey(currentLocation),
+                    child: child,
+                  ),
+                ),
+              ),
+            ],
           ),
           bottomNavigationBar: _buildBottomNav(context, tabs, currentIndex),
         );
@@ -109,13 +111,14 @@ class ScaffoldWithBottomNav extends StatelessWidget {
             route: '/historial',
           ),
           _TabItem(
-            label: 'Más',
-            icon: const Icon(Icons.menu_rounded),
-            iconActive: const Icon(Icons.menu_rounded),
-            route: '/mas',
+            label: 'Config',
+            icon: const Icon(Icons.settings_outlined),
+            iconActive: const Icon(Icons.settings_rounded),
+            route: '/configuracion',
           ),
         ];
       case 'PROPIETARIO':
+      case 'RESIDENTE':
         return [
           _TabItem(
             label: 'Inicio',
@@ -127,25 +130,19 @@ class ScaffoldWithBottomNav extends StatelessWidget {
             label: 'Pagos',
             icon: const Icon(Icons.payments_outlined),
             iconActive: const Icon(Icons.payments_rounded),
-            route: '/cartera', // as placeholder
+            route: '/cartera',
           ),
           _TabItem(
-            label: 'Historial',
-            icon: const Icon(Icons.history_outlined),
-            iconActive: const Icon(Icons.history_rounded),
-            route: '/historial',
+            label: 'Mi Casa',
+            icon: const Icon(Icons.home_work_outlined),
+            iconActive: const Icon(Icons.home_work_rounded),
+            route: '/mi-casa',
           ),
           _TabItem(
-            label: 'Perfil',
-            icon: const Icon(Icons.person_outline_rounded),
-            iconActive: const Icon(Icons.menu_rounded),
-            route: '/mas',
-          ),
-          _TabItem(
-            label: 'Ajustes',
-            icon: const Icon(Icons.settings_rounded),
+            label: 'Config',
+            icon: const Icon(Icons.settings_outlined),
             iconActive: const Icon(Icons.settings_rounded),
-            route: '/ajustes', // as placeholder
+            route: '/configuracion',
           ),
         ];
       default: // ADMIN
@@ -172,13 +169,13 @@ class ScaffoldWithBottomNav extends StatelessWidget {
             label: 'Reportes',
             icon: const Icon(Icons.analytics_outlined),
             iconActive: const Icon(Icons.analytics_rounded),
-            route: '/estado',
+            route: '/reportes',
           ),
           _TabItem(
-            label: 'Más',
-            icon: const Icon(Icons.menu_rounded),
-            iconActive: const Icon(Icons.menu_rounded),
-            route: '/mas',
+            label: 'Config',
+            icon: const Icon(Icons.settings_outlined),
+            iconActive: const Icon(Icons.settings_rounded),
+            route: '/configuracion',
           ),
         ];
     }

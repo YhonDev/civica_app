@@ -3,8 +3,16 @@ import '../../core/network/api_exceptions.dart';
 
 class ComunidadRepository {
   final ApiClient _api = ApiClient.instance;
-  
-  static const String currentTenantId = 'aeb25e74-8b70-43c8-9789-48b337fd6093';
+
+  /// Obtiene el tenantId del usuario autenticado desde el token storage.
+  static Future<String> getCurrentTenantId() async {
+    final user = await ApiClient.instance.tokenStorage.getUser();
+    if (user != null && user['tenantId'] != null) {
+      return user['tenantId'] as String;
+    }
+    // Fallback seguro para tests o estados transitorios
+    return '00000000-0000-0000-0000-000000000001';
+  }
 
   // ════════════════════════════════════════════════════════════
   // PROYECTOS (CONJUNTOS)
@@ -12,9 +20,7 @@ class ComunidadRepository {
 
   Future<List<Map<String, dynamic>>> getProyectos() async {
     try {
-      final response = await _api.get('/proyectos', queryParameters: {
-        'tenantId': currentTenantId,
-      });
+      final response = await _api.get('/proyectos');
       return (response.data as List<dynamic>).map((p) {
         int totalEtapas = 0;
         int totalManzanas = 0;
@@ -51,7 +57,6 @@ class ComunidadRepository {
     try {
       final response = await _api.post('/proyectos', data: {
         'nombre': nombre,
-        'tenantId': currentTenantId,
       });
       return {
         'id': response.data['id'],
@@ -69,9 +74,7 @@ class ComunidadRepository {
 
   Future<List<Map<String, dynamic>>> getEtapasPorProyecto(String proyectoId) async {
     try {
-      final response = await _api.get('/proyectos', queryParameters: {
-        'tenantId': currentTenantId,
-      });
+      final response = await _api.get('/proyectos');
       final proyectos = response.data as List<dynamic>;
       final proyecto = proyectos.firstWhere((p) => p['id'] == proyectoId, orElse: () => null);
       if (proyecto == null) return [];
@@ -110,9 +113,7 @@ class ComunidadRepository {
 
   Future<List<Map<String, dynamic>>> getManzanasPorEtapa(String etapaId) async {
     try {
-      final response = await _api.get('/proyectos', queryParameters: {
-        'tenantId': currentTenantId,
-      });
+      final response = await _api.get('/proyectos');
       final proyectos = response.data as List<dynamic>;
       for (final p in proyectos) {
         for (final e in p['etapas']) {
@@ -133,9 +134,7 @@ class ComunidadRepository {
   // Obtiene todas las etapas con sus respectivas manzanas (para la pantalla de manzanas)
   Future<List<Map<String, dynamic>>> getEtapasConManzanas() async {
     try {
-      final response = await _api.get('/proyectos', queryParameters: {
-        'tenantId': currentTenantId,
-      });
+      final response = await _api.get('/proyectos');
       final proyectos = response.data as List<dynamic>;
       if (proyectos.isEmpty) return [];
       
@@ -156,16 +155,12 @@ class ComunidadRepository {
   // Obtiene todo el árbol: Etapas -> Manzanas -> Casas (Solo disponibles + includeCasaId)
   Future<List<Map<String, dynamic>>> getArbolCompleto({String? includeCasaId}) async {
     try {
-      final response = await _api.get('/proyectos', queryParameters: {
-        'tenantId': currentTenantId,
-      });
+      final response = await _api.get('/proyectos');
       final proyectos = response.data as List<dynamic>;
       if (proyectos.isEmpty) return [];
       
       // Obtener casas ocupadas a través de propietarios activos
-      final responseProps = await _api.get('/residentes', queryParameters: {
-        'tenantId': currentTenantId,
-      });
+      final responseProps = await _api.get('/residentes');
       final propietarios = responseProps.data as List<dynamic>;
       
       final ocupadasSet = <String>{};
@@ -230,9 +225,7 @@ class ComunidadRepository {
 
   Future<List<Map<String, dynamic>>> getCasasPorManzana(String manzanaId) async {
     try {
-      final response = await _api.get('/proyectos', queryParameters: {
-        'tenantId': currentTenantId,
-      });
+      final response = await _api.get('/proyectos');
       final proyectos = response.data as List<dynamic>;
       for (final p in proyectos) {
         for (final e in p['etapas']) {
@@ -271,6 +264,31 @@ class ComunidadRepository {
       await _api.delete('/proyectos/casas/$id');
     } catch (e) {
       throw e is ApiException ? e : Exception('Error al eliminar casa: $e');
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════
+  // AJUSTES DE PROYECTO
+  // ════════════════════════════════════════════════════════════
+
+  Future<Map<String, dynamic>> getAjustesProyecto(String proyectoId) async {
+    try {
+      final response = await _api.get('/proyectos/$proyectoId/ajustes');
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      throw e is ApiException ? e : Exception('Error al cargar ajustes del proyecto: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> actualizarAjustesProyecto(
+    String proyectoId,
+    Map<String, dynamic> ajustes,
+  ) async {
+    try {
+      final response = await _api.patch('/proyectos/$proyectoId/ajustes', data: ajustes);
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      throw e is ApiException ? e : Exception('Error al actualizar ajustes del proyecto: $e');
     }
   }
 }

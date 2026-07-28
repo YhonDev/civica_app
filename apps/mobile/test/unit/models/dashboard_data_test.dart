@@ -28,7 +28,7 @@ void main() {
         {'dia': '15', 'valor': 780000000},
       ],
       'modalidades': [
-        {'frecuencia': 'MENSUAL', 'porcentaje': 65, 'montoRecaudo': 507000000},
+        {'modalidad': 'MENSUAL', 'porcentaje': 65, 'montoRecaudo': 507000000},
       ],
       'actividad': [
         {
@@ -41,8 +41,8 @@ void main() {
         },
       ],
       'solicitudesPendientes': 5,
-      'propietariosMora': 6,
-      'nuevosPropietariosSemana': 3,
+      'residentesMora': 6,
+      'nuevosResidentesSemana': 3,
       'acumuladoAnual': 2100000000,
       'metaAnual': 12672000000,
       'historialMeses': [
@@ -63,8 +63,8 @@ void main() {
       expect(data.mora, 720000); // 72000000 / 100
       expect(data.porcentaje, 73.9);
       expect(data.solicitudesPendientes, 5);
-      expect(data.propietariosMora, 6);
-      expect(data.nuevosPropietariosSemana, 3);
+      expect(data.residentesMora, 6);
+      expect(data.nuevosResidentesSemana, 3);
       expect(data.acumuladoAnual, 21000000); // 2100000000 / 100
       expect(data.metaAnual, 126720000); // 12672000000 / 100
     });
@@ -153,7 +153,8 @@ void main() {
       expect(data.estadosCobro.length, 3);
       expect(data.estadosCobro[0].porcentaje, 0);
       expect(data.estadosCobro[1].porcentaje, 0);
-      expect(data.estadosCobro[2].porcentaje, 0);
+      // moraPct = 100 - pagadosPct (0) - pendientesPct (0) = 100
+      expect(data.estadosCobro[2].porcentaje, 100);
     });
 
     test('fromJson -> campos string inválidos → 0', () {
@@ -215,9 +216,9 @@ void main() {
   // ModalidadItem
   // ─────────────────────────────────────────────────────────────
   group('ModalidadItem', () {
-    test('fromJson -> frecuencia mapeada a nombre, montoRecaudo a valor', () {
+    test('fromJson -> modalidad mapeada a nombre, montoRecaudo a valor', () {
       final item = ModalidadItem.fromJson({
-        'frecuencia': 'MENSUAL',
+        'modalidad': 'MENSUAL',
         'porcentaje': 65,
         'montoRecaudo': 507000000,
       });
@@ -235,9 +236,9 @@ void main() {
     });
 
     test('Equatable', () {
-      final a = ModalidadItem.fromJson({'frecuencia': 'SEMANAL', 'porcentaje': 10, 'montoRecaudo': 100000});
-      final b = ModalidadItem.fromJson({'frecuencia': 'SEMANAL', 'porcentaje': 10, 'montoRecaudo': 100000});
-      final c = ModalidadItem.fromJson({'frecuencia': 'MENSUAL', 'porcentaje': 10, 'montoRecaudo': 100000});
+      final a = ModalidadItem.fromJson({'modalidad': 'SEMANAL', 'porcentaje': 10, 'montoRecaudo': 100000});
+      final b = ModalidadItem.fromJson({'modalidad': 'SEMANAL', 'porcentaje': 10, 'montoRecaudo': 100000});
+      final c = ModalidadItem.fromJson({'modalidad': 'MENSUAL', 'porcentaje': 10, 'montoRecaudo': 100000});
       expect(a, equals(b));
       expect(a, isNot(equals(c)));
     });

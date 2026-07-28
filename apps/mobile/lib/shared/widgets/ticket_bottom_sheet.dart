@@ -12,23 +12,58 @@ import '../../screens/auth/auth_cubit.dart';
 class TicketData {
   final String numero;
   final DateTime fecha;
-  final String propietario;
+  final String residente;
   final String casa;
-  final int monto; // in pesos (integer, per ADR-005 adjusted)
+  final int monto; // in pesos
   final String metodo;
   final String estado;
   final String? cobrador;
+  final String? concepto;
+  final String? etapa;
+  final String? manzana;
 
   const TicketData({
     required this.numero,
     required this.fecha,
-    required this.propietario,
+    required this.residente,
     required this.casa,
     required this.monto,
     required this.metodo,
     required this.estado,
     this.cobrador,
+    this.concepto,
+    this.etapa,
+    this.manzana,
   });
+
+  factory TicketData.fromJson(Map<String, dynamic> json) {
+    final rawMonto = json['monto'];
+    int montoPesos = 0;
+    if (rawMonto != null) {
+      final numVal = (rawMonto is num) ? rawMonto.toDouble() : double.tryParse(rawMonto.toString()) ?? 0.0;
+      montoPesos = (numVal > 1000000 || numVal.toString().length > 6) ? (numVal / 100).round() : numVal.round();
+    }
+
+    final rawFecha = json['fecha'];
+    DateTime fecha = DateTime.now();
+    if (rawFecha != null) {
+      fecha = DateTime.tryParse(rawFecha.toString()) ?? DateTime.now();
+    }
+
+    return TicketData(
+      numero: json['numero'] as String? ?? 'N/A',
+      fecha: fecha,
+      residente: json['residenteNombre'] as String? ?? 'Residente',
+      casa: json['casaDireccion'] as String? ?? 'Inmueble',
+      monto: montoPesos,
+      metodo: json['metodo'] as String? ?? 'Efectivo',
+      estado: json['estado'] as String? ?? 'EMITIDO',
+      cobrador: json['cobradorNombre'] as String?,
+      concepto: json['concepto'] as String?,
+      etapa: json['etapa'] as String?,
+      manzana: json['manzana'] as String?,
+    );
+  }
 }
 
 /// Bottom sheet that displays a digital ticket/receipt.
@@ -42,7 +77,7 @@ class TicketData {
 /// Per doc/20-screen-specifications.md (TICKET DIGITAL):
 ///   - PDF generated on demand, never stored
 ///
-/// Reusable in: Propietario (tap movement), Cobrador (after payment).
+/// Reusable in: Residente (tap movement), Cobrador (after payment).
 class TicketBottomSheet extends StatelessWidget {
   final TicketData ticket;
 
@@ -60,7 +95,7 @@ class TicketBottomSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final userRole = context.watch<AuthCubit>().state.usuario?['rol'] as String?;
-    final isPropietario = userRole == 'PROPIETARIO';
+    final isResidente = userRole == 'RESIDENTE';
 
     final dateStr = DateFormat('dd/MM/yyyy').format(ticket.fecha);
     final timeStr = DateFormat('HH:mm').format(ticket.fecha);
@@ -145,10 +180,12 @@ class TicketBottomSheet extends StatelessWidget {
               children: [
                 _DetailRow(label: 'Fecha', value: dateStr),
                 _DetailRow(label: 'Hora', value: timeStr),
-                _DetailRow(label: 'Residente', value: ticket.propietario),
-                _DetailRow(label: 'Casa', value: ticket.casa),
+                if (ticket.concepto != null && ticket.concepto!.isNotEmpty)
+                  _DetailRow(label: 'Concepto', value: ticket.concepto!),
+                _DetailRow(label: 'Residente', value: ticket.residente),
+                _DetailRow(label: 'Inmueble', value: ticket.casa),
                 _DetailRow(label: 'Método', value: ticket.metodo),
-                if (ticket.cobrador != null)
+                if (ticket.cobrador != null && ticket.cobrador!.isNotEmpty)
                   _DetailRow(
                     label: 'Cobrador',
                     value: ticket.cobrador!,
@@ -161,7 +198,7 @@ class TicketBottomSheet extends StatelessWidget {
           const SizedBox(height: AppSpacing.lg),
 
           // ── Action buttons (Close / Report) ──────────────────
-          if (isPropietario) ...[
+          if (isResidente) ...[
             Row(
               children: [
                 Expanded(

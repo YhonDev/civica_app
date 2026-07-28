@@ -121,8 +121,9 @@ class _CasasExplorerScreenState extends State<CasasExplorerScreen> {
     for (final m in etapa.manzanas) {
       for (final c in m.casas) {
         totalCasas++;
-        if (c.estado == 'VENCIDA') enMora++;
-        else if (c.estado == 'PENDIENTE' || c.estado == 'PARCIAL') pendientes++;
+        if (c.estado == 'VENCIDA') {
+          enMora++;
+        } else if (c.estado == 'PENDIENTE' || c.estado == 'PARCIAL') pendientes++;
       }
     }
 
@@ -248,17 +249,17 @@ class _CasasExplorerScreenState extends State<CasasExplorerScreen> {
                         const SizedBox(width: 3),
                         Flexible(
                           child: Text(
-                            casa.propietarioNombre,
+                            casa.residenteNombre,
                             style: AppTypography.small.copyWith(color: AppColors.textSecondary),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        if (casa.propietarioTelefono.isNotEmpty) ...[
+                        if (casa.residenteTelefono.isNotEmpty) ...[
                           const SizedBox(width: 8),
                           Icon(Icons.call_rounded, size: 12, color: AppColors.textSecondary),
                           const SizedBox(width: 2),
                           Text(
-                            casa.propietarioTelefono,
+                            casa.residenteTelefono,
                             style: AppTypography.small.copyWith(color: AppColors.textSecondary),
                           ),
                         ],

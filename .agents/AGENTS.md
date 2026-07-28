@@ -440,3 +440,831 @@ Cada clic lleva exactamente al lugar donde esa información vive.
 El Dashboard no reemplaza la aplicación.
 
 El Dashboard es la puerta de entrada al sistema completo.
+
+---
+
+# Arquitectura de Dominio — Filosofía Cívica Pago (Motor de Recaudo)
+
+> **Principio fundamental**
+>
+> Cívica Pago **no es un CRUD de propietarios**.
+>
+> Cívica Pago es un **Motor de Recaudo**.
+>
+> Todo el dominio existe para administrar correctamente el ciclo completo del recaudo.
+
+---
+
+# 1. Lenguaje Ubicuo (Ubiquitous Language)
+
+Todo el sistema debe hablar exactamente el mismo idioma.
+
+No importa si estamos en:
+
+* Frontend
+* Backend
+* Base de datos
+* API
+* Documentación
+* Diseño UI
+* Dominio
+* Equipo de desarrollo
+
+Todos utilizan exactamente los mismos términos.
+
+---
+
+## Proyecto
+
+Conjunto residencial administrado.
+
+Ejemplo
+
+> Urbanización San Sebastián
+
+---
+
+## Etapa
+
+División principal del proyecto.
+
+Ejemplo
+
+> Etapa 1
+
+---
+
+## Manzana
+
+Agrupación física de casas.
+
+Ejemplo
+
+> Manzana A
+
+---
+
+## Casa
+
+Unidad física.
+
+Es la pieza central del dominio físico.
+
+Nunca "vivienda".
+
+Nunca "unidad".
+
+Siempre:
+
+> Casa
+
+Ejemplo
+
+Casa 23
+
+---
+
+## Residente
+
+Persona que actualmente ocupa una casa.
+
+Puede ser
+
+* Propietario
+* Inquilino
+
+El sistema no cobra personas.
+
+El sistema cobra la obligación asociada a una casa ocupada.
+
+---
+
+## Modalidad de Pago
+
+Define cómo se divide el recaudo mensual.
+
+Puede ser
+
+* Semanal
+* Quincenal
+* Mensual
+
+---
+
+## Mes de Cobro
+
+Unidad principal del recaudo.
+
+Todo comienza aquí.
+
+Ejemplo
+
+Julio 2026
+
+Agosto 2026
+
+Cada Mes de Cobro genera automáticamente sus cuotas.
+
+---
+
+## Cuota
+
+División del cobro mensual.
+
+Ejemplo
+
+Julio
+
+Pago 1
+
+Pago 2
+
+Pago 3
+
+Pago 4
+
+---
+
+## Cobro
+
+Es una obligación pendiente.
+
+Existe antes del pago.
+
+Lo utiliza principalmente el cobrador.
+
+---
+
+## Pago
+
+Resultado de un cobro realizado.
+
+Lo visualiza principalmente el residente.
+
+---
+
+## Solicitud
+
+Evento generado por un usuario.
+
+Ejemplos
+
+Solicitud de Cobro
+
+Solicitud de Revisión
+
+---
+
+## Actividad
+
+Registro histórico del sistema.
+
+Todo genera actividad.
+
+---
+
+# 2. Filosofía General
+
+Todo gira alrededor del recaudo.
+
+No alrededor del usuario.
+
+No alrededor del CRUD.
+
+No alrededor de las pantallas.
+
+El dominio debe responder una sola pregunta.
+
+> ¿Cómo garantizar que cada casa genere correctamente su recaudo?
+
+Todo lo demás es consecuencia.
+
+---
+
+# 3. Jerarquía del Dominio
+
+```
+Proyecto
+
+    ↓
+
+Etapa
+
+    ↓
+
+Manzana
+
+    ↓
+
+Casa
+
+    ↓
+
+Residente
+
+    ↓
+
+Modalidad de Pago
+
+    ↓
+
+Mes de Cobro
+
+    ↓
+
+Cuotas
+
+    ↓
+
+Cobros
+
+    ↓
+
+Pagos
+
+    ↓
+
+Historial
+```
+
+Nunca al revés.
+
+---
+
+# 4. Ciclo de Vida del Recaudo
+
+## Paso 1
+
+Se crea una Casa.
+
+Todavía no existe recaudo.
+
+---
+
+## Paso 2
+
+Se asigna un Residente.
+
+En ese momento comienza la obligación de recaudo.
+
+---
+
+## Paso 3
+
+El sistema crea automáticamente
+
+Mes de Cobro actual.
+
+---
+
+## Paso 4
+
+Según la modalidad
+
+Genera automáticamente las cuotas.
+
+Ejemplo
+
+Semanal
+
+↓
+
+4 cuotas
+
+Quincenal
+
+↓
+
+2 cuotas
+
+Mensual
+
+↓
+
+1 cuota
+
+---
+
+## Paso 5
+
+Cada cuota obtiene
+
+* fecha programada
+* estado
+* valor
+
+---
+
+## Paso 6
+
+Las cuotas aparecen automáticamente en
+
+Dashboard del Residente
+
+Agenda del Cobrador
+
+Dashboard del Administrador
+
+---
+
+## Paso 7
+
+Cuando llega la fecha
+
+La cuota entra en estado
+
+Pendiente
+
+---
+
+## Paso 8
+
+El cobrador registra el pago.
+
+---
+
+## Paso 9
+
+El sistema actualiza automáticamente
+
+Recaudo
+
+Dashboard
+
+Historial
+
+Actividad
+
+Reportes
+
+Todo.
+
+---
+
+# 5. Estados de una Cuota
+
+```
+Programada
+
+↓
+
+Pendiente
+
+↓
+
+Solicitada
+
+↓
+
+En Cobro
+
+↓
+
+Pagada
+```
+
+o
+
+```
+Pendiente
+
+↓
+
+Vencida
+```
+
+o
+
+```
+Pendiente
+
+↓
+
+Pago Parcial
+
+↓
+
+Pagada
+```
+
+Nunca existen estados ambiguos.
+
+---
+
+# 6. Motor de Recaudo
+
+Es el corazón del sistema.
+
+Debe encargarse de
+
+## Generación automática
+
+Crear cuotas.
+
+---
+
+## Calendario
+
+Calcular fechas.
+
+---
+
+## Estados
+
+Actualizar automáticamente.
+
+---
+
+## Mora
+
+Detectar vencimientos.
+
+---
+
+## Pago parcial
+
+Aceptar abonos.
+
+---
+
+## Pago completo
+
+Cerrar cuota.
+
+---
+
+## Pago superior
+
+Distribuir automáticamente.
+
+Ejemplo
+
+Cuota vale
+
+20.000
+
+Usuario paga
+
+40.000
+
+↓
+
+Paga cuota actual
+
+↓
+
+Abona siguiente cuota.
+
+---
+
+Usuario paga
+
+25.000
+
+↓
+
+20.000
+
+↓
+
+Cuota pagada
+
+↓
+
+5.000
+
+↓
+
+Abono siguiente cuota.
+
+---
+
+Usuario paga
+
+15.000
+
+↓
+
+Cuota continúa abierta
+
+↓
+
+Saldo pendiente
+
+5.000
+
+---
+
+# 7. Motor de Agenda
+
+El cobrador nunca busca propietarios.
+
+Trabaja por territorio.
+
+Siempre.
+
+Orden
+
+```
+Etapa
+
+↓
+
+Manzana
+
+↓
+
+Casa
+```
+
+Nunca
+
+Propietario
+
+↓
+
+Casa
+
+---
+
+La agenda organiza automáticamente
+
+* Cobros pendientes
+* Cobros vencidos
+* Solicitudes de cobro
+
+Todo ordenado por ruta.
+
+---
+
+# 8. Responsabilidad por Rol
+
+## Residente
+
+Responsabilidad
+
+Administrar su obligación.
+
+Visualiza
+
+* Próximas cuotas
+* Historial
+* Solicitudes
+* Estado del recaudo
+
+Puede
+
+Solicitar cobro.
+
+Solicitar revisión.
+
+Actualizar datos personales permitidos.
+
+---
+
+## Cobrador
+
+Responsabilidad
+
+Administrar el recaudo.
+
+Visualiza
+
+* Agenda
+* Casas
+* Estado del recaudo
+* Solicitudes
+
+Puede
+
+Registrar pago.
+
+Registrar abono.
+
+Consultar información básica del residente.
+
+Generar observaciones.
+
+No puede
+
+Eliminar pagos.
+
+Modificar cuotas.
+
+Cambiar modalidad.
+
+---
+
+## Administrador
+
+Responsabilidad
+
+Administrar todo el ecosistema.
+
+Puede
+
+Crear proyectos.
+
+Crear etapas.
+
+Crear manzanas.
+
+Crear casas.
+
+Asignar residentes.
+
+Administrar cobradores.
+
+Administrar modalidades.
+
+Resolver solicitudes.
+
+Consultar actividades.
+
+Generar reportes.
+
+Nunca realiza el recaudo.
+
+Supervisa el recaudo.
+
+---
+
+# 9. Arquitectura de Eventos
+
+Todo genera un evento.
+
+Ejemplos
+
+```
+Casa creada
+
+↓
+
+Residente asignado
+
+↓
+
+Cuotas generadas
+
+↓
+
+Solicitud creada
+
+↓
+
+Cobro registrado
+
+↓
+
+Pago registrado
+
+↓
+
+Pago revisado
+
+↓
+
+Cuota vencida
+
+↓
+
+Modalidad actualizada
+
+↓
+
+Residente cambiado
+```
+
+Los eventos alimentan
+
+* Actividad
+* Dashboard
+* Reportes
+* Notificaciones
+* Auditoría
+
+---
+
+# 10. Dashboards
+
+Los dashboards nunca administran.
+
+Solo resumen información.
+
+---
+
+## Dashboard Residente
+
+Debe responder
+
+¿Cuánto debo?
+
+¿Qué sigue?
+
+¿Qué pagué?
+
+---
+
+Widgets
+
+* Estado del recaudo
+* Próximas cuotas
+* Últimos pagos
+* Solicitudes activas
+
+---
+
+## Dashboard Cobrador
+
+Debe responder
+
+¿Qué debo cobrar hoy?
+
+Widgets
+
+* Meta del mes
+* Recaudo actual
+* Cobros pendientes
+* Cobros vencidos
+* Solicitudes nuevas
+* Ruta del día
+
+---
+
+## Dashboard Administrador
+
+Debe responder
+
+¿Cómo va el recaudo general?
+
+Widgets
+
+* Meta mensual
+* Recaudo actual
+* Porcentaje alcanzado
+* Casas activas
+* Casas con mora
+* Solicitudes
+* Actividad reciente
+
+---
+
+# 11. UI basada en el dominio
+
+La interfaz no se diseña alrededor de pantallas.
+
+Se diseña alrededor del flujo de recaudo.
+
+Cada pantalla responde una pregunta del usuario.
+
+**Residente**
+
+* ¿Qué debo pagar?
+* ¿Cuándo vence?
+* ¿Qué ya pagué?
+* ¿Necesito solicitar un cobro o revisar un pago?
+
+**Cobrador**
+
+* ¿Qué casas debo visitar?
+* ¿Cuál es mi ruta?
+* ¿Qué pagos debo registrar?
+* ¿Qué solicitudes debo atender?
+
+**Administrador**
+
+* ¿Cómo va el recaudo?
+* ¿Qué requiere atención?
+* ¿Dónde hay mora?
+* ¿Qué solicitudes están pendientes?
+
+---
+
+# 12. Componentes reutilizables de UI
+
+Toda la aplicación debe reutilizar componentes consistentes alineados con el dominio:
+
+* **KPI Card** (meta, recaudo, mora, progreso).
+* **Card de Casa** (Etapa → Manzana → Casa, residente y estado).
+* **Card de Cuota** (mes, número de cuota, valor, vencimiento y estado).
+* **Card de Pago** (detalle del pago, cobrador, comprobante y acciones).
+* **Timeline** de actividades.
+* **Lista de Solicitudes**.
+* **Filtros** por Etapa, Manzana y estado.
+* **Indicadores de estado** (Programada, Pendiente, En Cobro, Pagada, Parcial, Vencida).
+* **Bottom Sheets** para acciones rápidas (Registrar pago, Solicitar cobro, Solicitar revisión).
+
+---
+
+# 13. Principios que nunca deben romperse
+
+1. El **motor de recaudo** es el núcleo del sistema.
+2. El lenguaje ubicuo debe ser el mismo en frontend, backend, base de datos y documentación.
+3. La **Casa** es el centro físico del dominio; el residente puede cambiar, la casa permanece.
+4. Todo residente asignado a una casa activa entra automáticamente al ciclo de recaudo.
+5. Toda cuota pertenece a un **Mes de Cobro**.
+6. Todo pago nace de un cobro.
+7. Todo evento deja trazabilidad.
+8. Los dashboards informan; los módulos gestionan.
+9. Los roles se diferencian por responsabilidades, no por duplicar funcionalidades.
+10. La UI debe priorizar rapidez, claridad y eficiencia para el recaudo, manteniendo un diseño moderno, consistente y orientado a la productividad del usuario.

@@ -24,7 +24,7 @@ class FakeCarteraRepository extends CarteraRepository {
 
   @override
   Future<Map<String, dynamic>> registrarPago({
-    required String propietarioId,
+    required String residenteId,
     required int montoCentavos,
   }) async => {'id': 'mock-pago'};
 }
@@ -41,10 +41,15 @@ class FakeCarteraData {
     required String nombre,
     required String estado,
     double saldo = 50000,
+    double? monto,
+    double? montoPagado,
   }) {
+    final resolvedMonto = monto ?? saldo;
+    final resolvedMontoPagado = montoPagado ?? (estado == 'Pagado' ? resolvedMonto : 0.0);
     return CobroItem(
-      id: id, propietarioId: 'P-$id', nombre: nombre,
-      casa: 'Casa 101', etapa: 'Etapa 1',
+      id: id, residenteId: 'P-$id', nombre: nombre,
+      casa: 'Casa 101', manzana: 'Manzana A', etapa: 'Etapa 1',
+      monto: resolvedMonto, montoPagado: resolvedMontoPagado,
       saldo: saldo, estado: estado, modalidad: 'Mensual',
     );
   }
@@ -93,7 +98,7 @@ class FakeSolicitudesRepository extends SolicitudesRepository {
   }
 
   @override
-  Future<void> crearSolicitud({required String cuotaId, required String tipo, required String descripcion, required String propietarioId}) async {}
+  Future<void> crearSolicitud({required String cobroId, required String tipo, required String descripcion, required String residenteId}) async {}
 }
 
 /// Convenience builders for common test scenarios.
@@ -105,7 +110,7 @@ class FakeSolicitudesData {
     String? nroRecibo,
   }) {
     return SolicitudData(
-      id: id, cuotaId: 'C-$id',
+      id: id, cobroId: 'C-$id',
       nroRecibo: nroRecibo ?? 'TK-${id.padLeft(6, '0')}',
       tipo: tipo,
       descripcion: 'Descripción de $tipo',

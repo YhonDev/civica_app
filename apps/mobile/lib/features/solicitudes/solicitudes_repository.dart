@@ -1,6 +1,5 @@
 import '../../core/network/api_client.dart';
 import '../../core/network/api_exceptions.dart';
-import '../residentes/comunidad_repository.dart';
 import '../../shared/widgets/solicitud_card.dart';
 
 class SolicitudesRepository {
@@ -11,11 +10,17 @@ class SolicitudesRepository {
 
   Future<List<SolicitudData>> getSolicitudes() async {
     try {
-      final tenantId = ComunidadRepository.currentTenantId;
-      final response = await _api.get('/solicitudes/admin', queryParameters: {
-        'tenantId': tenantId,
-      });
+      final response = await _api.get('/solicitudes/admin');
       return (response.data as List).map((json) => _mapToSolicitudData(json)).toList();
+    } catch (e) {
+      throw e is ApiException ? e : Exception('Error al cargar solicitudes: $e');
+    }
+  }
+
+  Future<List<SolicitudData>> getMisSolicitudes() async {
+    try {
+      final response = await _api.get('/solicitudes');
+      return (response.data as List).map((json) => _mapToSolicitudData(json as Map<String, dynamic>)).toList();
     } catch (e) {
       throw e is ApiException ? e : Exception('Error al cargar solicitudes: $e');
     }
@@ -34,17 +39,17 @@ class SolicitudesRepository {
     required String cobroId,
     required String tipo,
     required String descripcion,
-    required String propietarioId,
+    required String residenteId,
   }) async {
     try {
-      // propietarioId is implied via CurrentUser in the backend for residents,
+      // residenteId is implied via CurrentUser in the backend for residents,
       // but if an admin creates it for a resident, they might need an admin route.
       // Assuming this is used properly by the backend
       await _api.post('/solicitudes', data: {
         'cobroId': cobroId,
         'tipo': tipo,
         'descripcion': descripcion,
-        // Backend handles tenantId and userId (propietarioId)
+        // Backend handles tenantId and userId (residenteId)
       });
     } catch (e) {
       throw e is ApiException ? e : Exception('Error al crear solicitud: $e');
@@ -70,8 +75,8 @@ class SolicitudesRepository {
       estado: estado,
       fecha: DateTime.parse((json['fecha'] ?? json['createdAt']) as String),
       respuesta: json['respuesta'] as String?,
-      propietarioId: json['usuarioId'] as String?,
-      propietarioNombre: (json['usuario']?['nombre']) as String?,
+      residenteId: json['usuarioId'] as String?,
+      residenteNombre: (json['usuario']?['nombre']) as String?,
     );
   }
 

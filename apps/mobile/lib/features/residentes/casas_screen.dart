@@ -37,12 +37,30 @@ class _CasasScreenState extends State<CasasScreen> {
                 'nombre': c['nombre'],
               };
             }).toList();
+            
+            // Natural sort for houses (e.g. Casa 2 before Casa 10)
+            casasList.sort((a, b) {
+              final aName = a['nombre'].toString();
+              final bName = b['nombre'].toString();
+              final aMatch = RegExp(r'\d+').firstMatch(aName);
+              final bMatch = RegExp(r'\d+').firstMatch(bName);
+              if (aMatch != null && bMatch != null) {
+                final aNum = int.tryParse(aMatch.group(0)!) ?? 0;
+                final bNum = int.tryParse(bMatch.group(0)!) ?? 0;
+                return aNum.compareTo(bNum);
+              }
+              return aName.compareTo(bName);
+            });
+
             return {
               'id': manzana['id'],
               'nombre': manzana['nombre'],
               'casas': casasList,
             };
           }).toList();
+
+          // Alphabetical sort for manzanas
+          manzanasEstructura.sort((a, b) => a['nombre'].toString().compareTo(b['nombre'].toString()));
 
           return {
             'id': etapa['id'],

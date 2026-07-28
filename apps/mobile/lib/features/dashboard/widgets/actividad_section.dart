@@ -21,7 +21,7 @@ class ActividadSection extends StatelessWidget {
   Widget build(BuildContext context) {
     // Only count activities with today's date (or all recent activities since they are the ones loaded)
     final pagosList = actividad.where((a) => a.tipo == 'PAGO' || a.tipo == 'pago' || a.tipo == 'pago_registrado').toList();
-    final propietariosList = actividad.where((a) => a.tipo == 'PROPIETARIO' || a.tipo == 'residente').toList();
+    final residentesList = actividad.where((a) => a.tipo == 'RESIDENTE' || a.tipo == 'residente').toList();
     final solicitudesList = actividad.where((a) => a.tipo == 'SOLICITUD' || a.tipo == 'solicitud').toList();
 
     double recaudoHoy = 0.0;
@@ -36,7 +36,7 @@ class ActividadSection extends StatelessWidget {
       }
     }
 
-    final hasTodayActivity = pagosList.isNotEmpty || propietariosList.isNotEmpty || solicitudesList.isNotEmpty;
+    final hasTodayActivity = pagosList.isNotEmpty || residentesList.isNotEmpty || solicitudesList.isNotEmpty;
 
     final items = actividad.map((a) {
       final isPago = a.tipo == 'PAGO' || a.tipo == 'pago' || a.tipo == 'pago_registrado';
@@ -51,7 +51,7 @@ class ActividadSection extends StatelessWidget {
         id: a.id,
         tipo: a.tipo,
         descripcion: a.descripcion,
-        usuario: isPago ? 'Cobrador: ${a.usuario}' : 'Propietario: ${a.usuario}',
+        usuario: isPago ? 'Cobrador: ${a.usuario}' : 'Residente: ${a.usuario}',
         timestamp: a.timestamp,
         hace: a.hace,
         contexto: contextStr,
@@ -125,8 +125,8 @@ class ActividadSection extends StatelessWidget {
                     Text('• Se crearon ${solicitudesList.length} solicitud(es).', style: AppTypography.body),
                     const SizedBox(height: 2),
                   ],
-                  if (propietariosList.isNotEmpty) ...[
-                    Text('• ${propietariosList.length} propietario(s) nuevo(s).', style: AppTypography.body),
+                  if (residentesList.isNotEmpty) ...[
+                    Text('• ${residentesList.length} residente(s) nuevo(s).', style: AppTypography.body),
                     const SizedBox(height: 2),
                   ],
                   if (recaudoHoy > 0) ...[
@@ -159,7 +159,7 @@ class ActividadSection extends StatelessWidget {
                   TicketData(
                     numero: 'TK-${item.id.hashCode.abs().toString().padLeft(6, '0')}',
                     fecha: item.timestamp,
-                    propietario: 'Propietario Casa $casa',
+                    residente: 'Residente Casa $casa',
                     casa: rawCasa,
                     monto: parsedMonto,
                     metodo: 'Efectivo',

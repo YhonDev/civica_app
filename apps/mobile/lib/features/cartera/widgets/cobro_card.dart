@@ -70,7 +70,7 @@ class CobroCard extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '${cobro.casa} · ${cobro.etapa} · ${cobro.modalidad}',
+                        '${cobro.casa} · ${cobro.manzana} · ${cobro.etapa} · ${cobro.modalidad}',
                         style: AppTypography.caption.copyWith(
                           color: AppColors.textSecondary,
                         ),

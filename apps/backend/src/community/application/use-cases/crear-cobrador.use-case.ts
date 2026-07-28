@@ -7,12 +7,12 @@ import { Usuario, RolUsuario } from '../../../iam/domain/usuario.entity';
 
 interface CrearCobradorParams {
   nombre: string;
-  telefono: string;
+  telefono?: string;
   tenantId: string;
   etapaIds?: string[];
 }
 
-interface ResultadoCrearCobrador {
+export interface ResultadoCrearCobrador {
   usuario: Usuario;
   credenciales: {
     username: string;

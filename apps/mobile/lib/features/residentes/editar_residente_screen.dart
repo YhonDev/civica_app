@@ -8,9 +8,9 @@ import 'residentes_repository.dart';
 import 'models/residentes_models.dart';
 
 class EditarResidenteScreen extends StatefulWidget {
-  final ResidenteItem propietario;
+  final ResidenteItem residente;
 
-  const EditarResidenteScreen({super.key, required this.propietario});
+  const EditarResidenteScreen({super.key, required this.residente});
 
   @override
   State<EditarResidenteScreen> createState() => _EditarResidenteScreenState();
@@ -40,18 +40,18 @@ class _EditarResidenteScreenState extends State<EditarResidenteScreen> {
   @override
   void initState() {
     super.initState();
-    _nombreCtrl = TextEditingController(text: widget.propietario.nombre);
-    _telefonoCtrl = TextEditingController(text: widget.propietario.telefono);
-    _emailCtrl = TextEditingController(text: widget.propietario.email ?? '');
+    _nombreCtrl = TextEditingController(text: widget.residente.nombre);
+    _telefonoCtrl = TextEditingController(text: widget.residente.telefono);
+    _emailCtrl = TextEditingController(text: widget.residente.email ?? '');
 
-    _selectedEtapaId = widget.propietario.etapaId;
-    _selectedManzanaId = widget.propietario.manzanaId;
-    _selectedCasaId = widget.propietario.casaId;
+    _selectedEtapaId = widget.residente.etapaId;
+    _selectedManzanaId = widget.residente.manzanaId;
+    _selectedCasaId = widget.residente.casaId;
 
     // Use default if missing or invalid
     final validModalidades = ['MENSUAL', 'QUINCENAL', 'SEMANAL'];
-    _selectedModalidad = validModalidades.contains(widget.propietario.modalidadPago) 
-        ? widget.propietario.modalidadPago 
+    _selectedModalidad = validModalidades.contains(widget.residente.modalidadPago) 
+        ? widget.residente.modalidadPago 
         : 'MENSUAL';
 
     _loadTree();
@@ -67,7 +67,7 @@ class _EditarResidenteScreenState extends State<EditarResidenteScreen> {
 
   Future<void> _loadTree() async {
     try {
-      final tree = await _comunidadRepo.getArbolCompleto(includeCasaId: widget.propietario.casaId);
+      final tree = await _comunidadRepo.getArbolCompleto(includeCasaId: widget.residente.casaId);
       setState(() {
         _etapasTree = tree;
         _isLoading = false;
@@ -96,7 +96,9 @@ class _EditarResidenteScreenState extends State<EditarResidenteScreen> {
   List<Map<String, dynamic>> get _manzanas {
     if (_selectedEtapaId == null) return [];
     final etapa = _etapasTree.firstWhere((e) => e['id'] == _selectedEtapaId, orElse: () => {});
-    return (etapa['manzanas'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    final list = (etapa['manzanas'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    return List<Map<String, dynamic>>.from(list)
+      ..sort((a, b) => a['nombre'].toString().compareTo(b['nombre'].toString()));
   }
   
   List<Map<String, dynamic>> get _casas {
@@ -138,7 +140,7 @@ class _EditarResidenteScreenState extends State<EditarResidenteScreen> {
             
             // Modalidad de Pago
             DropdownButtonFormField<String>(
-              value: _selectedModalidad,
+              initialValue: _selectedModalidad,
               items: const [
                 DropdownMenuItem(value: 'MENSUAL', child: Text('Mensual')),
                 DropdownMenuItem(value: 'QUINCENAL', child: Text('Quincenal')),
@@ -282,7 +284,7 @@ class _EditarResidenteScreenState extends State<EditarResidenteScreen> {
                     if (_emailCtrl.text.isNotEmpty) data['email'] = _emailCtrl.text;
                     if (_selectedCasaId != null) data['casaId'] = _selectedCasaId;
 
-                    final success = await _propietariosRepo.updatePropietario(widget.propietario.id, data);
+                    final success = await _propietariosRepo.updatePropietario(widget.residente.id, data);
                     
                     if (mounted) {
                       if (success) {
@@ -359,7 +361,7 @@ class _EditarResidenteScreenState extends State<EditarResidenteScreen> {
     }
 
     return DropdownButtonFormField<String>(
-      value: value,
+      initialValue: value,
       items: items.map((item) {
         return DropdownMenuItem(
           value: item['id'].toString(),

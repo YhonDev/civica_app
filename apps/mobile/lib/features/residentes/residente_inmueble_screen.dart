@@ -5,9 +5,9 @@ import '../../core/theme/app_typography.dart';
 import 'models/residentes_models.dart';
 
 class ResidenteInmuebleScreen extends StatelessWidget {
-  final ResidenteItem propietario;
+  final ResidenteItem residente;
 
-  const ResidenteInmuebleScreen({super.key, required this.propietario});
+  const ResidenteInmuebleScreen({super.key, required this.residente});
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +32,7 @@ class ResidenteInmuebleScreen extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.lg),
             Text(
-              'Casa actual: ${propietario.casa}\n${propietario.etapa}',
+              'Casa actual: ${residente.casa}\n${residente.etapa}',
               textAlign: TextAlign.center,
               style: AppTypography.body,
             ),

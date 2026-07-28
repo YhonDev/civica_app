@@ -328,7 +328,7 @@ class _DashboardContentState extends State<_DashboardContent>
                     color: AppColors.warning,
                   ),
                   ModuleSummaryItem(
-                    label: 'Propietarios en mora',
+                    label: 'Residentes en mora',
                     value: widget.data.residentesMora.toString(),
                     color: AppColors.error,
                   ),
@@ -422,7 +422,7 @@ class _DashboardContentState extends State<_DashboardContent>
                 title: 'Comunidad',
                 items: [
                   ModuleSummaryItem(
-                    label: 'Propietarios registrados',
+                    label: 'Residentes registrados',
                     value: widget.data.totalResidentes.toString(),
                     color: AppColors.textPrimary,
                   ),

@@ -12,6 +12,7 @@ import { PagoRepository } from '../persistence/pago.repository';
 import { PlanDeCobroRepository } from '../persistence/plan-de-cobro.repository';
 import { SolicitudRepository } from '../persistence/solicitud.repository';
 import { TarifaRepository } from '../persistence/tarifa.repository';
+import { Cobro } from '../../domain/cobro.entity';
 import type { TimelineItemDto, TimelineResponse } from '../../application/dtos/dashboard.dto';
 import { ResidenteRepository } from '../../../community/infrastructure/residente.repository';
 import { Periodo, type ModalidadRecaudo, pagosPorMes, calcularMontoParcial } from '../../../shared/common/value-objects';
@@ -41,9 +42,9 @@ export class DashboardController {
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN)
   async getDashboard(
+    @CurrentTenant() tenantId: string,
     @Query('mes') mesQuery?: string,
     @Query('anio') anioQuery?: string,
-    @CurrentTenant() tenantId: string,
   ) {
     const hoy = new Date();
     const mes = mesQuery ? parseInt(mesQuery, 10) : hoy.getMonth() + 1;

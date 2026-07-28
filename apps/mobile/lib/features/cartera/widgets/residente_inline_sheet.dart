@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:drift/drift.dart' hide Column;
 import '../../../core/database/app_database.dart';
 import '../../../core/database/daos/residente_dao.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../residentes/comunidad_repository.dart';
@@ -234,7 +233,7 @@ class _ResidenteInlineSheetState extends State<ResidenteInlineSheet> {
               ),
               const SizedBox(height: AppSpacing.sm),
               DropdownButtonFormField<String>(
-                value: _modalidadPago,
+                initialValue: _modalidadPago,
                 decoration: InputDecoration(
                   labelText: 'Modalidad de Pago',
                   prefixIcon: const Icon(Icons.calendar_today),
@@ -256,7 +255,7 @@ class _ResidenteInlineSheetState extends State<ResidenteInlineSheet> {
                 children: [
                   Expanded(
                     child: DropdownButtonFormField<String?>(
-                      value: _selectedEtapaId,
+                      initialValue: _selectedEtapaId,
                       decoration: InputDecoration(
                         labelText: 'Etapa',
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -280,7 +279,7 @@ class _ResidenteInlineSheetState extends State<ResidenteInlineSheet> {
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: DropdownButtonFormField<String?>(
-                      value: _selectedManzanaId,
+                      initialValue: _selectedManzanaId,
                       decoration: InputDecoration(
                         labelText: 'Manzana',
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -304,7 +303,7 @@ class _ResidenteInlineSheetState extends State<ResidenteInlineSheet> {
               ),
               const SizedBox(height: AppSpacing.sm),
               DropdownButtonFormField<String?>(
-                value: _selectedCasaId,
+                initialValue: _selectedCasaId,
                 decoration: InputDecoration(
                   labelText: 'Casa',
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),

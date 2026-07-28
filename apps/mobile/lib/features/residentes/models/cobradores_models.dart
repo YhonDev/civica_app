@@ -20,6 +20,8 @@ class CobradorItem extends Equatable {
   final String nombre;
   final String telefono;
   final String correo;
+  final String? username;
+  final String? usuarioId;
   final List<String> zonas;
   final bool activo;
   final int pagosRegistradosSemana;
@@ -29,6 +31,8 @@ class CobradorItem extends Equatable {
     required this.nombre,
     required this.telefono,
     required this.correo,
+    this.username,
+    this.usuarioId,
     required this.zonas,
     required this.activo,
     required this.pagosRegistradosSemana,
@@ -40,6 +44,8 @@ class CobradorItem extends Equatable {
         nombre,
         telefono,
         correo,
+        username,
+        usuarioId,
         zonas,
         activo,
         pagosRegistradosSemana,

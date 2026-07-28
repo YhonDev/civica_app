@@ -18,8 +18,8 @@ class SolicitudData {
   final SolicitudEstado estado;
   final DateTime fecha;
   final String? respuesta;
-  final String? propietarioId;
-  final String? propietarioNombre;
+  final String? residenteId;
+  final String? residenteNombre;
 
   const SolicitudData({
     required this.id,
@@ -30,8 +30,8 @@ class SolicitudData {
     required this.estado,
     required this.fecha,
     this.respuesta,
-    this.propietarioId,
-    this.propietarioNombre,
+    this.residenteId,
+    this.residenteNombre,
   });
 }
 
@@ -40,7 +40,7 @@ class SolicitudData {
 /// Per doc/19-dashboard-specification.md (Solicitudes):
 ///   Mostrar: Cantidad, Estado, Botón: Solicitar Revisión.
 ///
-/// Reusable in: Dashboard Propietario (summary), Solicitudes screen (full list),
+/// Reusable in: Dashboard Residente (summary), Solicitudes screen (full list),
 /// Admin (gestión solicitudes).
 class SolicitudCard extends StatelessWidget {
   final SolicitudData solicitud;

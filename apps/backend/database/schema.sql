@@ -8,11 +8,15 @@
 
 -- ── 1. Proyectos ────────────────────────────────────────
 CREATE TABLE proyectos (
-  id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  nombre         VARCHAR(255) NOT NULL,
-  tenant_id      UUID NOT NULL,
-  created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+  id                       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  nombre                   VARCHAR(255) NOT NULL,
+  tenant_id                UUID NOT NULL,
+  recordatorios_automaticos BOOLEAN NOT NULL DEFAULT true,
+  permite_pagos_parciales   BOOLEAN NOT NULL DEFAULT false,
+  modo_mantenimiento        BOOLEAN NOT NULL DEFAULT false,
+  fecha_mantenimiento       TIMESTAMPTZ,
+  created_at               TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at               TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX idx_proyectos_tenant ON proyectos (tenant_id);
 
@@ -259,6 +263,38 @@ CREATE TABLE actividad (
 );
 CREATE INDEX idx_actividad_tenant_created ON actividad (tenant_id, created_at DESC);
 
+-- ── 17. Tickets (Comprobantes de pago) ──────────────────
+CREATE TABLE tickets (
+  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tipo                VARCHAR(20) NOT NULL DEFAULT 'COBRO',
+  numero              VARCHAR(20) NOT NULL,
+  fecha               TIMESTAMPTZ NOT NULL DEFAULT now(),
+  tenant_id           UUID NOT NULL,
+  residente_id        UUID NOT NULL,
+  residente_nombre    VARCHAR(255) NOT NULL,
+  residente_documento VARCHAR(50),
+  casa_direccion      VARCHAR(255) NOT NULL,
+  etapa               VARCHAR(255) NOT NULL,
+  manzana             VARCHAR(255) NOT NULL,
+  estado              VARCHAR(20) NOT NULL DEFAULT 'EMITIDO'
+                      CHECK (estado IN ('EMITIDO', 'ANULADO')),
+  -- Campos específicos de TicketCobro (nullable for STI)
+  pago_id             UUID,
+  cobro_id            UUID,
+  cobrador_id         UUID,
+  cobrador_nombre     VARCHAR(255),
+  monto               INTEGER,
+  metodo              VARCHAR(50) DEFAULT 'EFECTIVO',
+  concepto            VARCHAR(255),
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE UNIQUE INDEX idx_tickets_numero     ON tickets (tenant_id, numero);
+CREATE INDEX idx_tickets_tenant            ON tickets (tenant_id);
+CREATE INDEX idx_tickets_residente         ON tickets (residente_id);
+CREATE INDEX idx_tickets_pago              ON tickets (pago_id);
+CREATE INDEX idx_tickets_tipo              ON tickets (tipo);
+
 -- ═══════════════════════════════════════════════════════════
 -- VISTA: Estado de Cartera por Casa
 -- ═══════════════════════════════════════════════════════════
@@ -321,6 +357,7 @@ ALTER TABLE residentes             ENABLE ROW LEVEL SECURITY;
 ALTER TABLE solicitudes            ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tarifas                ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tenencias              ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tickets                ENABLE ROW LEVEL SECURITY;
 ALTER TABLE usuarios               ENABLE ROW LEVEL SECURITY;
 
 -- Policies service_role (backend)
@@ -339,4 +376,5 @@ CREATE POLICY service_role_all_residentes            ON residentes            FO
 CREATE POLICY service_role_all_solicitudes           ON solicitudes           FOR ALL TO service_role USING (true);
 CREATE POLICY service_role_all_tarifas               ON tarifas               FOR ALL TO service_role USING (true);
 CREATE POLICY service_role_all_tenencias             ON tenencias             FOR ALL TO service_role USING (true);
+CREATE POLICY service_role_all_tickets                ON tickets               FOR ALL TO service_role USING (true);
 CREATE POLICY service_role_all_usuarios              ON usuarios              FOR ALL TO service_role USING (true);

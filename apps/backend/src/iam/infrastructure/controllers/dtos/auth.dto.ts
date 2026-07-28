@@ -26,8 +26,8 @@ export class RegisterDto {
   rol: RolUsuario;
 
   @IsString()
-  @IsNotEmpty({ message: 'El tenantId es requerido' })
-  tenantId: string;
+  @IsOptional()
+  tenantId?: string;
 
   @IsString()
   @IsOptional()

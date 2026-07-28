@@ -192,10 +192,10 @@ class _SolicitudBottomSheetState extends State<SolicitudBottomSheet> {
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      if (widget.solicitud.propietarioNombre != null &&
+                      if (widget.solicitud.residenteNombre != null &&
                           widget.isAdmin)
                         Text(
-                          widget.solicitud.propietarioNombre!,
+                          widget.solicitud.residenteNombre!,
                           style: AppTypography.bodyMedium.copyWith(
                             color: AppColors.primary,
                             fontWeight: FontWeight.w600,

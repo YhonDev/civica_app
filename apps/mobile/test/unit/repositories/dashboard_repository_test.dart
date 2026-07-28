@@ -2,7 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:civica_pago_mobile/core/network/api_client.dart';
 import 'package:civica_pago_mobile/features/dashboard/dashboard_repository.dart';
-import 'package:civica_pago_mobile/features/dashboard/models/dashboard_data.dart';
 import 'mock_http_adapter.dart';
 
 /// Simula la respuesta completa del endpoint GET /dashboard/administrador

@@ -6,6 +6,19 @@ import '../../core/theme/app_typography.dart';
 import 'comunidad_repository.dart';
 import 'residentes_repository.dart';
 
+/// Resultado de la creación del residente (lo que devuelve el backend).
+class _ResultadoCrearResidente {
+  final String username;
+  final String password;
+  final String nombre;
+
+  const _ResultadoCrearResidente({
+    required this.username,
+    required this.password,
+    required this.nombre,
+  });
+}
+
 class NuevoResidenteScreen extends StatefulWidget {
   const NuevoResidenteScreen({super.key});
 
@@ -48,6 +61,135 @@ class _NuevoResidenteScreenState extends State<NuevoResidenteScreen> {
     super.dispose();
   }
 
+  Future<void> _guardar() async {
+    if (_nombreCtrl.text.trim().isEmpty || _telefonoCtrl.text.trim().isEmpty) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Por favor, ingrese al menos el nombre y teléfono.')),
+      );
+      return;
+    }
+
+    setState(() => _isSaving = true);
+
+    try {
+      final data = await _propietariosRepo.createPropietario(
+        nombre: _nombreCtrl.text.trim(),
+        telefono: _telefonoCtrl.text.trim(),
+        email: _emailCtrl.text.trim(),
+        casaId: _selectedCasaId,
+        modalidadPago: _modalidadPago,
+      );
+
+      final credenciales = data['credenciales'] as Map<String, dynamic>?;
+      final usuario = data['usuario'] as Map<String, dynamic>?;
+
+      if (!context.mounted) return;
+
+      _mostrarCredenciales(_ResultadoCrearResidente(
+        username: credenciales?['username'] as String? ?? '',
+        password: credenciales?['password'] as String? ?? '',
+        nombre: usuario?['nombre'] as String? ?? _nombreCtrl.text.trim(),
+      ));
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al crear residente: $e')),
+      );
+    } finally {
+      if (context.mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
+  }
+
+  void _mostrarCredenciales(_ResultadoCrearResidente resultado) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.check_circle_rounded, color: AppColors.success),
+            const SizedBox(width: AppSpacing.sm),
+            const Expanded(child: Text('Residente creado')),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${resultado.nombre} ha sido registrado correctamente.',
+              style: AppTypography.body,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                color: AppColors.info.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.info.withValues(alpha: 0.3)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.person_outline, size: 16, color: AppColors.info),
+                      const SizedBox(width: AppSpacing.sm),
+                      Text('Usuario:', style: AppTypography.small.copyWith(fontWeight: FontWeight.w600)),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  SelectableText(
+                    resultado.username,
+                    style: AppTypography.body.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'monospace',
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  Row(
+                    children: [
+                      Icon(Icons.lock_outline, size: 16, color: AppColors.info),
+                      const SizedBox(width: AppSpacing.sm),
+                      Text('Contraseña:', style: AppTypography.small.copyWith(fontWeight: FontWeight.w600)),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  SelectableText(
+                    resultado.password,
+                    style: AppTypography.body.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'monospace',
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'Guarda estas credenciales. No se mostrarán nuevamente.',
+              style: AppTypography.small.copyWith(color: AppColors.textSecondary),
+            ),
+          ],
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              context.pop(true);
+            },
+            child: const Text('Listo'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _loadTree() async {
     try {
       final tree = await _comunidadRepo.getArbolCompleto();
@@ -65,7 +207,9 @@ class _NuevoResidenteScreenState extends State<NuevoResidenteScreen> {
   List<Map<String, dynamic>> get _manzanas {
     if (_selectedEtapaId == null) return [];
     final etapa = _etapasTree.firstWhere((e) => e['id'] == _selectedEtapaId, orElse: () => {});
-    return (etapa['manzanas'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    final list = (etapa['manzanas'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    return List<Map<String, dynamic>>.from(list)
+      ..sort((a, b) => a['nombre'].toString().compareTo(b['nombre'].toString()));
   }
   
   List<Map<String, dynamic>> get _casas {
@@ -219,41 +363,7 @@ class _NuevoResidenteScreenState extends State<NuevoResidenteScreen> {
             SizedBox(
               width: double.infinity,
               child: FilledButton(
-                onPressed: _isSaving ? null : () async {
-                  if (_nombreCtrl.text.isEmpty || _telefonoCtrl.text.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Por favor, ingrese al menos el nombre y teléfono.')),
-                    );
-                    return;
-                  }
-                  
-                  setState(() => _isSaving = true);
-                  try {
-                    await _propietariosRepo.createPropietario(
-                      nombre: _nombreCtrl.text,
-                      telefono: _telefonoCtrl.text,
-                      email: _emailCtrl.text,
-                      casaId: _selectedCasaId,
-                      modalidadPago: _modalidadPago,
-                    );
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Propietario creado con éxito.')),
-                      );
-                      context.pop(true);
-                    }
-                  } catch (e) {
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Error al crear propietario: $e')),
-                      );
-                    }
-                  } finally {
-                    if (mounted) {
-                      setState(() => _isSaving = false);
-                    }
-                  }
-                },
+                onPressed: _isSaving ? null : _guardar,
                 child: _isSaving 
                   ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                   : const Text('Crear Propietario'),
@@ -300,7 +410,8 @@ class _NuevoResidenteScreenState extends State<NuevoResidenteScreen> {
     bool enabled = true,
   }) {
     return DropdownButtonFormField<String>(
-      value: value,
+      key: ValueKey('${label}_$value'),
+      initialValue: value,
       items: items.map((item) {
         return DropdownMenuItem(
           value: item['id'].toString(),

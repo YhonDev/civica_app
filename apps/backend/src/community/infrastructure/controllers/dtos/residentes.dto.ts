@@ -14,10 +14,6 @@ export class RegistrarResidenteDto {
   email?: string;
 
   @IsString()
-  @IsNotEmpty()
-  tenantId: string;
-
-  @IsString()
   @IsOptional()
   casaId?: string;
 

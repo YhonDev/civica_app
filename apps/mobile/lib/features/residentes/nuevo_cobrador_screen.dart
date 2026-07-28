@@ -6,6 +6,19 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import 'comunidad_repository.dart';
 
+/// Resultado de la creación del cobrador (lo que devuelve el backend).
+class _ResultadoCrearCobrador {
+  final String username;
+  final String password;
+  final String nombre;
+
+  const _ResultadoCrearCobrador({
+    required this.username,
+    required this.password,
+    required this.nombre,
+  });
+}
+
 class NuevoCobradorScreen extends StatefulWidget {
   const NuevoCobradorScreen({super.key});
 
@@ -20,12 +33,9 @@ class _NuevoCobradorScreenState extends State<NuevoCobradorScreen> {
   bool _isSaving = false;
   List<Map<String, dynamic>> _etapasTree = [];
   String? _selectedEtapaId;
-  String? _selectedEtapaName;
 
   final _nombreCtrl = TextEditingController();
   final _telefonoCtrl = TextEditingController();
-  final _emailCtrl = TextEditingController();
-  final _passwordCtrl = TextEditingController();
 
   @override
   void initState() {
@@ -37,8 +47,6 @@ class _NuevoCobradorScreenState extends State<NuevoCobradorScreen> {
   void dispose() {
     _nombreCtrl.dispose();
     _telefonoCtrl.dispose();
-    _emailCtrl.dispose();
-    _passwordCtrl.dispose();
     super.dispose();
   }
 
@@ -55,9 +63,10 @@ class _NuevoCobradorScreenState extends State<NuevoCobradorScreen> {
   }
 
   Future<void> _guardar() async {
-    if (_nombreCtrl.text.isEmpty || _emailCtrl.text.isEmpty) {
+    if (_nombreCtrl.text.trim().isEmpty) {
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Nombre y correo son obligatorios')),
+        const SnackBar(content: Text('El nombre del cobrador es obligatorio')),
       );
       return;
     }
@@ -65,44 +74,129 @@ class _NuevoCobradorScreenState extends State<NuevoCobradorScreen> {
     setState(() => _isSaving = true);
 
     try {
-      // 1. Crear usuario con rol COBRADOR
-      final response = await _api.post('/auth/register', data: {
-        'email': _emailCtrl.text.trim(),
-        'password': _passwordCtrl.text.isNotEmpty
-            ? _passwordCtrl.text
-            : 'cobrador123',
+      final payload = <String, dynamic>{
         'nombre': _nombreCtrl.text.trim(),
-        'rol': 'COBRADOR',
-        'tenantId': ComunidadRepository.currentTenantId,
-      });
+        'telefono': _telefonoCtrl.text.trim(),
+      };
 
-      final usuarioId = response.data['id'] as String? ?? response.data['usuario']?['id'] as String?;
-      if (usuarioId == null) {
-        throw Exception('No se pudo obtener el ID del usuario creado');
-      }
-
-      // 2. Asignar etapa si se seleccionó una
       if (_selectedEtapaId != null) {
-        await _api.post('/usuarios/$usuarioId/etapas', data: {
-          'etapaId': _selectedEtapaId,
-        });
+        payload['etapaIds'] = <String>[_selectedEtapaId!];
       }
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Cobrador creado con éxito')),
-        );
-        context.pop(true);
-      }
+      final response = await _api.post<Map<String, dynamic>>(
+        '/cobradores',
+        data: payload,
+      );
+
+      final data = response.data as Map<String, dynamic>;
+      final credenciales = data['credenciales'] as Map<String, dynamic>?;
+      final usuario = data['usuario'] as Map<String, dynamic>?;
+
+      if (!context.mounted) return;
+
+      // Mostrar credenciales generadas
+      _mostrarCredenciales(_ResultadoCrearCobrador(
+        username: credenciales?['username'] as String? ?? '',
+        password: credenciales?['password'] as String? ?? '',
+        nombre: usuario?['nombre'] as String? ?? _nombreCtrl.text.trim(),
+      ));
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al crear cobrador: $e')),
-        );
-      }
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al crear cobrador: $e')),
+      );
     } finally {
-      if (mounted) setState(() => _isSaving = false);
+      if (context.mounted) {
+        setState(() => _isSaving = false);
+      }
     }
+  }
+
+  void _mostrarCredenciales(_ResultadoCrearCobrador resultado) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.check_circle_rounded, color: AppColors.success),
+            const SizedBox(width: AppSpacing.sm),
+            const Expanded(child: Text('Cobrador creado')),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${resultado.nombre} ha sido registrado correctamente.',
+              style: AppTypography.body,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                color: AppColors.info.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.info.withValues(alpha: 0.3)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.person_outline, size: 16, color: AppColors.info),
+                      const SizedBox(width: AppSpacing.sm),
+                      Text('Usuario:', style: AppTypography.small.copyWith(fontWeight: FontWeight.w600)),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  SelectableText(
+                    resultado.username,
+                    style: AppTypography.body.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'monospace',
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  Row(
+                    children: [
+                      Icon(Icons.lock_outline, size: 16, color: AppColors.info),
+                      const SizedBox(width: AppSpacing.sm),
+                      Text('Contraseña:', style: AppTypography.small.copyWith(fontWeight: FontWeight.w600)),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  SelectableText(
+                    resultado.password,
+                    style: AppTypography.body.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'monospace',
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'Guarda estas credenciales. No se mostrarán nuevamente.',
+              style: AppTypography.small.copyWith(color: AppColors.textSecondary),
+            ),
+          ],
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              context.pop(true);
+            },
+            child: const Text('Listo'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -119,91 +213,81 @@ class _NuevoCobradorScreenState extends State<NuevoCobradorScreen> {
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
               padding: const EdgeInsets.all(AppSpacing.screenPadding),
-              child: Form(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Información Personal',
-                      style: AppTypography.subtitle.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ── Sección: Información Personal ──
+                  Text(
+                    'Información Personal',
+                    style: AppTypography.subtitle.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    'El backend generará automáticamente el usuario y contraseña para el inicio de sesión.',
+                    style: AppTypography.small.copyWith(color: AppColors.textSecondary),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  _buildTextField(
+                    label: 'Nombre completo',
+                    icon: Icons.person_outline_rounded,
+                    controller: _nombreCtrl,
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  _buildTextField(
+                    label: 'Teléfono (opcional)',
+                    icon: Icons.phone_outlined,
+                    keyboardType: TextInputType.phone,
+                    controller: _telefonoCtrl,
+                  ),
+
+                  const SizedBox(height: AppSpacing.xl),
+
+                  // ── Sección: Asignación de Zonas ──
+                  Text(
+                    'Asignación de Zonas',
+                    style: AppTypography.subtitle.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  _buildDropdown(
+                    label: 'Zona asignada (Etapa)',
+                    icon: Icons.map_outlined,
+                    value: _selectedEtapaId,
+                    items: _etapasTree,
+                    onChanged: (val) {
+                      setState(() => _selectedEtapaId = val);
+                    },
+                  ),
+
+                  const SizedBox(height: AppSpacing.xl),
+
+                  // ── Botón Guardar ──
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: _isSaving ? null : _guardar,
+                      icon: _isSaving
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Icon(Icons.save_rounded),
+                      label: Text(_isSaving ? 'Guardando...' : 'Guardar Cobrador'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.info,
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.md),
-                    _buildTextField(
-                      label: 'Nombre completo',
-                      icon: Icons.person_outline_rounded,
-                      controller: _nombreCtrl,
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    _buildTextField(
-                      label: 'Teléfono',
-                      icon: Icons.phone_outlined,
-                      keyboardType: TextInputType.phone,
-                      controller: _telefonoCtrl,
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    _buildTextField(
-                      label: 'Correo electrónico',
-                      icon: Icons.email_outlined,
-                      keyboardType: TextInputType.emailAddress,
-                      controller: _emailCtrl,
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    _buildTextField(
-                      label: 'Contraseña (opcional, default: cobrador123)',
-                      icon: Icons.lock_outlined,
-                      controller: _passwordCtrl,
-                      obscureText: true,
-                    ),
-
-                    const SizedBox(height: AppSpacing.xl),
-
-                    Text(
-                      'Asignación de Zonas',
-                      style: AppTypography.subtitle.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    _buildDropdown(
-                      label: 'Zona asignada (Etapa)',
-                      icon: Icons.map_outlined,
-                      value: _selectedEtapaId,
-                      items: _etapasTree,
-                      onChanged: (val) {
-                        setState(() {
-                          _selectedEtapaId = val;
-                          _selectedEtapaName = _etapasTree
-                              .firstWhere((e) => e['id'] == val)['nombre'];
-                        });
-                      },
-                    ),
-
-                    const SizedBox(height: AppSpacing.xl),
-                    SizedBox(
-                      width: double.infinity,
-                      child: FilledButton(
-                        onPressed: _isSaving ? null : _guardar,
-                        style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.info,
-                        ),
-                        child: _isSaving
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Text('Guardar Cobrador'),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
     );
@@ -214,12 +298,10 @@ class _NuevoCobradorScreenState extends State<NuevoCobradorScreen> {
     required IconData icon,
     TextInputType? keyboardType,
     TextEditingController? controller,
-    bool obscureText = false,
   }) {
     return TextField(
       controller: controller,
       keyboardType: keyboardType,
-      obscureText: obscureText,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon, color: AppColors.textDisabled),
@@ -245,7 +327,8 @@ class _NuevoCobradorScreenState extends State<NuevoCobradorScreen> {
     required ValueChanged<String?> onChanged,
   }) {
     return DropdownButtonFormField<String>(
-      value: value,
+      key: ValueKey(value),
+      initialValue: value,
       items: items.map((item) {
         return DropdownMenuItem(
           value: item['id'].toString(),
@@ -272,9 +355,7 @@ class _NuevoCobradorScreenState extends State<NuevoCobradorScreen> {
       menuMaxHeight: 300,
       hint: Text(
         'Selecciona $label',
-        style: AppTypography.body.copyWith(
-          color: AppColors.textDisabled,
-        ),
+        style: AppTypography.body.copyWith(color: AppColors.textDisabled),
       ),
     );
   }

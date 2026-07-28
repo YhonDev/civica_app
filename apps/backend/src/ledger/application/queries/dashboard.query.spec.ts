@@ -429,7 +429,7 @@ describe('DashboardQuery', () => {
     it('should handle totalCuotas = 0 without division by zero', async () => {
       setupHappyPathMocks();
     mockCobroRepo.groupByTarifaModalidad.mockResolvedValue([
-      { modalidad: 'DESCONOCIDO', totalCuotas: 0, pagadas: 0 },
+      { modalidad: 'ANUAL', totalCuotas: 0, pagadas: 0 },
     ]);
 
       const result = await query.execute(MES, ANIO, TENANT);

@@ -6,9 +6,11 @@ import { Casa } from './domain/casa.entity';
 import { Manzana } from './domain/manzana.entity';
 import { Residente } from './domain/residente.entity';
 import { Tenencia } from './domain/tenencia.entity';
+import { Usuario } from '../iam/domain/usuario.entity';
 import { ProyectoRepository } from './infrastructure/proyecto.repository';
 import { ResidenteRepository } from './infrastructure/residente.repository';
 import { ResidenteDetailQuery } from './application/queries/residente-detail.query';
+import { MantenimientoService } from './application/services/mantenimiento.service';
 import { CrearProyectoUseCase } from './application/use-cases/crear-proyecto.use-case';
 import { CrearEtapaUseCase } from './application/use-cases/crear-etapa.use-case';
 import { CrearManzanaUseCase } from './application/use-cases/crear-manzana.use-case';
@@ -20,6 +22,7 @@ import { AgregarTenenciaUseCase } from './application/use-cases/agregar-tenencia
 import { CrearCobradorUseCase } from './application/use-cases/crear-cobrador.use-case';
 import { ProyectosController } from './infrastructure/controllers/proyectos.controller';
 import { ResidentesController } from './infrastructure/controllers/residentes.controller';
+import { CobradoresController } from './infrastructure/controllers/cobradores.controller';
 import { IamModule } from '../iam/iam.module';
 import { LedgerModule } from '../ledger/ledger.module';
 import { NotificationsModule } from '../notifications/notifications.module';
@@ -28,16 +31,18 @@ import { Reflector } from '@nestjs/core';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Proyecto, Etapa, Manzana, Casa, Residente, Tenencia]),
+    TypeOrmModule.forFeature([Proyecto, Etapa, Manzana, Casa, Residente, Tenencia, Usuario]),
     IamModule,
     forwardRef(() => LedgerModule),
     NotificationsModule,
   ],
-  controllers: [ProyectosController, ResidentesController],
+  controllers: [ProyectosController, ResidentesController, CobradoresController],
   providers: [
     // Repositories
     ProyectoRepository,
     ResidenteRepository,
+    // Services
+    MantenimientoService,
     // Queries
     ResidenteDetailQuery,
     // Use cases
@@ -54,6 +59,6 @@ import { Reflector } from '@nestjs/core';
     Reflector,
     ActividadInterceptor,
   ],
-  exports: [TypeOrmModule, ProyectoRepository, ResidenteRepository],
+  exports: [TypeOrmModule, ProyectoRepository, ResidenteRepository, MantenimientoService],
 })
 export class CommunityModule {}

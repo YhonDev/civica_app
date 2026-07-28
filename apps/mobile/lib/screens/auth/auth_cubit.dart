@@ -61,10 +61,27 @@ class AuthCubit extends Cubit<AuthState> {
   Future<void> checkSession() async {
     emit(const AuthState.loading());
     try {
-      // Para forzar login siempre al reiniciar la app y garantizar datos frescos:
+      final hasTokens = await _authApi.isLoggedIn();
+      if (!hasTokens) {
+        emit(const AuthState.unauthenticated());
+        return;
+      }
+
+      // Intentar refrescar el access token con el refresh token guardado.
+      // Si el refresh es válido → sesión restaurada. Si no → login obligatorio.
+      final refreshResponse = await _authApi.refreshSession();
+      if (refreshResponse != null) {
+        final user = refreshResponse['usuario'] as Map<String, dynamic>?;
+        if (user != null) {
+          emit(AuthState.authenticated(user));
+          return;
+        }
+      }
+      // Refresh falló → sesión expirada, limpiar y pedir login
       await _authApi.logout();
       emit(const AuthState.unauthenticated());
     } catch (_) {
+      await _authApi.logout();
       emit(const AuthState.unauthenticated());
     }
   }

@@ -32,7 +32,9 @@ class AccionesRapidasSection extends StatelessWidget {
         ActionCard(
           icon: Icons.person_add_rounded,
           title: 'Nuevo Propietario',
-          onTap: () => context.push('/nuevo-propietario'),
+          onTap: () async {
+            await context.push('/nuevo-residente');
+          },
         ),
         const SizedBox(height: AppSpacing.sm),
         ActionCard(
@@ -44,7 +46,9 @@ class AccionesRapidasSection extends StatelessWidget {
         ActionCard(
           icon: Icons.shield_rounded,
           title: 'Crear Cobrador',
-          onTap: () => context.push('/nuevo-cobrador'),
+          onTap: () async {
+            await context.push('/nuevo-cobrador');
+          },
         ),
         const SizedBox(height: AppSpacing.sm),
         ActionCard(

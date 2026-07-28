@@ -8,9 +8,9 @@ import '../residentes_repository.dart';
 import 'package:intl/intl.dart';
 
 class ResidenteFinanzasScreen extends StatefulWidget {
-  final ResidenteItem propietario;
+  final ResidenteItem residente;
 
-  const ResidenteFinanzasScreen({super.key, required this.propietario});
+  const ResidenteFinanzasScreen({super.key, required this.residente});
 
   @override
   State<ResidenteFinanzasScreen> createState() => _ResidenteFinanzasScreenState();
@@ -31,7 +31,7 @@ class _ResidenteFinanzasScreenState extends State<ResidenteFinanzasScreen> {
     setState(() => _isLoading = true);
     try {
       final response = await ApiClient.instance.get<List<dynamic>>(
-        '/cobros/residente/${widget.propietario.id}',
+        '/cobros/residente/${widget.residente.id}',
       );
       if (mounted) {
         setState(() {
@@ -140,7 +140,7 @@ class _ResidenteFinanzasScreenState extends State<ResidenteFinanzasScreen> {
       child: ListView.separated(
         padding: const EdgeInsets.all(AppSpacing.screenPadding),
         itemCount: _cuotas.length,
-        separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
+        separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.md),
         itemBuilder: (context, index) {
           final cuota = _cuotas[index];
           final estado = cuota['estado'] as String;

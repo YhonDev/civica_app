@@ -6,11 +6,12 @@ import '../../../core/network/api_client.dart';
 import '../models/residentes_models.dart';
 import '../residentes_repository.dart';
 import 'package:intl/intl.dart';
+import '../../../shared/widgets/ticket_bottom_sheet.dart';
 
 class ResidenteHistorialScreen extends StatefulWidget {
-  final ResidenteItem propietario;
+  final ResidenteItem residente;
 
-  const ResidenteHistorialScreen({super.key, required this.propietario});
+  const ResidenteHistorialScreen({super.key, required this.residente});
 
   @override
   State<ResidenteHistorialScreen> createState() => _ResidenteHistorialScreenState();
@@ -32,7 +33,7 @@ class _ResidenteHistorialScreenState extends State<ResidenteHistorialScreen> {
     try {
       final response = await ApiClient.instance.get<List<dynamic>>(
         '/pagos',
-        queryParameters: {'residenteId': widget.propietario.id},
+        queryParameters: {'residenteId': widget.residente.id},
       );
       if (mounted) {
         setState(() {
@@ -90,6 +91,40 @@ class _ResidenteHistorialScreenState extends State<ResidenteHistorialScreen> {
     );
   }
 
+  Future<void> _abrirTicket(Map<String, dynamic> pago) async {
+    final pagoId = pago['id'];
+    if (pagoId != null) {
+      try {
+        final response = await ApiClient.instance.get<dynamic>(
+          '/tickets',
+          queryParameters: {'pagoId': pagoId},
+        );
+        if (response.data != null && mounted) {
+          final ticketData = TicketData.fromJson(response.data as Map<String, dynamic>);
+          TicketBottomSheet.show(context, ticketData);
+          return;
+        }
+      } catch (_) {
+        // Fallback if backend ticket lookup fails
+      }
+    }
+
+    if (!mounted) return;
+    final monto = ((pago['monto'] ?? 0) / 100.0).round();
+    TicketBottomSheet.show(
+      context,
+      TicketData(
+        numero: pago['clientPaymentId'] ?? 'N/A',
+        fecha: pago['fechaPago'] != null ? DateTime.parse(pago['fechaPago']) : DateTime.now(),
+        monto: monto,
+        estado: 'PAGADO',
+        residente: widget.residente.nombre,
+        casa: widget.residente.casa,
+        metodo: 'Efectivo',
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -130,7 +165,7 @@ class _ResidenteHistorialScreenState extends State<ResidenteHistorialScreen> {
       child: ListView.separated(
         padding: const EdgeInsets.all(AppSpacing.screenPadding),
         itemCount: _pagos.length,
-        separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
+        separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.md),
         itemBuilder: (context, index) {
           final pago = _pagos[index];
           final monto = (pago['monto'] ?? 0) / 100.0;
@@ -141,6 +176,7 @@ class _ResidenteHistorialScreenState extends State<ResidenteHistorialScreen> {
 
           return Card(
             child: ListTile(
+              onTap: () => _abrirTicket(pago),
               contentPadding: const EdgeInsets.all(AppSpacing.md),
               leading: CircleAvatar(
                 backgroundColor: AppColors.success.withValues(alpha: 0.1),

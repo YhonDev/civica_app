@@ -57,6 +57,7 @@ class ResidenteDao extends DatabaseAccessor<AppDatabase> {
   Future<List<Residente>> _buscarConJoin({
     required String tenantId,
     String? etapaId,
+    String? manzanaId,
     String? casaId,
   }) async {
     // Construimos sub-query SQL directamente para el JOIN.
@@ -65,8 +66,12 @@ class ResidenteDao extends DatabaseAccessor<AppDatabase> {
     final variables = <Variable<Object>>[Variable<String>(tenantId)];
 
     if (etapaId != null) {
-      whereClauses.add('c.etapa_id = ?');
+      whereClauses.add('m.etapa_id = ?');
       variables.add(Variable<String>(etapaId));
+    }
+    if (manzanaId != null) {
+      whereClauses.add('c.manzana_id = ?');
+      variables.add(Variable<String>(manzanaId));
     }
     if (casaId != null) {
       whereClauses.add('t.casa_id = ?');
@@ -78,6 +83,7 @@ class ResidenteDao extends DatabaseAccessor<AppDatabase> {
       FROM residentes p
       INNER JOIN tenencias t ON t.residente_id = p.id
       INNER JOIN casas c ON c.id = t.casa_id
+      INNER JOIN manzanas m ON m.id = c.manzana_id
       WHERE ${whereClauses.join(' AND ')}
       ORDER BY p.nombre ASC
     ''';
@@ -110,6 +116,7 @@ class ResidenteDao extends DatabaseAccessor<AppDatabase> {
     String? nombre,
     String? telefono,
     String? etapaId,
+    String? manzanaId,
     String? casaId,
   }) async {
     final where = <String>['p.tenant_id = ?'];
@@ -124,8 +131,12 @@ class ResidenteDao extends DatabaseAccessor<AppDatabase> {
       vars.add(Variable<String>('%$telefono%'));
     }
     if (etapaId != null) {
-      where.add('c.etapa_id = ?');
+      where.add('m.etapa_id = ?');
       vars.add(Variable<String>(etapaId));
+    }
+    if (manzanaId != null) {
+      where.add('c.manzana_id = ?');
+      vars.add(Variable<String>(manzanaId));
     }
     if (casaId != null) {
       where.add('t.casa_id = ?');
@@ -136,12 +147,15 @@ class ResidenteDao extends DatabaseAccessor<AppDatabase> {
       SELECT DISTINCT p.*,
              c.direccion_interna AS casa_direccion,
              c.id AS casa_id,
+             m.nombre AS manzana_nombre,
+             m.id AS manzana_id,
              e.nombre AS etapa_nombre,
              e.id AS etapa_id
       FROM residentes p
       INNER JOIN tenencias t ON t.residente_id = p.id
       INNER JOIN casas c ON c.id = t.casa_id
-      INNER JOIN etapas e ON e.id = c.etapa_id
+      INNER JOIN manzanas m ON m.id = c.manzana_id
+      INNER JOIN etapas e ON e.id = m.etapa_id
       WHERE ${where.join(' AND ')}
       ORDER BY p.nombre ASC
     ''';
@@ -161,6 +175,8 @@ class ResidenteDao extends DatabaseAccessor<AppDatabase> {
         ),
         casaDireccion: row.read<String>('casa_direccion'),
         casaId: row.read<String>('casa_id'),
+        manzanaNombre: row.read<String>('manzana_nombre'),
+        manzanaId: row.read<String>('manzana_id'),
         etapaNombre: row.read<String>('etapa_nombre'),
         etapaId: row.read<String>('etapa_id'),
       );
@@ -205,6 +221,8 @@ class ResidenteConInfo {
   final Residente residente;
   final String casaDireccion;
   final String casaId;
+  final String manzanaNombre;
+  final String manzanaId;
   final String etapaNombre;
   final String etapaId;
 
@@ -212,6 +230,8 @@ class ResidenteConInfo {
     required this.residente,
     required this.casaDireccion,
     required this.casaId,
+    required this.manzanaNombre,
+    required this.manzanaId,
     required this.etapaNombre,
     required this.etapaId,
   });

@@ -27,9 +27,9 @@ DashboardData _makeData({
   double recaudoMes = 7800000,
   int pagaron = 65,
   int pendientes = 17,
-  int totalPropietarios = 200,
+  int totalResidentes = 200,
   int solicitudesPendientes = 5,
-  int propietariosMora = 6,
+  int residentesMora = 6,
 }) {
   return DashboardData(
     mes: 3, anio: 2026,
@@ -44,10 +44,10 @@ DashboardData _makeData({
       const CobroEstadoItem(estado: 'Revisión', porcentaje: 6.8, cantidad: 0),
     ],
     actividadReciente: [],
-    totalPropietarios: totalPropietarios,
-    nuevosPropietariosSemana: 3,
+    totalResidentes: totalResidentes,
+    nuevosResidentesSemana: 3,
     solicitudesPendientes: solicitudesPendientes,
-    propietariosMora: propietariosMora,
+    residentesMora: residentesMora,
     pagosRevision: 2,
     acumuladoAnual: 21000000,
     metaAnual: 126720000,
@@ -86,7 +86,7 @@ void main() {
     testWidgets('Centro de Atención', (tester) async {
       final cubit = DashboardCubit();
       cubit.emit(DashboardLoaded(
-        data: _makeData(solicitudesPendientes: 5, propietariosMora: 6),
+        data: _makeData(solicitudesPendientes: 5, residentesMora: 6),
         mes: 3, anio: 2026,
       ));
       await tester.pumpWidget(createDashboardScreen(cubit: cubit));
@@ -112,7 +112,7 @@ void main() {
     testWidgets('Comunidad section', (tester) async {
       final cubit = DashboardCubit();
       cubit.emit(DashboardLoaded(
-        data: _makeData(totalPropietarios: 200),
+        data: _makeData(totalResidentes: 200),
         mes: 3, anio: 2026,
       ));
       await tester.pumpWidget(createDashboardScreen(cubit: cubit));

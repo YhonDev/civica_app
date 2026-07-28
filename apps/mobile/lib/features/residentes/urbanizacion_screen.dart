@@ -160,9 +160,9 @@ class _UrbanizacionScreenState extends State<UrbanizacionScreen> {
                           manzanas: proyecto['manzanas'] ?? 0,
                           casas: proyecto['casas'] ?? 0,
                           isActive: proyecto['estado'] == 'Activo',
-                          onTap: () {
-                            // Pasamos el objeto proyecto usando extra para que las vistas hijas tengan el contexto
-                            context.push('/comunidad/urbanizacion/proyecto-detalle', extra: proyecto);
+                          onTap: () async {
+                            await context.push('/comunidad/urbanizacion/proyecto-detalle', extra: proyecto);
+                            if (mounted) _loadProyectos();
                           },
                         ),
                       )),

@@ -143,6 +143,17 @@ export class ProyectosController {
     return { success: true };
   }
 
+  @Get('actual')
+  @UseGuards(RolesGuard)
+  @Roles(RolUsuario.ADMIN, RolUsuario.COBRADOR, RolUsuario.RESIDENTE)
+  async getProyectoActual(@CurrentTenant() tenantId: string) {
+    if (!tenantId) return { nombre: '' };
+    const proyectos = await this.proyectoRepository.findByTenant(tenantId);
+    if (!proyectos || proyectos.length === 0) return { nombre: '' };
+    const p = proyectos[0];
+    return { id: p.id, nombre: p.nombre, tenantId: p.tenantId };
+  }
+
   @Get()
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN)

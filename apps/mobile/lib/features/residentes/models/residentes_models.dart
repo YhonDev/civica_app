@@ -25,6 +25,8 @@ class ResidenteItem extends Equatable {
   final String? manzanaId;
   final String? etapaId;
   final String? email;
+  final String? username;
+  final String? usuarioId;
   final String modalidadPago;
   final String estadoFinanciero; // 'Al Día', 'Mora', 'Pendiente'
   final double saldoPendiente;
@@ -39,6 +41,8 @@ class ResidenteItem extends Equatable {
     this.manzanaId,
     this.etapaId,
     this.email,
+    this.username,
+    this.usuarioId,
     required this.modalidadPago,
     required this.estadoFinanciero,
     required this.saldoPendiente,
@@ -55,6 +59,8 @@ class ResidenteItem extends Equatable {
         manzanaId,
         etapaId,
         email,
+        username,
+        usuarioId,
         modalidadPago,
         estadoFinanciero,
         saldoPendiente,

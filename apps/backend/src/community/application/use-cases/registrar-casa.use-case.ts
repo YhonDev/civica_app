@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Manzana } from '../../domain/manzana.entity';
@@ -6,6 +6,8 @@ import { Casa } from '../../domain/casa.entity';
 
 @Injectable()
 export class RegistrarCasaUseCase {
+  private readonly logger = new Logger(RegistrarCasaUseCase.name);
+
   constructor(
     @InjectRepository(Manzana)
     private readonly manzanaRepository: Repository<Manzana>,
@@ -20,14 +22,19 @@ export class RegistrarCasaUseCase {
 
     const manzana = await this.manzanaRepository.findOne({
       where: { id: manzanaId },
-      relations: { casas: true },
     });
     if (!manzana) {
       throw new NotFoundException(`Manzana con ID ${manzanaId} no encontrada`);
     }
 
-    const casa = manzana.crearCasa(direccionInterna);
-    await this.casaRepository.save(casa);
-    return casa;
+    try {
+      const casa = Casa.crear(direccionInterna, manzana);
+      await this.casaRepository.insert(casa);
+      this.logger.log(`Casa creada: ${casa.id} - ${direccionInterna}`);
+      return casa;
+    } catch (error) {
+      this.logger.error(`Error al crear casa: ${(error as Error).message}`, (error as Error).stack);
+      throw error;
+    }
   }
 }

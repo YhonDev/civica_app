@@ -8,14 +8,19 @@ import { PlanDeCobro } from './domain/plan-de-cobro.entity';
 import { PeriodoCobro } from './domain/periodo-cobro.entity';
 import { Pago } from './domain/pago.entity';
 import { Solicitud } from './domain/solicitud.entity';
+import { PagoEdicion } from './domain/pago-edicion.entity';
+import { Ticket } from './domain/ticket.entity';
+import { TicketCobro } from './domain/ticket-cobro.entity';
 
 // Repositories
 import { TarifaRepository } from './infrastructure/persistence/tarifa.repository';
 import { MontoPagoPredefinidoRepository } from './infrastructure/persistence/monto-pago-predefinido.repository';
 import { PlanDeCobroRepository } from './infrastructure/persistence/plan-de-cobro.repository';
+import { PeriodoCobroRepository } from './infrastructure/persistence/periodo-cobro.repository';
 import { CobroRepository } from './infrastructure/persistence/cobro.repository';
 import { PagoRepository } from './infrastructure/persistence/pago.repository';
 import { SolicitudRepository } from './infrastructure/persistence/solicitud.repository';
+import { TicketRepository } from './infrastructure/persistence/ticket.repository';
 
 // Use cases
 import { ConfigurarTarifaUseCase } from './application/use-cases/configurar-tarifa.use-case';
@@ -27,9 +32,15 @@ import { EliminarPagoUseCase } from './application/use-cases/eliminar-pago.use-c
 import { EliminarCobroUseCase } from './application/use-cases/eliminar-cobro.use-case';
 import { MarcarVencidasUseCase } from './application/use-cases/marcar-vencidas.use-case';
 import { TarifaDerivacionService } from './application/services/tarifa-derivacion.service';
+import { CorregirPagoUseCase } from './application/use-cases/corregir-pago.use-case';
+import { ValidarPagoUseCase } from './application/use-cases/validar-pago.use-case';
+import { GenerarTicketUseCase } from './application/use-cases/generar-ticket.use-case';
+
+import { GenerarReporteUseCase } from './application/use-cases/generar-reporte.use-case';
 
 // Queries
 import { DashboardQuery } from './application/queries/dashboard.query';
+import { CarteraViviendaResumenQuery } from './application/queries/cartera-vivienda-resumen.query';
 
 // Controllers
 import { TarifasController } from './infrastructure/controllers/tarifas.controller';
@@ -39,6 +50,8 @@ import { PlanesDeCobroController } from './infrastructure/controllers/planes-de-
 import { PagosController } from './infrastructure/controllers/pagos.controller';
 import { DashboardController } from './infrastructure/controllers/dashboard.controller';
 import { SolicitudesController } from './infrastructure/controllers/solicitudes.controller';
+import { ReportesController } from './infrastructure/controllers/reportes.controller';
+import { TicketsController } from './infrastructure/controllers/tickets.controller';
 
 // Jobs
 import { GenerarCobrosJob } from './infrastructure/jobs/generar-cobros.job';
@@ -52,7 +65,18 @@ import { Reflector } from '@nestjs/core';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Tarifa, MontoPagoPredefinido, Cobro, PlanDeCobro, PeriodoCobro, Pago, Solicitud]),
+    TypeOrmModule.forFeature([
+      Tarifa,
+      MontoPagoPredefinido,
+      Cobro,
+      PlanDeCobro,
+      PeriodoCobro,
+      Pago,
+      Solicitud,
+      PagoEdicion,
+      Ticket,
+      TicketCobro,
+    ]),
     ScheduleModule.forRoot(),
     NotificationsModule,
     forwardRef(() => CommunityModule),
@@ -65,15 +89,19 @@ import { Reflector } from '@nestjs/core';
     PagosController,
     DashboardController,
     SolicitudesController,
+    ReportesController,
+    TicketsController,
   ],
   providers: [
     // Repositories
     TarifaRepository,
     MontoPagoPredefinidoRepository,
     PlanDeCobroRepository,
+    PeriodoCobroRepository,
     CobroRepository,
     PagoRepository,
     SolicitudRepository,
+    TicketRepository,
 
     // Use cases
     ConfigurarTarifaUseCase,
@@ -84,12 +112,17 @@ import { Reflector } from '@nestjs/core';
     EliminarPagoUseCase,
     EliminarCobroUseCase,
     MarcarVencidasUseCase,
+    GenerarReporteUseCase,
+    CorregirPagoUseCase,
+    ValidarPagoUseCase,
+    GenerarTicketUseCase,
 
     // Services
     TarifaDerivacionService,
 
     // Queries
     DashboardQuery,
+    CarteraViviendaResumenQuery,
 
     // Jobs
     GenerarCobrosJob,
@@ -106,6 +139,9 @@ import { Reflector } from '@nestjs/core';
     PlanDeCobroRepository,
     PagoRepository,
     SolicitudRepository,
+    GenerarCobrosUseCase,
+    CarteraViviendaResumenQuery,
   ],
 })
 export class LedgerModule {}
+

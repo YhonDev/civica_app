@@ -11,7 +11,8 @@ import {
   UseInterceptors,
   UnauthorizedException,
 } from '@nestjs/common';
-import { DataSource } from 'typeorm';
+import { DataSource, In, Repository } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
 import { RegistrarResidenteUseCase } from '../../application/use-cases/registrar-residente.use-case';
 import { ResidenteRepository } from '../../infrastructure/residente.repository';
 import { ResidenteDetailQuery } from '../../application/queries/residente-detail.query';
@@ -39,6 +40,8 @@ export class ResidentesController {
     private readonly residenteRepository: ResidenteRepository,
     private readonly residenteDetailQuery: ResidenteDetailQuery,
     private readonly dataSource: DataSource,
+    @InjectRepository(Usuario)
+    private readonly usuarioRepository: Repository<Usuario>,
   ) {}
 
   @Get(':id/detalle')
@@ -67,12 +70,15 @@ export class ResidentesController {
     tipo: 'RESIDENTE',
     descripcionFn: (result: any) => `Nuevo residente registrado: ${result.nombre}`,
   })
-  async registrar(@Body() dto: RegistrarResidenteDto): Promise<any> {
+  async registrar(
+    @Body() dto: RegistrarResidenteDto,
+    @CurrentTenant() tenantId: string,
+  ): Promise<any> {
     return this.registrarResidenteUseCase.execute({
       nombre: dto.nombre,
       telefono: dto.telefono,
       email: dto.email ?? null,
-      tenantId: dto.tenantId,
+      tenantId,
       casaId: dto.casaId,
       fechaInicio: dto.fechaInicio ? new Date(dto.fechaInicio) : undefined,
       modalidadPago: dto.modalidadPago as any,
@@ -137,16 +143,18 @@ export class ResidentesController {
 
     // ADMIN: retorna todos los residentes
     if (user.rol === RolUsuario.ADMIN) {
-      return this.residenteRepository.buscarPorFiltros({
+      const residentes = await this.residenteRepository.buscarPorFiltros({
         tenantId,
         etapaId,
         casaId,
       });
+      return this.adjuntarUsernames(residentes);
     }
 
     // COBRADOR: solo residentes cuyas casas están en etapas asignadas
     if (user.rol === RolUsuario.COBRADOR) {
-      return this.listarParaCobrador(user.id, tenantId, etapaId, casaId);
+      const residentes = await this.listarParaCobrador(user.id, tenantId, etapaId, casaId);
+      return this.adjuntarUsernames(residentes);
     }
 
     // RESIDENTE: solo sus propios datos
@@ -157,10 +165,32 @@ export class ResidentesController {
       const residente = await this.residenteRepository.findById(
         user.residenteId,
       );
-      return residente ? [residente] : [];
+      if (!residente) return [];
+      return this.adjuntarUsernames([residente]);
     }
 
     return [];
+  }
+
+  private async adjuntarUsernames(residentes: any[]) {
+    if (residentes.length === 0) return residentes;
+
+    const ids = residentes.map(r => r.id);
+    const usuarios = await this.usuarioRepository.find({
+      where: { residenteId: In(ids) },
+      select: { id: true, residenteId: true, email: true },
+    });
+
+    const usuarioMap = new Map(usuarios.map(u => [u.residenteId, { id: u.id, email: u.email }]));
+
+    return residentes.map(r => {
+      const usuario = usuarioMap.get(r.id);
+      return {
+        ...r,
+        username: usuario?.email ?? null,
+        usuarioId: usuario?.id ?? null,
+      };
+    });
   }
 
   private async listarParaCobrador(

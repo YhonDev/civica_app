@@ -117,7 +117,7 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
         cobroId: _cobroIdSeleccionada!,
         tipo: tipo,
         descripcion: _descripcionController.text.trim(),
-        propietarioId: propietarioId,
+        residenteId: propietarioId,
       );
 
       if (mounted) {
@@ -235,6 +235,44 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
                       ),
                 const SizedBox(height: AppSpacing.lg),
 
+                // ── Motivos predefinidos ────────────────────────────
+                Text(
+                  'Motivos comunes',
+                  style: AppTypography.caption.copyWith(
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    'Monto de pago incorrecto',
+                    'Fecha de registro equivocada',
+                    'Asignación de vivienda errónea',
+                    'Otro motivo',
+                  ].map((motivo) {
+                    final isSelected = _descripcionController.text.startsWith(motivo);
+                    return ChoiceChip(
+                      label: Text(motivo),
+                      selected: isSelected,
+                      onSelected: (selected) {
+                        if (selected) {
+                          setState(() {
+                            if (motivo == 'Otro motivo') {
+                              _descripcionController.text = '';
+                            } else {
+                              _descripcionController.text = '$motivo: Se solicita revisión por inconsistencia en el registro.';
+                            }
+                          });
+                        }
+                      },
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+
                 // ── Descripción del reporte ───────────────────────────
                 Text(
                   'Detalle o Motivo',
@@ -246,7 +284,7 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
                 const SizedBox(height: AppSpacing.sm),
                 TextFormField(
                   controller: _descripcionController,
-                  maxLines: 5,
+                  maxLines: 4,
                   style: AppTypography.body,
                   decoration: const InputDecoration(
                     hintText: 'Explica detalladamente la inconsistencia...',

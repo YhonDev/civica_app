@@ -8,6 +8,9 @@ import { type ModalidadRecaudo } from '../../../shared/common/value-objects';
 import { GenerarCredencialesService } from '../../../iam/application/services/generar-credenciales.service';
 import { Usuario, RolUsuario } from '../../../iam/domain/usuario.entity';
 import { Casa } from '../../domain/casa.entity';
+import { PlanDeCobroRepository } from '../../../ledger/infrastructure/persistence/plan-de-cobro.repository';
+import { GenerarCobrosUseCase } from '../../../ledger/application/use-cases/generar-cobros.use-case';
+import { PlanDeCobro } from '../../../ledger/domain/plan-de-cobro.entity';
 
 interface RegistrarResidenteParams {
   nombre: string;
@@ -36,6 +39,8 @@ export class RegistrarResidenteUseCase {
     private readonly usuarioRepository: Repository<Usuario>,
     @InjectRepository(Casa)
     private readonly casaRepository: Repository<Casa>,
+    private readonly planDeCobroRepository: PlanDeCobroRepository,
+    private readonly generarCobrosUC: GenerarCobrosUseCase,
   ) {}
 
   async execute(params: RegistrarResidenteParams): Promise<ResultadoRegistroResidente> {
@@ -49,33 +54,58 @@ export class RegistrarResidenteUseCase {
 
     const saved = await this.residenteRepository.save(residente);
 
-    // Si se proporcionó una casa, crear tenencia
-    if (params.casaId) {
-      const fechaInicio = params.fechaInicio ?? new Date();
-      saved.agregarTenencia(params.casaId, fechaInicio);
-      await this.residenteRepository.save(saved);
-    }
-
-    // Generar username basado en la casa (manzana + casa)
     let username: string;
     let password: string;
+    let casa: Casa | null = null;
 
     if (params.casaId) {
-      const casa = await this.casaRepository.findOne({
+      casa = await this.casaRepository.findOne({
         where: { id: params.casaId },
-        relations: { manzana: true },
+        relations: { manzana: { etapa: true } },
       });
-      const manzanaNombre = casa?.manzana?.nombre ?? 'mz';
-      const casaDireccion = casa?.direccionInterna ?? params.casaId;
+    }
+
+    // Si se proporcionó una casa, crear tenencia y plan de cobro
+    if (params.casaId && casa) {
+      const fechaInicio = params.fechaInicio ?? new Date();
+      saved.agregarTenencia(params.casaId, fechaInicio);
+      saved.asignarCasa(params.casaId);
+      await this.residenteRepository.save(saved);
+
+      if (casa.manzana?.etapa?.proyectoId) {
+        const fechaActivacionStr = fechaInicio.toISOString().split('T')[0];
+        const plan = PlanDeCobro.crear(
+          params.casaId,
+          saved.id,
+          params.tenantId,
+          casa.manzana.etapa.proyectoId,
+          saved.modalidadPago,
+          fechaActivacionStr,
+        );
+        const planSaved = await this.planDeCobroRepository.save(plan);
+
+        // Generar cobros inmediatamente para el mes actual
+        const mes = fechaInicio.getMonth() + 1;
+        const anio = fechaInicio.getFullYear();
+        await this.generarCobrosUC.generarCobrosParaPlan(planSaved, mes, anio, fechaInicio);
+      }
+    }
+
+    if (params.casaId && casa) {
+      const manzanaNombre = casa.manzana?.nombre ?? 'mz';
+      const casaDireccion = casa.direccionInterna ?? params.casaId;
       username = this.generarCredenciales.generarUsernameResidente(
+        manzanaNombre,
+        casaDireccion,
+      );
+      password = this.generarCredenciales.generarPasswordResidente(
         manzanaNombre,
         casaDireccion,
       );
     } else {
       username = `residente_${saved.id.substring(0, 8)}`;
+      password = this.generarCredenciales.generarPasswordAleatoria();
     }
-
-    password = this.generarCredenciales.generarPasswordAleatoria();
     const passwordHash = await bcrypt.hash(password, 10);
 
     // Crear el usuario automáticamente

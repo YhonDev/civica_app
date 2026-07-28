@@ -9,16 +9,16 @@ import '../../core/network/api_client.dart';
 class CasaExplorer extends Equatable {
   final String id;
   final String direccion;
-  final String propietarioNombre;
-  final String propietarioTelefono;
+  final String residenteNombre;
+  final String residenteTelefono;
   final String estado;  // AL_DIA, PENDIENTE, PARCIAL, VENCIDA
   final int saldo;
 
   const CasaExplorer({
     required this.id,
     required this.direccion,
-    required this.propietarioNombre,
-    required this.propietarioTelefono,
+    required this.residenteNombre,
+    required this.residenteTelefono,
     required this.estado,
     required this.saldo,
   });
@@ -27,15 +27,15 @@ class CasaExplorer extends Equatable {
     return CasaExplorer(
       id: json['id'] as String? ?? '',
       direccion: json['direccion'] as String? ?? '',
-      propietarioNombre: json['propietarioNombre'] as String? ?? 'Sin propietario',
-      propietarioTelefono: json['propietarioTelefono'] as String? ?? '',
+      residenteNombre: json['residenteNombre'] as String? ?? 'Sin residente',
+      residenteTelefono: json['residenteTelefono'] as String? ?? '',
       estado: json['estado'] as String? ?? 'AL_DIA',
       saldo: json['saldo'] as int? ?? 0,
     );
   }
 
   @override
-  List<Object?> get props => [id, direccion, propietarioNombre, estado, saldo];
+  List<Object?> get props => [id, direccion, residenteNombre, estado, saldo];
 }
 
 class ManzanaExplorer extends Equatable {

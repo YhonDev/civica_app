@@ -69,7 +69,8 @@ class _CobradoresScreenState extends State<CobradoresScreen> {
       
       final matchesSearch = _searchQuery.isEmpty ||
           c.nombre.toLowerCase().contains(_searchQuery) ||
-          c.zonas.join(' ').toLowerCase().contains(_searchQuery);
+          c.zonas.join(' ').toLowerCase().contains(_searchQuery) ||
+          (c.username?.toLowerCase().contains(_searchQuery) ?? false);
           
       return matchesFilter && matchesSearch;
     }).toList();
@@ -124,7 +125,10 @@ class _CobradoresScreenState extends State<CobradoresScreen> {
               child: Align(
                 alignment: Alignment.centerRight,
                 child: FilledButton.icon(
-                  onPressed: () => context.push('/nuevo-cobrador'),
+                  onPressed: () async {
+                    final creado = await context.push<bool>('/nuevo-cobrador');
+                    if (creado == true) _loadData();
+                  },
                   icon: const Icon(Icons.shield_rounded, size: 18),
                   label: const Text('Nuevo Cobrador'),
                   style: FilledButton.styleFrom(
@@ -350,8 +354,8 @@ class _CobradoresSkeleton extends StatelessWidget {
           Expanded(
             child: ListView.separated(
               itemCount: 4,
-              separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
-              itemBuilder: (_, __) => const SkeletonBox(
+              separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
+              itemBuilder: (_, _) => const SkeletonBox(
                 width: double.infinity,
                 height: 120,
                 borderRadius: 12,

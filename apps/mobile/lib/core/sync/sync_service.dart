@@ -26,6 +26,9 @@ enum SyncStatus {
 
   /// Error de red durante el sync (se reintentará después).
   networkError,
+
+  /// Conflicto detectado durante el sync.
+  conflicto,
 }
 
 /// Resultado de una ejecución de sync.
@@ -162,6 +165,23 @@ class SyncService {
     return _executeSync();
   }
 
+  /// Alias para sincronización manual.
+  Future<SyncResult?> syncPendingPagos() => requestSync();
+
+  /// Obtiene los elementos pendientes en la cola local de sync.
+  Future<List<Map<String, dynamic>>> getPendingQueue() async {
+    final pendientes = await _pagoDao.getPendientesSync();
+    return pendientes
+        .map((p) => {
+              'id': p.id,
+              'clientPaymentId': p.clientPaymentId,
+              'monto': p.monto,
+              'fechaPago': p.fechaPago,
+              'residenteId': p.residenteId,
+            })
+        .toList();
+  }
+
   Future<SyncResult> _executeSync() async {
     _isSyncing = true;
     _setStatus(SyncStatus.syncing);
@@ -204,18 +224,13 @@ class SyncService {
             final mapped = mapDioError(e);
             if (mapped is ConflictException) {
               // Conflicto 409 — el pago ya existe en el servidor
-              final serverId = mapped.serverId;
-              await _pagoDao.marcarSincronizado(
-                pago.id,
-                serverId ?? pago.clientPaymentId,
-              );
+              await _pagoDao.marcarConflicto(pago.id);
               conflicts++;
               debugPrint('[SyncService] Conflicto en pago ${pago.id}: $mapped');
             } else if (mapped is NetworkException) {
-              // Error de red — detener sync, reintentar después
+              // Error de red — continuar sync sin parar la cola
               errors++;
-              debugPrint('[SyncService] Error de red en pago ${pago.id}: parando sync');
-              break;
+              debugPrint('[SyncService] Error de red en pago ${pago.id}: continuando sync');
             } else if (mapped is AuthException) {
               // Sesión expirada — no se puede sync
               errors++;
@@ -246,7 +261,11 @@ class SyncService {
         errors: errors,
       );
 
-      _setStatus(result.allOk ? SyncStatus.success : SyncStatus.partial);
+      if (conflicts > 0) {
+        _setStatus(SyncStatus.conflicto);
+      } else {
+        _setStatus(result.allOk ? SyncStatus.success : SyncStatus.partial);
+      }
       _lastSyncResult = result;
       _resultController.add(result);
 

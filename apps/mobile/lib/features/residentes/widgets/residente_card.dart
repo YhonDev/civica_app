@@ -39,7 +39,7 @@ class ResidenteCard extends StatelessWidget {
       child: InkWell(
         onTap: () async {
           final result = await context.pushNamed<bool>(
-            'comunidad-propietario-detalle',
+            'comunidad-residente-detalle',
             extra: propietario,
           );
           if (result == true && onUpdate != null) {
@@ -77,7 +77,8 @@ class ResidenteCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 2),
+
                     Text(
                       '${propietario.casa} • ${propietario.etapa}',
                       style: AppTypography.body.copyWith(

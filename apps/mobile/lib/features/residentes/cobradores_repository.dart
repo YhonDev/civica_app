@@ -1,7 +1,6 @@
 import '../../core/network/api_client.dart';
 import '../../core/network/api_exceptions.dart';
 import 'models/cobradores_models.dart';
-import 'comunidad_repository.dart';
 
 class CobradoresRepository {
   final ApiClient _api;
@@ -11,11 +10,7 @@ class CobradoresRepository {
 
   Future<CobradorResumen> getResumen() async {
     try {
-      final tenantId = ComunidadRepository.currentTenantId;
-
-      final response = await _api.get('/usuarios', queryParameters: {
-        'tenantId': tenantId,
-      });
+      final response = await _api.get('/usuarios');
       
       final total = (response.data as List).length;
       final activos = total;
@@ -32,11 +27,7 @@ class CobradoresRepository {
 
   Future<List<CobradorItem>> getCobradores() async {
     try {
-      final tenantId = ComunidadRepository.currentTenantId;
-
-      final response = await _api.get('/usuarios', queryParameters: {
-        'tenantId': tenantId,
-      });
+      final response = await _api.get('/usuarios');
 
       final List<CobradorItem> cobradores = [];
       
@@ -53,8 +44,10 @@ class CobradoresRepository {
             nombre: u['nombre'] ?? 'Sin nombre',
             telefono: 'Sin teléfono',
             correo: u['email'] ?? '',
+            username: u['email'],
+            usuarioId: u['id'].toString(),
             zonas: zonas,
-            activo: true,
+            activo: u['activo'] ?? true,
             pagosRegistradosSemana: 0,
           ),
         );

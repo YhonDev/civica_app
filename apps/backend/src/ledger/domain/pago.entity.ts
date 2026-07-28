@@ -7,6 +7,12 @@ import {
 } from 'typeorm';
 import { Money, type SyncStatus } from '../../shared/common/value-objects';
 
+export enum EstadoValidacionPago {
+  PENDIENTE_REVISION = 'PENDIENTE_REVISION',
+  VALIDADO = 'VALIDADO',
+  RECHAZADO = 'RECHAZADO',
+}
+
 @Entity('pagos')
 export class Pago {
   @PrimaryGeneratedColumn('uuid')
@@ -39,6 +45,14 @@ export class Pago {
   @Column({ name: 'sync_status', type: 'varchar', length: 20, default: 'SYNC_OK' })
   syncStatus: SyncStatus;
 
+  @Column({
+    name: 'estado',
+    type: 'varchar',
+    length: 30,
+    default: EstadoValidacionPago.PENDIENTE_REVISION,
+  })
+  estado: EstadoValidacionPago;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
@@ -64,6 +78,7 @@ export class Pago {
     pago.cobroId = cobroId ?? null;
     pago.fechaSync = null;
     pago.syncStatus = 'SYNC_OK';
+    pago.estado = EstadoValidacionPago.PENDIENTE_REVISION;
     return pago;
   }
 
@@ -76,3 +91,4 @@ export class Pago {
     this.syncStatus = 'SYNC_OK';
   }
 }
+

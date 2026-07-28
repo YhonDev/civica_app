@@ -25,7 +25,23 @@ export class ProyectoRepository {
     });
   }
 
+  async findByIdPlano(id: string): Promise<Proyecto | null> {
+    return this.repo.findOne({ where: { id } });
+  }
+
   async save(proyecto: Proyecto): Promise<Proyecto> {
     return this.repo.save(proyecto);
+  }
+
+  /**
+   * Verifica si un proyecto está en modo mantenimiento.
+   * Retorna true si el proyecto no existe (fail-closed: bloquea si no se puede determinar).
+   */
+  async estaEnMantenimiento(id: string): Promise<boolean> {
+    const proyecto = await this.repo.findOne({
+      where: { id },
+      select: { modoMantenimiento: true },
+    });
+    return proyecto?.modoMantenimiento ?? true;
   }
 }

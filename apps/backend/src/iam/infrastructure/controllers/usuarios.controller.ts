@@ -2,15 +2,17 @@ import {
   Controller,
   Get,
   Post,
+  Put,
   Patch,
   Param,
   Body,
   UseGuards,
   BadRequestException,
   NotFoundException,
+  Delete,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { IsString, IsNotEmpty, IsOptional, MinLength } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, MinLength, IsArray } from 'class-validator';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { JwtAuthGuard } from '../../../shared/auth/jwt-auth.guard';
@@ -26,6 +28,12 @@ class AsignarEtapaDto {
   @IsString()
   @IsNotEmpty()
   etapaId: string;
+}
+
+class AsignarEtapasBulkDto {
+  @IsArray()
+  @IsString({ each: true })
+  etapaIds: string[];
 }
 
 class CambiarPasswordDto {
@@ -135,6 +143,41 @@ export class UsuariosController {
       etapaId: dto.etapaId,
       tenantId: currentUser.tenantId,
     });
+  }
+
+  @Put(':id/etapas')
+  @UseGuards(RolesGuard)
+  @Roles(RolUsuario.ADMIN)
+  async reemplazarEtapas(
+    @Param('id') usuarioId: string,
+    @Body() dto: AsignarEtapasBulkDto,
+    @CurrentUser() currentUser: Usuario,
+  ) {
+    await this.asignacionRepository.delete({ usuarioId });
+    const asignaciones = dto.etapaIds.map((etapaId) =>
+      AsignacionEtapa.crear(usuarioId, etapaId, currentUser.tenantId),
+    );
+    if (asignaciones.length > 0) {
+      await this.asignacionRepository.save(asignaciones);
+    }
+    return { success: true, count: asignaciones.length };
+  }
+
+  @Delete(':id/etapas/:etapaId')
+  @UseGuards(RolesGuard)
+  @Roles(RolUsuario.ADMIN)
+  async desasignarEtapa(
+    @Param('id') usuarioId: string,
+    @Param('etapaId') etapaId: string,
+  ) {
+    const result = await this.asignacionRepository.delete({
+      usuarioId,
+      etapaId,
+    });
+    if (result.affected === 0) {
+      throw new NotFoundException('Asignación no encontrada');
+    }
+    return { success: true };
   }
 
   /**

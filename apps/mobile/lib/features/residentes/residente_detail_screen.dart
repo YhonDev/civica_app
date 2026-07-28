@@ -1,23 +1,57 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../../screens/auth/auth_cubit.dart';
 import 'models/residentes_models.dart';
 import 'residentes_repository.dart';
+import 'widgets/security_section.dart';
 
-class ResidenteDetailScreen extends StatelessWidget {
-  final ResidenteItem propietario;
+class ResidenteDetailScreen extends StatefulWidget {
+  final ResidenteItem residente;
 
-  const ResidenteDetailScreen({super.key, required this.propietario});
+  const ResidenteDetailScreen({super.key, required this.residente});
+
+  @override
+  State<ResidenteDetailScreen> createState() => _ResidenteDetailScreenState();
+}
+
+class _ResidenteDetailScreenState extends State<ResidenteDetailScreen> {
+  late ResidenteItem _residente;
+  bool _cargando = false;
+
+  final _repo = ResidentesRepository();
+
+  @override
+  void initState() {
+    super.initState();
+    _residente = widget.residente;
+  }
+
+  Future<void> _recargarPropietario() async {
+    setState(() => _cargando = true);
+    try {
+      final lista = await _repo.getPropietarios();
+      final actualizado = lista.where((p) => p.id == _residente.id).firstOrNull;
+      if (actualizado != null && mounted) {
+        setState(() => _residente = actualizado);
+      }
+    } catch (_) {
+      // Si falla la recarga, se queda con los datos actuales
+    } finally {
+      if (mounted) setState(() => _cargando = false);
+    }
+  }
 
   // ── Mock: upcoming payment dates based on modality ──────────────
   List<_ProximoCobro> _getProximosCobros() {
     final now = DateTime.now();
     final year = now.year;
     final month = now.month;
-    final modalidad = propietario.modalidadPago.toUpperCase();
+    final modalidad = _residente.modalidadPago.toUpperCase();
 
     List<DateTime> fechas;
     switch (modalidad) {
@@ -91,11 +125,22 @@ class ResidenteDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Gestión de Propietario'),
+        title: const Text('Gestión de Residente'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.pop(true),
         ),
+        actions: [
+          if (_cargando)
+            const Padding(
+              padding: EdgeInsets.only(right: 16),
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.screenPadding),
@@ -112,6 +157,21 @@ class ResidenteDetailScreen extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.md),
             _buildGrid(context),
+            const SizedBox(height: AppSpacing.xl),
+            // ── Módulo de Seguridad ──
+            if (_residente.usuarioId != null) ...[
+              SecuritySection(
+                usuarioId: _residente.usuarioId!,
+                nombre: _residente.nombre,
+                initialUsername: _residente.username,
+                isAdmin: context.read<AuthCubit>().state.usuario?['rol'] == 'ADMIN',
+                onCredentialsUpdated: () {
+                  // Recargar para mostrar el nuevo username
+                  _recargarPropietario();
+                },
+              ),
+              const SizedBox(height: AppSpacing.xl),
+            ],
           ],
         ),
       ),
@@ -137,17 +197,18 @@ class ResidenteDetailScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      propietario.nombre,
+                      _residente.nombre,
                       style: AppTypography.title.copyWith(fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 8),
+
                     Text(
-                      propietario.casa,
+                      _residente.casa,
                       style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary),
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      propietario.etapa,
+                      _residente.etapa,
                       style: AppTypography.caption.copyWith(color: AppColors.textDisabled),
                     ),
                   ],
@@ -173,9 +234,9 @@ class ResidenteDetailScreen extends StatelessWidget {
                         Text('Deuda Actual', style: AppTypography.caption),
                         const SizedBox(height: 4),
                         Text(
-                          '\$${propietario.saldoPendiente.toStringAsFixed(2)}',
+                          '\$${_residente.saldoPendiente.toStringAsFixed(2)}',
                           style: AppTypography.title.copyWith(
-                            color: propietario.saldoPendiente > 0 ? AppColors.error : AppColors.success,
+                            color: _residente.saldoPendiente > 0 ? AppColors.error : AppColors.success,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -189,15 +250,15 @@ class ResidenteDetailScreen extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: propietario.saldoPendiente > 0 
+                            color: _residente.saldoPendiente > 0 
                                 ? AppColors.error.withValues(alpha: 0.1) 
                                 : AppColors.success.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
-                            propietario.estadoFinanciero,
+                            _residente.estadoFinanciero,
                             style: AppTypography.caption.copyWith(
-                              color: propietario.saldoPendiente > 0 ? AppColors.error : AppColors.success,
+                              color: _residente.saldoPendiente > 0 ? AppColors.error : AppColors.success,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -224,7 +285,7 @@ class ResidenteDetailScreen extends StatelessWidget {
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              propietario.modalidadPago,
+                              _residente.modalidadPago,
                               style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w600),
                             ),
                           ],
@@ -258,7 +319,7 @@ class ResidenteDetailScreen extends StatelessWidget {
   }
 
   IconData _modalidadIcon() {
-    switch (propietario.modalidadPago.toUpperCase()) {
+    switch (_residente.modalidadPago.toUpperCase()) {
       case 'SEMANAL':
         return Icons.view_week_rounded;
       case 'QUINCENAL':
@@ -270,11 +331,12 @@ class ResidenteDetailScreen extends StatelessWidget {
 
   // ── Próximos Cobros (replaces old static mini-timeline) ─────────
   Widget _buildProximosCobros(List<_ProximoCobro> cobros) {
-    final modalidad = propietario.modalidadPago.toUpperCase();
+    final modalidad = _residente.modalidadPago.toUpperCase();
+    final mesActual = DateFormat('MMMM', 'es').format(DateTime.now());
     final label = switch (modalidad) {
-      'SEMANAL' => 'Cobros semanales del mes',
-      'QUINCENAL' => 'Cobros quincenales del mes',
-      _ => 'Cobro mensual',
+      'SEMANAL' => 'Cobros semanales de $mesActual',
+      'QUINCENAL' => 'Cobros quincenales de $mesActual',
+      _ => 'Cobro mensual de $mesActual',
     };
 
     return Column(
@@ -375,6 +437,7 @@ class ResidenteDetailScreen extends StatelessWidget {
   Widget _buildGrid(BuildContext context) {
     return GridView.count(
       crossAxisCount: 2,
+      childAspectRatio: 2.8,
       crossAxisSpacing: AppSpacing.md,
       mainAxisSpacing: AppSpacing.md,
       shrinkWrap: true,
@@ -386,7 +449,7 @@ class ResidenteDetailScreen extends StatelessWidget {
           icon: Icons.account_balance_wallet_rounded,
           color: AppColors.primary,
           route: '/comunidad/residentes/detalle/finanzas',
-          extra: propietario,
+          extra: _residente,
         ),
         _buildModuleCard(
           context,
@@ -394,7 +457,7 @@ class ResidenteDetailScreen extends StatelessWidget {
           icon: Icons.receipt_long_rounded,
           color: AppColors.success,
           route: '/comunidad/residentes/detalle/historial',
-          extra: propietario,
+          extra: _residente,
         ),
         _buildModuleCard(
           context,
@@ -402,7 +465,7 @@ class ResidenteDetailScreen extends StatelessWidget {
           icon: Icons.edit_rounded,
           color: AppColors.info,
           routeName: 'comunidad-propietario-editar',
-          extra: propietario,
+          extra: _residente,
         ),
         _buildModuleCard(
           context,
@@ -426,8 +489,13 @@ class ResidenteDetailScreen extends StatelessWidget {
     VoidCallback? onTap,
   }) {
     return InkWell(
-      onTap: onTap ?? () {
-        if (routeName != null) {
+      onTap: onTap ?? () async {
+        if (routeName == 'comunidad-propietario-editar') {
+          final editado = await context.pushNamed<bool>(routeName!, extra: extra);
+          if (editado == true) {
+            await _recargarPropietario();
+          }
+        } else if (routeName != null) {
           context.pushNamed(routeName, extra: extra);
         } else if (route != null) {
           context.push(route, extra: extra);
@@ -440,21 +508,17 @@ class ResidenteDetailScreen extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: AppColors.border),
         ),
-        child: Column(
+        child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: color, size: 28),
-            ),
-            const SizedBox(height: AppSpacing.md),
+            Icon(icon, color: color, size: 22),
+            const SizedBox(width: AppSpacing.sm),
             Text(
               title,
-              style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w600, color: color == AppColors.error ? color : null),
+              style: AppTypography.bodyMedium.copyWith(
+                fontWeight: FontWeight.w600,
+                color: color == AppColors.error ? color : null,
+              ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -468,7 +532,7 @@ class ResidenteDetailScreen extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Eliminar Propietario'),
-        content: Text('¿Estás seguro de eliminar a ${propietario.nombre}? Esta acción no se puede deshacer y eliminará sus deudas.'),
+        content: Text('¿Estás seguro de eliminar a ${_residente.nombre}? Esta acción no se puede deshacer y eliminará sus deudas.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -484,8 +548,7 @@ class ResidenteDetailScreen extends StatelessWidget {
     );
 
     if (confirmed == true && context.mounted) {
-      final repo = ResidentesRepository();
-      final success = await repo.deletePropietario(propietario.id);
+      final success = await _repo.deletePropietario(_residente.id);
       if (success && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Propietario eliminado correctamente')),
