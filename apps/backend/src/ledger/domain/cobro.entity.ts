@@ -9,6 +9,7 @@ import {
 } from 'typeorm';
 import { Money, type EstadoCobro } from '../../shared/common/value-objects';
 import { Residente } from '../../community/domain/residente.entity';
+import { Casa } from '../../community/domain/casa.entity';
 import { PeriodoCobro } from './periodo-cobro.entity';
 
 @Entity('cobros')
@@ -35,6 +36,10 @@ export class Cobro {
 
   @Column({ name: 'casa_id', type: 'uuid', nullable: true })
   casaId: string | null;
+
+  @ManyToOne(() => Casa, { createForeignKeyConstraints: false })
+  @JoinColumn({ name: 'casa_id' })
+  casa: Casa;
 
   @Column({ name: 'tarifa_id', type: 'uuid', nullable: true })
   tarifaId: string | null;
