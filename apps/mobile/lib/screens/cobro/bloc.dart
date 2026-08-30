@@ -252,7 +252,7 @@ class CobroBloc extends Bloc<CobroEvent, CobroState> {
     try {
       final cuotas = await _cuotaDao.getPendientes(event.propietario.id);
       emit(CobroLoaded(
-        propietario: event.propietario,
+        residente: event.propietario,
         casaDireccion: event.casaDireccion,
         etapaNombre: event.etapaNombre,
         cuotas: cuotas.map((c) => CobroConSeleccion(cuota: c)).toList(),
@@ -286,7 +286,9 @@ class CobroBloc extends Bloc<CobroEvent, CobroState> {
     final s = state;
     if (s is! CobroLoaded) return;
 
-    final monto = int.tryParse(event.monto) ?? 0;
+    // El input del monto manual es en PESOS (payment_screen hint: "Ej: 50000"),
+    // pero el dominio del cobro (montoTotal, saldo, DTO /pagos) trabaja en CENTAVOS.
+    final monto = (int.tryParse(event.monto) ?? 0) * 100;
     emit(s.copyWith(montoManual: monto, errorMessage: null));
   }
 
@@ -340,7 +342,7 @@ class CobroBloc extends Bloc<CobroEvent, CobroState> {
         mensaje:
             'Pago registrado offline por \$${_formatPesos(s.montoTotal)}',
         pagoId: pagoId,
-        propietarioNombre: s.propietario.nombre,
+        residenteNombre: s.residente.nombre,
         cobradorId: event.cobradorId,
         fechaPago: now.toIso8601String(),
         montoTotal: s.montoTotal,

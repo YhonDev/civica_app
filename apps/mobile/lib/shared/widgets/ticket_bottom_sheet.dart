@@ -41,7 +41,9 @@ class TicketData {
     int montoPesos = 0;
     if (rawMonto != null) {
       final numVal = (rawMonto is num) ? rawMonto.toDouble() : double.tryParse(rawMonto.toString()) ?? 0.0;
-      montoPesos = (numVal > 1000000 || numVal.toString().length > 6) ? (numVal / 100).round() : numVal.round();
+      // El backend entrega monto en CENTAVOS (ticket.mapper), siempre convertir a pesos.
+      // La heurística anterior (>1000000) mostraba $800.000 para un ticket de $8.000.
+      montoPesos = (numVal / 100).round();
     }
 
     final rawFecha = json['fecha'];
@@ -99,11 +101,7 @@ class TicketBottomSheet extends StatelessWidget {
 
     final dateStr = DateFormat('dd/MM/yyyy').format(ticket.fecha);
     final timeStr = DateFormat('HH:mm').format(ticket.fecha);
-    final montoStr = NumberFormat.currency(
-      locale: 'es_CO',
-      symbol: r'$',
-      decimalDigits: 0,
-    ).format(ticket.monto);
+    final montoStr = r'$ ' + NumberFormat('#,##0', 'es_CO').format(ticket.monto);
 
     return Padding(
       padding: EdgeInsets.only(

@@ -33,7 +33,7 @@ class PaymentScreen extends StatelessWidget {
         final bloc = CobroBloc();
         if (propietario != null) {
           bloc.add(CargarResidente(
-            propietario: propietario!,
+            residente: propietario!,
             casaDireccion: casaDireccion,
             etapaNombre: etapaNombre,
           ));
@@ -159,7 +159,7 @@ class _PaymentScreenBodyState extends State<_PaymentScreenBody> {
           _propietario = res;
         });
         context.read<CobroBloc>().add(CargarResidente(
-              propietario: res,
+              residente: res,
               casaDireccion: widget.casaDireccion,
               etapaNombre: widget.etapaNombre,
             ));
@@ -238,7 +238,7 @@ class _PaymentScreenBodyState extends State<_PaymentScreenBody> {
             FilledButton(
               onPressed: () => context.read<CobroBloc>().add(
                     CargarResidente(
-                      propietario: _propietario!,
+                      residente: _propietario!,
                       casaDireccion: widget.casaDireccion,
                       etapaNombre: widget.etapaNombre,
                     ),
@@ -554,7 +554,8 @@ class _PaymentScreenBodyState extends State<_PaymentScreenBody> {
               const SizedBox(height: 4),
             ],
             if (state.montoManual > 0) ...[
-              Text('Monto adicional: \$${fmt.format(state.montoManual)}'),
+              // montoManual está en centavos; el display es en pesos
+              Text('Monto adicional: \$${fmt.format(state.montoManual / 100)}'),
               const SizedBox(height: 4),
             ],
             const Divider(),

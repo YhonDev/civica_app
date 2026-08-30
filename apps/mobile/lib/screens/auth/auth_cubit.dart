@@ -69,13 +69,12 @@ class AuthCubit extends Cubit<AuthState> {
 
       // Intentar refrescar el access token con el refresh token guardado.
       // Si el refresh es válido → sesión restaurada. Si no → login obligatorio.
-      final refreshResponse = await _authApi.refreshSession();
-      if (refreshResponse != null) {
-        final user = refreshResponse['usuario'] as Map<String, dynamic>?;
-        if (user != null) {
-          emit(AuthState.authenticated(user));
-          return;
-        }
+      // refreshSession() ya retorna el usuario directo (AuthApi.refreshSession
+      // devuelve `usuario` o lo que hubiera guardado); NO es un mapa con clave 'usuario'.
+      final user = await _authApi.refreshSession();
+      if (user != null) {
+        emit(AuthState.authenticated(user));
+        return;
       }
       // Refresh falló → sesión expirada, limpiar y pedir login
       await _authApi.logout();
