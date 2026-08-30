@@ -41,7 +41,7 @@ class CobradorDashboardData extends Equatable {
       pendientes: stats['pendientes'] as int? ?? 0,
       vencidas: stats['vencidas'] as int? ?? 0,
       montoEsperado: stats['montoEsperado'] as int? ?? 0,
-      casas: List<Map<String, dynamic>>.from(json['casas'] as List? ?? []),
+      casas: List<Map<String, dynamic>>.from(json['viviendas'] as List? ?? json['casas'] as List? ?? []),
       proximaVivienda: json['proximaVivienda'] as Map<String, dynamic>?,
       ultimosCobros: List<Map<String, dynamic>>.from(json['ultimosCobros'] as List? ?? []),
     );

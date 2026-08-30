@@ -191,6 +191,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             onPressed: () {
                               _emailCtrl.text = 'admin@vigivecino.com';
                               _passwordCtrl.text = 'Admin123!';
+                              _handleLogin(context);
                             },
                           ),
                           ActionChip(
@@ -199,6 +200,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             onPressed: () {
                               _emailCtrl.text = 'robertomartinezcobrador';
                               _passwordCtrl.text = 'robertomartinez2026';
+                              _handleLogin(context);
                             },
                           ),
                           ActionChip(
@@ -207,6 +209,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             onPressed: () {
                               _emailCtrl.text = 'manzana_a_casa_1_residente';
                               _passwordCtrl.text = 'Casa1ManzanaA';
+                              _handleLogin(context);
                             },
                           ),
                           ActionChip(
@@ -215,6 +218,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             onPressed: () {
                               _emailCtrl.text = 'manzana_a_casa_2_residente';
                               _passwordCtrl.text = 'Casa2ManzanaA';
+                              _handleLogin(context);
                             },
                           ),
                           ActionChip(
@@ -223,6 +227,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             onPressed: () {
                               _emailCtrl.text = 'manzana_a_casa_3_residente';
                               _passwordCtrl.text = 'Casa3ManzanaA';
+                              _handleLogin(context);
                             },
                           ),
                         ],

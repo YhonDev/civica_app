@@ -13,25 +13,33 @@ import 'casas_cubit.dart';
 ///
 /// Cada casa muestra un semáforo de estado:
 ///   🟢 AL_DIA   🟠 Pendiente   🔵 Parcial   🔴 En mora
-class CasasExplorerScreen extends StatefulWidget {
-  const CasasExplorerScreen({super.key});
+class CasasExplorerScreen extends StatelessWidget {
+  final CasasCubit? cubit;
+
+  const CasasExplorerScreen({super.key, this.cubit});
 
   @override
-  State<CasasExplorerScreen> createState() => _CasasExplorerScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider<CasasCubit>(
+      create: (_) => cubit ?? (CasasCubit()..loadViviendas()),
+      child: const _CasasExplorerView(),
+    );
+  }
 }
 
-class _CasasExplorerScreenState extends State<CasasExplorerScreen> {
-  @override
-  void initState() {
-    super.initState();
-    context.read<CasasCubit>().loadViviendas();
-  }
+class _CasasExplorerView extends StatefulWidget {
+  const _CasasExplorerView();
 
+  @override
+  State<_CasasExplorerView> createState() => _CasasExplorerViewState();
+}
+
+class _CasasExplorerViewState extends State<_CasasExplorerView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Viviendas'),
+        title: const Text('Rutas'),
         centerTitle: true,
       ),
       body: BlocBuilder<CasasCubit, CasasState>(
@@ -170,6 +178,7 @@ class _CasasExplorerScreenState extends State<CasasExplorerScreen> {
     return Padding(
       padding: const EdgeInsets.only(left: AppSpacing.xl),
       child: ExpansionTile(
+        initiallyExpanded: true,
         tilePadding: const EdgeInsets.only(right: AppSpacing.md),
         leading: Container(
           width: 8,

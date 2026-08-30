@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:intl/intl.dart';
 
 /// Resumen general de la cartera (totales).
 class CarteraResumen extends Equatable {
@@ -46,6 +47,9 @@ class CobroItem extends Equatable {
   final String fechaVencimiento;
   final String periodoInicio;
   final String periodoFin;
+  final String concepto;
+  final String nroRecibo;
+  final String cobradorNombre;
 
   const CobroItem({
     required this.id,
@@ -62,7 +66,34 @@ class CobroItem extends Equatable {
     this.fechaVencimiento = '',
     this.periodoInicio = '',
     this.periodoFin = '',
+    this.concepto = 'Cuota de Vigilancia',
+    this.nroRecibo = '',
+    this.cobradorNombre = 'Administración',
   });
+
+  String get tituloCuota {
+    if (concepto.isNotEmpty && concepto != 'Cuota de Vigilancia') {
+      return concepto;
+    }
+    if (fechaVencimiento.isNotEmpty) {
+      final date = DateTime.tryParse(fechaVencimiento);
+      if (date != null) {
+        final monthName = DateFormat('MMMM', 'es').format(date);
+        final capitalizedMonth = monthName[0].toUpperCase() + monthName.substring(1);
+        final day = date.day;
+        int cuotaNum = 1;
+        if (day > 21) {
+          cuotaNum = 4;
+        } else if (day > 14) {
+          cuotaNum = 3;
+        } else if (day > 7) {
+          cuotaNum = 2;
+        }
+        return '$capitalizedMonth — Cuota $cuotaNum';
+      }
+    }
+    return concepto.isNotEmpty ? concepto : 'Cuota de Vigilancia';
+  }
 
   factory CobroItem.fromJson(Map<String, dynamic> json) {
     final estadoDb = json['estado'];
@@ -75,23 +106,38 @@ class CobroItem extends Equatable {
     final double saldo = monto - pagado;
 
     final propietario = json['residente'] as Map<String, dynamic>?;
-    String nombre = propietario?['nombre'] ?? 'Desconocido';
+    String nombre = (propietario?['nombre'] as String?) ?? (json['residenteNombre'] as String?) ?? 'Residente';
     
-    String casaNombre = 'Sin casa';
-    String manzanaNombre = 'Sin manzana';
-    String etapaNombre = 'Sin etapa';
+    String casaNombre = (json['casaDireccion'] as String?) ?? 'Inmueble';
+    String manzanaNombre = (json['manzanaNombre'] as String?) ?? 'Manzana';
+    String etapaNombre = (json['etapaNombre'] as String?) ?? 'Etapa';
 
-    final tenencias = propietario?['tenencias'] as List<dynamic>? ?? [];
-    if (tenencias.isNotEmpty) {
-      final casa = tenencias.first['casa'] as Map<String, dynamic>?;
-      if (casa != null) {
-        casaNombre = casa['direccionInterna'] ?? 'Sin casa';
-        final manzana = casa['manzana'] as Map<String, dynamic>?;
-        if (manzana != null) {
-          manzanaNombre = manzana['nombre'] ?? 'Sin manzana';
-          final etapa = manzana['etapa'] as Map<String, dynamic>?;
-          if (etapa != null) {
-            etapaNombre = etapa['nombre'] ?? 'Sin etapa';
+    // 1. Intentar obtener de relación directa `casa` o `casaActual`
+    final casaObj = (json['casa'] as Map<String, dynamic>?) ?? (propietario?['casaActual'] as Map<String, dynamic>?);
+    if (casaObj != null) {
+      casaNombre = (casaObj['direccionInterna'] as String?) ?? (casaObj['nombre'] as String?) ?? casaNombre;
+      final manzanaObj = casaObj['manzana'] as Map<String, dynamic>?;
+      if (manzanaObj != null) {
+        manzanaNombre = (manzanaObj['nombre'] as String?) ?? manzanaNombre;
+        final etapaObj = manzanaObj['etapa'] as Map<String, dynamic>?;
+        if (etapaObj != null) {
+          etapaNombre = (etapaObj['nombre'] as String?) ?? etapaNombre;
+        }
+      }
+    } else {
+      // 2. Fallback a tenencias
+      final tenencias = propietario?['tenencias'] as List<dynamic>? ?? [];
+      if (tenencias.isNotEmpty) {
+        final casa = tenencias.first['casa'] as Map<String, dynamic>?;
+        if (casa != null) {
+          casaNombre = (casa['direccionInterna'] as String?) ?? casaNombre;
+          final manzana = casa['manzana'] as Map<String, dynamic>?;
+          if (manzana != null) {
+            manzanaNombre = (manzana['nombre'] as String?) ?? manzanaNombre;
+            final etapa = manzana['etapa'] as Map<String, dynamic>?;
+            if (etapa != null) {
+              etapaNombre = (etapa['nombre'] as String?) ?? etapaNombre;
+            }
           }
         }
       }
@@ -115,6 +161,9 @@ class CobroItem extends Equatable {
       fechaVencimiento: json['fechaVencimiento'] ?? '',
       periodoInicio: json['periodoInicio'] ?? '',
       periodoFin: json['periodoFin'] ?? '',
+      concepto: json['concepto'] as String? ?? 'Cuota de Vigilancia',
+      nroRecibo: json['nroRecibo'] as String? ?? '',
+      cobradorNombre: json['cobradorNombre'] as String? ?? 'Administración',
     );
   }
 

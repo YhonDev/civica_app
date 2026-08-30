@@ -127,7 +127,7 @@ class CasasCubit extends Cubit<CasasState> {
   Future<void> loadViviendas() async {
     emit(const ViviendasLoading());
     try {
-      final response = await _api.get('/dashboard/cobrador/casas');
+      final response = await _api.get('/dashboard/cobrador/viviendas');
       final data = response.data as Map<String, dynamic>;
       final etapas = (data['etapas'] as List? ?? [])
           .map((e) => EtapaExplorer.fromJson(e as Map<String, dynamic>))

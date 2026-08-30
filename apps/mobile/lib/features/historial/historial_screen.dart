@@ -51,7 +51,7 @@ class _HistorialScreenState extends State<HistorialScreen> {
   Future<void> _loadHistorial() async {
     try {
       final user = context.read<AuthCubit>().state.usuario;
-      final residenteId = user?['id'] as String?;
+      final residenteId = (user?['residenteId'] as String?) ?? (user?['id'] as String?);
       if (residenteId == null) {
         setState(() {
           _loading = false;

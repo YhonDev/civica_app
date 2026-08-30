@@ -140,7 +140,11 @@ class _MiCasaScreenState extends State<MiCasaScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '$_casaDireccion — $_etapaNombre',
+                          [
+                            if (_manzanaNombre.isNotEmpty) _manzanaNombre,
+                            if (_casaDireccion.isNotEmpty) _casaDireccion,
+                            if (_etapaNombre.isNotEmpty) _etapaNombre,
+                          ].join(' — '),
                           style: AppTypography.title.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
                         ),
                       ],
@@ -206,7 +210,7 @@ class _MiCasaScreenState extends State<MiCasaScreen> {
                         const Divider(height: 1),
                         ListTile(
                           leading: const Icon(Icons.home_outlined),
-                          title: const Text('Dirección de Inmueble'),
+                          title: const Text('Casa'),
                           subtitle: Text(_casaDireccion),
                         ),
                       ],

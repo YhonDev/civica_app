@@ -19,7 +19,7 @@ class ConsolidatedState extends Equatable {
 
   const ConsolidatedState({
     this.items = const [],
-    this.activeFilter = 'TODOS',
+    this.activeFilter = 'EN_MORA',
     this.selectedEtapaId,
     this.selectedManzanaId,
     this.etapas = const [],

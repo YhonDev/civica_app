@@ -7,6 +7,8 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 
+import '../cartera/models/cartera_models.dart';
+import '../cartera/widgets/registrar_pago_bottom_sheet.dart';
 import 'dashboard_cobrador_cubit.dart';
 
 /// Cobrador Jornada — Pantalla principal del Cobrador.
@@ -14,20 +16,29 @@ import 'dashboard_cobrador_cubit.dart';
 /// Enfocada en la **ruta de trabajo**, no en residentes.
 /// Muestra: stats de la jornada, próxima vivienda a visitar,
 /// lista de casas pendientes con semáforo 🟢🟠🔴.
-class JornadaScreen extends StatefulWidget {
-  const JornadaScreen({super.key});
+class JornadaScreen extends StatelessWidget {
+  final DashboardCobradorCubit? cubit;
+
+  const JornadaScreen({super.key, this.cubit});
 
   @override
-  State<JornadaScreen> createState() => _JornadaScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider<DashboardCobradorCubit>(
+      create: (_) => cubit ?? (DashboardCobradorCubit()..loadDashboard()),
+      child: const _JornadaView(),
+    );
+  }
 }
 
-class _JornadaScreenState extends State<JornadaScreen> {
-  @override
-  void initState() {
-    super.initState();
-    context.read<DashboardCobradorCubit>().loadDashboard();
-  }
+class _JornadaView extends StatefulWidget {
+  const _JornadaView();
 
+  @override
+  State<_JornadaView> createState() => _JornadaViewState();
+}
+
+class _JornadaViewState extends State<_JornadaView> {
+  String _filterModalidad = 'TODAS';
   @override
   Widget build(BuildContext context) {
     final user = context.watch<AuthCubit>().state.usuario;
@@ -120,6 +131,26 @@ class _JornadaScreenState extends State<JornadaScreen> {
   // ── Content ───────────────────────────────────────────────────────
 
   Widget _buildContent(CobradorDashboardData data, String nombre, String hoy) {
+    final filteredCasas = data.casas.where((v) {
+      if (_filterModalidad == 'TODAS') return true;
+      final proximoVenc = v['proximoVencimiento'] as String?;
+      if (proximoVenc == null) return true;
+      final date = DateTime.tryParse(proximoVenc);
+      if (date == null) return true;
+
+      final now = DateTime.now();
+      if (_filterModalidad == 'SEMANA') {
+        final diffDays = date.difference(now).inDays;
+        return diffDays <= 7 || date.isBefore(now);
+      } else if (_filterModalidad == 'QUINCENA') {
+        final diffDays = date.difference(now).inDays;
+        return diffDays <= 15 || date.isBefore(now);
+      } else if (_filterModalidad == 'MES') {
+        return (date.month == now.month && date.year == now.year) || date.isBefore(now);
+      }
+      return true;
+    }).toList();
+
     return RefreshIndicator(
       color: AppColors.primary,
       onRefresh: () => context.read<DashboardCobradorCubit>().refresh(),
@@ -168,17 +199,34 @@ class _JornadaScreenState extends State<JornadaScreen> {
                   style: AppTypography.subtitle.copyWith(fontWeight: FontWeight.w600),
                 ),
                 Text(
-                  '${data.casas.length}',
+                  '${filteredCasas.length} de ${data.casas.length}',
                   style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
                 ),
               ],
             ),
+            const SizedBox(height: AppSpacing.sm),
+
+            // Chips de filtrado por ventana de vencimiento
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _filterChip('Todas', 'TODAS'),
+                  const SizedBox(width: 8),
+                  _filterChip('Esta Semana', 'SEMANA'),
+                  const SizedBox(width: 8),
+                  _filterChip('Esta Quincena', 'QUINCENA'),
+                  const SizedBox(width: 8),
+                  _filterChip('Este Mes', 'MES'),
+                ],
+              ),
+            ),
             const SizedBox(height: AppSpacing.md),
 
-            if (data.casas.isEmpty)
+            if (filteredCasas.isEmpty)
               _buildEmptyState()
             else
-              ...data.casas.map((v) => Padding(
+              ...filteredCasas.map((v) => Padding(
                 padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                 child: _ViviendaCard(vivienda: v),
               )),
@@ -308,6 +356,27 @@ class _JornadaScreenState extends State<JornadaScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _filterChip(String label, String value) {
+    final isSelected = _filterModalidad == value;
+    final colorScheme = Theme.of(context).colorScheme;
+    return FilterChip(
+      selected: isSelected,
+      label: Text(label),
+      labelStyle: TextStyle(
+        fontSize: 12,
+        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+        color: isSelected ? colorScheme.onPrimary : AppColors.textPrimary,
+      ),
+      selectedColor: AppColors.primary,
+      backgroundColor: AppColors.surface,
+      onSelected: (_) {
+        setState(() {
+          _filterModalidad = value;
+        });
+      },
     );
   }
 
@@ -446,14 +515,6 @@ class _MiniStatCard extends StatelessWidget {
             Icon(icon, color: color, size: 20),
             const SizedBox(height: 6),
             Text(
-              value,
-              style: AppTypography.bodyMedium.copyWith(
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
               label,
               style: AppTypography.small.copyWith(color: AppColors.textSecondary),
             ),
@@ -514,117 +575,259 @@ class _ViviendaCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final estado = vivienda['peorEstado'] as String? ?? 'PENDIENTE';
     final semaforoColor = _semaforoColor(estado);
 
-    // Determinar borde izquierdo según estado
-    final leftBorderColor = estado == 'VENCIDA'
-        ? AppColors.error
-        : estado == 'PARCIAL'
-            ? AppColors.info
-            : AppColors.warning;
+    final cardBorderColor = estado == 'VENCIDA'
+        ? AppColors.error.withValues(alpha: 0.4)
+        : (isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0));
 
-    return Card(
-      margin: EdgeInsets.zero,
-      clipBehavior: Clip.antiAlias,
-      child: Container(
-        decoration: BoxDecoration(
-          border: Border(
-            left: BorderSide(color: leftBorderColor, width: 4),
-          ),
+    final cuotas = vivienda['cuotas'] as List?;
+    final firstCuota = cuotas != null && cuotas.isNotEmpty ? cuotas.first : null;
+
+    // Formatear detalle de cuota + días vencidos
+    String cuotaDetalleStr = '';
+    if (firstCuota != null) {
+      final concepto = firstCuota['concepto'] as String? ?? '';
+      final periodo = firstCuota['periodoInicio'] as String? ?? '';
+      final fechaVenc = firstCuota['fechaVencimiento'] as String? ?? '';
+      
+      String cuotaName = concepto.isNotEmpty ? concepto : periodo;
+      if (cuotaName.isEmpty) cuotaName = 'Cuota de Recaudo';
+
+      if (fechaVenc.isNotEmpty) {
+        final date = DateTime.tryParse(fechaVenc);
+        if (date != null) {
+          final monthName = DateFormat('MMMM', 'es').format(date);
+          final capitalizedMonth = monthName[0].toUpperCase() + monthName.substring(1);
+          final fechaFormat = DateFormat("dd/MM/yyyy", 'es').format(date);
+          final diffDays = DateTime.now().difference(date).inDays;
+          final diasText = diffDays > 0 ? ' (Hace $diffDays días)' : '';
+
+          if (estado == 'VENCIDA') {
+            cuotaDetalleStr = '$capitalizedMonth · Vencido el $fechaFormat$diasText';
+          } else {
+            cuotaDetalleStr = '$capitalizedMonth · Vence el $fechaFormat';
+          }
+        }
+      }
+    }
+
+    final manzanaName = vivienda['manzanaNombre'] as String? ?? 'Manzana A';
+    final casaName = vivienda['casaDireccion'] as String? ?? '';
+    final mainTitle = casaName.contains(manzanaName) ? casaName : '$manzanaName — $casaName';
+    final etapaName = vivienda['etapaNombre'] as String? ?? 'Etapa 1';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: cardBorderColor,
+          width: 1.2,
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.cardInnerPadding),
-          child: Row(
-            children: [
-              // Semáforo circular
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: semaforoColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Center(
-                  child: Text(
-                    _semaforoIcon(estado),
-                    style: const TextStyle(fontSize: 20),
-                  ),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.md),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: () {
+                    final cobroId = firstCuota != null ? (firstCuota['id'] as String? ?? '') : '';
+                    final firstCuotaMonto = firstCuota != null ? ((firstCuota['monto'] as num? ?? 20000).toDouble()) : 20000.0;
+                    final saldoTotal = (vivienda['saldo'] as num? ?? 0).toDouble();
 
-              // Info de la vivienda
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${vivienda['casaDireccion'] ?? ''}',
-                      style: AppTypography.bodyMedium.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '${vivienda['etapaNombre'] ?? ''} — Mz. ${vivienda['manzanaNombre'] ?? ''}',
-                      style: AppTypography.caption.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    // Residente + teléfono
-                    Row(
+                    final cobroItem = CobroItem(
+                      id: cobroId,
+                      concepto: 'Cuota de Recaudo — $mainTitle',
+                      monto: firstCuotaMonto > 0 ? firstCuotaMonto : 20000.0,
+                      montoPagado: 0,
+                      saldo: saldoTotal,
+                      estado: vivienda['peorEstado'] as String? ?? 'Pendiente',
+                      modalidad: vivienda['modalidadPago'] as String? ?? 'Mensual',
+                      casa: vivienda['casaDireccion'] as String? ?? '',
+                      manzana: vivienda['manzanaNombre'] as String? ?? '',
+                      etapa: vivienda['etapaNombre'] as String? ?? '',
+                      residenteId: vivienda['residenteId'] as String? ?? '',
+                      nombre: vivienda['residenteNombre'] as String? ?? '',
+                    );
+
+                    RegistrarPagoBottomSheet.show(
+                      context,
+                      cobro: cobroItem,
+                      cuotas: cuotas,
+                      onSuccess: () {
+                        context.read<DashboardCobradorCubit>().refresh();
+                      },
+                    );
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSpacing.cardInnerPadding),
+                    child: Row(
                       children: [
-                        Icon(Icons.person_rounded, size: 14, color: AppColors.textSecondary),
-                        const SizedBox(width: 4),
-                        Flexible(
-                          child: Text(
-                            vivienda['propietarioNombre'] ?? 'Sin residente',
-                            style: AppTypography.small.copyWith(
-                              color: AppColors.textSecondary,
-                            ),
-                            overflow: TextOverflow.ellipsis,
+                        // Semáforo circular
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: semaforoColor.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: semaforoColor.withValues(alpha: 0.3), width: 1),
                           ),
+                          child: Center(
+                            child: Text(
+                              _semaforoIcon(estado),
+                              style: const TextStyle(fontSize: 20),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.md),
+
+                        // Info de la vivienda
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  // TÍTULO: Ubicación / Casa (ej. Manzana A — Casa 2)
+                                  Flexible(
+                                    child: Text(
+                                      '$mainTitle ($etapaName)',
+                                      style: AppTypography.bodyMedium.copyWith(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 15,
+                                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  if (vivienda['tieneSolicitud'] == true) ...[
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.error.withValues(alpha: 0.15),
+                                        borderRadius: BorderRadius.circular(6),
+                                        border: Border.all(color: AppColors.error, width: 0.8),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.notifications_active_rounded, size: 10, color: AppColors.error),
+                                          const SizedBox(width: 3),
+                                          Text(
+                                            'Solicitud',
+                                            style: AppTypography.small.copyWith(
+                                              color: AppColors.error,
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 10,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                              const SizedBox(height: 3),
+                              // Detalle de Cuota + Vencimiento (ej. Julio · Vencido el 15/07/2026 (Hace 44 días))
+                              if (cuotaDetalleStr.isNotEmpty) ...[
+                                Text(
+                                  cuotaDetalleStr,
+                                  style: AppTypography.caption.copyWith(
+                                    color: estado == 'VENCIDA' ? AppColors.error : AppColors.primary,
+                                    fontWeight: estado == 'VENCIDA' ? FontWeight.w700 : FontWeight.w600,
+                                    fontSize: 11.5,
+                                  ),
+                                ),
+                                const SizedBox(height: 3),
+                              ],
+                              // Residente + modalidad
+                              Row(
+                                children: [
+                                  Icon(Icons.person_rounded, size: 14, color: AppColors.textSecondary),
+                                  const SizedBox(width: 4),
+                                  Flexible(
+                                    child: Text(
+                                      vivienda['residenteNombre'] ?? vivienda['propietarioNombre'] ?? 'Sin residente',
+                                      style: AppTypography.small.copyWith(
+                                        color: AppColors.textSecondary,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  if (vivienda['modalidadPago'] != null) ...[
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primary.withValues(alpha: 0.12),
+                                        borderRadius: BorderRadius.circular(4),
+                                        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3), width: 0.8),
+                                      ),
+                                      child: Text(
+                                        '${vivienda['modalidadPago']}',
+                                        style: AppTypography.small.copyWith(
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.primary,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(width: 8),
+
+                        // Monto + estado
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              _formatPesos(vivienda['saldo'] as int? ?? 0),
+                              style: AppTypography.bodyMedium.copyWith(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 16,
+                                color: estado == 'VENCIDA' ? AppColors.error : (isDark ? Colors.white : const Color(0xFF0F172A)),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: semaforoColor.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: semaforoColor.withValues(alpha: 0.4), width: 0.8),
+                              ),
+                              child: Text(
+                                _semaforoLabel(estado),
+                                style: AppTypography.small.copyWith(
+                                  color: semaforoColor,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                  ],
+                  ),
                 ),
               ),
-
-              // Monto + estado
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    _formatPesos(vivienda['saldo'] as int? ?? 0),
-                    style: AppTypography.bodyMedium.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: semaforoColor.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      _semaforoLabel(estado),
-                      style: AppTypography.small.copyWith(
-                        color: semaforoColor,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

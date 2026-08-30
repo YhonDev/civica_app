@@ -304,60 +304,69 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
     final concepto = pago['concepto'] as String;
     final desglose = (pago['desglose'] as List<dynamic>?) ?? [];
     
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.cardPadding),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AppColors.info.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(12),
+    return InkWell(
+      onTap: () => context.go('/cartera'),
+      borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(AppSpacing.cardPadding),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+          border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.info.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.event_outlined,
+                    color: AppColors.info,
+                    size: 22,
+                  ),
                 ),
-                child: Icon(
-                  Icons.event_outlined,
-                  color: AppColors.info,
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Próximo pago',
-                      style: AppTypography.caption.copyWith(
-                        color: AppColors.info,
-                        fontWeight: FontWeight.w700,
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Próximo pago',
+                        style: AppTypography.caption.copyWith(
+                          color: AppColors.info,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      concepto.replaceAll(RegExp(r' - .*'), ''),
-                      style: AppTypography.bodyMedium.copyWith(
-                        fontWeight: FontWeight.w600,
+                      const SizedBox(height: 2),
+                      Text(
+                        concepto.replaceAll(RegExp(r' - .*'), ''),
+                        style: AppTypography.bodyMedium.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          // Desglose (Partial Payments)
-          if (desglose.isNotEmpty)
-            ...desglose.map((item) => _buildDesgloseItem(item)),
-        ],
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: AppColors.textSecondary,
+                  size: 24,
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.md),
+            // Desglose (Partial Payments)
+            if (desglose.isNotEmpty)
+              ...desglose.map((item) => _buildDesgloseItem(item)),
+          ],
+        ),
       ),
     );
   }

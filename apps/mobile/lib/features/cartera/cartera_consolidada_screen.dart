@@ -178,13 +178,13 @@ class CarteraConsolidadaScreen extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
                     child: Row(
                       children: [
-                        _buildFilterChip(context, 'TODOS', 'Todos (${state.items.length})', state.activeFilter),
-                        const SizedBox(width: 8),
                         _buildFilterChip(context, 'EN_MORA', 'En Mora (${state.items.where((i) => i.estado == "EN_MORA").length})', state.activeFilter),
                         const SizedBox(width: 8),
                         _buildFilterChip(context, 'PENDIENTE', 'Pendiente (${state.items.where((i) => i.estado == "PENDIENTE").length})', state.activeFilter),
                         const SizedBox(width: 8),
                         _buildFilterChip(context, 'AL_DIA', 'Al Día (${state.items.where((i) => i.estado == "AL_DIA").length})', state.activeFilter),
+                        const SizedBox(width: 8),
+                        _buildFilterChip(context, 'TODOS', 'Todos (${state.items.length})', state.activeFilter),
                       ],
                     ),
                   ),

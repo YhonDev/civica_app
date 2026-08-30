@@ -47,9 +47,9 @@ class SolicitudesRepository {
       // Assuming this is used properly by the backend
       await _api.post('/solicitudes', data: {
         'cobroId': cobroId,
+        'cuotaId': cobroId,
         'tipo': tipo,
         'descripcion': descripcion,
-        // Backend handles tenantId and userId (residenteId)
       });
     } catch (e) {
       throw e is ApiException ? e : Exception('Error al crear solicitud: $e');
