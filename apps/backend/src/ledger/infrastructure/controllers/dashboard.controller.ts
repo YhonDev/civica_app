@@ -5,6 +5,7 @@ import {
   UseGuards,
   ParseIntPipe,
   DefaultValuePipe,
+  Optional,
 } from '@nestjs/common';
 import { DashboardQuery } from '../../application/queries/dashboard.query';
 import { CobroRepository } from '../persistence/cobro.repository';
@@ -12,6 +13,8 @@ import { PagoRepository } from '../persistence/pago.repository';
 import { PlanDeCobroRepository } from '../persistence/plan-de-cobro.repository';
 import { SolicitudRepository } from '../persistence/solicitud.repository';
 import { TarifaRepository } from '../persistence/tarifa.repository';
+import { GenerarCobrosUseCase } from '../../application/use-cases/generar-cobros.use-case';
+import { MarcarVencidasUseCase } from '../../application/use-cases/marcar-vencidas.use-case';
 import { Cobro } from '../../domain/cobro.entity';
 import type { TimelineItemDto, TimelineResponse } from '../../application/dtos/dashboard.dto';
 import { ResidenteRepository } from '../../../community/infrastructure/residente.repository';
@@ -36,6 +39,8 @@ export class DashboardController {
     private readonly tarifaRepository: TarifaRepository,
     private readonly residenteRepository: ResidenteRepository,
     private readonly dataSource: DataSource,
+    @Optional() private readonly generarCobrosUC?: GenerarCobrosUseCase,
+    @Optional() private readonly marcarVencidasUC?: MarcarVencidasUseCase,
   ) {}
 
   @Get('dashboard/administrador')
@@ -178,8 +183,27 @@ export class DashboardController {
     const { pagos: pagosHoy, total: totalHoy, count: countHoy } =
       await this.pagoRepository.findByCobradorToday(user.id);
 
+    // 3.5. Buscar solicitudes activas del tenant para priorizar casas
+    const solicitudesActivas = await this.dataSource.query(
+      `SELECT s.id, s.cobro_id, s.casa_id, s.residente_id, s.descripcion, cb.casa_id as cobro_casa_id, r.casa_actual_id
+       FROM solicitudes s
+       LEFT JOIN cobros cb ON cb.id = s.cobro_id
+       LEFT JOIN residentes r ON r.id = s.residente_id
+       WHERE s.tenant_id = $1 
+         AND s.estado IN ('PENDIENTE', 'EN_REVISION')
+         AND s.created_at >= NOW() - INTERVAL '8 hours'`,
+      [tenantId],
+    );
+    const casaSolicitudMap = new Map<string, { id: string; descripcion: string }>();
+    const cobroSolicitudSet = new Set<string>();
+    for (const sol of solicitudesActivas) {
+      const targetCasaId = sol.casa_id || sol.cobro_casa_id || sol.casa_actual_id;
+      const desc = sol.descripcion || 'Solicitud de cobro enviada por el residente';
+      if (targetCasaId) casaSolicitudMap.set(targetCasaId, { id: sol.id, descripcion: desc });
+      if (sol.cobro_id) cobroSolicitudSet.add(sol.cobro_id);
+    }
+
     // 4. Armar respuesta centrada en Viviendas (casas), no en Residentes
-    //    Una casa puede tener múltiples cuotas pendientes; las agrupamos bajo la misma casa.
     type AgrupacionVivienda = {
       casaId: string;
       casaDireccion: string;
@@ -188,31 +212,49 @@ export class DashboardController {
       residenteId: string;
       residenteNombre: string;
       residenteTelefono: string;
+      modalidadPago: string;
+      tieneSolicitud: boolean;
+      solicitudId?: string;
+      solicitudDescripcion?: string;
+      proximoVencimiento: string;
       saldo: number;
       peorEstado: string;
-      cuotas: Array<{ id: string; monto: number; estado: string; periodo: string }>;
+      cuotas: Array<{ id: string; monto: number; estado: string; periodo: string; fechaVencimiento: string }>;
     };
 
     const viviendasMap = new Map<string, AgrupacionVivienda>();
 
     for (const c of cobros) {
       const res = c.residente;
-      // Filtrar solo tenencias activas (sin fecha_fin)
       const tenencia = res?.tenencias?.find((t) => t.fechaFin === null);
-      if (!tenencia) continue; // sin ocupante actual, ignoramos
+      const casa = c.casa ?? tenencia?.casa ?? res?.casaActual;
+      if (!casa) continue;
 
-      const casa = tenencia.casa;
       const manzana = casa?.manzana;
       const etapa = manzana?.etapa;
-      if (!casa) continue;
+      if (etapaIds.length > 0 && etapa?.id && !etapaIds.includes(etapa.id)) continue;
 
       const casaId = casa.id;
       const existing = viviendasMap.get(casaId);
 
       const montoSaldo = Math.round((c.monto - c.montoPagado) / 100);
+      const solObj = casaSolicitudMap.get(casaId);
+      const tieneSol = Boolean(solObj) || cobroSolicitudSet.has(c.id);
+      const fVencStr = c.fechaVencimiento ? new Date(c.fechaVencimiento).toISOString() : new Date().toISOString();
 
       if (existing) {
         existing.saldo += montoSaldo;
+        if (tieneSol) {
+          existing.tieneSolicitud = true;
+          if (solObj) {
+            existing.solicitudId = solObj.id;
+            existing.solicitudDescripcion = solObj.descripcion;
+          }
+        }
+        // Actualizar proximoVencimiento si esta cuota vence antes
+        if (new Date(fVencStr) < new Date(existing.proximoVencimiento)) {
+          existing.proximoVencimiento = fVencStr;
+        }
         // El peor estado (VENCIDA > PARCIAL > PENDIENTE)
         if (c.estado === 'VENCIDA') existing.peorEstado = 'VENCIDA';
         else if (c.estado === 'PARCIAL' && existing.peorEstado !== 'VENCIDA') existing.peorEstado = 'PARCIAL';
@@ -221,6 +263,7 @@ export class DashboardController {
           monto: Math.round(c.monto / 100),
           estado: c.estado,
           periodo: c.periodoInicio.slice(0, 7),
+          fechaVencimiento: fVencStr,
         });
       } else {
         viviendasMap.set(casaId, {
@@ -231,6 +274,11 @@ export class DashboardController {
           residenteId: res?.id ?? '',
           residenteNombre: res?.nombre ?? 'Desconocido',
           residenteTelefono: res?.telefono ?? '',
+          modalidadPago: res?.modalidadPago ?? 'MENSUAL',
+          tieneSolicitud: tieneSol,
+          solicitudId: solObj?.id,
+          solicitudDescripcion: solObj?.descripcion,
+          proximoVencimiento: fVencStr,
           saldo: montoSaldo,
           peorEstado: c.estado,
           cuotas: [{
@@ -238,6 +286,7 @@ export class DashboardController {
             monto: Math.round(c.monto / 100),
             estado: c.estado,
             periodo: c.periodoInicio.slice(0, 7),
+            fechaVencimiento: fVencStr,
           }],
         });
       }
@@ -250,8 +299,15 @@ export class DashboardController {
     const vencidasViviendas = viviendas.filter((v) => v.peorEstado === 'VENCIDA').length;
     const montoEsperado = viviendas.reduce((sum, v) => sum + v.saldo, 0);
 
-    // Próxima vivienda (la primera con peor estado, orden priorizando vencidas > pendientes)
+    // Próxima vivienda (prioriza casas con solicitud presencial > orden cronológico por fecha de vencimiento más cercana)
     viviendas.sort((a, b) => {
+      if (a.tieneSolicitud && !b.tieneSolicitud) return -1;
+      if (!a.tieneSolicitud && b.tieneSolicitud) return 1;
+
+      const dateA = new Date(a.proximoVencimiento).getTime();
+      const dateB = new Date(b.proximoVencimiento).getTime();
+      if (dateA !== dateB) return dateA - dateB;
+
       const order = { VENCIDA: 0, PARCIAL: 1, PENDIENTE: 2 };
       return (order[a.peorEstado as keyof typeof order] ?? 3) -
              (order[b.peorEstado as keyof typeof order] ?? 3);
@@ -317,7 +373,7 @@ export class DashboardController {
       JOIN manzanas m ON m.etapa_id = e.id
       JOIN casas c ON c.manzana_id = m.id
       LEFT JOIN tenencias t ON t.casa_id = c.id AND t.fecha_fin IS NULL
-      LEFT JOIN propietarios p ON p.id = t.residente_id
+      LEFT JOIN residentes p ON p.id = t.residente_id
       WHERE e.id = ANY($1::uuid[])
       ORDER BY e.nombre, m.nombre, c.direccion_interna`,
       [etapaIds],
@@ -328,8 +384,8 @@ export class DashboardController {
       `SELECT
         cu.id, cu.residente_id, cu.monto, cu.monto_pagado,
         cu.estado, cu.periodo_inicio
-      FROM cuotas cu
-      JOIN propietarios p ON p.id = cu.residente_id
+      FROM cobros cu
+      JOIN residentes p ON p.id = cu.residente_id
       JOIN tenencias t ON t.residente_id = p.id AND t.fecha_fin IS NULL
       WHERE cu.tenant_id = $1
         AND cu.estado IN ('PENDIENTE', 'PARCIAL', 'VENCIDA')
@@ -427,9 +483,16 @@ export class DashboardController {
       };
     }
 
+    if (this.generarCobrosUC) {
+      await this.generarCobrosUC.execute().catch(() => {});
+    }
+    if (this.marcarVencidasUC) {
+      await this.marcarVencidasUC.execute().catch(() => {});
+    }
+
     const [cobrosRaw, pagos, cuenta, residente] = await Promise.all([
-      this.cobroRepository.findByResidente(user.residenteId),
-      this.pagoRepository.findByPropietario(user.residenteId),
+      this.cobroRepository.findByResidente(user.residenteId, tenantId),
+      this.pagoRepository.findByPropietario(user.residenteId, tenantId),
       this.planDeCobroRepository.findByResidente(user.residenteId),
       this.residenteRepository.findByIdWithRelations(user.residenteId),
     ]);
@@ -442,9 +505,8 @@ export class DashboardController {
 
     const residenteInfo = {
       nombre: residente?.nombre ?? '',
-      casaDireccion: casa
-        ? `${casa.direccionInterna}${manzana ? `, Mz. ${manzana.nombre}` : ''}`
-        : '',
+      casaDireccion: casa?.direccionInterna ?? '',
+      manzanaNombre: manzana?.nombre ?? '',
       etapaNombre: etapa?.nombre ?? '',
     };
 
@@ -462,6 +524,8 @@ export class DashboardController {
       tarifaPropia = vigentes[modalidad];
     }
 
+    const hoyStr = hoy.toISOString().split('T')[0];
+
     const cobros = cobrosRaw.filter((c) =>
       Periodo.esVisible(c.periodoInicio, modalidad, hoy),
     );
@@ -471,7 +535,7 @@ export class DashboardController {
     for (const cobro of cobros) {
       if (cobro.monto > cobro.montoPagado) {
         saldo += (cobro.monto - cobro.montoPagado);
-        if (cobro.estado === 'VENCIDA') {
+        if (cobro.estado === 'VENCIDA' || cobro.fechaVencimiento < hoyStr) {
           hasVencida = true;
         }
       }
@@ -517,9 +581,17 @@ export class DashboardController {
       const montoParcial = calcularMontoParcial(next.monto, modalidad).amount;
 
       const desglose: any[] = [];
-      const [y, m] = next.periodoInicio.split('-').map(Number);
-      let currentYear = y;
-      let currentMonth = m - 1; // 0-indexed
+      const [nextY, nextM] = next.periodoInicio.split('-').map(Number);
+      const hoyY = hoy.getFullYear();
+      const hoyM = hoy.getMonth(); // 0-indexed (e.g., August = 7)
+
+      // Start desglose from current month (hoy) if oldest pending cobro is from a past month
+      let currentYear = hoyY;
+      let currentMonth = hoyM;
+      if (nextY > hoyY || (nextY === hoyY && (nextM - 1) > hoyM)) {
+        currentYear = nextY;
+        currentMonth = nextM - 1;
+      }
 
       const mesesEsp = [
         'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -545,14 +617,17 @@ export class DashboardController {
 
         for (let i = 0; i < remainingFechas.length; i++) {
           if (desglose.length >= pagosEsperados) break;
-          desglose.push({
-            id: cobroId ? `${cobroId}-${pRegistrados + i + 1}` : `future-${periodStr}-${pRegistrados + i + 1}`,
-            cobroId: cobroId,
-            fecha: remainingFechas[i],
-            monto: Math.round(cobroMontoParcial / 100),
-            numeroPago: pRegistrados + i + 1,
-            mes: mesNombre,
-          });
+          // Solo mostrar en desglose cuotas cuya fecha sea >= hoy (próximos pagos)
+          if (remainingFechas[i] >= hoyStr) {
+            desglose.push({
+              id: cobroId ? `${cobroId}-${pRegistrados + i + 1}` : `future-${periodStr}-${pRegistrados + i + 1}`,
+              cobroId: cobroId,
+              fecha: remainingFechas[i],
+              monto: Math.round(cobroMontoParcial / 100),
+              numeroPago: pRegistrados + i + 1,
+              mes: mesNombre,
+            });
+          }
         }
 
         currentMonth++;
@@ -643,6 +718,7 @@ export class DashboardController {
   @Roles(RolUsuario.RESIDENTE)
   async getResidenteTimeline(
     @CurrentUser() user: Usuario,
+    @CurrentTenant() tenantId: string,
     @Query('offset', new DefaultValuePipe(0), ParseIntPipe) offset: number,
     @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
   ): Promise<TimelineResponse> {
@@ -654,7 +730,7 @@ export class DashboardController {
     }
 
     const [pagos, solicitudes] = await Promise.all([
-      this.pagoRepository.findByPropietario(user.residenteId),
+      this.pagoRepository.findByPropietario(user.residenteId, tenantId),
       this.solicitudRepository.findByUsuario(user.id),
     ]);
 

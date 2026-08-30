@@ -28,14 +28,18 @@ export class SolicitudesController {
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.RESIDENTE, RolUsuario.ADMIN)
   async crear(
-    @Body() dto: { cuotaId: string; tipo: string; descripcion: string },
+    @Body() dto: { cuotaId?: string; cobroId?: string; tipo: string; descripcion: string },
     @CurrentUser() user: Usuario,
     @CurrentTenant() tenantId: string,
   ) {
+    const targetCobroId = dto.cobroId || dto.cuotaId;
+    if (!targetCobroId) {
+      throw new BadRequestException('Se requiere cobroId o cuotaId');
+    }
     const solicitud = Solicitud.crear(
       tenantId,
       user.id,
-      dto.cuotaId,
+      targetCobroId,
       dto.tipo,
       dto.descripcion,
     );
@@ -52,8 +56,8 @@ export class SolicitudesController {
   @Get('pendientes')
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN, RolUsuario.COBRADOR)
-  async listarPendientes(@CurrentUser() user: Usuario) {
-    return this.solicitudRepo.findPendingByUsuario(user.id);
+  async listarPendientes(@CurrentTenant() tenantId: string) {
+    return this.solicitudRepo.findPendingByTenant(tenantId);
   }
 
   @Get('admin')

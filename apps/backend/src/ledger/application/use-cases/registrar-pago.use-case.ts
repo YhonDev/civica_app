@@ -2,9 +2,11 @@ import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { Pago } from '../../domain/pago.entity';
 import { Cobro } from '../../domain/cobro.entity';
+import { PagoCobro } from '../../domain/pago-cobro.entity';
 import { PagoRepository } from '../../infrastructure/persistence/pago.repository';
 import { CobroRepository } from '../../infrastructure/persistence/cobro.repository';
 import { PlanDeCobroRepository } from '../../infrastructure/persistence/plan-de-cobro.repository';
+import { PagoCobroRepository } from '../../infrastructure/persistence/pago-cobro.repository';
 import { Money } from '../../../shared/common/value-objects';
 import { PagoRegistradoEvent } from '../../domain/events/pago-registrado.event';
 import { GenerarTicketUseCase } from './generar-ticket.use-case';
@@ -47,6 +49,7 @@ export class RegistrarPagoUseCase {
     private readonly solicitudRepo: SolicitudRepository,
     private readonly generarTicketUC: GenerarTicketUseCase,
     private readonly ticketRepo: TicketRepository,
+    private readonly pagoCobroRepo: PagoCobroRepository,
   ) {}
 
   async execute(input: RegistrarPagoInput): Promise<RegistrarPagoResult> {
@@ -62,7 +65,7 @@ export class RegistrarPagoUseCase {
       );
 
       const cobrosAfectados = existingPago.cobroId
-        ? await this.cobroRepo.findByResidente(input.residenteId)
+        ? await this.cobroRepo.findByResidente(input.residenteId, input.tenantId)
         : [];
 
       // Build event from existing pago
@@ -103,6 +106,7 @@ export class RegistrarPagoUseCase {
       async (entityManager) => {
         let remaining = input.monto;
         const cobrosAfectados: Cobro[] = [];
+        const vinculos: PagoCobro[] = [];
 
         while (remaining > 0) {
           // Usar PESSIMISTIC_WRITE para evitar race conditions
@@ -110,6 +114,7 @@ export class RegistrarPagoUseCase {
           const cobro = await this.cobroRepo.findMasAntiguoConSaldoLocked(
             entityManager,
             input.residenteId,
+            input.tenantId,
           );
 
           if (!cobro) {
@@ -121,9 +126,17 @@ export class RegistrarPagoUseCase {
             break;
           }
 
+          const aplicado = Math.min(
+            remaining,
+            cobro.monto - cobro.montoPagado,
+          );
           const excess = cobro.aplicarPago(Money.ofCOP(remaining));
           await entityManager.save(cobro);
           cobrosAfectados.push(cobro);
+          // pagoId se completa al guardar el Pago (paso 5b), ya que aún no existe.
+          vinculos.push(
+            PagoCobro.crear('', cobro.id, aplicado, input.tenantId),
+          );
           remaining = excess.amount;
         }
 
@@ -148,6 +161,12 @@ export class RegistrarPagoUseCase {
         // 5. Persist dentro de la misma transacción
         await entityManager.save(pago);
 
+        // 5b. Registrar los vínculos PagoCobro (pagoId se conoce tras el save)
+        for (const vinculo of vinculos) {
+          vinculo.pagoId = pago.id;
+          await this.pagoCobroRepo.save(entityManager, vinculo);
+        }
+
         if (input.solicitudId) {
           const solicitud = await this.solicitudRepo.findById(input.solicitudId);
           if (solicitud) {
@@ -157,6 +176,32 @@ export class RegistrarPagoUseCase {
             solicitud.fechaRespuesta = new Date();
             await entityManager.save(solicitud);
           }
+        }
+
+        // Auto-resolver cualquier solicitud pendiente activa del residente para actualizar la interfaz
+        try {
+          const queryRunner = (entityManager as any).query ? entityManager : (this.dataSource as any);
+          if (queryRunner && typeof queryRunner.query === 'function') {
+            const pendingSolicitudes = await queryRunner.query(
+              `SELECT id FROM solicitudes 
+               WHERE tenant_id = $1 
+                 AND (residente_id = $2 OR cobro_id IN (${cobrosAfectados.map((_, i) => `$${i + 3}`).join(',') || 'NULL'}))
+                 AND estado IN ('PENDIENTE', 'EN_REVISION')`,
+              [input.tenantId, input.residenteId, ...cobrosAfectados.map((c) => c.id)],
+            );
+            if (Array.isArray(pendingSolicitudes)) {
+              for (const sol of pendingSolicitudes) {
+                await queryRunner.query(
+                  `UPDATE solicitudes 
+                   SET estado = 'RESUELTA', pago_id = $1, respuesta = 'Pago registrado exitosamente por el cobrador.', fecha_respuesta = NOW() 
+                   WHERE id = $2`,
+                  [pago.id, sol.id],
+                );
+              }
+            }
+          }
+        } catch (e) {
+          this.logger.warn(`Could not auto-resolve solicitudes: ${e}`);
         }
 
         return { pago, cobrosAfectados };

@@ -11,6 +11,7 @@ import { Solicitud } from './domain/solicitud.entity';
 import { PagoEdicion } from './domain/pago-edicion.entity';
 import { Ticket } from './domain/ticket.entity';
 import { TicketCobro } from './domain/ticket-cobro.entity';
+import { PagoCobro } from './domain/pago-cobro.entity';
 
 // Repositories
 import { TarifaRepository } from './infrastructure/persistence/tarifa.repository';
@@ -21,6 +22,7 @@ import { CobroRepository } from './infrastructure/persistence/cobro.repository';
 import { PagoRepository } from './infrastructure/persistence/pago.repository';
 import { SolicitudRepository } from './infrastructure/persistence/solicitud.repository';
 import { TicketRepository } from './infrastructure/persistence/ticket.repository';
+import { PagoCobroRepository } from './infrastructure/persistence/pago-cobro.repository';
 
 // Use cases
 import { ConfigurarTarifaUseCase } from './application/use-cases/configurar-tarifa.use-case';
@@ -76,6 +78,7 @@ import { Reflector } from '@nestjs/core';
       PagoEdicion,
       Ticket,
       TicketCobro,
+      PagoCobro,
     ]),
     ScheduleModule.forRoot(),
     NotificationsModule,
@@ -102,6 +105,7 @@ import { Reflector } from '@nestjs/core';
     PagoRepository,
     SolicitudRepository,
     TicketRepository,
+    PagoCobroRepository,
 
     // Use cases
     ConfigurarTarifaUseCase,

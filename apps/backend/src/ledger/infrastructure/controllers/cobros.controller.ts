@@ -56,11 +56,12 @@ export class CobrosController {
       allowedEtapaIds = stageIds;
     }
 
-    return this.cobroRepository.findAllWithFilters(
+    const cobros = await this.cobroRepository.findAllWithFilters(
       tenantId,
       { etapaId, manzanaId, status },
       allowedEtapaIds,
     );
+    return cobros.map((cobro) => this.mapCobroItem(cobro));
   }
 
   @Get('residente/:residenteId')
@@ -77,7 +78,66 @@ export class CobrosController {
       throw new UnauthorizedException('No tienes permiso para ver estos cobros');
     }
 
-    return this.cobroRepository.findByResidente(residenteId);
+    // Mismo scope que `listar`: etapas asignadas al cobrador + tenant.
+    let allowedEtapaIds: string[] | undefined;
+
+    if (user.rol === RolUsuario.COBRADOR) {
+      const asignaciones = await this.dataSource.query(
+        'SELECT etapa_id FROM asignaciones_etapa WHERE usuario_id = $1',
+        [user.id],
+      );
+      const stageIds: string[] = asignaciones.map((a: any) => a.etapa_id);
+      if (stageIds.length === 0) {
+        return [];
+      }
+      allowedEtapaIds = stageIds;
+    }
+
+    const cobros = await this.cobroRepository.findByResidente(residenteId, tenantId);
+
+    const escoped = allowedEtapaIds
+      ? cobros.filter((cobro) => {
+          const etapa =
+            cobro.casa?.manzana?.etapa || cobro.residente?.casaActual?.manzana?.etapa;
+          return etapa ? allowedEtapaIds!.includes(etapa.id) : false;
+        })
+      : cobros;
+
+    return escoped.map((cobro) => this.mapCobroItem(cobro));
+  }
+
+  private mapCobroItem(cobro: any) {
+    const residente = cobro.residente;
+    const casa = cobro.casa ?? residente?.casaActual;
+    const manzana = casa?.manzana;
+    const etapa = manzana?.etapa;
+
+    return {
+      ...cobro,
+      residenteNombre: residente?.nombre ?? 'Residente',
+      cobradorNombre: cobro.cobradorNombre ?? 'Administración',
+      nroRecibo: cobro.nroRecibo ?? `TK-${cobro.id.replace(/-/g, '').substring(0, 6).toUpperCase()}`,
+      casaDireccion: casa?.direccionInterna ?? 'Inmueble',
+      manzanaNombre: manzana?.nombre ?? 'Manzana',
+      etapaNombre: etapa?.nombre ?? 'Etapa',
+      residente: residente ? {
+        id: residente.id,
+        nombre: residente.nombre,
+        modalidadPago: residente.modalidadPago,
+      } : null,
+      casa: casa ? {
+        id: casa.id,
+        direccionInterna: casa.direccionInterna,
+        manzana: manzana ? {
+          id: manzana.id,
+          nombre: manzana.nombre,
+          etapa: etapa ? {
+            id: etapa.id,
+            nombre: etapa.nombre,
+          } : null,
+        } : null,
+      } : null,
+    };
   }
 
   @Get('casas/cartera-resumen')

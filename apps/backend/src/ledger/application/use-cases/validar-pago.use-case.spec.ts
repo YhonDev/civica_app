@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { DataSource } from 'typeorm';
 import { ValidarPagoUseCase } from './validar-pago.use-case';
 import { PagoRepository } from '../../infrastructure/persistence/pago.repository';
-import { CobroRepository } from '../../infrastructure/persistence/cobro.repository';
+import { PagoCobroRepository } from '../../infrastructure/persistence/pago-cobro.repository';
 import { Pago, EstadoValidacionPago } from '../../domain/pago.entity';
 import { Cobro } from '../../domain/cobro.entity';
 import { Money } from '../../../shared/common/value-objects';
@@ -15,13 +15,19 @@ describe('ValidarPagoUseCase', () => {
     save: jest.fn(),
   };
 
-  const mockCobroRepo = {
-    findByResidente: jest.fn(),
+  const mockPagoCobroRepo = {
+    findByPago: jest.fn(),
     save: jest.fn(),
   };
 
+  let cobro: Cobro;
+
   const mockEntityManager = {
     save: jest.fn().mockImplementation(async (entity: any) => entity),
+    findOne: jest.fn(),
+    getRepository: jest.fn().mockReturnValue({
+      find: jest.fn().mockImplementation(async () => [cobro]),
+    }),
   };
 
   const mockDataSource = {
@@ -41,10 +47,10 @@ describe('ValidarPagoUseCase', () => {
   }
 
   function crearCobro(monto: number, montoPagado = 0): Cobro {
-    const cobro = Cobro.crear(RESIDENTE_ID, TENANT_ID, 'Cuota Test', Money.ofCOP(monto), '2026-01-01', '2026-02-01', '2026-12-15');
-    cobro.montoPagado = montoPagado;
-    cobro.estado = montoPagado === 0 ? 'PENDIENTE' : montoPagado === monto ? 'PAGADA' : 'PARCIAL';
-    return cobro;
+    const c = Cobro.crear(RESIDENTE_ID, TENANT_ID, 'Cuota Test', Money.ofCOP(monto), '2026-01-01', '2026-02-01', '2026-12-15');
+    c.montoPagado = montoPagado;
+    c.estado = montoPagado === 0 ? 'PENDIENTE' : montoPagado === monto ? 'PAGADA' : 'PARCIAL';
+    return c;
   }
 
   beforeEach(async () => {
@@ -55,7 +61,7 @@ describe('ValidarPagoUseCase', () => {
         ValidarPagoUseCase,
         { provide: DataSource, useValue: mockDataSource },
         { provide: PagoRepository, useValue: mockPagoRepo },
-        { provide: CobroRepository, useValue: mockCobroRepo },
+        { provide: PagoCobroRepository, useValue: mockPagoCobroRepo },
       ],
     }).compile();
 
@@ -78,9 +84,10 @@ describe('ValidarPagoUseCase', () => {
 
   it('should change state to RECHAZADO and revert abonos successfully', async () => {
     const pago = crearPago(40000);
-    const cobro = crearCobro(50000, 40000);
+    cobro = crearCobro(50000, 40000);
     mockPagoRepo.findById.mockResolvedValue(pago);
-    mockCobroRepo.findByResidente.mockResolvedValue([cobro]);
+    // Sin vínculos pago_cobros => reverso legacy
+    mockPagoCobroRepo.findByPago.mockResolvedValue([]);
 
     const result = await useCase.execute({
       pagoId: 'pago-1',
@@ -92,6 +99,6 @@ describe('ValidarPagoUseCase', () => {
     expect(result.cobroId).toBeNull();
     expect(cobro.montoPagado).toBe(0);
     expect(cobro.estado).toBe('PENDIENTE');
-    expect(mockEntityManager.save).toHaveBeenCalledWith(cobro);
+    expect(mockEntityManager.save).toHaveBeenCalledWith(Cobro, cobro);
   });
 });

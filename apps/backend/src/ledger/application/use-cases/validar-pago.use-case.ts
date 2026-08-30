@@ -2,7 +2,8 @@ import { Injectable, BadRequestException, NotFoundException, Logger } from '@nes
 import { DataSource } from 'typeorm';
 import { Pago, EstadoValidacionPago } from '../../domain/pago.entity';
 import { PagoRepository } from '../../infrastructure/persistence/pago.repository';
-import { CobroRepository } from '../../infrastructure/persistence/cobro.repository';
+import { PagoCobroRepository } from '../../infrastructure/persistence/pago-cobro.repository';
+import { revertirAbonos } from './revertir-abonos';
 
 export interface ValidarPagoInput {
   pagoId: string;
@@ -17,7 +18,7 @@ export class ValidarPagoUseCase {
   constructor(
     private readonly dataSource: DataSource,
     private readonly pagoRepo: PagoRepository,
-    private readonly cobroRepo: CobroRepository,
+    private readonly pagoCobroRepo: PagoCobroRepository,
   ) {}
 
   async execute(input: ValidarPagoInput): Promise<Pago> {
@@ -42,37 +43,9 @@ export class ValidarPagoUseCase {
 
     await this.dataSource.transaction(async (entityManager) => {
       if (input.estado === EstadoValidacionPago.RECHAZADO) {
-        // Revertir el abono de los cobros vinculados (LIFO inverso)
-        let remainingToReverse = pago.monto;
-        const cobros = await this.cobroRepo.findByResidente(pago.residenteId);
-
-        // Sort: newest first
-        cobros.sort(
-          (a, b) => new Date(b.periodoInicio).getTime() - new Date(a.periodoInicio).getTime(),
-        );
-
-        for (const cobro of cobros) {
-          if (remainingToReverse <= 0) break;
-
-          if (cobro.montoPagado > 0) {
-            const amountToSubtract = Math.min(cobro.montoPagado, remainingToReverse);
-            cobro.montoPagado -= amountToSubtract;
-            remainingToReverse -= amountToSubtract;
-
-            // Recalcular estado del cobro
-            if (cobro.montoPagado === 0) {
-              if (new Date(cobro.fechaVencimiento).getTime() < new Date().getTime()) {
-                cobro.estado = 'VENCIDA';
-              } else {
-                cobro.estado = 'PENDIENTE';
-              }
-            } else if (cobro.montoPagado < cobro.monto) {
-              cobro.estado = 'PARCIAL';
-            }
-
-            await entityManager.save(cobro);
-          }
-        }
+        // Revertir EXACTAMENTE los cobros que el pago afectó (vía pago_cobros),
+        // con fallback LIFO para pagos legacy sin vínculos.
+        await revertirAbonos(entityManager, pago, this.pagoCobroRepo);
 
         pago.cobroId = null;
       }

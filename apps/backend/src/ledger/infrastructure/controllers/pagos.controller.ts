@@ -121,9 +121,9 @@ export class PagosController {
   @Get(':id')
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN, RolUsuario.COBRADOR)
-  async getById(@Param('id') id: string) {
+  async getById(@Param('id') id: string, @CurrentTenant() tenantId: string) {
     const pago = await this.pagoRepo.findById(id);
-    if (!pago) {
+    if (!pago || pago.tenantId !== tenantId) {
       throw new NotFoundException(`Pago ${id} no encontrado`);
     }
     return pago;
@@ -131,9 +131,50 @@ export class PagosController {
 
   @Get()
   @UseGuards(RolesGuard)
-  @Roles(RolUsuario.ADMIN)
-  async listByResidente(@Query('residenteId') residenteId: string) {
-    return this.pagoRepo.findByPropietario(residenteId);
+  @Roles(RolUsuario.ADMIN, RolUsuario.COBRADOR, RolUsuario.RESIDENTE)
+  async listByResidente(
+    @Query('residenteId') residenteId: string,
+    @CurrentUser() user: Usuario,
+    @CurrentTenant() tenantId: string,
+  ) {
+    const targetId = user.rol === RolUsuario.RESIDENTE
+      ? (user.residenteId ?? residenteId)
+      : (residenteId ?? user.residenteId);
+
+    if (!targetId) return [];
+    const pagos = await this.pagoRepo.findByPropietario(targetId, tenantId);
+    return pagos.map((pago) => {
+      const residente = pago.residente;
+      const casa = pago.cobro?.casa ?? residente?.casaActual;
+      const manzana = casa?.manzana;
+      const etapa = manzana?.etapa;
+
+      return {
+        ...pago,
+        residenteNombre: residente?.nombre ?? 'Residente',
+        cobradorNombre: pago.cobrador?.nombre ?? 'Administración',
+        nroRecibo: pago.clientPaymentId || (`TK-${pago.id.replace(/-/g, '').substring(0, 6).toUpperCase()}`),
+        casaDireccion: casa?.direccionInterna ?? 'Inmueble',
+        manzanaNombre: manzana?.nombre ?? 'Manzana',
+        etapaNombre: etapa?.nombre ?? 'Etapa',
+        residente: residente ? {
+          id: residente.id,
+          nombre: residente.nombre,
+        } : null,
+        casa: casa ? {
+          id: casa.id,
+          direccionInterna: casa.direccionInterna,
+          manzana: manzana ? {
+            id: manzana.id,
+            nombre: manzana.nombre,
+            etapa: etapa ? {
+              id: etapa.id,
+              nombre: etapa.nombre,
+            } : null,
+          } : null,
+        } : null,
+      };
+    });
   }
 
   @Delete(':id')

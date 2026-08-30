@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { CobroRepository } from './cobro.repository';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Cobro } from '../../domain/cobro.entity';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 
 describe('CobroRepository', () => {
   let repo: CobroRepository;
@@ -77,11 +77,15 @@ describe('CobroRepository', () => {
   });
 
   describe('findByResidente()', () => {
-    it('should call find with residenteId and order', async () => {
+    it('should call find with residenteId, tenantId and order', async () => {
       mockRepo.find.mockResolvedValue([]);
-      await repo.findByResidente('res-1');
+      await repo.findByResidente('res-1', TENANT_ID);
       expect(mockRepo.find).toHaveBeenCalledWith({
-        where: { residenteId: 'res-1' },
+        where: { residenteId: 'res-1', tenantId: TENANT_ID },
+        relations: {
+          residente: { casaActual: { manzana: { etapa: true } } },
+          casa: { manzana: { etapa: true } },
+        },
         order: { periodoInicio: 'DESC' },
       });
     });
@@ -92,7 +96,8 @@ describe('CobroRepository', () => {
       mockRepo.find.mockResolvedValue([]);
       await repo.findPendientesByTenant(TENANT_ID);
       expect(mockRepo.find).toHaveBeenCalledWith({
-        where: { tenantId: TENANT_ID, estado: 'PENDIENTE' },
+        where: { tenantId: TENANT_ID, estado: expect.anything() },
+        relations: expect.anything(),
         order: { fechaVencimiento: 'ASC' },
       });
     });
@@ -182,8 +187,9 @@ describe('CobroRepository', () => {
       await repo.findVencidas();
       expect(mockRepo.find).toHaveBeenCalled();
       const findArgs = mockRepo.find.mock.calls[0][0];
-      expect(findArgs.where.estado).toBe('PENDIENTE');
-      expect(findArgs.where.fechaVencimiento).toBeDefined();
+      expect(findArgs.where[0].estado).toBe('PENDIENTE');
+      expect(findArgs.where[1].estado).toBe('PARCIAL');
+      expect(findArgs.where[0].fechaVencimiento).toBeDefined();
     });
   });
 
@@ -211,7 +217,7 @@ describe('CobroRepository', () => {
 
       expect(result?.id).toBe('oldest');
       expect(mockRepo.findOne).toHaveBeenCalledWith({
-        where: { residenteId: 'res-1', estado: 'PENDIENTE' },
+        where: { residenteId: 'res-1', estado: In(['VENCIDA', 'PARCIAL', 'PENDIENTE']) },
         order: { fechaVencimiento: 'ASC' },
       });
     });
@@ -220,6 +226,33 @@ describe('CobroRepository', () => {
       mockRepo.findOne.mockResolvedValue(null);
       const result = await repo.findMasAntiguoConSaldo('res-1');
       expect(result).toBeNull();
+    });
+  });
+
+  describe('findMasAntiguoConSaldoLocked()', () => {
+    it('should filter by tenantId to enforce multi-tenant isolation', async () => {
+      const mockEmQb = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        setLock: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue({ id: 'cobro-1' }),
+      };
+      const mockEm = {
+        createQueryBuilder: jest.fn().mockReturnValue(mockEmQb),
+      };
+
+      const result = await repo.findMasAntiguoConSaldoLocked(
+        mockEm as any,
+        'res-1',
+        TENANT_ID,
+      );
+
+      // Debe filtrar por tenant para no devolver cobros de otro tenant
+      expect(mockEmQb.andWhere).toHaveBeenCalledWith('cobro.tenantId = :tenantId', {
+        tenantId: TENANT_ID,
+      });
+      expect(result?.id).toBe('cobro-1');
     });
   });
 

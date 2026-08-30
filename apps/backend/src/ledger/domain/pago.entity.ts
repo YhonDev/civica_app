@@ -4,8 +4,13 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 import { Money, type SyncStatus } from '../../shared/common/value-objects';
+import { Residente } from '../../community/domain/residente.entity';
+import { Cobro } from './cobro.entity';
+import { Usuario } from '../../iam/domain/usuario.entity';
 
 export enum EstadoValidacionPago {
   PENDIENTE_REVISION = 'PENDIENTE_REVISION',
@@ -27,6 +32,10 @@ export class Pago {
   @Column({ name: 'cobro_id', type: 'uuid', nullable: true })
   cobroId: string | null;
 
+  @ManyToOne(() => Cobro, { createForeignKeyConstraints: false, eager: true })
+  @JoinColumn({ name: 'cobro_id' })
+  cobro: Cobro | null;
+
   @Column({ name: 'monto', type: 'integer' })
   monto: number; // en centavos COP
 
@@ -36,8 +45,16 @@ export class Pago {
   @Column({ name: 'cobrador_id', type: 'uuid' })
   cobradorId: string;
 
+  @ManyToOne(() => Usuario, { createForeignKeyConstraints: false, eager: true })
+  @JoinColumn({ name: 'cobrador_id' })
+  cobrador: Usuario;
+
   @Column({ name: 'residente_id', type: 'uuid' })
   residenteId: string;
+
+  @ManyToOne(() => Residente, { createForeignKeyConstraints: false, eager: true })
+  @JoinColumn({ name: 'residente_id' })
+  residente: Residente;
 
   @Column({ name: 'fecha_sync', type: 'timestamptz', nullable: true })
   fechaSync: Date | null;

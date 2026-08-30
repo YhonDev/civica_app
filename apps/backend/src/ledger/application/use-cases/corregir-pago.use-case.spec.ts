@@ -3,6 +3,7 @@ import { DataSource } from 'typeorm';
 import { CorregirPagoUseCase } from './corregir-pago.use-case';
 import { PagoRepository } from '../../infrastructure/persistence/pago.repository';
 import { CobroRepository } from '../../infrastructure/persistence/cobro.repository';
+import { PagoCobroRepository } from '../../infrastructure/persistence/pago-cobro.repository';
 import { Pago, EstadoValidacionPago } from '../../domain/pago.entity';
 import { Cobro } from '../../domain/cobro.entity';
 import { Money } from '../../../shared/common/value-objects';
@@ -21,8 +22,20 @@ describe('CorregirPagoUseCase', () => {
     save: jest.fn(),
   };
 
+  const mockPagoCobroRepo = {
+    findByPago: jest.fn(),
+    save: jest.fn().mockImplementation(async (_em: any, vinc: any) => vinc),
+  };
+
+  // Cobro usado por los tests para el reverso legacy y re-aplicación FIFO.
+  let cobro: Cobro;
+
   const mockEntityManager = {
     save: jest.fn().mockImplementation(async (entity: any) => entity),
+    findOne: jest.fn(),
+    getRepository: jest.fn().mockReturnValue({
+      find: jest.fn().mockImplementation(async () => [cobro]),
+    }),
   };
 
   const mockDataSource = {
@@ -58,6 +71,7 @@ describe('CorregirPagoUseCase', () => {
         { provide: DataSource, useValue: mockDataSource },
         { provide: PagoRepository, useValue: mockPagoRepo },
         { provide: CobroRepository, useValue: mockCobroRepo },
+        { provide: PagoCobroRepository, useValue: mockPagoCobroRepo },
       ],
     }).compile();
 
@@ -95,9 +109,10 @@ describe('CorregirPagoUseCase', () => {
 
   it('should revert old payment amount and apply new amount successfully', async () => {
     const pago = crearPago(40000);
-    const cobro = crearCobro(50000, 40000); // 40k pagados de 50k
+    cobro = crearCobro(50000, 40000); // 40k pagados de 50k
     mockPagoRepo.findById.mockResolvedValue(pago);
-    mockCobroRepo.findByResidente.mockResolvedValue([cobro]);
+    // Sin vínculos => reverso legacy (mismo comportamiento pre-fix)
+    mockPagoCobroRepo.findByPago.mockResolvedValue([]);
     
     // Al re-aplicar el nuevo monto (30000)
     mockCobroRepo.findMasAntiguoConSaldoLocked.mockResolvedValue(cobro);

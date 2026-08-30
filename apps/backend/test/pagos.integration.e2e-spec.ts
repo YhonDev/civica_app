@@ -226,7 +226,7 @@ describe('Pagos API Integration — Sprint 4 (FIFO)', () => {
       expect(reloaded!.estado).toBe('PARCIAL');
       expect(reloaded!.montoPagado).toBe(10000);
 
-      const allCuotas = await cobroRepository.findByResidente(residenteId);
+      const allCuotas = await cobroRepository.findByResidente(residenteId, tenantId);
       const c2 = allCuotas.find(c => c.estado === 'PENDIENTE');
       expect(c2).toBeDefined();
       expect(c2!.montoPagado).toBe(0);
@@ -319,7 +319,7 @@ describe('Pagos API Integration — Sprint 4 (FIFO)', () => {
       expect(c2Afectada.montoPagado).toBe(20000);
 
       // Cuota3 debe seguir PENDIENTE (no afectada)
-      const allCuotas = await cobroRepository.findByResidente(residenteId);
+      const allCuotas = await cobroRepository.findByResidente(residenteId, tenantId);
       const c3 = allCuotas.find(c => c.monto === 40000 && c.montoPagado === 0);
       expect(c3).toBeDefined();
       expect(c3!.estado).toBe('PENDIENTE');

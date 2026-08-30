@@ -3,9 +3,12 @@ import { DataSource } from 'typeorm';
 import { Pago, EstadoValidacionPago } from '../../domain/pago.entity';
 import { PagoEdicion } from '../../domain/pago-edicion.entity';
 import { Cobro } from '../../domain/cobro.entity';
+import { PagoCobro } from '../../domain/pago-cobro.entity';
 import { PagoRepository } from '../../infrastructure/persistence/pago.repository';
 import { CobroRepository } from '../../infrastructure/persistence/cobro.repository';
+import { PagoCobroRepository } from '../../infrastructure/persistence/pago-cobro.repository';
 import { Money } from '../../../shared/common/value-objects';
+import { revertirAbonos } from './revertir-abonos';
 
 export interface CorregirPagoInput {
   pagoId: string;
@@ -23,6 +26,7 @@ export class CorregirPagoUseCase {
     private readonly dataSource: DataSource,
     private readonly pagoRepo: PagoRepository,
     private readonly cobroRepo: CobroRepository,
+    private readonly pagoCobroRepo: PagoCobroRepository,
   ) {}
 
   async execute(input: CorregirPagoInput): Promise<Pago> {
@@ -45,48 +49,21 @@ export class CorregirPagoUseCase {
     const montoAnterior = pago.monto;
 
     await this.dataSource.transaction(async (entityManager) => {
-      // 1. Revertir el abono anterior en los cobros (LIFO inverso)
-      let remainingToReverse = pago.monto;
-      const cobros = await this.cobroRepo.findByResidente(pago.residenteId);
-      
-      // Sort cobros: newest first for LIFO reversal
-      cobros.sort(
-        (a, b) => new Date(b.periodoInicio).getTime() - new Date(a.periodoInicio).getTime(),
-      );
-
-      for (const cobro of cobros) {
-        if (remainingToReverse <= 0) break;
-
-        if (cobro.montoPagado > 0) {
-          const amountToSubtract = Math.min(cobro.montoPagado, remainingToReverse);
-          cobro.montoPagado -= amountToSubtract;
-          remainingToReverse -= amountToSubtract;
-
-          // Recalcular estado del cobro
-          if (cobro.montoPagado === 0) {
-            if (new Date(cobro.fechaVencimiento).getTime() < new Date().getTime()) {
-              cobro.estado = 'VENCIDA';
-            } else {
-              cobro.estado = 'PENDIENTE';
-            }
-          } else if (cobro.montoPagado < cobro.monto) {
-            cobro.estado = 'PARCIAL';
-          }
-
-          await entityManager.save(cobro);
-        }
-      }
+      // 1. Revertir EXACTAMENTE los cobros que el pago afectó (vía pago_cobros),
+      //    con fallback LIFO para pagos legacy sin vínculos.
+      await revertirAbonos(entityManager, pago, this.pagoCobroRepo);
 
       // 2. Aplicar el nuevo monto en los cobros (FIFO distribución)
       let remainingToApply = input.nuevoMonto;
       const cobrosAfectados: Cobro[] = [];
+      const vinculosNuevos: PagoCobro[] = [];
 
       while (remainingToApply > 0) {
         // Encontrar el cobro más antiguo con saldo pendiente para el residente
-        // Usamos la lógica de buscar entre los cobros del residente cargados en la transacción
         const cobroPendiente = await this.cobroRepo.findMasAntiguoConSaldoLocked(
           entityManager,
           pago.residenteId,
+          pago.tenantId,
         );
 
         if (!cobroPendiente) {
@@ -96,9 +73,16 @@ export class CorregirPagoUseCase {
           break;
         }
 
+        const aplicado = Math.min(
+          remainingToApply,
+          cobroPendiente.monto - cobroPendiente.montoPagado,
+        );
         const excess = cobroPendiente.aplicarPago(Money.ofCOP(remainingToApply));
         await entityManager.save(cobroPendiente);
         cobrosAfectados.push(cobroPendiente);
+        vinculosNuevos.push(
+          PagoCobro.crear(pago.id, cobroPendiente.id, aplicado, pago.tenantId),
+        );
         remainingToApply = excess.amount;
       }
 
@@ -119,7 +103,12 @@ export class CorregirPagoUseCase {
       );
       await entityManager.save(edicion);
 
-      // 4. Actualizar el pago
+      // 4. Registrar los vínculos del nuevo abono en la misma transacción
+      for (const vinculo of vinculosNuevos) {
+        await this.pagoCobroRepo.save(entityManager, vinculo);
+      }
+
+      // 5. Actualizar el pago
       pago.monto = input.nuevoMonto;
       pago.cobroId = cobrosAfectados[0]?.id ?? null;
       await entityManager.save(pago);

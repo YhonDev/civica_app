@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, LessThan, EntityManager } from 'typeorm';
+import { Repository, LessThan, In, EntityManager } from 'typeorm';
 import { Cobro } from '../../domain/cobro.entity';
 import { BaseTenantRepository } from '../../../shared/common/infrastructure/base-tenant.repository';
 
@@ -17,9 +17,13 @@ export class CobroRepository extends BaseTenantRepository<Cobro> {
     return this.repo.findOne({ where: { id } });
   }
 
-  async findByResidente(residenteId: string): Promise<Cobro[]> {
+  async findByResidente(residenteId: string, tenantId: string): Promise<Cobro[]> {
     return this.repo.find({
-      where: { residenteId },
+      where: { residenteId, tenantId },
+      relations: {
+        residente: { casaActual: { manzana: { etapa: true } } },
+        casa: { manzana: { etapa: true } },
+      },
       order: { periodoInicio: 'DESC' },
     });
   }
@@ -34,7 +38,11 @@ export class CobroRepository extends BaseTenantRepository<Cobro> {
 
   async findPendientesByTenant(tenantId: string): Promise<Cobro[]> {
     return this.repo.find({
-      where: { tenantId, estado: 'PENDIENTE' },
+      where: { tenantId, estado: In(['PENDIENTE', 'VENCIDA', 'PARCIAL']) },
+      relations: {
+        residente: { tenencias: { casa: { manzana: { etapa: true } } }, casaActual: { manzana: { etapa: true } } },
+        casa: { manzana: { etapa: true } },
+      },
       order: { fechaVencimiento: 'ASC' },
     });
   }
@@ -169,7 +177,7 @@ export class CobroRepository extends BaseTenantRepository<Cobro> {
 
   async findMasAntiguoConSaldo(residenteId: string): Promise<Cobro | null> {
     return this.repo.findOne({
-      where: { residenteId, estado: 'PENDIENTE' },
+      where: { residenteId, estado: In(['VENCIDA', 'PARCIAL', 'PENDIENTE']) },
       order: { fechaVencimiento: 'ASC' },
     });
   }
@@ -182,12 +190,18 @@ export class CobroRepository extends BaseTenantRepository<Cobro> {
   async findMasAntiguoConSaldoLocked(
     entityManager: EntityManager,
     residenteId: string,
+    tenantId: string,
   ): Promise<Cobro | null> {
-    return entityManager.findOne(Cobro, {
-      where: { residenteId, estado: 'PENDIENTE' },
-      order: { fechaVencimiento: 'ASC' },
-      lock: { mode: 'pessimistic_write' },
-    });
+    return entityManager
+      .createQueryBuilder(Cobro, 'cobro')
+      .where('cobro.residenteId = :residenteId', { residenteId })
+      .andWhere('cobro.tenantId = :tenantId', { tenantId })
+      .andWhere('cobro.estado IN (:...estados)', {
+        estados: ['VENCIDA', 'PARCIAL', 'PENDIENTE'],
+      })
+      .orderBy('cobro.fechaVencimiento', 'ASC')
+      .setLock('pessimistic_write', undefined, ['cobro'])
+      .getOne();
   }
 
   async saveMany(cobros: Cobro[]): Promise<Cobro[]> {
@@ -197,10 +211,10 @@ export class CobroRepository extends BaseTenantRepository<Cobro> {
   async findVencidas(): Promise<Cobro[]> {
     const hoy = new Date().toISOString().split('T')[0];
     return this.repo.find({
-      where: {
-        estado: 'PENDIENTE',
-        fechaVencimiento: LessThan(hoy),
-      },
+      where: [
+        { estado: 'PENDIENTE', fechaVencimiento: LessThan(hoy) },
+        { estado: 'PARCIAL', fechaVencimiento: LessThan(hoy) },
+      ],
     });
   }
 

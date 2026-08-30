@@ -35,7 +35,6 @@ describe('GenerarCobrosUseCase', () => {
   const CASA_ID = 'casa-1';
   const PLAN_ID = 'plan-1';
 
-  /** Helper to create a PlanDeCobro with minimal fields */
   function crearPlan(overrides: Partial<PlanDeCobro> = {}): PlanDeCobro {
     const plan = PlanDeCobro.crear(
       CASA_ID,
@@ -48,6 +47,8 @@ describe('GenerarCobrosUseCase', () => {
     Object.assign(plan, { id: PLAN_ID, ...overrides });
     return plan;
   }
+
+  const hoyStr = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-01`;
 
   /** Helper to create a Tarifa */
   function crearTarifa(overrides: Partial<Tarifa> = {}): Tarifa {
@@ -83,7 +84,7 @@ describe('GenerarCobrosUseCase', () => {
 
   describe('execute()', () => {
     it('should generate cobros for active plans', async () => {
-      const plan = crearPlan();
+      const plan = crearPlan({ fechaActivacion: hoyStr });
       mockPlanRepo.findAllActivos.mockResolvedValue([plan]);
       mockPeriodoRepo.findByPlanAndMonth.mockResolvedValue(null);
       mockTarifaRepo.findVigente.mockResolvedValue(crearTarifa());
@@ -101,7 +102,7 @@ describe('GenerarCobrosUseCase', () => {
     });
 
     it('should skip plan when PeriodoCobro already exists (idempotency)', async () => {
-      const plan = crearPlan();
+      const plan = crearPlan({ fechaActivacion: hoyStr });
       mockPlanRepo.findAllActivos.mockResolvedValue([plan]);
       mockPeriodoRepo.findByPlanAndMonth.mockResolvedValue(
         new PeriodoCobro(),
@@ -114,8 +115,8 @@ describe('GenerarCobrosUseCase', () => {
       expect(mockCobroRepo.saveMany).not.toHaveBeenCalled();
     });
 
-    it('should skip plan when no tarifa nor valorMensual', async () => {
-      const plan = crearPlan({ valorMensual: null });
+    it('should skip plan when no tarifa and no valorMensual', async () => {
+      const plan = crearPlan({ fechaActivacion: hoyStr });
       mockPlanRepo.findAllActivos.mockResolvedValue([plan]);
       mockPeriodoRepo.findByPlanAndMonth.mockResolvedValue(null);
       mockTarifaRepo.findVigente.mockResolvedValue(null);
@@ -128,7 +129,7 @@ describe('GenerarCobrosUseCase', () => {
     });
 
     it('should use plan.valorMensual when set (priority over tarifa)', async () => {
-      const plan = crearPlan({ valorMensual: 5000000 });
+      const plan = crearPlan({ valorMensual: 5000000, fechaActivacion: hoyStr });
       mockPlanRepo.findAllActivos.mockResolvedValue([plan]);
       mockPeriodoRepo.findByPlanAndMonth.mockResolvedValue(null);
       // tarifa exists but should NOT be used
@@ -158,8 +159,8 @@ describe('GenerarCobrosUseCase', () => {
     });
 
     it('should continue to next plan if one plan throws error', async () => {
-      const plan1 = crearPlan({ id: 'plan-1' });
-      const plan2 = crearPlan({ id: 'plan-2' });
+      const plan1 = crearPlan({ id: 'plan-1', fechaActivacion: hoyStr });
+      const plan2 = crearPlan({ id: 'plan-2', fechaActivacion: hoyStr });
       mockPlanRepo.findAllActivos.mockResolvedValue([plan1, plan2]);
       mockPeriodoRepo.findByPlanAndMonth.mockResolvedValue(null);
       mockTarifaRepo.findVigente

@@ -5,6 +5,7 @@ describe('GenerarReporteUseCase', () => {
   let mockDataSource: any;
   let mockCobroRepo: any;
   let mockEtapaRepo: any;
+  let mockProyectoRepo: any;
   let mockQueryBuilder: any;
 
   beforeEach(() => {
@@ -23,10 +24,17 @@ describe('GenerarReporteUseCase', () => {
       find: jest.fn(),
     };
 
+    mockProyectoRepo = {
+      findOne: jest.fn(),
+    };
+
     mockDataSource = {
       getRepository: jest.fn((entity) => {
         if (entity.name === 'Etapa' || entity.tableName === 'etapas') {
           return mockEtapaRepo;
+        }
+        if (entity.name === 'Proyecto' || entity.tableName === 'proyectos') {
+          return mockProyectoRepo;
         }
         return mockCobroRepo;
       }),
@@ -65,11 +73,20 @@ describe('GenerarReporteUseCase', () => {
       },
     ]);
 
+    mockProyectoRepo.findOne.mockResolvedValue({ id: 'proy-1', tenantId: 'tenant-A' });
+
     const result = await useCase.execute({
       proyectoId: 'proy-1',
       mes: 7,
       anio: 2026,
+      tenantId: 'tenant-A',
     });
+
+    // Debe filtrar cobros por el tenant del llamador
+    expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+      'cobro.tenantId = :tenantId',
+      { tenantId: 'tenant-A' },
+    );
 
     expect(result.mes).toBe(7);
     expect(result.anio).toBe(2026);
@@ -118,11 +135,14 @@ describe('GenerarReporteUseCase', () => {
       },
     ]);
 
+    mockProyectoRepo.findOne.mockResolvedValue({ id: 'proy-1', tenantId: 'tenant-A' });
+
     const result = await useCase.execute({
       proyectoId: 'proy-1',
       mes: 7,
       anio: 2026,
       etapaId: 'etapa-1',
+      tenantId: 'tenant-A',
     });
 
     expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
@@ -131,5 +151,40 @@ describe('GenerarReporteUseCase', () => {
     );
     expect(result.desglosePorEtapa).toHaveLength(1);
     expect(result.desglosePorEtapa[0].etapaId).toBe('etapa-1');
+  });
+
+  it('debe rechazar un proyecto de otro tenant (aislamiento multi-tenant)', async () => {
+    mockEtapaRepo.find.mockResolvedValue([]);
+    mockQueryBuilder.getMany.mockResolvedValue([]);
+    // El proyecto pertenece a tenant-B, no al llamador (tenant-A)
+    mockProyectoRepo.findOne.mockResolvedValue({ id: 'proy-1', tenantId: 'tenant-B' });
+
+    await expect(
+      useCase.execute({
+        proyectoId: 'proy-1',
+        mes: 7,
+        anio: 2026,
+        tenantId: 'tenant-A',
+      }),
+    ).rejects.toThrow(/Proyecto proy-1 no encontrado/);
+  });
+
+  it('debe filtrar los cobros por el tenant del llamador (el reporte de A no ve cobros de B)', async () => {
+    mockEtapaRepo.find.mockResolvedValue([]);
+    mockQueryBuilder.getMany.mockResolvedValue([]);
+
+    const result = await useCase.execute({
+      mes: 7,
+      anio: 2026,
+      tenantId: 'tenant-A',
+    });
+
+    expect(result).toBeDefined();
+    expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+      'cobro.tenantId = :tenantId',
+      { tenantId: 'tenant-A' },
+    );
+    // Sin proyectoId no se consulta el repositorio de proyectos
+    expect(mockProyectoRepo.findOne).not.toHaveBeenCalled();
   });
 });

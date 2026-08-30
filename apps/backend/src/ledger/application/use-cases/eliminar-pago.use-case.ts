@@ -1,14 +1,17 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { DataSource } from 'typeorm';
 import { PagoRepository } from '../../infrastructure/persistence/pago.repository';
-import { CobroRepository } from '../../infrastructure/persistence/cobro.repository';
+import { PagoCobroRepository } from '../../infrastructure/persistence/pago-cobro.repository';
+import { revertirAbonos } from './revertir-abonos';
 
 @Injectable()
 export class EliminarPagoUseCase {
   private readonly logger = new Logger(EliminarPagoUseCase.name);
 
   constructor(
+    private readonly dataSource: DataSource,
     private readonly pagoRepo: PagoRepository,
-    private readonly cobroRepo: CobroRepository,
+    private readonly pagoCobroRepo: PagoCobroRepository,
   ) {}
 
   async execute(id: string, tenantId: string): Promise<void> {
@@ -18,46 +21,21 @@ export class EliminarPagoUseCase {
       throw new NotFoundException(`Pago ${id} no encontrado`);
     }
 
-    // Revertir el pago aplicando LIFO inverso
-    let remainingToReverse = pago.monto;
-    const cobros = await this.cobroRepo.findByResidente(pago.residenteId);
-    
-    // Sort cobros by periodoInicio DESC (newest first)
-    cobros.sort((a, b) => new Date(b.periodoInicio).getTime() - new Date(a.periodoInicio).getTime());
+    await this.dataSource.transaction(async (entityManager) => {
+      // Revertir EXACTAMENTE los cobros que el pago afectó (vía pago_cobros),
+      // con fallback LIFO para pagos legacy sin vínculos.
+      const cobrosRevertidos = await revertirAbonos(
+        entityManager,
+        pago,
+        this.pagoCobroRepo,
+      );
 
-    const cobrosActualizados = [];
+      // Eliminar el pago
+      await entityManager.remove(pago);
 
-    for (const cobro of cobros) {
-      if (remainingToReverse <= 0) break;
-      
-      if (cobro.montoPagado > 0) {
-        const amountToSubtract = Math.min(cobro.montoPagado, remainingToReverse);
-        cobro.montoPagado -= amountToSubtract;
-        remainingToReverse -= amountToSubtract;
-        
-        // Recalcular estado
-        if (cobro.montoPagado === 0) {
-          if (new Date(cobro.fechaVencimiento).getTime() < new Date().getTime()) {
-            cobro.estado = 'VENCIDA';
-          } else {
-            cobro.estado = 'PENDIENTE';
-          }
-        } else if (cobro.montoPagado < cobro.monto) {
-          cobro.estado = 'PARCIAL';
-        }
-        
-        cobrosActualizados.push(cobro);
-      }
-    }
-
-    // Guardar cobros revertidos
-    if (cobrosActualizados.length > 0) {
-      await this.cobroRepo.saveMany(cobrosActualizados);
-    }
-
-    // Eliminar el pago
-    await this.pagoRepo.delete(id);
-    
-    this.logger.log(`Pago eliminado: ${id} | Monto revertido: ${pago.monto - remainingToReverse} centavos`);
+      this.logger.log(
+        `Pago eliminado: ${id} | ${cobrosRevertidos.length} cobro(s) revertido(s)`,
+      );
+    });
   }
 }

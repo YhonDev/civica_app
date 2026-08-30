@@ -20,7 +20,7 @@ export class Cobro {
   @Column({ name: 'residente_id', type: 'uuid' })
   residenteId: string;
 
-  @ManyToOne(() => Residente, { createForeignKeyConstraints: false })
+  @ManyToOne(() => Residente, { createForeignKeyConstraints: false, eager: true })
   @JoinColumn({ name: 'residente_id' })
   residente: Residente;
 
@@ -37,7 +37,7 @@ export class Cobro {
   @Column({ name: 'casa_id', type: 'uuid', nullable: true })
   casaId: string | null;
 
-  @ManyToOne(() => Casa, { createForeignKeyConstraints: false })
+  @ManyToOne(() => Casa, { createForeignKeyConstraints: false, eager: true })
   @JoinColumn({ name: 'casa_id' })
   casa: Casa;
 
@@ -122,6 +122,9 @@ export class Cobro {
   aplicarPago(montoPago: Money): Money {
     if (this.estado === 'PAGADA') {
       throw new Error('No se puede pagar un cobro ya PAGADO');
+    }
+    if (this.estado === 'ANULADO') {
+      throw new Error('No se puede pagar un cobro en estado ANULADO');
     }
 
     const saldoActual = this.saldo();

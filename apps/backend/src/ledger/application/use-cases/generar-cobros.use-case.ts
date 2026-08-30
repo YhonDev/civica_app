@@ -23,8 +23,8 @@ export class GenerarCobrosUseCase {
     this.logger.log('Generando cobros para planes activos...');
 
     const hoy = new Date();
-    const mes = hoy.getMonth() + 1; // 1-indexed
-    const anio = hoy.getFullYear();
+    const currentMes = hoy.getMonth() + 1; // 1-indexed
+    const currentAnio = hoy.getFullYear();
 
     const planes = await this.planDeCobroRepository.findAllActivos();
     this.logger.log(`${planes.length} plan(es) activo(s) encontrado(s)`);
@@ -33,8 +33,40 @@ export class GenerarCobrosUseCase {
 
     for (const plan of planes) {
       try {
-        const generado = await this.generarCobrosParaPlan(plan, mes, anio, hoy);
-        generados += generado;
+        let actAnio = currentAnio;
+        let actMes = currentMes;
+
+        if (plan.fechaActivacion) {
+          const parts = plan.fechaActivacion.split('-');
+          if (parts.length >= 2) {
+            actAnio = parseInt(parts[0], 10) || currentAnio;
+            actMes = parseInt(parts[1], 10) || currentMes;
+          }
+        }
+
+        // Limit catch-up to max 12 months ago to prevent runaway loops if date is ancient
+        const minDate = new Date(currentAnio - 1, currentMes - 1, 1);
+        const startIterDate = new Date(actAnio, actMes - 1, 1);
+        let iterAnio = actAnio;
+        let iterMes = actMes;
+        if (startIterDate < minDate) {
+          iterAnio = minDate.getFullYear();
+          iterMes = minDate.getMonth() + 1;
+        }
+
+        while (
+          iterAnio < currentAnio ||
+          (iterAnio === currentAnio && iterMes <= currentMes)
+        ) {
+          const generado = await this.generarCobrosParaPlan(plan, iterMes, iterAnio, hoy);
+          generados += generado;
+
+          iterMes++;
+          if (iterMes > 12) {
+            iterMes = 1;
+            iterAnio++;
+          }
+        }
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Error desconocido';
         this.logger.error(`Error generando cobros para plan ${plan.id}: ${message}`);
@@ -62,12 +94,32 @@ export class GenerarCobrosUseCase {
       return 0;
     }
 
-    // 2. Obtener tarifa vigente
+    // 2. Obtener fechas de cobro según la modalidad (antes de la tarifa,
+    //    porque la tarifa debe evaluarse en la fecha real del cobro).
     const modalidad: ModalidadRecaudo = plan.modalidad;
+    const fechasCobro = Periodo.fechasCobroParciales(modalidad, anio, mes - 1);
+
+    // Filtrar fechas de cobro anteriores a la fecha de activación del plan,
+    // para evitar cobros retroactivos en el mes de ingreso.
+    const fechasFiltradas = fechasCobro.filter(
+      (fechaStr) => fechaStr >= plan.fechaActivacion,
+    );
+
+    // Sin cuota en este período → no crear período ni cobros.
+    if (fechasFiltradas.length === 0) {
+      return 0;
+    }
+
+    // 2b. Obtener tarifa vigente PARA LA FECHA DE VENCIMIENTO REAL del primer
+    //    cobro del período (no una fecha arbitraria). Si el admin crea una
+    //    tarifa el día 29 con vigencia 29, esa tarifa rige la cuota que vence
+    //    el 29; antes (fecha fija día 15) se omitía todo el mes.
+    const diaPrimerCobro = Number(fechasFiltradas[0].slice(8, 10));
+    const fechaRefTarifa = new Date(anio, mes - 1, diaPrimerCobro);
     const tarifa = await this.tarifaRepository.findVigente(
       plan.proyectoId,
       modalidad,
-      hoy,
+      fechaRefTarifa,
     );
 
     // 3. Calcular valor total del mes
@@ -101,19 +153,14 @@ export class GenerarCobrosUseCase {
     const periodoGuardado = await this.periodoCobroRepository.save(periodo);
 
     // 6. Obtener fechas de cobro según la modalidad
-    const fechasCobro = Periodo.fechasCobroParciales(modalidad, anio, mes - 1);
     const totalPagos = pagosPorMes(modalidad);
     const montoPorCobro = Math.round(valorMensualCentavos / totalPagos);
 
-    // Filtrar fechas de cobro que sean anteriores a la fecha de activación del plan
-    // Para evitar cobros retroactivos en el mes de ingreso.
-    const fechasFiltradas = fechasCobro.filter(
-      (fechaStr) => fechaStr >= plan.fechaActivacion,
-    );
+    const hoyStr = hoy.toISOString().split('T')[0];
 
     // 7. Crear los cobros individuales con periodoId asignado
-    const cobrosAGuardar: Cobro[] = fechasFiltradas.map((fechaStr) =>
-      Cobro.crear(
+    const cobrosAGuardar: Cobro[] = fechasFiltradas.map((fechaStr) => {
+      const cobro = Cobro.crear(
         plan.residenteId,
         plan.tenantId,
         'Cuota de Vigilancia',
@@ -124,8 +171,15 @@ export class GenerarCobrosUseCase {
         tarifa?.id,
         periodoGuardado.id, // periodoId del PeriodoCobro persistido
         plan.casaId ?? undefined,
-      ),
-    );
+      );
+
+      // Si la fecha de vencimiento es anterior a la fecha actual, marcar como VENCIDA
+      if (fechaStr < hoyStr) {
+        cobro.marcarVencida();
+      }
+
+      return cobro;
+    });
 
     // 8. Persistir cobros
     if (cobrosAGuardar.length > 0) {

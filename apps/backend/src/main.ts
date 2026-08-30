@@ -7,6 +7,9 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // ─── Global Prefix ───────────────────────────────────
+  app.setGlobalPrefix('api');
+
   // ─── Security Middleware ─────────────────────────────
   // Helmet: protege contra vulnerabilidades HTTP comunes
   app.use(helmet());

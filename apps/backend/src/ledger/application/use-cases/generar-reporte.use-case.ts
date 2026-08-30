@@ -1,9 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { Cobro } from '../../domain/cobro.entity';
 import { Etapa } from '../../../community/domain/etapa.entity';
+import { Proyecto } from '../../../community/domain/proyecto.entity';
 
 export interface GenerarReporteDto {
+  tenantId: string;
   proyectoId?: string;
   mes: number;
   anio: number;
@@ -37,12 +39,22 @@ export class GenerarReporteUseCase {
   constructor(private readonly dataSource: DataSource) {}
 
   async execute(dto: GenerarReporteDto): Promise<ReporteRecaudoResponse> {
-    const { mes, anio, etapaId, proyectoId } = dto;
+    const { mes, anio, etapaId, proyectoId, tenantId } = dto;
     const mesFormatted = String(mes).padStart(2, '0');
     const periodoInicio = `${anio}-${mesFormatted}-01`;
 
     const cobroRepo = this.dataSource.getRepository(Cobro);
     const etapaRepo = this.dataSource.getRepository(Etapa);
+
+    // Validar que el proyecto pertenezca al tenant del llamador antes de usarlo.
+    if (proyectoId) {
+      const proyecto = await this.dataSource.getRepository(Proyecto).findOne({
+        where: { id: proyectoId },
+      });
+      if (!proyecto || proyecto.tenantId !== tenantId) {
+        throw new NotFoundException(`Proyecto ${proyectoId} no encontrado`);
+      }
+    }
 
     // Obtener etapas del proyecto para inicializar el desglose
     const etapasProyecto = proyectoId
@@ -61,7 +73,8 @@ export class GenerarReporteUseCase {
       .leftJoinAndSelect('residente.casaActual', 'casaActual')
       .leftJoinAndSelect('casaActual.manzana', 'manzanaResidente')
       .leftJoinAndSelect('manzanaResidente.etapa', 'etapaResidente')
-      .where('cobro.periodoInicio = :periodoInicio', { periodoInicio });
+      .where('cobro.periodoInicio = :periodoInicio', { periodoInicio })
+      .andWhere('cobro.tenantId = :tenantId', { tenantId });
 
     if (etapaId) {
       queryBuilder.andWhere(

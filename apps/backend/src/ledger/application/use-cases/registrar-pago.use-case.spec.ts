@@ -5,6 +5,7 @@ import { PagoRepository } from '../../infrastructure/persistence/pago.repository
 import { CobroRepository } from '../../infrastructure/persistence/cobro.repository';
 import { PlanDeCobroRepository } from '../../infrastructure/persistence/plan-de-cobro.repository';
 import { SolicitudRepository } from '../../infrastructure/persistence/solicitud.repository';
+import { PagoCobroRepository } from '../../infrastructure/persistence/pago-cobro.repository';
 import { Pago } from '../../domain/pago.entity';
 import { Cobro } from '../../domain/cobro.entity';
 import { PlanDeCobro } from '../../domain/plan-de-cobro.entity';
@@ -71,6 +72,11 @@ describe('RegistrarPagoUseCase', () => {
     save: jest.fn(),
   };
 
+  const mockPagoCobroRepo = {
+    save: jest.fn().mockImplementation(async (_em: any, vinc: any) => vinc),
+    findByPago: jest.fn(),
+  };
+
   const TENANT_ID = 'tenant-1';
   const RESIDENTE_ID = 'residente-1';
   const COBRADOR_ID = 'cobrador-1';
@@ -123,6 +129,7 @@ describe('RegistrarPagoUseCase', () => {
         { provide: SolicitudRepository, useValue: mockSolicitudRepo },
         { provide: GenerarTicketUseCase, useValue: mockGenerarTicketUC },
         { provide: TicketRepository, useValue: mockTicketRepo },
+        { provide: PagoCobroRepository, useValue: mockPagoCobroRepo },
       ],
     }).compile();
 

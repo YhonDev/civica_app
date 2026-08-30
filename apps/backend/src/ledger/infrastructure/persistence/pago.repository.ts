@@ -24,9 +24,13 @@ export class PagoRepository extends BaseTenantRepository<Pago> {
     return this.repo.findOne({ where: { tenantId, clientPaymentId } });
   }
 
-  async findByPropietario(residenteId: string): Promise<Pago[]> {
+  async findByPropietario(residenteId: string, tenantId: string): Promise<Pago[]> {
     return this.repo.find({
-      where: { residenteId },
+      where: { residenteId, tenantId },
+      relations: {
+        residente: { casaActual: { manzana: { etapa: true } } },
+        cobro: { casa: { manzana: { etapa: true } } },
+      },
       order: { createdAt: 'DESC' },
     });
   }

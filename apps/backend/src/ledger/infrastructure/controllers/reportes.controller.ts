@@ -3,6 +3,7 @@ import { JwtAuthGuard } from '../../../shared/auth/jwt-auth.guard';
 import { RolesGuard } from '../../../shared/auth/guards/roles.guard';
 import { Roles } from '../../../shared/auth/decorators/roles.decorator';
 import { RolUsuario } from '../../../iam/domain/usuario.entity';
+import { CurrentTenant } from '../../../shared/tenant/current-tenant.decorator';
 import { GenerarReporteUseCase } from '../../application/use-cases/generar-reporte.use-case';
 
 @Controller('reportes')
@@ -13,6 +14,7 @@ export class ReportesController {
   @Get('recaudo')
   @Roles(RolUsuario.ADMIN)
   async getReporteRecaudo(
+    @CurrentTenant() tenantId: string,
     @Query('proyectoId') proyectoId: string,
     @Query('mes') mesQuery?: string,
     @Query('anio') anioQuery?: string,
@@ -26,6 +28,7 @@ export class ReportesController {
       mes,
       anio,
       etapaId,
+      tenantId,
     });
   }
 }
