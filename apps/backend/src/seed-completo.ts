@@ -30,22 +30,11 @@ async function bootstrap() {
   
   // 1. DELETE everything from June and July to start clean
   console.log('Limpiando datos anteriores de Junio y Julio 2026...');
-  const ormPagoRepo = dataSource.getRepository(Pago);
-  const ormCobroRepo = dataSource.getRepository(Cobro);
-  const ormPeriodoRepo = dataSource.getRepository(PeriodoCobro);
-  const ormTicketRepo = dataSource.getRepository(Ticket);
-  
-  const tickets = await ormTicketRepo.find();
-  if (tickets.length > 0) await ormTicketRepo.remove(tickets);
-
-  const pagos = await ormPagoRepo.find({ where: { fechaPago: Between('2026-06-01', '2026-07-31') } });
-  if (pagos.length > 0) await ormPagoRepo.remove(pagos);
-  
-  const cobros = await ormCobroRepo.find({ where: [{ periodoInicio: '2026-06-01' }, { periodoInicio: '2026-07-01' }] });
-  if (cobros.length > 0) await ormCobroRepo.remove(cobros);
-  
-  const periodos = await ormPeriodoRepo.find({ where: [{ anio: 2026, mes: 6 }, { anio: 2026, mes: 7 }] });
-  if (periodos.length > 0) await ormPeriodoRepo.remove(periodos);
+  await dataSource.query('DELETE FROM solicitudes');
+  await dataSource.query('DELETE FROM tickets');
+  await dataSource.query('DELETE FROM pagos');
+  await dataSource.query('DELETE FROM cobros');
+  await dataSource.query('DELETE FROM periodos_cobro');
   
   // 2. Fetch all active planes and setup Tarifa
   const planes = await planRepo.findAllActivos();
@@ -105,6 +94,7 @@ async function bootstrap() {
 
   // 5. Register ALL payments for previous period (fully paid)
   console.log('--- REGISTRANDO PAGOS CON MOTOR REAL ---');
+  const ormCobroRepo = dataSource.getRepository(Cobro);
   let cobrosAPagar = await ormCobroRepo.find({ where: { periodoInicio: '2026-05-01' } });
   if (cobrosAPagar.length === 0) {
     cobrosAPagar = await ormCobroRepo.find();

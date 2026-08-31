@@ -53,6 +53,20 @@ export class ProyectosController {
     return this.crearProyectoUseCase.execute(dto.nombre, tenantId);
   }
 
+  @Get('etapas')
+  @UseGuards(RolesGuard)
+  @Roles(RolUsuario.ADMIN, RolUsuario.COBRADOR)
+  async listarEtapas(@CurrentTenant() tenantId: string) {
+    return this.dataSource.query(
+      `SELECT e.id, e.nombre, e.proyecto_id AS "proyectoId" 
+       FROM etapas e 
+       JOIN proyectos p ON e.proyecto_id = p.id 
+       WHERE p.tenant_id = $1 
+       ORDER BY e.created_at ASC`,
+      [tenantId],
+    );
+  }
+
   @Post(':id/etapas')
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN)

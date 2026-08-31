@@ -76,7 +76,7 @@ export class SolicitudesController {
 
   @Patch(':id/resolver')
   @UseGuards(RolesGuard)
-  @Roles(RolUsuario.ADMIN)
+  @Roles(RolUsuario.ADMIN, RolUsuario.COBRADOR)
   async resolver(
     @Param('id') id: string,
     @Body() dto: { estado: string; respuesta: string },

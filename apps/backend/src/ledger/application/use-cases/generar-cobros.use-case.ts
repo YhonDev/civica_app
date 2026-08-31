@@ -158,12 +158,22 @@ export class GenerarCobrosUseCase {
 
     const hoyStr = hoy.toISOString().split('T')[0];
 
+    const mesesEsp = [
+      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+    ];
+    const nombreMes = mesesEsp[mes - 1] ?? '';
+    const modalidadLabel = modalidad === 'SEMANAL' ? 'Semanal' : modalidad === 'QUINCENAL' ? 'Quincenal' : 'Mensual';
+
     // 7. Crear los cobros individuales con periodoId asignado
-    const cobrosAGuardar: Cobro[] = fechasFiltradas.map((fechaStr) => {
+    const cobrosAGuardar: Cobro[] = fechasFiltradas.map((fechaStr, index) => {
+      const numCuota = index + 1;
+      const conceptoStr = `${nombreMes} — Cuota ${numCuota}`;
+
       const cobro = Cobro.crear(
         plan.residenteId,
         plan.tenantId,
-        'Cuota de Vigilancia',
+        conceptoStr,
         Money.ofCOP(montoPorCobro),
         fechaInicio,
         fechaFin,

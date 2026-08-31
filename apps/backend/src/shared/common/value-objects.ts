@@ -313,15 +313,23 @@ export class Periodo {
       }
       case 'QUINCENAL': {
         const ancla1 = toLocalDate(year, month, 15);
-        const ancla2 = toLocalDate(year, month + 1, 0);
+        const ultimoDia = toLocalDate(year, month + 1, 0);
+        let d2 = new Date(ultimoDia);
+        while (d2.getDay() !== 6) {
+          d2.setDate(d2.getDate() - 1);
+        }
         return [
           formatDate(Periodo.sabadoCercano(ancla1)),
-          formatDate(Periodo.sabadoCercano(ancla2)),
+          formatDate(d2),
         ];
       }
       case 'MENSUAL': {
         const ultimoDia = toLocalDate(year, month + 1, 0);
-        return [formatDate(Periodo.sabadoCercano(ultimoDia))];
+        let d = new Date(ultimoDia);
+        while (d.getDay() !== 6) {
+          d.setDate(d.getDate() - 1);
+        }
+        return [formatDate(d)];
       }
     }
   }

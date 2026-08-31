@@ -47,7 +47,7 @@ class ResetPasswordDto {
   @IsString()
   @IsOptional()
   @MinLength(6, { message: 'La contraseña debe tener al menos 6 caracteres' })
-  password?: string; // Si no se provee, se genera una automática
+  password?: string;
 }
 
 @Controller('usuarios')
@@ -61,16 +61,6 @@ export class UsuariosController {
     private readonly asignarEtapaUseCase: AsignarEtapaUseCase,
   ) {}
 
-  // ════════════════════════════════════════════════════════════
-  // ADMIN: Gestionar usuarios y contraseñas
-  // ════════════════════════════════════════════════════════════
-
-  /**
-   * Listar todos los residentes con sus emails (solo Admin).
-   * Útil para el módulo Community donde Admin ve credenciales.
-   * IMPORTANTE: Esta ruta DEBE estar ANTES de /:id/etapas
-   * para evitar que NestJS la interprete como un :id.
-   */
   @Get('residentes')
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN)
@@ -98,10 +88,33 @@ export class UsuariosController {
       where: { tenantId, rol: RolUsuario.COBRADOR },
       relations: {
         asignaciones: {
-          etapa: true
-        }
-      }
+          etapa: true,
+        },
+      },
     });
+  }
+
+  @Delete(':id')
+  @UseGuards(RolesGuard)
+  @Roles(RolUsuario.ADMIN)
+  async eliminar(
+    @Param('id') usuarioId: string,
+    @CurrentUser() currentUser: Usuario,
+  ) {
+    const usuario = await this.usuarioRepository.findOne({
+      where: { id: usuarioId, tenantId: currentUser.tenantId },
+    });
+
+    if (!usuario) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    if (usuario.id === currentUser.id) {
+      throw new BadRequestException('No puedes eliminar tu propio usuario administrador');
+    }
+
+    await this.usuarioRepository.remove(usuario);
+    return { success: true, message: `Usuario ${usuario.nombre} eliminado correctamente` };
   }
 
   @Get(':id/etapas')
@@ -111,8 +124,6 @@ export class UsuariosController {
     @Param('id') usuarioId: string,
     @CurrentUser() currentUser: Usuario,
   ) {
-    // ADMIN puede ver etapas de cualquier usuario del mismo tenant
-    // COBRADOR solo puede ver sus propias etapas
     if (
       currentUser.rol !== RolUsuario.ADMIN &&
       currentUser.id !== usuarioId
@@ -180,10 +191,6 @@ export class UsuariosController {
     return { success: true };
   }
 
-  /**
-   * Cambiar contraseña de un usuario (solo Admin).
-   * PATCH /usuarios/:id/password
-   */
   @Patch(':id/password')
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN)
@@ -210,11 +217,6 @@ export class UsuariosController {
     };
   }
 
-  /**
-   * Resetear contraseña de un usuario a una temporal (solo Admin).
-   * Si no se provee password, se genera una automáticamente.
-   * POST /usuarios/:id/reset-password
-   */
   @Post(':id/reset-password')
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN)
@@ -231,7 +233,6 @@ export class UsuariosController {
       throw new NotFoundException('Usuario no encontrado');
     }
 
-    // Generar contraseña temporal si no se provee
     const tempPassword = dto.password || this.generarPasswordTemporal();
     const passwordHash = await bcrypt.hash(tempPassword, 10);
     usuario.passwordHash = passwordHash;
@@ -240,13 +241,10 @@ export class UsuariosController {
     return {
       message: `Contraseña reseteada para ${usuario.nombre}`,
       email: usuario.email,
-      tempPassword: tempPassword, // Solo se muestra una vez
+      tempPassword: tempPassword,
     };
   }
 
-  /**
-   * Genera una contraseña temporal con el patrón Civica+year+!+4digits
-   */
   private generarPasswordTemporal(): string {
     const year = new Date().getFullYear();
     const digits = String(Math.floor(1000 + Math.random() * 9000));

@@ -503,11 +503,15 @@ export class DashboardController {
     const manzana = casa?.manzana;
     const etapa = manzana?.etapa;
 
+    const modStr = cuenta?.modalidad ?? residente?.modalidadPago ?? 'MENSUAL';
+    const modalidadPagoFormatted = modStr === 'SEMANAL' ? 'Semanal' : modStr === 'QUINCENAL' ? 'Quincenal' : 'Mensual';
+
     const residenteInfo = {
       nombre: residente?.nombre ?? '',
       casaDireccion: casa?.direccionInterna ?? '',
       manzanaNombre: manzana?.nombre ?? '',
       etapaNombre: etapa?.nombre ?? '',
+      modalidadPago: modalidadPagoFormatted,
     };
 
     const modalidad: ModalidadRecaudo = (cuenta?.modalidad as ModalidadRecaudo) ?? 'MENSUAL';
@@ -649,6 +653,62 @@ export class DashboardController {
         montoParcial: Math.round(montoParcial / 100),
         desglose,
       };
+    } else {
+      // ── Projected fallback when there are 0 active pending cobros in DB ──
+      // (e.g. resident registered late in current month or has paid all current cuotas)
+      const pagosEsperados = pagosPorMes(modalidad);
+      const montoTotalCentavos = tarifaMensual ? tarifaMensual.monto : (cuenta?.valorMensual ?? 4000000);
+      const montoParcialCentavos = Math.round(montoTotalCentavos / pagosEsperados);
+
+      const desglose: any[] = [];
+      let currentYear = hoy.getFullYear();
+      let currentMonth = hoy.getMonth(); // 0-indexed
+
+      const mesesEsp = [
+        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+      ];
+
+      while (desglose.length < pagosEsperados) {
+        const periodStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`;
+        const fechas = Periodo.fechasCobroParciales(modalidad, currentYear, currentMonth);
+        const mesNombre = mesesEsp[currentMonth];
+
+        for (let i = 0; i < fechas.length; i++) {
+          if (desglose.length >= pagosEsperados) break;
+          if (fechas[i] >= hoyStr) {
+            desglose.push({
+              id: `future-${periodStr}-${i + 1}`,
+              cobroId: null,
+              fecha: fechas[i],
+              monto: Math.round(montoParcialCentavos / 100),
+              numeroPago: i + 1,
+              mes: mesNombre,
+            });
+          }
+        }
+
+        currentMonth++;
+        if (currentMonth > 11) {
+          currentMonth = 0;
+          currentYear++;
+        }
+      }
+
+      if (desglose.length > 0) {
+        proximoCobro = desglose[0].fecha;
+        proximoPago = {
+          concepto: `${desglose[0].mes} — Cuota 1`,
+          fechaVencimiento: proximoCobro ?? hoyStr,
+          monto: Math.round(montoParcialCentavos / 100),
+          montoTotal: Math.round(montoTotalCentavos / 100),
+          montoPagado: 0,
+          pagosEsperados,
+          pagosRegistrados: 0,
+          montoParcial: Math.round(montoParcialCentavos / 100),
+          desglose,
+        };
+      }
     }
 
     let ultimoPago: any = null;
@@ -685,21 +745,18 @@ export class DashboardController {
     // Sort merged by date descending
     movimientos.sort((a, b) => b.fecha.localeCompare(a.fecha));
 
-    let tarifaActual: {
-      cuotaMensual: number;
-      montoSegunModalidad: number;
-      modalidad: ModalidadRecaudo;
-    } | null = null;
+    const montoTarifaBase = tarifaMensual
+      ? Math.round(tarifaMensual.monto / 100)
+      : (cuenta?.valorMensual ? Math.round(cuenta.valorMensual / 100) : 40000);
 
-    if (tarifaMensual) {
-      tarifaActual = {
-        cuotaMensual: Math.round(tarifaMensual.monto / 100),
-        montoSegunModalidad: tarifaPropia
-          ? Math.round(tarifaPropia.monto / 100)
-          : Math.round(tarifaMensual.monto / 100),
-        modalidad: modalidad,
-      };
-    }
+    const tarifaActual = {
+      cobroMensual: montoTarifaBase,
+      cuotaMensual: montoTarifaBase,
+      montoSegunModalidad: tarifaPropia
+        ? Math.round(tarifaPropia.monto / 100)
+        : Math.round(montoTarifaBase / (modalidad === 'SEMANAL' ? 4 : modalidad === 'QUINCENAL' ? 2 : 1)),
+      modalidad: modalidad,
+    };
 
     return {
       saldo: saldoFrontend,

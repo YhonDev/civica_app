@@ -6,11 +6,13 @@ import {
   CreateDateColumn,
   ManyToOne,
   JoinColumn,
+  Unique,
 } from 'typeorm';
 import { Usuario } from './usuario.entity';
 import { Etapa } from '../../community/domain/etapa.entity';
 
 @Entity('asignaciones_etapa')
+@Unique(['usuarioId', 'etapaId'])
 export class AsignacionEtapa {
   @PrimaryGeneratedColumn('uuid')
   id: string;

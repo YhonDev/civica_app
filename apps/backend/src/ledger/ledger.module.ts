@@ -37,6 +37,7 @@ import { TarifaDerivacionService } from './application/services/tarifa-derivacio
 import { CorregirPagoUseCase } from './application/use-cases/corregir-pago.use-case';
 import { ValidarPagoUseCase } from './application/use-cases/validar-pago.use-case';
 import { GenerarTicketUseCase } from './application/use-cases/generar-ticket.use-case';
+import { ReconciliarModalidadUseCase } from './application/use-cases/reconciliar-modalidad.use-case';
 
 import { GenerarReporteUseCase } from './application/use-cases/generar-reporte.use-case';
 
@@ -120,6 +121,7 @@ import { Reflector } from '@nestjs/core';
     CorregirPagoUseCase,
     ValidarPagoUseCase,
     GenerarTicketUseCase,
+    ReconciliarModalidadUseCase,
 
     // Services
     TarifaDerivacionService,
@@ -144,6 +146,7 @@ import { Reflector } from '@nestjs/core';
     PagoRepository,
     SolicitudRepository,
     GenerarCobrosUseCase,
+    ReconciliarModalidadUseCase,
     CarteraViviendaResumenQuery,
   ],
 })
