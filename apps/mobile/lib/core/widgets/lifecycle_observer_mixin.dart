@@ -56,4 +56,7 @@ mixin LifecycleObserverMixin<T extends StatefulWidget> on State<T>
 
   @override
   Future<bool> didPushRouteInformation(RouteInformation routeInformation) async => false;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
