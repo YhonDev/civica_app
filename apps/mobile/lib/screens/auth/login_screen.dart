@@ -209,7 +209,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             onPressed: () {
                               setState(() {
                                 _emailCtrl.text = 'manzana_a_casa_1_residente';
-                                _passwordCtrl.text = 'Casa1ManzanaA..';
+                                _passwordCtrl.text = 'Casa1ManzanaA';
                               });
                             },
                           ),
