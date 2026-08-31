@@ -14,6 +14,11 @@ import 'widgets/security_section.dart';
 import '../../core/widgets/top_toast.dart';
 import '../../core/network/local_cache_repository.dart';
 
+import '../../shared/widgets/user_profile_header.dart';
+import '../../shared/widgets/basic_information_section.dart';
+import '../../shared/widgets/territory_hierarchy_card.dart';
+import '../../shared/widgets/kpi_card.dart';
+
 class ResidenteDetailScreen extends StatefulWidget {
   final ResidenteItem residente;
 
@@ -370,140 +375,74 @@ class _ResidenteDetailScreenState extends State<ResidenteDetailScreen> {
   Widget _buildHeader(BuildContext context) {
     final cobros = _getProximosCobros();
 
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _residente.nombre,
-                      style: AppTypography.title.copyWith(fontWeight: FontWeight.w700),
-                    ),
-                    const SizedBox(height: 8),
+    return Column(
+      children: [
+        // 1. User Profile Header
+        UserProfileHeader(
+          nombre: _residente.nombre,
+          rol: 'RESIDENTE',
+        ),
+        const SizedBox(height: AppSpacing.md),
 
-                    Text(
-                      _residente.casa,
-                      style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      _residente.etapa,
-                      style: AppTypography.caption.copyWith(color: AppColors.textDisabled),
-                    ),
-                  ],
-                ),
+        // 2. Territory Hierarchy Card
+        TerritoryHierarchyCard(
+          etapa: _residente.etapa,
+          manzana: '',
+          casaNumero: _residente.casa,
+          residenteNombre: _residente.nombre,
+          estadoRecaudo: _residente.estadoFinanciero,
+        ),
+        const SizedBox(height: AppSpacing.md),
+
+        // 3. KPI Cards Row
+        Row(
+          children: [
+            Expanded(
+              child: KPICard(
+                title: 'Deuda Actual',
+                value: '\$${_residente.saldoPendiente.toStringAsFixed(2)}',
+                subtitle: _residente.estadoFinanciero,
+                icon: Icons.account_balance_wallet_outlined,
+                color: _residente.saldoPendiente > 0 ? AppColors.error : AppColors.success,
               ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          Container(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            decoration: BoxDecoration(
-              color: AppColors.background,
-              borderRadius: BorderRadius.circular(12),
             ),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Deuda Actual', style: AppTypography.caption),
-                        const SizedBox(height: 4),
-                        Text(
-                          '\$${_residente.saldoPendiente.toStringAsFixed(2)}',
-                          style: AppTypography.title.copyWith(
-                            color: _residente.saldoPendiente > 0 ? AppColors.error : AppColors.success,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text('Estado', style: AppTypography.caption),
-                        const SizedBox(height: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: _residente.saldoPendiente > 0 
-                                ? AppColors.error.withValues(alpha: 0.1) 
-                                : AppColors.success.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            _residente.estadoFinanciero,
-                            style: AppTypography.caption.copyWith(
-                              color: _residente.saldoPendiente > 0 ? AppColors.error : AppColors.success,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                const Divider(height: AppSpacing.lg),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Modalidad', style: AppTypography.caption),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Icon(
-                              _modalidadIcon(),
-                              size: 16,
-                              color: AppColors.primary,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              _residente.modalidadPago,
-                              style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w600),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text('Próximo Venc.', style: AppTypography.caption),
-                        const SizedBox(height: 4),
-                        Text(
-                          _proximoVencimiento(),
-                          style: AppTypography.bodyMedium.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.info,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ],
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: KPICard(
+                title: 'Próximo Venc.',
+                value: _proximoVencimiento(),
+                subtitle: _residente.modalidadPago,
+                icon: Icons.event_outlined,
+                color: AppColors.info,
+              ),
             ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          _buildProximosCobros(cobros),
-        ],
-      ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.md),
+
+        // 4. Basic Information Section (con botón de edición para Admin)
+        Column(
+          children: [
+            BasicInformationSection(
+              telefonoOverride: _residente.telefono,
+              modalidadOverride: _residente.modalidadPago,
+              casaInfoOverride: '${_residente.etapa} - ${_residente.casa}',
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: () => _mostrarModalEditar(context),
+                icon: const Icon(Icons.edit_outlined, size: 16),
+                label: const Text('Editar información'),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.md),
+
+        _buildProximosCobros(cobros),
+      ],
     );
   }
 

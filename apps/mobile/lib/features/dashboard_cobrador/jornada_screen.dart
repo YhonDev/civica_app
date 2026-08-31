@@ -7,6 +7,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/lifecycle_observer_mixin.dart';
+import '../../shared/widgets/kpi_card.dart';
 
 import '../cartera/models/cartera_models.dart';
 import '../cartera/widgets/registrar_pago_bottom_sheet.dart';
@@ -190,55 +191,55 @@ class _JornadaViewState extends State<_JornadaView> with LifecycleObserverMixin 
   Widget _buildStatsRow(CobradorDashboardData data) {
     return Column(
       children: [
-        // Fila principal: stats grandes
+        // Fila principal con componentes KPICard atómicos
         Row(
           children: [
             Expanded(
-              child: _StatCard(
-                icon: Icons.home_work_rounded,
-                label: 'Total casas',
+              child: KPICard(
+                title: 'Total casas',
                 value: '${data.totalViviendas}',
+                icon: Icons.home_work_rounded,
                 color: AppColors.primary,
               ),
             ),
             const SizedBox(width: AppSpacing.sm),
             Expanded(
-              child: _StatCard(
-                icon: Icons.check_circle_rounded,
-                label: 'Cobradas hoy',
+              child: KPICard(
+                title: 'Cobradas hoy',
                 value: '${data.cobradosHoy}',
+                icon: Icons.check_circle_rounded,
                 color: AppColors.success,
               ),
             ),
           ],
         ),
         const SizedBox(height: AppSpacing.sm),
-        // Fila secundaria: pendientes y vencidas con semáforo
+        // Fila secundaria de indicadores
         Row(
           children: [
             Expanded(
-              child: _MiniStatCard(
-                icon: Icons.schedule_rounded,
-                label: 'Pendientes',
+              child: KPICard(
+                title: 'Pendientes',
                 value: '${data.pendientes}',
+                icon: Icons.schedule_rounded,
                 color: AppColors.warning,
               ),
             ),
             const SizedBox(width: AppSpacing.sm),
             Expanded(
-              child: _MiniStatCard(
-                icon: Icons.error_outline_rounded,
-                label: 'Vencidas',
+              child: KPICard(
+                title: 'Vencidas',
                 value: '${data.vencidas}',
+                icon: Icons.error_outline_rounded,
                 color: AppColors.error,
               ),
             ),
             const SizedBox(width: AppSpacing.sm),
             Expanded(
-              child: _MiniStatCard(
-                icon: Icons.attach_money_rounded,
-                label: 'Esperado',
+              child: KPICard(
+                title: 'Esperado',
                 value: _formatPesos(data.montoEsperado),
+                icon: Icons.attach_money_rounded,
                 color: AppColors.info,
               ),
             ),
