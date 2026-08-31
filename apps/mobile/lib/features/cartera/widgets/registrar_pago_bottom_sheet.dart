@@ -18,12 +18,14 @@ import '../cartera_repository.dart';
 class RegistrarPagoBottomSheet extends StatefulWidget {
   final CobroItem cobro;
   final List<dynamic>? cuotas;
+  final bool initialQuickMode;
   final VoidCallback onSuccess;
 
   const RegistrarPagoBottomSheet({
     super.key,
     required this.cobro,
     this.cuotas,
+    this.initialQuickMode = false,
     required this.onSuccess,
   });
 
@@ -31,6 +33,7 @@ class RegistrarPagoBottomSheet extends StatefulWidget {
     BuildContext context, {
     required CobroItem cobro,
     List<dynamic>? cuotas,
+    bool initialQuickMode = false,
     required VoidCallback onSuccess,
   }) {
     return showModalBottomSheet(
@@ -44,6 +47,7 @@ class RegistrarPagoBottomSheet extends StatefulWidget {
       builder: (_) => RegistrarPagoBottomSheet(
         cobro: cobro,
         cuotas: cuotas,
+        initialQuickMode: initialQuickMode,
         onSuccess: onSuccess,
       ),
     );
@@ -57,6 +61,7 @@ class RegistrarPagoBottomSheet extends StatefulWidget {
 class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
   late TextEditingController _montoController;
   bool _enviando = false;
+  late bool _isQuickMode;
   final _repo = CarteraRepository();
   late final List<dynamic> _cuotasList;
   final Set<int> _selectedIndices = {0};
@@ -65,6 +70,7 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
   void initState() {
     super.initState();
     _montoController = TextEditingController();
+    _isQuickMode = widget.initialQuickMode;
 
     final rawCuotas = widget.cuotas ?? [];
     if (rawCuotas.isNotEmpty) {
@@ -273,7 +279,123 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
               ),
             ],
           ),
-          const SizedBox(height: AppSpacing.lg),
+          const SizedBox(height: AppSpacing.sm),
+
+          // Segmented Tabs Header: [ Cuota Actual ]  [ Ver Deuda ]
+          Row(
+            children: [
+              Expanded(
+                child: InkWell(
+                  onTap: () {
+                    if (!_isQuickMode) {
+                      setState(() {
+                        _isQuickMode = true;
+                        _selectedIndices.clear();
+                        _selectedIndices.add(0);
+                        _recalcularMonto();
+                      });
+                    }
+                  },
+                  borderRadius: BorderRadius.circular(10),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.symmetric(vertical: 9),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: _isQuickMode ? AppColors.primary : AppColors.surface,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: _isQuickMode ? AppColors.primary : AppColors.border,
+                        width: 1.2,
+                      ),
+                      boxShadow: _isQuickMode
+                          ? [
+                              BoxShadow(
+                                color: AppColors.primary.withValues(alpha: 0.22),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
+                              )
+                            ]
+                          : [],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.bolt_rounded,
+                          size: 16,
+                          color: _isQuickMode ? Colors.white : AppColors.textSecondary,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Cuota Actual',
+                          style: AppTypography.caption.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: _isQuickMode ? Colors.white : AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: InkWell(
+                  onTap: () {
+                    if (_isQuickMode) {
+                      setState(() {
+                        _isQuickMode = false;
+                        _recalcularMonto();
+                      });
+                    }
+                  },
+                  borderRadius: BorderRadius.circular(10),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.symmetric(vertical: 9),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: !_isQuickMode ? AppColors.primaryDark : AppColors.surface,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: !_isQuickMode ? AppColors.primaryDark : AppColors.border,
+                        width: 1.2,
+                      ),
+                      boxShadow: !_isQuickMode
+                          ? [
+                              BoxShadow(
+                                color: AppColors.primaryDark.withValues(alpha: 0.22),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
+                              )
+                            ]
+                          : [],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.account_balance_wallet_rounded,
+                          size: 16,
+                          color: !_isQuickMode ? Colors.white : AppColors.textSecondary,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Ver Deuda',
+                          style: AppTypography.caption.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: !_isQuickMode ? Colors.white : AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
 
           // Saldo info (Información visual estática)
           Container(
@@ -287,16 +409,18 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Saldo total adeudado',
+                  _isQuickMode ? 'Valor cuota actual' : 'Saldo total adeudado',
                   style: AppTypography.body.copyWith(
                     color: AppColors.textSecondary,
                   ),
                 ),
                 Text(
-                  saldoStr,
+                  _isQuickMode && _cuotasList.isNotEmpty
+                      ? '\$ ${NumberFormat.decimalPattern('es_CO').format((_cuotasList.first['monto'] as num? ?? 20000).toInt())}'
+                      : saldoStr,
                   style: AppTypography.subtitle.copyWith(
                     fontWeight: FontWeight.w700,
-                    color: widget.cobro.estado == 'Mora'
+                    color: widget.cobro.estado == 'Mora' && !_isQuickMode
                         ? AppColors.error
                         : AppColors.textPrimary,
                   ),
@@ -306,8 +430,8 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
           ),
           const SizedBox(height: AppSpacing.md),
 
-          // Lista de cuotas individuales con Checkboxes interactivos
-          if (_cuotasList.isNotEmpty) ...[
+          // VISTA MULTI-CUOTA (Cuando _isQuickMode es false)
+          if (!_isQuickMode && _cuotasList.isNotEmpty) ...[
             Text(
               'Seleccionar cuotas a liquidar',
               style: AppTypography.caption.copyWith(
@@ -401,46 +525,48 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
           const SizedBox(height: AppSpacing.sm),
 
           // Botones de selección dinámica de cuotas (1x, 2x, 3x, 4x, Total)
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                if (widget.cobro.monto > 0) ...[
-                  for (int n in [1, 2, 3, 4]) ...[
-                    if ((widget.cobro.monto * n) <= (widget.cobro.saldo * 1.5))
-                      Padding(
-                        padding: const EdgeInsets.only(right: 6),
-                        child: ChoiceChip(
-                          label: Text(
-                            '$n ${n == 1 ? 'Cuota' : 'Cuotas'} (\$${NumberFormat.decimalPattern('es_CO').format((widget.cobro.monto * n).toInt())})',
-                            style: AppTypography.small.copyWith(fontSize: 11),
+          if (!_isQuickMode) ...[
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  if (widget.cobro.monto > 0) ...[
+                    for (int n in [1, 2, 3, 4]) ...[
+                      if ((widget.cobro.monto * n) <= (widget.cobro.saldo * 1.5))
+                        Padding(
+                          padding: const EdgeInsets.only(right: 6),
+                          child: ChoiceChip(
+                            label: Text(
+                              '$n ${n == 1 ? 'Cuota' : 'Cuotas'} (\$${NumberFormat.decimalPattern('es_CO').format((widget.cobro.monto * n).toInt())})',
+                              style: AppTypography.small.copyWith(fontSize: 11),
+                            ),
+                            selected: _montoController.text == (widget.cobro.monto * n).toInt().toString(),
+                            onSelected: (_) {
+                              setState(() {
+                                _montoController.text = (widget.cobro.monto * n).toInt().toString();
+                              });
+                            },
                           ),
-                          selected: _montoController.text == (widget.cobro.monto * n).toInt().toString(),
-                          onSelected: (_) {
-                            setState(() {
-                              _montoController.text = (widget.cobro.monto * n).toInt().toString();
-                            });
-                          },
                         ),
-                      ),
+                    ],
                   ],
-                ],
-                ChoiceChip(
-                  label: Text(
-                    'Total (\$${NumberFormat.decimalPattern('es_CO').format(widget.cobro.saldo.toInt())})',
-                    style: AppTypography.small.copyWith(fontSize: 11),
+                  ChoiceChip(
+                    label: Text(
+                      'Total (\$${NumberFormat.decimalPattern('es_CO').format(widget.cobro.saldo.toInt())})',
+                      style: AppTypography.small.copyWith(fontSize: 11),
+                    ),
+                    selected: _montoController.text == widget.cobro.saldo.toInt().toString(),
+                    onSelected: (_) {
+                      setState(() {
+                        _montoController.text = widget.cobro.saldo.toInt().toString();
+                      });
+                    },
                   ),
-                  selected: _montoController.text == widget.cobro.saldo.toInt().toString(),
-                  onSelected: (_) {
-                    setState(() {
-                      _montoController.text = widget.cobro.saldo.toInt().toString();
-                    });
-                  },
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: AppSpacing.xs),
+            const SizedBox(height: AppSpacing.xs),
+          ],
 
           // Helper note explicativa sobre orden FIFO
           Row(
@@ -449,7 +575,9 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
               const SizedBox(width: 4),
               Expanded(
                 child: Text(
-                  'El dinero ingresado se aplicará primero a la cuota más antigua en mora para sanearla.',
+                  _isQuickMode
+                      ? 'Registro inmediato de la cuota programada del día.'
+                      : 'El dinero ingresado se aplicará primero a la cuota más antigua en mora para sanearla.',
                   style: AppTypography.small.copyWith(
                     color: AppColors.textSecondary,
                     fontSize: 11,
@@ -474,8 +602,10 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
                         color: Colors.white,
                       ),
                     )
-                  : const Icon(Icons.payments_outlined),
-              label: Text(_enviando ? 'Procesando recaudo...' : 'Registrar Pago'),
+                  : const Icon(Icons.account_balance_wallet_rounded),
+              label: Text(
+                _enviando ? 'Procesando recaudo...' : 'Registrar Cobro',
+              ),
             ),
           ),
         ],

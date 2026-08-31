@@ -227,8 +227,8 @@ class CobroEstadoItem extends Equatable {
   factory CobroEstadoItem.fromJson(Map<String, dynamic> json) {
     return CobroEstadoItem(
       estado: json['estado'] as String? ?? '',
-      porcentaje: (json['porcentaje'] as num?)?.toDouble() ?? 0,
-      cantidad: json['cantidad'] as int? ?? 0,
+      porcentaje: (double.tryParse(json['porcentaje']?.toString() ?? '') ?? 0),
+      cantidad: int.tryParse(json['cantidad']?.toString() ?? '') ?? 0,
     );
   }
 
@@ -284,10 +284,10 @@ class CobroSemanaItem extends Equatable {
 
   factory CobroSemanaItem.fromJson(Map<String, dynamic> json) {
     return CobroSemanaItem(
-      semana: json['semana'] as int? ?? 1,
-      pagados: json['pagados'] as int? ?? 0,
-      pendientes: json['pendientes'] as int? ?? 0,
-      mora: json['mora'] as int? ?? 0,
+      semana: int.tryParse(json['semana']?.toString() ?? '') ?? 1,
+      pagados: int.tryParse(json['pagados']?.toString() ?? '') ?? 0,
+      pendientes: int.tryParse(json['pendientes']?.toString() ?? '') ?? 0,
+      mora: int.tryParse(json['mora']?.toString() ?? '') ?? 0,
     );
   }
 
@@ -312,10 +312,10 @@ class MesHistorico extends Equatable {
 
   factory MesHistorico.fromJson(Map<String, dynamic> json) {
     return MesHistorico(
-      mes: json['mes'] as int? ?? 1,
-      anio: json['anio'] as int? ?? 2026,
+      mes: int.tryParse(json['mes']?.toString() ?? '') ?? 1,
+      anio: int.tryParse(json['anio']?.toString() ?? '') ?? 2026,
       recaudo: (double.tryParse(json['recaudo']?.toString() ?? '') ?? 0) / 100,
-      pendientes: json['pendientes'] as int? ?? 0,
+      pendientes: int.tryParse(json['pendientes']?.toString() ?? '') ?? 0,
       mora: (double.tryParse(json['mora']?.toString() ?? '') ?? 0) / 100,
     );
   }

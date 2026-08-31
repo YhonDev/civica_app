@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/network/api_client.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/widgets/top_toast.dart';
 import 'comunidad_repository.dart';
 
-/// Resultado de la creación del cobrador (lo que devuelve el backend).
 class _ResultadoCrearCobrador {
   final String username;
   final String password;
@@ -65,9 +66,7 @@ class _NuevoCobradorScreenState extends State<NuevoCobradorScreen> {
   Future<void> _guardar() async {
     if (_nombreCtrl.text.trim().isEmpty) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('El nombre del cobrador es obligatorio')),
-      );
+      TopToast.showError(context, 'El nombre del cobrador es obligatorio');
       return;
     }
 
@@ -94,7 +93,6 @@ class _NuevoCobradorScreenState extends State<NuevoCobradorScreen> {
 
       if (!context.mounted) return;
 
-      // Mostrar credenciales generadas
       _mostrarCredenciales(_ResultadoCrearCobrador(
         username: credenciales?['username'] as String? ?? '',
         password: credenciales?['password'] as String? ?? '',
@@ -102,9 +100,7 @@ class _NuevoCobradorScreenState extends State<NuevoCobradorScreen> {
       ));
     } catch (e) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al crear cobrador: $e')),
-      );
+      TopToast.showError(context, 'Error al crear cobrador: $e');
     } finally {
       if (context.mounted) {
         setState(() => _isSaving = false);
@@ -113,88 +109,116 @@ class _NuevoCobradorScreenState extends State<NuevoCobradorScreen> {
   }
 
   void _mostrarCredenciales(_ResultadoCrearCobrador resultado) {
+    bool copiado = false;
+
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(Icons.check_circle_rounded, color: AppColors.success),
-            const SizedBox(width: AppSpacing.sm),
-            const Expanded(child: Text('Cobrador creado')),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '${resultado.nombre} ha sido registrado correctamente.',
-              style: AppTypography.body,
-            ),
-            const SizedBox(height: AppSpacing.md),
-            Container(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              decoration: BoxDecoration(
-                color: AppColors.info.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.info.withValues(alpha: 0.3)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.person_outline, size: 16, color: AppColors.info),
-                      const SizedBox(width: AppSpacing.sm),
-                      Text('Usuario:', style: AppTypography.small.copyWith(fontWeight: FontWeight.w600)),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  SelectableText(
-                    resultado.username,
-                    style: AppTypography.body.copyWith(
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'monospace',
-                      fontSize: 16,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  Row(
-                    children: [
-                      Icon(Icons.lock_outline, size: 16, color: AppColors.info),
-                      const SizedBox(width: AppSpacing.sm),
-                      Text('Contraseña:', style: AppTypography.small.copyWith(fontWeight: FontWeight.w600)),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  SelectableText(
-                    resultado.password,
-                    style: AppTypography.body.copyWith(
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'monospace',
-                      fontSize: 16,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              'Guarda estas credenciales. No se mostrarán nuevamente.',
-              style: AppTypography.small.copyWith(color: AppColors.textSecondary),
-            ),
-          ],
-        ),
-        actions: [
-          FilledButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              context.pop(true);
-            },
-            child: const Text('Listo'),
+      builder: (ctx) => StatefulBuilder(
+        builder: (dialogCtx, setDialogState) => AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.check_circle_rounded, color: AppColors.success),
+              const SizedBox(width: AppSpacing.sm),
+              const Expanded(child: Text('Cobrador creado')),
+            ],
           ),
-        ],
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${resultado.nombre} ha sido registrado correctamente.',
+                style: AppTypography.body,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: AppColors.info.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.info.withValues(alpha: 0.3)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.person_outline, size: 16, color: AppColors.info),
+                        const SizedBox(width: AppSpacing.sm),
+                        Text('Usuario:', style: AppTypography.small.copyWith(fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    SelectableText(
+                      resultado.username,
+                      style: AppTypography.body.copyWith(
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'monospace',
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    Row(
+                      children: [
+                        Icon(Icons.lock_outline, size: 16, color: AppColors.info),
+                        const SizedBox(width: AppSpacing.sm),
+                        Text('Contraseña:', style: AppTypography.small.copyWith(fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    SelectableText(
+                      resultado.password,
+                      style: AppTypography.body.copyWith(
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'monospace',
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                'Copia o guarda estas credenciales para entregarlas al cobrador.',
+                style: AppTypography.small.copyWith(color: AppColors.textSecondary),
+              ),
+            ],
+          ),
+          actions: [
+            OutlinedButton.icon(
+              onPressed: () {
+                final textoCopiar = 'Usuario: ${resultado.username}\nContraseña: ${resultado.password}';
+                Clipboard.setData(ClipboardData(text: textoCopiar));
+                setDialogState(() => copiado = true);
+                TopToast.showSuccess(dialogCtx, 'Credenciales copiadas al portapapeles');
+              },
+              icon: Icon(
+                copiado ? Icons.check_rounded : Icons.copy_rounded,
+                color: copiado ? AppColors.success : AppColors.primary,
+              ),
+              label: Text(
+                copiado ? '¡Copiado!' : 'Copiar Credenciales',
+                style: TextStyle(
+                  color: copiado ? AppColors.success : AppColors.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(
+                  color: copiado ? AppColors.success : AppColors.primary,
+                ),
+              ),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                context.pop(true);
+              },
+              child: const Text('Listo'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -216,7 +240,6 @@ class _NuevoCobradorScreenState extends State<NuevoCobradorScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ── Sección: Información Personal ──
                   Text(
                     'Información Personal',
                     style: AppTypography.subtitle.copyWith(
@@ -245,7 +268,6 @@ class _NuevoCobradorScreenState extends State<NuevoCobradorScreen> {
 
                   const SizedBox(height: AppSpacing.xl),
 
-                  // ── Sección: Asignación de Zonas ──
                   Text(
                     'Asignación de Zonas',
                     style: AppTypography.subtitle.copyWith(
@@ -266,7 +288,6 @@ class _NuevoCobradorScreenState extends State<NuevoCobradorScreen> {
 
                   const SizedBox(height: AppSpacing.xl),
 
-                  // ── Botón Guardar ──
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton.icon(

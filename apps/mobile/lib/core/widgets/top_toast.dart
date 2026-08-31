@@ -1,57 +1,70 @@
 import 'package:flutter/material.dart';
+import '../theme/app_typography.dart';
+
+enum ToastType { success, error, info, warning }
 
 class TopToast {
   static void show(
     BuildContext context, {
-    required String title,
     required String message,
-    IconData icon = Icons.check_circle_rounded,
-    Color backgroundColor = const Color(0xFF0F172A),
-    Color accentColor = const Color(0xFF10B981),
-    Duration duration = const Duration(milliseconds: 3200),
+    String? title,
+    IconData? icon,
+    Color? accentColor,
+    ToastType type = ToastType.success,
+    Duration duration = const Duration(seconds: 3),
   }) {
-    final overlay = Overlay.maybeOf(context);
-    if (overlay == null) return;
+    final overlayState = Overlay.of(context);
+    late OverlayEntry overlayEntry;
 
-    late OverlayEntry entry;
-
-    entry = OverlayEntry(
+    overlayEntry = OverlayEntry(
       builder: (context) => _TopToastWidget(
         title: title,
         message: message,
-        icon: icon,
-        backgroundColor: backgroundColor,
-        accentColor: accentColor,
-        duration: duration,
+        type: type,
+        customIcon: icon,
+        customColor: accentColor,
         onDismiss: () {
-          if (entry.mounted) {
-            entry.remove();
+          if (overlayEntry.mounted) {
+            overlayEntry.remove();
           }
         },
+        duration: duration,
       ),
     );
 
-    overlay.insert(entry);
+    overlayState.insert(overlayEntry);
+  }
+
+  static void showSuccess(BuildContext context, String message, {String? title}) {
+    show(context, message: message, title: title, type: ToastType.success);
+  }
+
+  static void showError(BuildContext context, String message, {String? title}) {
+    show(context, message: message, title: title, type: ToastType.error);
+  }
+
+  static void showInfo(BuildContext context, String message, {String? title}) {
+    show(context, message: message, title: title, type: ToastType.info);
   }
 }
 
 class _TopToastWidget extends StatefulWidget {
-  final String title;
+  final String? title;
   final String message;
-  final IconData icon;
-  final Color backgroundColor;
-  final Color accentColor;
-  final Duration duration;
+  final ToastType type;
+  final IconData? customIcon;
+  final Color? customColor;
   final VoidCallback onDismiss;
+  final Duration duration;
 
   const _TopToastWidget({
-    required this.title,
+    this.title,
     required this.message,
-    required this.icon,
-    required this.backgroundColor,
-    required this.accentColor,
-    required this.duration,
+    required this.type,
+    this.customIcon,
+    this.customColor,
     required this.onDismiss,
+    required this.duration,
   });
 
   @override
@@ -61,7 +74,7 @@ class _TopToastWidget extends StatefulWidget {
 class _TopToastWidgetState extends State<_TopToastWidget>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  late Animation<double> _slideAnimation;
+  late Animation<Offset> _offsetAnimation;
   late Animation<double> _fadeAnimation;
 
   @override
@@ -69,12 +82,17 @@ class _TopToastWidgetState extends State<_TopToastWidget>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 400),
+      duration: const Duration(milliseconds: 380),
     );
-    _slideAnimation = CurvedAnimation(
+
+    _offsetAnimation = Tween<Offset>(
+      begin: const Offset(0.0, -1.2),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
       parent: _controller,
-      curve: Curves.easeOutBack,
-    );
+      curve: Curves.elasticOut,
+    ));
+
     _fadeAnimation = CurvedAnimation(
       parent: _controller,
       curve: Curves.easeIn,
@@ -85,7 +103,7 @@ class _TopToastWidgetState extends State<_TopToastWidget>
     Future.delayed(widget.duration, () {
       if (mounted) {
         _controller.reverse().then((_) {
-          if (mounted) widget.onDismiss();
+          widget.onDismiss();
         });
       }
     });
@@ -100,90 +118,106 @@ class _TopToastWidgetState extends State<_TopToastWidget>
   @override
   Widget build(BuildContext context) {
     final topPadding = MediaQuery.of(context).padding.top;
-    return SafeArea(
-      child: Align(
-        alignment: Alignment.topCenter,
-        child: Padding(
-          padding: EdgeInsets.only(
-            top: topPadding > 0 ? 8 : 16,
-            left: 16,
-            right: 16,
-          ),
-          child: AnimatedBuilder(
-            animation: _controller,
-            builder: (context, child) {
-              return Transform.translate(
-                offset: Offset(0, -60 * (1 - _slideAnimation.value)),
-                child: Opacity(
-                  opacity: _fadeAnimation.value.clamp(0.0, 1.0),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    Color iconColor;
+    IconData icon;
+
+    switch (widget.type) {
+      case ToastType.success:
+        iconColor = widget.customColor ?? (isDark ? const Color(0xFF4ADE80) : const Color(0xFF166534));
+        icon = widget.customIcon ?? Icons.check_circle_rounded;
+        break;
+      case ToastType.error:
+        iconColor = widget.customColor ?? (isDark ? const Color(0xFFF87171) : const Color(0xFF991B1B));
+        icon = widget.customIcon ?? Icons.error_rounded;
+        break;
+      case ToastType.warning:
+        iconColor = widget.customColor ?? (isDark ? const Color(0xFFFACC15) : const Color(0xFF854D0E));
+        icon = widget.customIcon ?? Icons.warning_rounded;
+        break;
+      case ToastType.info:
+        iconColor = widget.customColor ?? (isDark ? const Color(0xFF38BDF8) : const Color(0xFF075985));
+        icon = widget.customIcon ?? Icons.info_rounded;
+        break;
+    }
+
+    final cardBgColor = isDark ? const Color(0xFF1E2022) : Colors.white;
+    final titleTextColor = isDark ? Colors.white : const Color(0xFF0F172A);
+    final bodyTextColor = isDark ? Colors.white.withValues(alpha: 0.88) : const Color(0xFF334155);
+    final shadowColor = isDark ? Colors.black.withValues(alpha: 0.5) : Colors.black.withValues(alpha: 0.12);
+    final borderColor = isDark ? iconColor.withValues(alpha: 0.35) : iconColor.withValues(alpha: 0.25);
+
+    return Positioned(
+      top: topPadding + 8,
+      left: 16,
+      right: 16,
+      child: SlideTransition(
+        position: _offsetAnimation,
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: SafeArea(
+            bottom: false,
+            child: Material(
+              color: Colors.transparent,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: cardBgColor,
+                  borderRadius: BorderRadius.circular(26),
+                  border: Border.all(color: borderColor, width: 1.2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: shadowColor,
+                      blurRadius: 18,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        color: widget.backgroundColor,
-                        borderRadius: BorderRadius.circular(24),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.3),
-                            blurRadius: 16,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
-                        border: Border.all(
-                          color: widget.accentColor.withValues(alpha: 0.4),
-                          width: 1.5,
-                        ),
+                        color: iconColor.withValues(alpha: isDark ? 0.2 : 0.12),
+                        shape: BoxShape.circle,
                       ),
-                      child: Row(
+                      child: Icon(icon, color: iconColor, size: 20),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
                         mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: widget.accentColor.withValues(alpha: 0.2),
-                              shape: BoxShape.circle,
+                          if (widget.title != null) ...[
+                            Text(
+                              widget.title!,
+                              style: AppTypography.body.copyWith(
+                                color: titleTextColor,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
                             ),
-                            child: Icon(
-                              widget.icon,
-                              color: widget.accentColor,
-                              size: 20,
+                            const SizedBox(height: 2),
+                          ],
+                          Text(
+                            widget.message,
+                            style: AppTypography.caption.copyWith(
+                              color: bodyTextColor,
+                              fontWeight: FontWeight.w500,
+                              fontSize: 12,
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          Flexible(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  widget.title,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  widget.message,
-                                  style: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.9),
-                                    fontSize: 12,
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ),
                     ),
-                  ),
+                  ],
                 ),
-              );
-            },
+              ),
+            ),
           ),
         ),
       ),

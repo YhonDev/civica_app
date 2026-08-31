@@ -7,6 +7,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../screens/auth/auth_cubit.dart';
 import '../../shared/widgets/status_badge.dart';
+import '../residentes/widgets/security_section.dart';
 
 class MiCasaScreen extends StatefulWidget {
   const MiCasaScreen({super.key});
@@ -20,7 +21,7 @@ class _MiCasaScreenState extends State<MiCasaScreen> {
   String _casaDireccion = 'Casa 1';
   String _etapaNombre = 'Etapa 1';
   String _manzanaNombre = 'Manzana A';
-  String _modalidadPago = 'Semanal';
+  String _modalidadPago = '';
   String _proyectoNombre = 'Urbanización San Sebastián';
   StatusType _status = StatusType.alDia;
 
@@ -84,6 +85,8 @@ class _MiCasaScreenState extends State<MiCasaScreen> {
 
     final nombre = user?['nombre'] ?? 'Residente';
     final email = user?['email'] ?? '';
+    final usuarioId = user?['id'] ?? '';
+    final username = user?['username'] ?? user?['email'] ?? '';
 
     return Scaffold(
       appBar: AppBar(
@@ -171,8 +174,8 @@ class _MiCasaScreenState extends State<MiCasaScreen> {
                         const Divider(height: 1),
                         ListTile(
                           leading: const Icon(Icons.alternate_email_rounded),
-                          title: const Text('Correo registrado'),
-                          subtitle: Text(email.isNotEmpty ? email : 'No se ha agregado correo'),
+                          title: const Text('Usuario registrado'),
+                          subtitle: Text(username.isNotEmpty ? username : 'Sin usuario'),
                         ),
                         const Divider(height: 1),
                         ListTile(
@@ -215,6 +218,18 @@ class _MiCasaScreenState extends State<MiCasaScreen> {
                         ),
                       ],
                     ),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+
+                  // ── Módulo de Seguridad (Cambiar Contraseña propia) ──
+                  SecuritySection(
+                    usuarioId: usuarioId,
+                    nombre: nombre,
+                    initialUsername: username,
+                    isAdmin: false, // Exige contraseña actual
+                    onCredentialsUpdated: () {
+                      _cargarDatosInmueble();
+                    },
                   ),
                 ],
               ),

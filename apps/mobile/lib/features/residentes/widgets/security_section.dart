@@ -4,6 +4,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/widgets/top_toast.dart';
 
 /// Sección de Seguridad reutilizable para residentes y cobradores.
 ///
@@ -14,7 +15,9 @@ class SecuritySection extends StatefulWidget {
   final String nombre;
   final String? initialUsername;
   final bool isAdmin;
+  final bool autoExpandPassword;
   final VoidCallback? onCredentialsUpdated;
+  final VoidCallback? onCancel;
 
   const SecuritySection({
     super.key,
@@ -22,7 +25,9 @@ class SecuritySection extends StatefulWidget {
     required this.nombre,
     this.initialUsername,
     this.isAdmin = false,
+    this.autoExpandPassword = false,
     this.onCredentialsUpdated,
+    this.onCancel,
   });
 
   @override
@@ -31,10 +36,14 @@ class SecuritySection extends StatefulWidget {
 
 class _SecuritySectionState extends State<SecuritySection> {
   final ApiClient _api = ApiClient.instance;
-  
+
   bool _isEditingUsername = false;
-  bool _isChangingPassword = false;
+  late bool _isChangingPassword;
   bool _isLoading = false;
+
+  bool _obscureCurrent = true;
+  bool _obscureNew = true;
+  bool _obscureConfirm = true;
 
   late TextEditingController _usernameCtrl;
   final _currentPasswordCtrl = TextEditingController();
@@ -44,6 +53,7 @@ class _SecuritySectionState extends State<SecuritySection> {
   @override
   void initState() {
     super.initState();
+    _isChangingPassword = widget.autoExpandPassword;
     _usernameCtrl = TextEditingController(text: widget.initialUsername ?? '');
   }
 
@@ -57,12 +67,16 @@ class _SecuritySectionState extends State<SecuritySection> {
   }
 
   Future<void> _updateUsername() async {
-    if (_usernameCtrl.text.trim().isEmpty) return;
+    final newUsername = _usernameCtrl.text.trim();
+    if (newUsername.isEmpty) {
+      TopToast.showError(context, 'El nombre de usuario no puede estar vacío');
+      return;
+    }
 
     setState(() => _isLoading = true);
     try {
       final payload = <String, dynamic>{
-        'newUsername': _usernameCtrl.text.trim(),
+        'newUsername': newUsername,
       };
       if (widget.isAdmin) {
         payload['usuarioId'] = widget.usuarioId;
@@ -72,47 +86,54 @@ class _SecuritySectionState extends State<SecuritySection> {
 
       if (mounted) {
         setState(() => _isEditingUsername = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Usuario actualizado correctamente'),
-            backgroundColor: AppColors.success,
-          ),
-        );
+        TopToast.showSuccess(context, 'Usuario actualizado correctamente');
         widget.onCredentialsUpdated?.call();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.error),
-        );
+        TopToast.showError(context, 'Error al actualizar usuario: $e');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
+  String? _validarPasswordSegura(String pass) {
+    if (pass.length < 8) {
+      return 'La contraseña debe tener al menos 8 caracteres';
+    }
+    if (!pass.contains(RegExp(r'[A-Z]'))) {
+      return 'Debe incluir al menos una letra mayúscula';
+    }
+    if (!pass.contains(RegExp(r'[a-z]'))) {
+      return 'Debe incluir al menos una letra minúscula';
+    }
+    if (!pass.contains(RegExp(r'[0-9]'))) {
+      return 'Debe incluir al menos un número';
+    }
+    if (!pass.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'))) {
+      return 'Debe incluir al menos un símbolo (!@#\$%^&*)';
+    }
+    return null;
+  }
+
   Future<void> _updatePassword() async {
     final newPass = _newPasswordCtrl.text;
     final confirmPass = _confirmPasswordCtrl.text;
 
-    if (newPass.length < 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('La contraseña debe tener al menos 6 caracteres')),
-      );
-      return;
-    }
-    if (newPass != confirmPass) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Las contraseñas no coinciden')),
-      );
+    final errorValidacion = _validarPasswordSegura(newPass);
+    if (errorValidacion != null) {
+      TopToast.showError(context, errorValidacion);
       return;
     }
 
-    // Si no es admin, pedir contraseña actual
+    if (newPass != confirmPass) {
+      TopToast.showError(context, 'Las contraseñas no coinciden');
+      return;
+    }
+
     if (!widget.isAdmin && _currentPasswordCtrl.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ingresa tu contraseña actual')),
-      );
+      TopToast.showError(context, 'Ingresa tu contraseña actual');
       return;
     }
 
@@ -134,18 +155,11 @@ class _SecuritySectionState extends State<SecuritySection> {
         _currentPasswordCtrl.clear();
         _newPasswordCtrl.clear();
         _confirmPasswordCtrl.clear();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Contraseña actualizada correctamente'),
-            backgroundColor: AppColors.success,
-          ),
-        );
+        TopToast.showSuccess(context, 'Contraseña actualizada correctamente');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.error),
-        );
+        TopToast.showError(context, 'Error al actualizar contraseña: $e');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -157,20 +171,19 @@ class _SecuritySectionState extends State<SecuritySection> {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.card,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
           Row(
             children: [
               Icon(Icons.shield_rounded, size: 20, color: AppColors.warning),
               const SizedBox(width: 8),
               Text(
-                'Seguridad',
+                'Seguridad & Credenciales',
                 style: AppTypography.subtitle.copyWith(
                   fontWeight: FontWeight.w700,
                 ),
@@ -179,11 +192,9 @@ class _SecuritySectionState extends State<SecuritySection> {
           ),
           const SizedBox(height: AppSpacing.md),
 
-          // Username section
           _buildUsernameSection(),
           const SizedBox(height: AppSpacing.md),
 
-          // Password section
           _buildPasswordSection(),
         ],
       ),
@@ -196,6 +207,7 @@ class _SecuritySectionState extends State<SecuritySection> {
       decoration: BoxDecoration(
         color: AppColors.background,
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -209,17 +221,12 @@ class _SecuritySectionState extends State<SecuritySection> {
               if (!_isEditingUsername) ...[
                 if (widget.initialUsername != null && widget.initialUsername!.isNotEmpty)
                   IconButton(
-                    icon: Icon(Icons.copy_rounded, size: 18, color: AppColors.textSecondary),
+                    icon: Icon(Icons.copy_rounded, size: 18, color: AppColors.primary),
                     visualDensity: VisualDensity.compact,
                     tooltip: 'Copiar usuario',
                     onPressed: () {
                       Clipboard.setData(ClipboardData(text: widget.initialUsername!));
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Usuario copiado al portapapeles'),
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
+                      TopToast.showSuccess(context, 'Usuario copiado al portapapeles');
                     },
                   ),
                 const SizedBox(width: 4),
@@ -298,6 +305,7 @@ class _SecuritySectionState extends State<SecuritySection> {
       decoration: BoxDecoration(
         color: AppColors.background,
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -309,14 +317,13 @@ class _SecuritySectionState extends State<SecuritySection> {
               Text('Contraseña', style: AppTypography.caption.copyWith(fontWeight: FontWeight.w600)),
               const Spacer(),
               if (!_isChangingPassword) ...[
-
                 TextButton.icon(
-                  icon: Icon(Icons.key_rounded, size: 18),
-                  label: Text('Cambiar', style: AppTypography.small),
+                  icon: Icon(Icons.key_rounded, size: 18, color: AppColors.primary),
+                  label: Text('Cambiar', style: AppTypography.small.copyWith(color: AppColors.primary, fontWeight: FontWeight.bold)),
                   onPressed: () => setState(() => _isChangingPassword = true),
                   style: TextButton.styleFrom(
                     visualDensity: VisualDensity.compact,
-                    padding: EdgeInsets.symmetric(horizontal: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
                   ),
                 ),
               ],
@@ -327,11 +334,19 @@ class _SecuritySectionState extends State<SecuritySection> {
             if (!widget.isAdmin) ...[
               TextField(
                 controller: _currentPasswordCtrl,
-                obscureText: true,
+                obscureText: _obscureCurrent,
                 decoration: InputDecoration(
                   hintText: 'Contraseña actual',
                   hintStyle: AppTypography.body.copyWith(color: AppColors.textDisabled),
                   isDense: true,
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscureCurrent ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      color: AppColors.textSecondary,
+                      size: 20,
+                    ),
+                    onPressed: () => setState(() => _obscureCurrent = !_obscureCurrent),
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                     borderSide: BorderSide(color: AppColors.border),
@@ -349,11 +364,19 @@ class _SecuritySectionState extends State<SecuritySection> {
             ],
             TextField(
               controller: _newPasswordCtrl,
-              obscureText: true,
+              obscureText: _obscureNew,
               decoration: InputDecoration(
-                hintText: 'Nueva contraseña (mín. 6 caracteres)',
-                hintStyle: AppTypography.body.copyWith(color: AppColors.textDisabled),
+                hintText: 'Nueva contraseña (mín. 8 chars, 1 Mayús, 1 Núm, 1 Símbolo)',
+                hintStyle: AppTypography.body.copyWith(color: AppColors.textDisabled, fontSize: 12),
                 isDense: true,
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscureNew ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                    color: AppColors.textSecondary,
+                    size: 20,
+                  ),
+                  onPressed: () => setState(() => _obscureNew = !_obscureNew),
+                ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide: BorderSide(color: AppColors.border),
@@ -370,11 +393,19 @@ class _SecuritySectionState extends State<SecuritySection> {
             const SizedBox(height: 8),
             TextField(
               controller: _confirmPasswordCtrl,
-              obscureText: true,
+              obscureText: _obscureConfirm,
               decoration: InputDecoration(
                 hintText: 'Confirmar nueva contraseña',
-                hintStyle: AppTypography.body.copyWith(color: AppColors.textDisabled),
+                hintStyle: AppTypography.body.copyWith(color: AppColors.textDisabled, fontSize: 12),
                 isDense: true,
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscureConfirm ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                    color: AppColors.textSecondary,
+                    size: 20,
+                  ),
+                  onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
+                ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide: BorderSide(color: AppColors.border),
@@ -394,10 +425,14 @@ class _SecuritySectionState extends State<SecuritySection> {
               children: [
                 TextButton(
                   onPressed: () {
-                    setState(() => _isChangingPassword = false);
-                    _currentPasswordCtrl.clear();
-                    _newPasswordCtrl.clear();
-                    _confirmPasswordCtrl.clear();
+                    if (widget.onCancel != null) {
+                      widget.onCancel!();
+                    } else {
+                      setState(() => _isChangingPassword = false);
+                      _currentPasswordCtrl.clear();
+                      _newPasswordCtrl.clear();
+                      _confirmPasswordCtrl.clear();
+                    }
                   },
                   child: const Text('Cancelar'),
                 ),
@@ -405,10 +440,10 @@ class _SecuritySectionState extends State<SecuritySection> {
                 FilledButton.icon(
                   onPressed: _isLoading ? null : _updatePassword,
                   icon: _isLoading
-                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                       : const Icon(Icons.save_rounded, size: 18),
                   label: const Text('Guardar'),
-                  style: FilledButton.styleFrom(backgroundColor: AppColors.warning),
+                  style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
                 ),
               ],
             ),

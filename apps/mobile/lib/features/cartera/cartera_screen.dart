@@ -38,8 +38,22 @@ class CarteraScreen extends StatelessWidget {
   }
 }
 
-class _CarteraScreenContent extends StatelessWidget {
+class _CarteraScreenContent extends StatefulWidget {
   const _CarteraScreenContent();
+
+  @override
+  State<_CarteraScreenContent> createState() => _CarteraScreenContentState();
+}
+
+class _CarteraScreenContentState extends State<_CarteraScreenContent> {
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -122,6 +136,14 @@ class _CarteraScreenContent extends StatelessWidget {
                     );
                   }
 
+                  // Aplicar filtro de búsqueda por Etapa, Manzana, Casa o Residente
+                  final searchLower = _searchQuery.trim().toLowerCase();
+                  final List<CobroItem> displayCobros = state.filteredCobros.where((c) {
+                    if (searchLower.isEmpty) return true;
+                    final target = '${c.etapa} ${c.manzana} ${c.casa} ${c.nombre} ${c.concepto}'.toLowerCase();
+                    return target.contains(searchLower);
+                  }).toList();
+
                   return RefreshIndicator(
                     onRefresh: () => context.read<CarteraCubit>().loadCobros(),
                     child: CustomScrollView(
@@ -136,6 +158,49 @@ class _CarteraScreenContent extends StatelessWidget {
                         
                         const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
                         
+                        // Barra de Búsqueda por Etapa / Manzana / Casa / Residente
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
+                            child: TextField(
+                              controller: _searchController,
+                              onChanged: (value) {
+                                setState(() {
+                                  _searchQuery = value;
+                                });
+                              },
+                              decoration: InputDecoration(
+                                hintText: 'Buscar por Etapa, Manzana, Casa o Residente...',
+                                hintStyle: AppTypography.caption.copyWith(
+                                  color: AppColors.textSecondary,
+                                ),
+                                prefixIcon: const Icon(Icons.search_rounded, size: 20),
+                                suffixIcon: _searchQuery.isNotEmpty
+                                    ? IconButton(
+                                        icon: const Icon(Icons.clear_rounded, size: 18),
+                                        onPressed: () {
+                                          _searchController.clear();
+                                          setState(() {
+                                            _searchQuery = '';
+                                          });
+                                        },
+                                      )
+                                    : null,
+                                filled: true,
+                                fillColor: Theme.of(context).brightness == Brightness.dark
+                                    ? const Color(0xFF1E293B)
+                                    : const Color(0xFFF1F5F9),
+                                contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide.none,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.sm)),
+
                         // Toggle View: Lista | Calendario
                         SliverToBoxAdapter(
                           child: Padding(
@@ -199,19 +264,21 @@ class _CarteraScreenContent extends StatelessWidget {
                           const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.md)),
 
                           // Lista
-                          if (state.filteredCobros.isEmpty)
+                          if (displayCobros.isEmpty)
                             SliverToBoxAdapter(
                               child: Padding(
                                 padding: const EdgeInsets.only(top: AppSpacing.xl),
                                 child: EmptyState(
                                   icon: Icons.inbox_rounded,
                                   title: 'Sin registros',
-                                  description: 'No hay registros en estado "${state.activeFilter}".',
+                                  description: _searchQuery.isNotEmpty
+                                      ? 'No se encontraron resultados para "$_searchQuery".'
+                                      : 'No hay registros en estado "${state.activeFilter}".',
                                 ),
                               ),
                             )
                           else
-                            ..._buildGroupedList(context, state.filteredCobros, canRegisterPago),
+                            ..._buildGroupedList(context, displayCobros, canRegisterPago),
                         ],
                               
                         // Espaciado final
@@ -283,6 +350,12 @@ class _CarteraScreenContent extends StatelessWidget {
                           etapa: cobro.etapa,
                           manzana: cobro.manzana,
                         ),
+                      );
+                    } else if (canRegisterPago) {
+                      RegistrarPagoBottomSheet.show(
+                        context,
+                        cobro: cobro,
+                        onSuccess: () => context.read<CarteraCubit>().loadCobros(),
                       );
                     }
                   },

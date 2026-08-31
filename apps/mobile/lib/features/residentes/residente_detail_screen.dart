@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+
+import '../../core/network/api_client.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
@@ -9,6 +11,7 @@ import '../../screens/auth/auth_cubit.dart';
 import 'models/residentes_models.dart';
 import 'residentes_repository.dart';
 import 'widgets/security_section.dart';
+import '../../core/widgets/top_toast.dart';
 
 class ResidenteDetailScreen extends StatefulWidget {
   final ResidenteItem residente;
@@ -22,6 +25,7 @@ class ResidenteDetailScreen extends StatefulWidget {
 class _ResidenteDetailScreenState extends State<ResidenteDetailScreen> {
   late ResidenteItem _residente;
   bool _cargando = false;
+  bool _eliminando = false;
 
   final _repo = ResidentesRepository();
 
@@ -46,7 +50,7 @@ class _ResidenteDetailScreenState extends State<ResidenteDetailScreen> {
     }
   }
 
-  // ── Mock: upcoming payment dates based on modality ──────────────
+  // ── Fechas de cobro según modalidad ─────────────────────────────
   List<_ProximoCobro> _getProximosCobros() {
     final now = DateTime.now();
     final year = now.year;
@@ -68,7 +72,6 @@ class _ResidenteDetailScreenState extends State<ResidenteDetailScreen> {
         fechas = [_sabadoCercano(ultimoDia)];
     }
 
-    // Mock: mark dates before today as paid, today as current, future as pending
     return fechas.map((f) {
       final dateOnly = DateTime(f.year, f.month, f.day);
       final todayOnly = DateTime(now.year, now.month, now.day);
@@ -92,7 +95,6 @@ class _ResidenteDetailScreenState extends State<ResidenteDetailScreen> {
       final fecha = DateTime(year, month, d);
       if (fecha.weekday == DateTime.saturday) sabados.add(fecha);
     }
-    // Business rule: exactly 4 weekly payments per month
     if (sabados.length == 5) {
       if (sabados.first.day <= 2) {
         sabados.removeAt(0);
@@ -105,10 +107,8 @@ class _ResidenteDetailScreenState extends State<ResidenteDetailScreen> {
 
   DateTime _sabadoCercano(DateTime ancla) {
     final weekday = ancla.weekday;
-    // DateTime.saturday == 6
     final diff = (DateTime.saturday - weekday) % 7;
     if (diff == 0) return ancla;
-    // pick the closest saturday (before or after)
     final after = ancla.add(Duration(days: diff));
     final before = ancla.subtract(Duration(days: 7 - diff));
     return (diff <= 3) ? after : before;
@@ -119,6 +119,201 @@ class _ResidenteDetailScreenState extends State<ResidenteDetailScreen> {
     final pendientes = cobros.where((c) => c.status != _CobroStatus.pagado);
     if (pendientes.isEmpty) return 'Sin vencimientos';
     return DateFormat("d 'de' MMMM", 'es').format(pendientes.first.fecha);
+  }
+
+  Future<void> _confirmarEliminar(BuildContext context) async {
+    final seguro = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: AppColors.error),
+            const SizedBox(width: AppSpacing.sm),
+            const Text('Eliminar Residente'),
+          ],
+        ),
+        content: Text(
+          '¿Estás seguro de que deseas eliminar a "${_residente.nombre}"? Esta acción desasignará su casa y eliminará su usuario.',
+          style: AppTypography.body,
+        ),
+        actions: [
+          OutlinedButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
+
+    if (seguro != true || !mounted) return;
+
+    setState(() => _eliminando = true);
+
+    try {
+      if (_residente.usuarioId != null) {
+        await ApiClient.instance.delete('/usuarios/${_residente.usuarioId}');
+      } else {
+        await ApiClient.instance.delete('/residentes/${_residente.id}');
+      }
+
+      if (mounted) {
+        TopToast.showSuccess(context, 'Residente eliminado correctamente');
+        context.pop(true);
+      }
+    } catch (e) {
+      if (mounted) {
+        TopToast.showError(context, 'Error al eliminar residente: $e');
+        setState(() => _eliminando = false);
+      }
+    }
+  }
+
+  void _mostrarModalEditar(BuildContext context) {
+    final nombreCtrl = TextEditingController(text: _residente.nombre);
+    final telefonoCtrl = TextEditingController(text: _residente.telefono);
+    String modalidadSeleccionada = _residente.modalidadPago.toUpperCase();
+    bool guardando = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setStateModal) {
+          return Container(
+            decoration: BoxDecoration(
+              color: AppColors.background,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            padding: EdgeInsets.only(
+              left: AppSpacing.md,
+              right: AppSpacing.md,
+              top: AppSpacing.md,
+              bottom: MediaQuery.of(ctx).viewInsets.bottom + AppSpacing.lg,
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 36,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: AppColors.border,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  Text(
+                    'Editar Residente',
+                    style: AppTypography.subtitle.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    'Modifica la información general de ${_residente.nombre}',
+                    style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+
+                  TextField(
+                    controller: nombreCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Nombre completo',
+                      prefixIcon: Icon(Icons.person_outlined),
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+
+                  TextField(
+                    controller: telefonoCtrl,
+                    keyboardType: TextInputType.phone,
+                    decoration: const InputDecoration(
+                      labelText: 'Teléfono de contacto',
+                      prefixIcon: Icon(Icons.phone_outlined),
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+
+                  DropdownButtonFormField<String>(
+                    initialValue: modalidadSeleccionada,
+                    decoration: const InputDecoration(
+                      labelText: 'Modalidad de Pago',
+                      prefixIcon: Icon(Icons.calendar_month_outlined),
+                      border: OutlineInputBorder(),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'SEMANAL', child: Text('Semanal (4 cuotas)')),
+                      DropdownMenuItem(value: 'QUINCENAL', child: Text('Quincenal (2 cuotas)')),
+                      DropdownMenuItem(value: 'MENSUAL', child: Text('Mensual (1 cuota)')),
+                    ],
+                    onChanged: (val) {
+                      if (val != null) {
+                        setStateModal(() => modalidadSeleccionada = val);
+                      }
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: guardando ? null : () => Navigator.pop(ctx),
+                        child: const Text('Cancelar'),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      FilledButton.icon(
+                        onPressed: guardando
+                            ? null
+                            : () async {
+                                final nombre = nombreCtrl.text.trim();
+                                if (nombre.isEmpty) {
+                                  TopToast.showError(ctx, 'El nombre no puede estar vacío');
+                                  return;
+                                }
+                                setStateModal(() => guardando = true);
+
+                                final exito = await _repo.updateResidente(_residente.id, {
+                                  'nombre': nombre,
+                                  'telefono': telefonoCtrl.text.trim(),
+                                  'modalidadPago': modalidadSeleccionada,
+                                });
+
+                                if (ctx.mounted) {
+                                  if (exito) {
+                                    Navigator.pop(ctx);
+                                    TopToast.showSuccess(context, 'Residente actualizado correctamente');
+                                    await _recargarResidente();
+                                  } else {
+                                    setStateModal(() => guardando = false);
+                                    TopToast.showError(ctx, 'Error al actualizar residente');
+                                  }
+                                }
+                              },
+                        icon: guardando
+                            ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                            : const Icon(Icons.save_rounded, size: 18),
+                        label: const Text('Guardar Cambios'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
   }
 
   @override
@@ -166,7 +361,6 @@ class _ResidenteDetailScreenState extends State<ResidenteDetailScreen> {
                 initialUsername: _residente.username,
                 isAdmin: context.read<AuthCubit>().state.usuario?['rol'] == 'ADMIN',
                 onCredentialsUpdated: () {
-                  // Recargar para mostrar el nuevo username
                   _recargarResidente();
                 },
               ),
@@ -329,7 +523,6 @@ class _ResidenteDetailScreenState extends State<ResidenteDetailScreen> {
     }
   }
 
-  // ── Próximos Cobros (replaces old static mini-timeline) ─────────
   Widget _buildProximosCobros(List<_ProximoCobro> cobros) {
     final modalidad = _residente.modalidadPago.toUpperCase();
     final mesActual = DateFormat('MMMM', 'es').format(DateTime.now());
@@ -351,7 +544,6 @@ class _ResidenteDetailScreenState extends State<ResidenteDetailScreen> {
         ),
         const SizedBox(height: AppSpacing.sm),
 
-        // Timeline row
         Row(
           children: [
             for (int i = 0; i < cobros.length; i++) ...[
@@ -464,15 +656,14 @@ class _ResidenteDetailScreenState extends State<ResidenteDetailScreen> {
           title: 'Editar',
           icon: Icons.edit_rounded,
           color: AppColors.info,
-          routeName: 'comunidad-propietario-editar',
-          extra: _residente,
+          onTap: () => _mostrarModalEditar(context),
         ),
         _buildModuleCard(
           context,
           title: 'Eliminar',
           icon: Icons.delete_forever_rounded,
           color: AppColors.error,
-          onTap: () => _confirmarEliminacion(context),
+          onTap: () => _confirmarEliminar(context),
         ),
       ],
     );
@@ -484,22 +675,12 @@ class _ResidenteDetailScreenState extends State<ResidenteDetailScreen> {
     required IconData icon,
     required Color color,
     String? route,
-    String? routeName,
     Object? extra,
     VoidCallback? onTap,
-    String? subtitle,
-    bool isDanger = false,
   }) {
     return InkWell(
-      onTap: onTap ?? () async {
-        if (routeName == 'comunidad-residente-editar') {
-          final editado = await context.pushNamed<bool>(routeName!, extra: extra);
-          if (editado == true) {
-            await _recargarResidente();
-          }
-        } else if (routeName != null) {
-          context.pushNamed(routeName, extra: extra);
-        } else if (route != null) {
+      onTap: onTap ?? () {
+        if (route != null) {
           context.push(route, extra: extra);
         }
       },
@@ -528,44 +709,7 @@ class _ResidenteDetailScreenState extends State<ResidenteDetailScreen> {
       ),
     );
   }
-
-  Future<void> _confirmarEliminacion(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Eliminar Residente'),
-        content: Text('¿Estás seguro de eliminar a ${_residente.nombre}? Esta acción no se puede deshacer y eliminará sus deudas.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Eliminar'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true && context.mounted) {
-      final success = await _repo.deleteResidente(_residente.id);
-      if (success && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Residente eliminado correctamente')),
-        );
-        context.pop(true);
-      } else if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Error al eliminar el residente')),
-        );
-      }
-    }
-  }
 }
-
-// ── Private helpers ──────────────────────────────────────────────
 
 enum _CobroStatus { pagado, hoy, pendiente }
 

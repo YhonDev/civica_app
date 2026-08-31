@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/widgets/top_toast.dart';
 import 'bloc/asignacion_etapa_cubit.dart';
 
 class AsignarEtapasScreen extends StatelessWidget {
@@ -27,14 +28,10 @@ class AsignarEtapasScreen extends StatelessWidget {
         body: BlocConsumer<AsignacionEtapaCubit, AsignacionEtapaState>(
           listener: (context, state) {
             if (state.isSuccess) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Etapas asignadas correctamente')),
-              );
+              TopToast.showSuccess(context, 'Asignación de zonas actualizada');
               Navigator.pop(context, true);
             } else if (state.errorMessage != null) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(state.errorMessage!)),
-              );
+              TopToast.showError(context, state.errorMessage!);
             }
           },
           builder: (context, state) {
@@ -61,7 +58,7 @@ class AsignarEtapasScreen extends StatelessWidget {
                           itemBuilder: (context, index) {
                             final etapa = state.allEtapas[index];
                             final id = etapa['id'] as String;
-                            final nombre = etapa['nombre'] ?? 'Etapa';
+                            final nombre = etapa['nombre'] ?? 'Etapa ${index + 1}';
                             final isChecked = state.selectedIds.contains(id);
 
                             return Card(
@@ -75,8 +72,18 @@ class AsignarEtapasScreen extends StatelessWidget {
                               ),
                               child: CheckboxListTile(
                                 value: isChecked,
-                                title: Text(nombre, style: AppTypography.subtitle),
-                                subtitle: Text('ID: ${id.substring(0, 8)}...'),
+                                title: Text(
+                                  nombre,
+                                  style: AppTypography.subtitle.copyWith(
+                                    fontWeight: isChecked ? FontWeight.w700 : FontWeight.w500,
+                                  ),
+                                ),
+                                subtitle: Text(
+                                  isChecked ? 'Zona asignada a cobrador' : 'Disponible para asignar',
+                                  style: AppTypography.caption.copyWith(
+                                    color: isChecked ? AppColors.primary : AppColors.textSecondary,
+                                  ),
+                                ),
                                 activeColor: AppColors.primary,
                                 onChanged: (val) {
                                   context.read<AsignacionEtapaCubit>().toggle(id);
@@ -96,6 +103,9 @@ class AsignarEtapasScreen extends StatelessWidget {
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
                       backgroundColor: AppColors.primary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                     child: state.isSaving
                         ? const SizedBox(
@@ -103,7 +113,10 @@ class AsignarEtapasScreen extends StatelessWidget {
                             width: 20,
                             child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                           )
-                        : const Text('Guardar Asignación', style: TextStyle(color: Colors.white)),
+                        : const Text(
+                            'Guardar Asignación',
+                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                          ),
                   ),
                 ),
               ],

@@ -7,12 +7,6 @@ import 'app_typography.dart';
 final darkThemeNotifier = ValueNotifier<bool>(false);
 
 /// Builds the light [ThemeData] for the Civica Pago app.
-///
-/// Follows the tokens and rules from doc/DESIGN_SYSTEM.md:
-/// - Material 3 enabled
-/// - Custom color scheme from AppColors
-/// - Flat cards with border-radius 16
-/// - Clean app bar, bottom nav, and inputs
 ThemeData buildLightTheme() {
   final colorScheme = ColorScheme.light(
     primary: AppColors.primary,
@@ -56,6 +50,10 @@ ThemeData buildLightTheme() {
       shadowColor: Colors.black.withValues(alpha: 0.06),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+        side: BorderSide(
+          color: AppColors.border.withValues(alpha: 0.85),
+          width: 1,
+        ),
       ),
       margin: EdgeInsets.zero,
     ),
@@ -166,14 +164,6 @@ ThemeData buildLightTheme() {
       space: 1,
     ),
 
-    // ── Snackbar ────────────────────────────────────
-    snackBarTheme: SnackBarThemeData(
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
-      ),
-    ),
-
     // ── Dialog ──────────────────────────────────────
     dialogTheme: DialogThemeData(
       elevation: 0,
@@ -181,17 +171,94 @@ ThemeData buildLightTheme() {
         borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
       ),
     ),
+  );
+}
 
-    // ── Bottom Sheet ────────────────────────────────
-    bottomSheetTheme: BottomSheetThemeData(
+/// Builds the dark [ThemeData] for the Civica Pago app.
+ThemeData buildDarkTheme() {
+  final darkBackground = const Color(0xFF121417);
+  final darkSurface = const Color(0xFF1B1E22);
+  final darkCard = const Color(0xFF23272D);
+  final darkBorder = const Color(0xFF32373E);
+
+  final colorScheme = ColorScheme.dark(
+    primary: AppColors.primary,
+    onPrimary: Colors.white,
+    primaryContainer: AppColors.primary.withValues(alpha: 0.2),
+    onPrimaryContainer: Colors.white,
+    secondary: AppColors.primaryLight,
+    onSecondary: Colors.white,
+    surface: darkBackground,
+    onSurface: Colors.white,
+    surfaceContainerHighest: darkSurface,
+    onSurfaceVariant: const Color(0xFF94A3B8),
+    error: const Color(0xFFEF4444),
+    onError: Colors.white,
+    outline: const Color(0xFF64748B),
+    outlineVariant: darkBorder,
+  );
+
+  return ThemeData(
+    useMaterial3: true,
+    brightness: Brightness.dark,
+    colorScheme: colorScheme,
+    scaffoldBackgroundColor: darkBackground,
+
+    appBarTheme: AppBarTheme(
+      centerTitle: true,
       elevation: 0,
-      showDragHandle: true,
-      dragHandleColor: AppColors.border,
+      scrolledUnderElevation: 0,
+      backgroundColor: darkBackground,
+      foregroundColor: Colors.white,
+      titleTextStyle: AppTypography.subtitle.copyWith(color: Colors.white),
+    ),
+
+    cardTheme: CardThemeData(
+      elevation: 0,
+      color: darkCard,
+      surfaceTintColor: Colors.transparent,
+      shadowColor: Colors.black.withValues(alpha: 0.3),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(AppSpacing.bottomSheetRadius),
-          topRight: Radius.circular(AppSpacing.bottomSheetRadius),
+        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+        side: BorderSide(
+          color: darkBorder.withValues(alpha: 0.9),
+          width: 1,
         ),
+      ),
+      margin: EdgeInsets.zero,
+    ),
+
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: darkSurface,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
+        borderSide: BorderSide(color: darkBorder),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
+        borderSide: BorderSide(color: darkBorder),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
+        borderSide: BorderSide(color: AppColors.primary, width: 1.5),
+      ),
+    ),
+
+    bottomNavigationBarTheme: BottomNavigationBarThemeData(
+      elevation: 0,
+      backgroundColor: darkSurface,
+      selectedItemColor: AppColors.primary,
+      unselectedItemColor: const Color(0xFF64748B),
+      type: BottomNavigationBarType.fixed,
+    ),
+
+    dialogTheme: DialogThemeData(
+      elevation: 0,
+      backgroundColor: darkCard,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
       ),
     ),
   );

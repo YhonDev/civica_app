@@ -7,10 +7,12 @@ import '../models/cobradores_models.dart';
 
 class CobradorCard extends StatelessWidget {
   final CobradorItem cobrador;
+  final VoidCallback? onTap;
 
   const CobradorCard({
     super.key,
     required this.cobrador,
+    this.onTap,
   });
 
   @override
@@ -23,7 +25,7 @@ class CobradorCard extends StatelessWidget {
         side: BorderSide(color: AppColors.border.withValues(alpha: 0.5)),
       ),
       child: InkWell(
-        onTap: () {
+        onTap: onTap ?? () {
           context.push('/cobrador-detalle', extra: cobrador);
         },
         borderRadius: BorderRadius.circular(16),
@@ -33,7 +35,6 @@ class CobradorCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  // Initials avatar
                   CircleAvatar(
                     radius: 24,
                     backgroundColor: AppColors.info.withValues(alpha: 0.1),
@@ -61,7 +62,7 @@ class CobradorCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'Zonas: ${cobrador.zonas.join(', ')}',
+                          'Zonas: ${cobrador.zonas.isEmpty ? "Sin asignación" : cobrador.zonas.join(", ")}',
                           style: AppTypography.body.copyWith(
                             color: AppColors.textSecondary,
                           ),
@@ -71,7 +72,6 @@ class CobradorCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  // Status indicator
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(

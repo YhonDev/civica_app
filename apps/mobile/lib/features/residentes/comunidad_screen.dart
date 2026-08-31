@@ -70,12 +70,6 @@ class ComunidadScreen extends StatelessWidget {
                 title: 'Configuración de Tarifas',
                 onTap: () => context.go('/comunidad/tarifas'),
               ),
-              const SizedBox(height: AppSpacing.sm),
-              ActionCard(
-                icon: Icons.price_change_outlined,
-                title: 'Montos Predefinidos',
-                onTap: () => context.push('/montos'),
-              ),
             ],
           ),
         ),

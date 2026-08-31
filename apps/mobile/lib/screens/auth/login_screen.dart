@@ -29,8 +29,6 @@ class _LoginScreenState extends State<LoginScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    // Usamos BlocBuilder en vez de BlocConsumer porque _AuthGate
-    // en main.dart ya maneja la transición login → home mediante BlocBuilder.
     return BlocBuilder<AuthCubit, AuthState>(
       builder: (context, state) {
         return Scaffold(
@@ -77,7 +75,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 36),
 
-                      // Email
+                      // Email / Username
                       TextFormField(
                         controller: _emailCtrl,
                         decoration: const InputDecoration(
@@ -173,7 +171,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       const Divider(),
                       const SizedBox(height: 12),
                       Text(
-                        'Usuarios de prueba (Autocompletar)',
+                        'Autocompletado de prueba',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: colorScheme.outline,
                           fontWeight: FontWeight.w600,
@@ -185,49 +183,54 @@ class _LoginScreenState extends State<LoginScreen> {
                         runSpacing: 8,
                         alignment: WrapAlignment.center,
                         children: [
-                           ActionChip(
+                          ActionChip(
                             avatar: const Icon(Icons.admin_panel_settings_outlined, size: 16),
                             label: const Text('Admin'),
                             onPressed: () {
-                              _emailCtrl.text = 'admin@vigivecino.com';
-                              _passwordCtrl.text = 'Admin123!';
-                              _handleLogin(context);
+                              setState(() {
+                                _emailCtrl.text = 'admin@vigivecino.com';
+                                _passwordCtrl.text = 'Admin123!';
+                              });
                             },
                           ),
                           ActionChip(
-                            avatar: const Icon(Icons.directions_run_rounded, size: 16),
-                            label: const Text('Cobrador'),
+                            avatar: const Icon(Icons.badge_outlined, size: 16),
+                            label: const Text('Cobrador (Ricardo Arrieta)'),
                             onPressed: () {
-                              _emailCtrl.text = 'robertomartinezcobrador';
-                              _passwordCtrl.text = 'robertomartinez2026';
-                              _handleLogin(context);
-                            },
-                          ),
-                          ActionChip(
-                            avatar: const Icon(Icons.home_outlined, size: 16),
-                            label: const Text('Residente 1 (Semanal)'),
-                            onPressed: () {
-                              _emailCtrl.text = 'manzana_a_casa_1_residente';
-                              _passwordCtrl.text = 'Casa1ManzanaA';
-                              _handleLogin(context);
+                              setState(() {
+                                _emailCtrl.text = 'ricardoarrietacobrador';
+                                _passwordCtrl.text = 'ricardoArrieta2026.';
+                              });
                             },
                           ),
                           ActionChip(
                             avatar: const Icon(Icons.home_outlined, size: 16),
-                            label: const Text('Residente 2 (Quincenal)'),
+                            label: const Text('Residente Mz A (Camilo Silva)'),
                             onPressed: () {
-                              _emailCtrl.text = 'manzana_a_casa_2_residente';
-                              _passwordCtrl.text = 'Casa2ManzanaA';
-                              _handleLogin(context);
+                              setState(() {
+                                _emailCtrl.text = 'manzana_a_casa_1_residente';
+                                _passwordCtrl.text = 'Casa1ManzanaA..';
+                              });
                             },
                           ),
                           ActionChip(
                             avatar: const Icon(Icons.home_outlined, size: 16),
-                            label: const Text('Residente 3 (Mensual)'),
+                            label: const Text('Residente Mz B Casa 1'),
                             onPressed: () {
-                              _emailCtrl.text = 'manzana_a_casa_3_residente';
-                              _passwordCtrl.text = 'Casa3ManzanaA';
-                              _handleLogin(context);
+                              setState(() {
+                                _emailCtrl.text = 'manzana_b_casa_1_residente';
+                                _passwordCtrl.text = 'Casa1ManzanaB';
+                              });
+                            },
+                          ),
+                          ActionChip(
+                            avatar: const Icon(Icons.home_outlined, size: 16),
+                            label: const Text('Residente Mz C Casa 1'),
+                            onPressed: () {
+                              setState(() {
+                                _emailCtrl.text = 'manzana_c_casa_1_residente';
+                                _passwordCtrl.text = 'Casa1ManzanaC';
+                              });
                             },
                           ),
                         ],

@@ -39,7 +39,7 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
   Future<void> _loadCuotas() async {
     try {
       final user = context.read<AuthCubit>().state.usuario;
-      final propietarioId = user?['residenteId'] as String?;
+      final propietarioId = (user?['residenteId'] as String?) ?? (user?['id'] as String?);
       if (propietarioId == null) {
         setState(() {
           _loadingCuotas = false;

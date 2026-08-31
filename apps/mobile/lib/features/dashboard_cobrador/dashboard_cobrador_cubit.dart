@@ -35,12 +35,12 @@ class CobradorDashboardData extends Equatable {
     final stats = json['stats'] as Map<String, dynamic>? ?? {};
     return CobradorDashboardData(
       cobradorNombre: (json['cobrador'] as Map<String, dynamic>?)?['nombre'] as String? ?? '',
-      totalViviendas: stats['totalViviendas'] as int? ?? 0,
-      cobradosHoy: stats['cobradosHoy'] as int? ?? 0,
-      montoCobradoHoy: stats['montoCobradoHoy'] as int? ?? 0,
-      pendientes: stats['pendientes'] as int? ?? 0,
-      vencidas: stats['vencidas'] as int? ?? 0,
-      montoEsperado: stats['montoEsperado'] as int? ?? 0,
+      totalViviendas: int.tryParse(stats['totalViviendas']?.toString() ?? '') ?? 0,
+      cobradosHoy: int.tryParse(stats['cobradosHoy']?.toString() ?? '') ?? 0,
+      montoCobradoHoy: int.tryParse(stats['montoCobradoHoy']?.toString() ?? '') ?? 0,
+      pendientes: int.tryParse(stats['pendientes']?.toString() ?? '') ?? 0,
+      vencidas: int.tryParse(stats['vencidas']?.toString() ?? '') ?? 0,
+      montoEsperado: int.tryParse(stats['montoEsperado']?.toString() ?? '') ?? 0,
       casas: List<Map<String, dynamic>>.from(json['viviendas'] as List? ?? json['casas'] as List? ?? []),
       proximaVivienda: json['proximaVivienda'] as Map<String, dynamic>?,
       ultimosCobros: List<Map<String, dynamic>>.from(json['ultimosCobros'] as List? ?? []),
@@ -102,8 +102,10 @@ class DashboardCobradorCubit extends Cubit<CobradorDashboardState> {
       : _api = api ?? ApiClient.instance,
         super(const CobradorDashboardInitial());
 
-  Future<void> loadDashboard() async {
-    emit(const CobradorDashboardLoading());
+  Future<void> loadDashboard({bool silent = false}) async {
+    if (!silent) {
+      emit(const CobradorDashboardLoading());
+    }
     try {
       final response = await _api.get('/dashboard/cobrador');
       final data = CobradorDashboardData.fromJson(
@@ -111,11 +113,65 @@ class DashboardCobradorCubit extends Cubit<CobradorDashboardState> {
       );
       emit(CobradorDashboardLoaded(data));
     } catch (e) {
-      emit(CobradorDashboardError('Error al cargar jornada: $e'));
+      if (!silent) {
+        emit(CobradorDashboardError('Error al cargar jornada: $e'));
+      }
     }
   }
 
-  Future<void> refresh() async {
-    await loadDashboard();
+  Future<void> refresh({bool silent = true}) async {
+    await loadDashboard(silent: silent);
+  }
+
+  /// Mutación optimista e instantánea al registrar un pago en la jornada
+  void optimisticRegistrarPago({
+    required String residenteId,
+    required int montoPesos,
+  }) {
+    if (state is! CobradorDashboardLoaded) return;
+    final currentData = (state as CobradorDashboardLoaded).data;
+
+    // 1. Filtrar o actualizar viviendas
+    final updatedCasas = currentData.casas.map((c) {
+      if (c['residenteId'] == residenteId || c['id'] == residenteId) {
+        final currentMonto = (c['montoAdeudado'] as num? ?? c['saldo'] as num? ?? 0).toInt();
+        final newMonto = (currentMonto - montoPesos).clamp(0, 99999999);
+        final newMap = Map<String, dynamic>.from(c);
+        newMap['montoAdeudado'] = newMonto;
+        newMap['saldo'] = newMonto;
+        if (newMonto == 0) {
+          newMap['peorEstado'] = 'AL_DIA';
+          newMap['estado'] = 'AL_DIA';
+        }
+        return newMap;
+      }
+      return c;
+    }).where((c) {
+      final monto = (c['montoAdeudado'] as num? ?? c['saldo'] as num? ?? 0).toInt();
+      return monto > 0;
+    }).toList();
+
+    // 2. Determinar próxima vivienda activa
+    Map<String, dynamic>? newProxima = currentData.proximaVivienda;
+    if (updatedCasas.isNotEmpty) {
+      newProxima = updatedCasas.first;
+    } else {
+      newProxima = null;
+    }
+
+    final newData = CobradorDashboardData(
+      cobradorNombre: currentData.cobradorNombre,
+      totalViviendas: currentData.totalViviendas,
+      cobradosHoy: currentData.cobradosHoy + 1,
+      montoCobradoHoy: currentData.montoCobradoHoy + montoPesos,
+      pendientes: (currentData.pendientes - 1).clamp(0, 99999),
+      vencidas: currentData.vencidas,
+      montoEsperado: currentData.montoEsperado,
+      casas: updatedCasas,
+      proximaVivienda: newProxima,
+      ultimosCobros: currentData.ultimosCobros,
+    );
+
+    emit(CobradorDashboardLoaded(newData));
   }
 }

@@ -4,11 +4,11 @@ import 'package:go_router/go_router.dart';
 
 import '../../screens/auth/auth_cubit.dart';
 import '../../core/network/api_client.dart';
-import '../../core/network/api_exceptions.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_theme.dart';
+import '../residentes/widgets/security_section.dart';
 
 class ConfiguracionScreen extends StatefulWidget {
   const ConfiguracionScreen({super.key});
@@ -19,9 +19,6 @@ class ConfiguracionScreen extends StatefulWidget {
 
 class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
   String? _proyectoNombreBackend;
-  String _casaDireccion = 'Casa 1';
-  String _ubicacion = 'Etapa 1 — Manzana A';
-  String _modalidadPago = 'Semanal';
 
   @override
   void initState() {
@@ -41,25 +38,6 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
         }
       }
     } catch (_) {}
-
-    try {
-      final resProp = await ApiClient.instance.get<Map<String, dynamic>>('/dashboard/residente');
-      if (mounted && resProp.data != null) {
-        final resInfo = resProp.data!['residenteInfo'] as Map<String, dynamic>? ?? {};
-        final dir = resInfo['casaDireccion'] as String?;
-        final etapa = resInfo['etapaNombre'] as String?;
-        final manzana = resInfo['manzanaNombre'] as String?;
-        final mod = resInfo['modalidadPago'] as String?;
-
-        setState(() {
-          if (dir != null && dir.isNotEmpty) _casaDireccion = dir;
-          if (etapa != null && manzana != null && etapa.isNotEmpty && manzana.isNotEmpty) {
-            _ubicacion = '$etapa — $manzana';
-          }
-          if (mod != null && mod.isNotEmpty) _modalidadPago = mod;
-        });
-      }
-    } catch (_) {}
   }
 
   @override
@@ -71,7 +49,6 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
     final tenantId = user?['tenantId'] as String? ?? '';
 
     final rolLabel = _rolName(rol);
-    final isPropietario = rol == 'PROPIETARIO' || rol == 'RESIDENTE';
 
     // Obtención dinámica del nombre del proyecto desde el backend
     final proyectoNombre = _proyectoNombreBackend ??
@@ -147,32 +124,6 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
                 ],
               ),
 
-              if (isPropietario) ...[
-                const SizedBox(height: AppSpacing.lg),
-                _SectionCard(
-                  title: 'Mi Casa',
-                  children: [
-                    _InfoTile(
-                      icon: Icons.home_outlined,
-                      label: 'Dirección de Inmueble',
-                      value: _casaDireccion,
-                    ),
-                    const Divider(height: 1, indent: 56),
-                    _InfoTile(
-                      icon: Icons.location_on_outlined,
-                      label: 'Ubicación',
-                      value: _ubicacion,
-                    ),
-                    const Divider(height: 1, indent: 56),
-                    _InfoTile(
-                      icon: Icons.calendar_month_outlined,
-                      label: 'Modalidad de Pago',
-                      value: _modalidadPago,
-                    ),
-                  ],
-                ),
-              ],
-
               // Herramientas según rol
               if (rol == 'COBRADOR' || rol == 'ADMIN') ...[
                 const SizedBox(height: AppSpacing.lg),
@@ -227,7 +178,7 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
                     title: const Text('Cambiar contraseña'),
                     subtitle: const Text('Actualiza tu clave de acceso'),
                     trailing: Icon(Icons.chevron_right_rounded, color: AppColors.textDisabled),
-                    onTap: () => _mostrarModalCambiarPassword(context),
+                    onTap: () => _mostrarModalCambiarPassword(context, user),
                   ),
                 ],
               ),
@@ -261,123 +212,61 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
     );
   }
 
-  void _mostrarModalCambiarPassword(BuildContext context) {
-    final passActualController = TextEditingController();
-    final passNuevaController = TextEditingController();
-    final formKey = GlobalKey<FormState>();
-    bool cargando = false;
+  void _mostrarModalCambiarPassword(BuildContext context, Map<String, dynamic>? user) {
+    final usuarioId = user?['id'] as String? ?? '';
+    final nombre = user?['nombre'] as String? ?? 'Usuario';
+    final username = user?['username'] as String? ?? user?['email'] as String? ?? '';
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setStateModal) {
-          return Padding(
-            padding: EdgeInsets.only(
-              left: AppSpacing.screenPadding,
-              right: AppSpacing.screenPadding,
-              top: AppSpacing.lg,
-              bottom: MediaQuery.of(ctx).viewInsets.bottom + AppSpacing.xl,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          decoration: BoxDecoration(
+            color: AppColors.background,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: EdgeInsets.only(
+            left: AppSpacing.md,
+            right: AppSpacing.md,
+            top: AppSpacing.md,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + AppSpacing.lg,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Drag handle indicator
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.border,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                SecuritySection(
+                  usuarioId: usuarioId,
+                  nombre: nombre,
+                  initialUsername: username,
+                  isAdmin: false,
+                  autoExpandPassword: true,
+                  onCredentialsUpdated: () {
+                    Navigator.of(ctx).pop();
+                  },
+                  onCancel: () {
+                    Navigator.of(ctx).pop();
+                  },
+                ),
+              ],
             ),
-            child: Form(
-              key: formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Cambiar contraseña',
-                    style: AppTypography.subtitle.copyWith(fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    'Ingresa tu contraseña actual y define la nueva contraseña.',
-                    style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-
-                  TextFormField(
-                    controller: passActualController,
-                    obscureText: true,
-                    decoration: const InputDecoration(
-                      labelText: 'Contraseña actual',
-                      prefixIcon: Icon(Icons.lock_outline),
-                    ),
-                    validator: (v) => (v == null || v.isEmpty) ? 'Ingresa tu clave actual' : null,
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-
-                  TextFormField(
-                    controller: passNuevaController,
-                    obscureText: true,
-                    decoration: const InputDecoration(
-                      labelText: 'Nueva contraseña',
-                      prefixIcon: Icon(Icons.lock_reset),
-                    ),
-                    validator: (v) {
-                      if (v == null || v.length < 6) {
-                        return 'La clave debe tener al menos 6 caracteres';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: AppSpacing.xl),
-
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton(
-                      onPressed: cargando
-                          ? null
-                          : () async {
-                              if (!formKey.currentState!.validate()) return;
-                              setStateModal(() => cargando = true);
-
-                              try {
-                                await ApiClient.instance.patch(
-                                  '/auth/credentials',
-                                  data: {
-                                    'currentPassword': passActualController.text,
-                                    'newPassword': passNuevaController.text,
-                                  },
-                                );
-
-                                if (ctx.mounted) {
-                                  Navigator.of(ctx).pop();
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: const Text('Contraseña actualizada correctamente.'),
-                                      backgroundColor: AppColors.success,
-                                    ),
-                                  );
-                                }
-                              } catch (e) {
-                                setStateModal(() => cargando = false);
-                                final msg = e is ApiException ? e.message : 'Error al actualizar contraseña.';
-                                if (ctx.mounted) {
-                                  ScaffoldMessenger.of(ctx).showSnackBar(
-                                    SnackBar(
-                                      content: Text(msg),
-                                      backgroundColor: AppColors.error,
-                                    ),
-                                  );
-                                }
-                              }
-                            },
-                      child: cargando
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                            )
-                          : const Text('Guardar Contraseña'),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 

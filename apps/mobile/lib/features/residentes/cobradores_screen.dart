@@ -216,6 +216,12 @@ class _CobradoresScreenState extends State<CobradoresScreen> {
                           padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                           child: CobradorCard(
                             cobrador: filteredList[index],
+                            onTap: () async {
+                              final res = await context.push('/cobrador-detalle', extra: filteredList[index]);
+                              if (res == true && mounted) {
+                                _loadData();
+                              }
+                            },
                           ),
                         );
                       },

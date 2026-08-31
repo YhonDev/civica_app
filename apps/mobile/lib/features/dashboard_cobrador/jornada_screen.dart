@@ -38,7 +38,6 @@ class _JornadaView extends StatefulWidget {
 }
 
 class _JornadaViewState extends State<_JornadaView> {
-  String _filterModalidad = 'TODAS';
   @override
   Widget build(BuildContext context) {
     final user = context.watch<AuthCubit>().state.usuario;
@@ -131,26 +130,6 @@ class _JornadaViewState extends State<_JornadaView> {
   // ── Content ───────────────────────────────────────────────────────
 
   Widget _buildContent(CobradorDashboardData data, String nombre, String hoy) {
-    final filteredCasas = data.casas.where((v) {
-      if (_filterModalidad == 'TODAS') return true;
-      final proximoVenc = v['proximoVencimiento'] as String?;
-      if (proximoVenc == null) return true;
-      final date = DateTime.tryParse(proximoVenc);
-      if (date == null) return true;
-
-      final now = DateTime.now();
-      if (_filterModalidad == 'SEMANA') {
-        final diffDays = date.difference(now).inDays;
-        return diffDays <= 7 || date.isBefore(now);
-      } else if (_filterModalidad == 'QUINCENA') {
-        final diffDays = date.difference(now).inDays;
-        return diffDays <= 15 || date.isBefore(now);
-      } else if (_filterModalidad == 'MES') {
-        return (date.month == now.month && date.year == now.year) || date.isBefore(now);
-      }
-      return true;
-    }).toList();
-
     return RefreshIndicator(
       color: AppColors.primary,
       onRefresh: () => context.read<DashboardCobradorCubit>().refresh(),
@@ -184,52 +163,14 @@ class _JornadaViewState extends State<_JornadaView> {
 
             const SizedBox(height: AppSpacing.lg),
 
-            // ── Próxima vivienda a visitar ──────────────────────────
+            // ── Próxima vivienda a visitar (Héroe interactivo) ──────
             if (data.proximaVivienda != null) ...[
               _buildProximaVivienda(data.proximaVivienda!),
               const SizedBox(height: AppSpacing.lg),
             ],
 
-            // ── Lista de casas pendientes ───────────────────────
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Viviendas pendientes',
-                  style: AppTypography.subtitle.copyWith(fontWeight: FontWeight.w600),
-                ),
-                Text(
-                  '${filteredCasas.length} de ${data.casas.length}',
-                  style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.sm),
-
-            // Chips de filtrado por ventana de vencimiento
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  _filterChip('Todas', 'TODAS'),
-                  const SizedBox(width: 8),
-                  _filterChip('Esta Semana', 'SEMANA'),
-                  const SizedBox(width: 8),
-                  _filterChip('Esta Quincena', 'QUINCENA'),
-                  const SizedBox(width: 8),
-                  _filterChip('Este Mes', 'MES'),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-
-            if (filteredCasas.isEmpty)
-              _buildEmptyState()
-            else
-              ...filteredCasas.map((v) => Padding(
-                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                child: _ViviendaCard(vivienda: v),
-              )),
+            // ── Card de Acceso Directo a Gestión de Cartera ─────────
+            _buildCarteraDirectAccessBanner(data),
 
             const SizedBox(height: AppSpacing.xl),
           ],
@@ -304,21 +245,148 @@ class _JornadaViewState extends State<_JornadaView> {
   // ── Próxima Vivienda ─────────────────────────────────────────────
 
   Widget _buildProximaVivienda(Map<String, dynamic> vivienda) {
+    final cuotas = vivienda['cuotas'] as List<dynamic>? ?? [];
+    final firstCuotaMonto = cuotas.isNotEmpty
+        ? (cuotas.first['monto'] as num? ?? 20000.0).toDouble()
+        : (vivienda['montoAdeudado'] as num? ?? 20000.0).toDouble();
+    final saldoTotal = (vivienda['montoAdeudado'] as num? ?? vivienda['saldo'] as num? ?? 20000.0).toDouble();
+
+    final cobroItem = CobroItem(
+      id: vivienda['id'] as String? ?? '0',
+      concepto: 'Cuota Actual',
+      monto: firstCuotaMonto > 0 ? firstCuotaMonto : 20000.0,
+      montoPagado: 0,
+      saldo: saldoTotal,
+      estado: vivienda['peorEstado'] as String? ?? 'Pendiente',
+      modalidad: vivienda['modalidadPago'] as String? ?? 'Mensual',
+      casa: vivienda['casaDireccion'] as String? ?? '',
+      manzana: vivienda['manzanaNombre'] as String? ?? '',
+      etapa: vivienda['etapaNombre'] as String? ?? '',
+      residenteId: vivienda['residenteId'] as String? ?? '',
+      nombre: vivienda['residenteNombre'] as String? ?? '',
+    );
+
+    return GestureDetector(
+      onTap: () {
+        final cobradorCubit = context.read<DashboardCobradorCubit>();
+        RegistrarPagoBottomSheet.show(
+          context,
+          cobro: cobroItem,
+          cuotas: cuotas,
+          initialQuickMode: true,
+          onSuccess: () {
+            cobradorCubit.optimisticRegistrarPago(
+              residenteId: cobroItem.residenteId,
+              montoPesos: firstCuotaMonto > 0 ? firstCuotaMonto.toInt() : 10000,
+            );
+            cobradorCubit.refresh(silent: true);
+          },
+        );
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(AppSpacing.cardPadding),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [AppColors.primary, AppColors.primaryDark],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withValues(alpha: 0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.near_me_rounded, color: Colors.white, size: 18),
+                      const SizedBox(width: AppSpacing.sm),
+                      Text(
+                        'Próxima vivienda a visitar',
+                        style: AppTypography.caption.copyWith(
+                          color: Colors.white.withValues(alpha: 0.9),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      'Tocar para cobrar',
+                      style: AppTypography.small.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                '${vivienda['etapaNombre'] ?? ''}',
+                style: AppTypography.body.copyWith(
+                  color: Colors.white.withValues(alpha: 0.8),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                '${vivienda['manzanaNombre'] ?? ''} — ${vivienda['casaDireccion'] ?? ''}',
+                style: AppTypography.subtitle.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              if (vivienda['residenteNombre'] != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  'Residente: ${vivienda['residenteNombre']}',
+                  style: AppTypography.caption.copyWith(
+                    color: Colors.white.withValues(alpha: 0.9),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      );
+  }
+
+  Widget _buildCarteraDirectAccessBanner(CobradorDashboardData data) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final count = data.casas.length;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.cardPadding),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [AppColors.primary, AppColors.primaryDark],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+        border: Border.all(
+          color: AppColors.primary.withValues(alpha: 0.3),
+          width: 1.2,
+        ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -327,82 +395,73 @@ class _JornadaViewState extends State<_JornadaView> {
         children: [
           Row(
             children: [
-              const Icon(Icons.near_me_rounded, color: Colors.white, size: 18),
-              const SizedBox(width: AppSpacing.sm),
-              Text(
-                'Próxima vivienda',
-                style: AppTypography.caption.copyWith(
-                  color: Colors.white.withValues(alpha: 0.9),
-                  fontWeight: FontWeight.w600,
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.account_balance_wallet_outlined,
+                  color: AppColors.primary,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Gestión de Cartera',
+                      style: AppTypography.subtitle.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Text(
+                      '$count viviendas registradas en ruta',
+                      style: AppTypography.caption.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
           const SizedBox(height: AppSpacing.md),
           Text(
-            '${vivienda['etapaNombre'] ?? ''}',
+            'Gestiona todos los cobros, filtros por Manzana/Casa y liquidaciones desde el módulo oficial de Cartera.',
             style: AppTypography.body.copyWith(
-              color: Colors.white.withValues(alpha: 0.8),
-              fontWeight: FontWeight.w500,
+              color: AppColors.textSecondary,
+              fontSize: 13,
             ),
           ),
-          const SizedBox(height: 2),
-          Text(
-            '${vivienda['manzanaNombre'] ?? ''} — ${vivienda['casaDireccion'] ?? ''}',
-            style: AppTypography.subtitle.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _filterChip(String label, String value) {
-    final isSelected = _filterModalidad == value;
-    final colorScheme = Theme.of(context).colorScheme;
-    return FilterChip(
-      selected: isSelected,
-      label: Text(label),
-      labelStyle: TextStyle(
-        fontSize: 12,
-        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-        color: isSelected ? colorScheme.onPrimary : AppColors.textPrimary,
-      ),
-      selectedColor: AppColors.primary,
-      backgroundColor: AppColors.surface,
-      onSelected: (_) {
-        setState(() {
-          _filterModalidad = value;
-        });
-      },
-    );
-  }
-
-  // ── Empty State ──────────────────────────────────────────────────
-
-  Widget _buildEmptyState() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.xl),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-      ),
-      child: Column(
-        children: [
-          Icon(Icons.check_circle_outline_rounded, size: 48, color: AppColors.success),
           const SizedBox(height: AppSpacing.md),
-          Text(
-            '¡Jornada completa!',
-            style: AppTypography.subtitle.copyWith(fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            'No hay casas pendientes de cobro.',
-            style: AppTypography.body.copyWith(color: AppColors.textSecondary),
-            textAlign: TextAlign.center,
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () {
+                // Navigate to Cartera tab using DefaultTabController or BottomNavigationBar switch
+                final mainTabState = context.findAncestorStateOfType<State>();
+                if (mainTabState != null && mainTabState.mounted) {
+                  // Fallback: reload state
+                }
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Selecciona la pestaña "Cobrar" en el menú inferior para gestionar la cartera.'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.arrow_forward_rounded, size: 18),
+              label: const Text('Ir a Gestión de Cartera'),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                foregroundColor: AppColors.primary,
+                side: BorderSide(color: AppColors.primary.withValues(alpha: 0.5)),
+              ),
+            ),
           ),
         ],
       ),
@@ -521,313 +580,6 @@ class _MiniStatCard extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// VIVIENDA CARD — Con semáforo 🟢🟠🔴
-// ═══════════════════════════════════════════════════════════════════
-
-class _ViviendaCard extends StatelessWidget {
-  final Map<String, dynamic> vivienda;
-
-  const _ViviendaCard({required this.vivienda});
-
-  Color _semaforoColor(String estado) {
-    switch (estado) {
-      case 'PAGADA':
-        return AppColors.success;
-      case 'VENCIDA':
-        return AppColors.error;
-      case 'PARCIAL':
-        return AppColors.info;
-      default:
-        return AppColors.warning;
-    }
-  }
-
-  String _semaforoLabel(String estado) {
-    switch (estado) {
-      case 'PAGADA':
-        return 'Pagó';
-      case 'VENCIDA':
-        return 'En mora';
-      case 'PARCIAL':
-        return 'Parcial';
-      default:
-        return 'Pendiente';
-    }
-  }
-
-  String _semaforoIcon(String estado) {
-    switch (estado) {
-      case 'PAGADA':
-        return '🟢';
-      case 'VENCIDA':
-        return '🔴';
-      case 'PARCIAL':
-        return '🔵';
-      default:
-        return '🟠';
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final estado = vivienda['peorEstado'] as String? ?? 'PENDIENTE';
-    final semaforoColor = _semaforoColor(estado);
-
-    final cardBorderColor = estado == 'VENCIDA'
-        ? AppColors.error.withValues(alpha: 0.4)
-        : (isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0));
-
-    final cuotas = vivienda['cuotas'] as List?;
-    final firstCuota = cuotas != null && cuotas.isNotEmpty ? cuotas.first : null;
-
-    // Formatear detalle de cuota + días vencidos
-    String cuotaDetalleStr = '';
-    if (firstCuota != null) {
-      final concepto = firstCuota['concepto'] as String? ?? '';
-      final periodo = firstCuota['periodoInicio'] as String? ?? '';
-      final fechaVenc = firstCuota['fechaVencimiento'] as String? ?? '';
-      
-      String cuotaName = concepto.isNotEmpty ? concepto : periodo;
-      if (cuotaName.isEmpty) cuotaName = 'Cuota de Recaudo';
-
-      if (fechaVenc.isNotEmpty) {
-        final date = DateTime.tryParse(fechaVenc);
-        if (date != null) {
-          final monthName = DateFormat('MMMM', 'es').format(date);
-          final capitalizedMonth = monthName[0].toUpperCase() + monthName.substring(1);
-          final fechaFormat = DateFormat("dd/MM/yyyy", 'es').format(date);
-          final diffDays = DateTime.now().difference(date).inDays;
-          final diasText = diffDays > 0 ? ' (Hace $diffDays días)' : '';
-
-          if (estado == 'VENCIDA') {
-            cuotaDetalleStr = '$capitalizedMonth · Vencido el $fechaFormat$diasText';
-          } else {
-            cuotaDetalleStr = '$capitalizedMonth · Vence el $fechaFormat';
-          }
-        }
-      }
-    }
-
-    final manzanaName = vivienda['manzanaNombre'] as String? ?? 'Manzana A';
-    final casaName = vivienda['casaDireccion'] as String? ?? '';
-    final mainTitle = casaName.contains(manzanaName) ? casaName : '$manzanaName — $casaName';
-    final etapaName = vivienda['etapaNombre'] as String? ?? 'Etapa 1';
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: cardBorderColor,
-          width: 1.2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: InkWell(
-          onTap: () {
-                    final cobroId = firstCuota != null ? (firstCuota['id'] as String? ?? '') : '';
-                    final firstCuotaMonto = firstCuota != null ? ((firstCuota['monto'] as num? ?? 20000).toDouble()) : 20000.0;
-                    final saldoTotal = (vivienda['saldo'] as num? ?? 0).toDouble();
-
-                    final cobroItem = CobroItem(
-                      id: cobroId,
-                      concepto: 'Cuota de Recaudo — $mainTitle',
-                      monto: firstCuotaMonto > 0 ? firstCuotaMonto : 20000.0,
-                      montoPagado: 0,
-                      saldo: saldoTotal,
-                      estado: vivienda['peorEstado'] as String? ?? 'Pendiente',
-                      modalidad: vivienda['modalidadPago'] as String? ?? 'Mensual',
-                      casa: vivienda['casaDireccion'] as String? ?? '',
-                      manzana: vivienda['manzanaNombre'] as String? ?? '',
-                      etapa: vivienda['etapaNombre'] as String? ?? '',
-                      residenteId: vivienda['residenteId'] as String? ?? '',
-                      nombre: vivienda['residenteNombre'] as String? ?? '',
-                    );
-
-                    RegistrarPagoBottomSheet.show(
-                      context,
-                      cobro: cobroItem,
-                      cuotas: cuotas,
-                      onSuccess: () {
-                        context.read<DashboardCobradorCubit>().refresh();
-                      },
-                    );
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppSpacing.cardInnerPadding),
-                    child: Row(
-                      children: [
-                        // Semáforo circular
-                        Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: semaforoColor.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: semaforoColor.withValues(alpha: 0.3), width: 1),
-                          ),
-                          child: Center(
-                            child: Text(
-                              _semaforoIcon(estado),
-                              style: const TextStyle(fontSize: 20),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: AppSpacing.md),
-
-                        // Info de la vivienda
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  // TÍTULO: Ubicación / Casa (ej. Manzana A — Casa 2)
-                                  Flexible(
-                                    child: Text(
-                                      '$mainTitle ($etapaName)',
-                                      style: AppTypography.bodyMedium.copyWith(
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 15,
-                                        color: isDark ? Colors.white : const Color(0xFF0F172A),
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  if (vivienda['tieneSolicitud'] == true) ...[
-                                    const SizedBox(width: 6),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: AppColors.error.withValues(alpha: 0.15),
-                                        borderRadius: BorderRadius.circular(6),
-                                        border: Border.all(color: AppColors.error, width: 0.8),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(Icons.notifications_active_rounded, size: 10, color: AppColors.error),
-                                          const SizedBox(width: 3),
-                                          Text(
-                                            'Solicitud',
-                                            style: AppTypography.small.copyWith(
-                                              color: AppColors.error,
-                                              fontWeight: FontWeight.w700,
-                                              fontSize: 10,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                              const SizedBox(height: 3),
-                              // Detalle de Cuota + Vencimiento (ej. Julio · Vencido el 15/07/2026 (Hace 44 días))
-                              if (cuotaDetalleStr.isNotEmpty) ...[
-                                Text(
-                                  cuotaDetalleStr,
-                                  style: AppTypography.caption.copyWith(
-                                    color: estado == 'VENCIDA' ? AppColors.error : AppColors.primary,
-                                    fontWeight: estado == 'VENCIDA' ? FontWeight.w700 : FontWeight.w600,
-                                    fontSize: 11.5,
-                                  ),
-                                ),
-                                const SizedBox(height: 3),
-                              ],
-                              // Residente + modalidad
-                              Row(
-                                children: [
-                                  Icon(Icons.person_rounded, size: 14, color: AppColors.textSecondary),
-                                  const SizedBox(width: 4),
-                                  Flexible(
-                                    child: Text(
-                                      vivienda['residenteNombre'] ?? vivienda['propietarioNombre'] ?? 'Sin residente',
-                                      style: AppTypography.small.copyWith(
-                                        color: AppColors.textSecondary,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  if (vivienda['modalidadPago'] != null) ...[
-                                    const SizedBox(width: 6),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                                      decoration: BoxDecoration(
-                                        color: AppColors.primary.withValues(alpha: 0.12),
-                                        borderRadius: BorderRadius.circular(4),
-                                        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3), width: 0.8),
-                                      ),
-                                      child: Text(
-                                        '${vivienda['modalidadPago']}',
-                                        style: AppTypography.small.copyWith(
-                                          fontSize: 9,
-                                          fontWeight: FontWeight.w700,
-                                          color: AppColors.primary,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        const SizedBox(width: 8),
-
-                        // Monto + estado
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              _formatPesos(vivienda['saldo'] as int? ?? 0),
-                              style: AppTypography.bodyMedium.copyWith(
-                                fontWeight: FontWeight.w800,
-                                fontSize: 16,
-                                color: estado == 'VENCIDA' ? AppColors.error : (isDark ? Colors.white : const Color(0xFF0F172A)),
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: semaforoColor.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: semaforoColor.withValues(alpha: 0.4), width: 0.8),
-                              ),
-                              child: Text(
-                                _semaforoLabel(estado),
-                                style: AppTypography.small.copyWith(
-                                  color: semaforoColor,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 11,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
     );
   }
 }

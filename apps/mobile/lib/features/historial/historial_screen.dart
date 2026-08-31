@@ -48,19 +48,38 @@ class _HistorialScreenState extends State<HistorialScreen> {
     });
   }
 
-  Future<void> _loadHistorial() async {
+  Future<void> _loadHistorial({bool silent = false}) async {
+    if (!silent) {
+      setState(() {
+        _loading = true;
+      });
+    }
     try {
       final user = context.read<AuthCubit>().state.usuario;
       final residenteId = (user?['residenteId'] as String?) ?? (user?['id'] as String?);
       if (residenteId == null) {
-        setState(() {
-          _loading = false;
-        });
+        if (mounted && !silent) {
+          setState(() {
+            _loading = false;
+          });
+        }
         return;
       }
 
       final response = await ApiClient.instance.get<List<dynamic>>('/cobros/residente/$residenteId');
       final listCuotas = response.data!.map((item) => item as Map<String, dynamic>).toList();
+
+      // Ordenar: si están pagadas o en el módulo de pagos, las más recientes primero
+      listCuotas.sort((a, b) {
+        final aPagada = a['estado'] == 'PAGADA';
+        final bPagada = b['estado'] == 'PAGADA';
+        if (aPagada && bPagada) {
+          final dateA = DateTime.tryParse(a['updatedAt'] as String? ?? a['periodoInicio'] as String? ?? '') ?? DateTime(2000);
+          final dateB = DateTime.tryParse(b['updatedAt'] as String? ?? b['periodoInicio'] as String? ?? '') ?? DateTime(2000);
+          return dateB.compareTo(dateA); // Descenso: más reciente arriba
+        }
+        return 0;
+      });
 
       final listSolicitudes = await _solicitudesRepo.getSolicitudes();
 
@@ -73,7 +92,7 @@ class _HistorialScreenState extends State<HistorialScreen> {
       }
     } catch (e) {
       debugPrint('Error loading history: $e');
-      if (mounted) {
+      if (mounted && !silent) {
         setState(() {
           _loading = false;
         });

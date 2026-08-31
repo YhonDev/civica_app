@@ -71,7 +71,10 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
     });
   }
 
-  Future<void> _loadDashboardData() async {
+  Future<void> _loadDashboardData({bool silent = false}) async {
+    if (!silent) {
+      setState(() => _loading = true);
+    }
     try {
       final response = await ApiClient.instance.get<Map<String, dynamic>>('/dashboard/residente');
       final data = response.data!;
@@ -117,7 +120,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
       }
     } catch (e) {
       debugPrint('Error loading dashboard: $e');
-      if (mounted) {
+      if (mounted && !silent) {
         setState(() {
           _loading = false;
           _hasError = true;
@@ -227,18 +230,18 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
       );
     }
 
-    final saldoStr = NumberFormat.currency(
-      locale: 'es_CO',
-      symbol: r'$',
-      decimalDigits: 0,
-    ).format(_saldo);
+    final saldoFormatted = NumberFormat.decimalPattern('es_CO').format(_saldo);
+    final saldoLabelText = _saldo > 0 ? 'Deuda actual: \$$saldoFormatted' : 'Saldo actual: \$$saldoFormatted';
 
     return Scaffold(
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.screenPadding,
-          ),
+        child: RefreshIndicator(
+          onRefresh: () => _loadDashboardData(silent: true),
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.screenPadding,
+            ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -257,7 +260,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
                 index: 1,
                 child: EstadoCuentaCard(
                   status: _status,
-                  saldoLabel: _saldo > 0 ? 'Deuda actual: $saldoStr' : 'Saldo actual: $saldoStr',
+                  saldoLabel: saldoLabelText,
                   proximoCobro: _formatFecha(_proximoCobro),
                   tarifaActual: _tarifaActual,
                 ),
@@ -471,11 +474,19 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
     if (!mounted) return;
 
     if (result != null) {
-      setState(() => _loading = true);
       final messenger = ScaffoldMessenger.of(context);
       try {
+        final rawId = (item is Map) ? (item['cobroId'] ?? item['id']) : null;
+        final validCobroId = (rawId != null && rawId.toString().length > 20 && !rawId.toString().startsWith('future-'))
+            ? rawId.toString()
+            : (_movimientos.isNotEmpty ? _movimientos.first.id : null);
+
+        if (validCobroId == null) {
+          throw Exception('No se encontró un cobro válido asignado.');
+        }
+
         await _solicitudesRepo.crearSolicitud(
-          cobroId: item['cobroId'],
+          cobroId: validCobroId,
           tipo: 'SOLICITUD_COBRO',
           descripcion: result.isEmpty ? 'Solicita cobro en casa.' : result,
           residenteId: user['id'],
@@ -484,7 +495,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
           messenger.showSnackBar(
             const SnackBar(content: Text('Solicitud de cobro enviada al administrador/cobrador')),
           );
-          _loadDashboardData();
+          _loadDashboardData(silent: true);
         }
       } catch (e) {
         if (mounted) {

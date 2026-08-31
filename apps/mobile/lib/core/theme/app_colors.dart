@@ -18,14 +18,14 @@ class AppColors {
   static Color get primaryDark => const Color(0xFF1D4ED8);
 
   // ── Backgrounds ────────────────────────────────────
-  static Color get background => _isDark ? const Color(0xFF000000) : const Color(0xFFF8FAFC);
-  static Color get card => _isDark ? const Color(0xFF121212) : const Color(0xFFFFFFFF);
-  static Color get surface => _isDark ? const Color(0xFF1E1E1E) : const Color(0xFFF1F5F9);
+  static Color get background => _isDark ? const Color(0xFF121417) : const Color(0xFFF1F5F9);
+  static Color get card => _isDark ? const Color(0xFF23272D) : const Color(0xFFFFFFFF);
+  static Color get surface => _isDark ? const Color(0xFF1B1E22) : const Color(0xFFE2E8F0);
 
   // ── Text ───────────────────────────────────────────
   static Color get textPrimary => _isDark ? const Color(0xFFFFFFFF) : const Color(0xFF111827);
-  static Color get textSecondary => _isDark ? const Color(0xFFB3B3B3) : const Color(0xFF6B7280);
-  static Color get textDisabled => _isDark ? const Color(0xFF666666) : const Color(0xFF9CA3AF);
+  static Color get textSecondary => _isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+  static Color get textDisabled => _isDark ? const Color(0xFF64748B) : const Color(0xFF9CA3AF);
 
   // ── Semantic ───────────────────────────────────────
   static Color get success => const Color(0xFF22C55E);
@@ -34,5 +34,5 @@ class AppColors {
   static Color get info => const Color(0xFF3B82F6);
 
   // ── Borders ────────────────────────────────────────
-  static Color get border => _isDark ? const Color(0xFF2C2C2C) : const Color(0xFFE2E8F0);
+  static Color get border => _isDark ? const Color(0xFF32373E) : const Color(0xFFCBD5E1);
 }

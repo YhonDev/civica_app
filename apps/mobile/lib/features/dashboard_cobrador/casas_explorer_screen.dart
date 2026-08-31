@@ -3,6 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../cartera/models/cartera_models.dart';
+import '../cartera/widgets/registrar_pago_bottom_sheet.dart';
+import 'dashboard_cobrador_cubit.dart';
 
 import 'casas_cubit.dart';
 
@@ -226,88 +229,120 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> {
           borderRadius: BorderRadius.circular(10),
           side: BorderSide(color: AppColors.border),
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.cardInnerPadding),
-          child: Row(
-            children: [
-              // Semáforo
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: Center(child: Text(emoji, style: const TextStyle(fontSize: 18))),
-              ),
-              const SizedBox(width: AppSpacing.md),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(10),
+          onTap: () {
+            final cobroItem = CobroItem(
+              id: casa.id,
+              concepto: 'Cuota de Recaudo — ${casa.direccion}',
+              monto: casa.saldo > 0 ? (casa.saldo / 2).clamp(10000, 50000).toDouble() : 20000.0,
+              montoPagado: 0,
+              saldo: casa.saldo.toDouble(),
+              estado: casa.estado,
+              modalidad: 'Mensual',
+              casa: casa.direccion,
+              manzana: '',
+              etapa: '',
+              residenteId: casa.id,
+              nombre: casa.residenteNombre,
+            );
 
-              // Info
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      casa.direccion,
-                      style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 2),
-                    Row(
-                      children: [
-                        Icon(Icons.person_rounded, size: 13, color: AppColors.textSecondary),
-                        const SizedBox(width: 3),
-                        Flexible(
-                          child: Text(
-                            casa.residenteNombre,
-                            style: AppTypography.small.copyWith(color: AppColors.textSecondary),
-                            overflow: TextOverflow.ellipsis,
+            final casasCubit = context.read<CasasCubit>();
+            RegistrarPagoBottomSheet.show(
+              context,
+              cobro: cobroItem,
+              initialQuickMode: true,
+              onSuccess: () {
+                casasCubit.loadViviendas();
+                try {
+                  context.read<DashboardCobradorCubit>().refresh(silent: true);
+                } catch (_) {}
+              },
+            );
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.cardInnerPadding),
+            child: Row(
+              children: [
+                // Semáforo
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Center(child: Text(emoji, style: const TextStyle(fontSize: 18))),
+                ),
+                const SizedBox(width: AppSpacing.md),
+
+                // Info
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        casa.direccion,
+                        style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          Icon(Icons.person_rounded, size: 13, color: AppColors.textSecondary),
+                          const SizedBox(width: 3),
+                          Flexible(
+                            child: Text(
+                              casa.residenteNombre,
+                              style: AppTypography.small.copyWith(color: AppColors.textSecondary),
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                        ),
-                        if (casa.residenteTelefono.isNotEmpty) ...[
-                          const SizedBox(width: 8),
-                          Icon(Icons.call_rounded, size: 12, color: AppColors.textSecondary),
-                          const SizedBox(width: 2),
-                          Text(
-                            casa.residenteTelefono,
-                            style: AppTypography.small.copyWith(color: AppColors.textSecondary),
-                          ),
+                          if (casa.residenteTelefono.isNotEmpty) ...[
+                            const SizedBox(width: 8),
+                            Icon(Icons.call_rounded, size: 12, color: AppColors.textSecondary),
+                            const SizedBox(width: 2),
+                            Text(
+                              casa.residenteTelefono,
+                              style: AppTypography.small.copyWith(color: AppColors.textSecondary),
+                            ),
+                          ],
                         ],
-                      ],
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Estado + saldo
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    if (casa.saldo > 0)
+                      Text(
+                        _formatPesos(casa.saldo),
+                        style: AppTypography.bodyMedium.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    const SizedBox(height: 3),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        label,
+                        style: AppTypography.small.copyWith(
+                          color: color,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                   ],
                 ),
-              ),
-
-              // Estado + saldo
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  if (casa.saldo > 0)
-                    Text(
-                      _formatPesos(casa.saldo),
-                      style: AppTypography.bodyMedium.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                  const SizedBox(height: 3),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      label,
-                      style: AppTypography.small.copyWith(
-                        color: color,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

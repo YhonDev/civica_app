@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/widgets/top_toast.dart';
 import 'comunidad_repository.dart';
 import 'tarifas_repository.dart';
 
@@ -51,28 +52,36 @@ class _TarifasScreenState extends State<TarifasScreen> {
     }
   }
 
-  Future<void> _editarTarifa(String id, String modalidad, int currentMonto) async {
+  Future<void> _crearOEditarTarifaDialog({String? tarifaId, int currentMonto = 40000}) async {
+    if (_proyectoId == null) {
+      TopToast.showError(context, 'Primero crea una Urbanización/Proyecto');
+      return;
+    }
+
+    final isEdit = tarifaId != null;
     final controller = TextEditingController(text: currentMonto.toString());
     
     final result = await showDialog<int>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Configurar Tarifa Base del Conjunto'),
+        title: Text(isEdit ? 'Editar Tarifa Vigente' : 'Crear Tarifa del Conjunto'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Establece la tarifa mensual general. El motor de recaudo del backend calculará y distribuirá automáticamente las cuotas según la modalidad asignada a cada casa.',
+              'Establece el monto mensual base del conjunto. El motor de recaudo distribuirá automáticamente las cuotas según la modalidad asignada.',
               style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
             ),
             const SizedBox(height: AppSpacing.md),
             TextField(
               controller: controller,
               keyboardType: TextInputType.number,
+              autofocus: true,
               decoration: const InputDecoration(
-                labelText: 'Monto mensual base',
-                prefixText: '\$',
+                labelText: 'Monto mensual base (\$ COP)',
+                prefixText: '\$ ',
+                border: OutlineInputBorder(),
               ),
             ),
           ],
@@ -87,7 +96,7 @@ class _TarifasScreenState extends State<TarifasScreen> {
               final val = int.tryParse(controller.text.replaceAll(RegExp(r'[^0-9]'), ''));
               Navigator.pop(context, val);
             },
-            child: const Text('Guardar'),
+            child: Text(isEdit ? 'Guardar Cambios' : 'Crear Tarifa'),
           ),
         ],
       ),
@@ -96,15 +105,65 @@ class _TarifasScreenState extends State<TarifasScreen> {
     if (result != null && result > 0) {
       setState(() => _loading = true);
       try {
-        await _repository.actualizarTarifa(id, result);
+        if (isEdit) {
+          await _repository.actualizarTarifa(tarifaId, result);
+        } else {
+          await _repository.crearTarifa(
+            proyectoId: _proyectoId!,
+            modalidad: 'MENSUAL',
+            montoPesos: result,
+          );
+        }
         await _loadTarifas();
+        if (mounted) {
+          TopToast.showSuccess(
+            context,
+            isEdit ? 'Tarifa actualizada correctamente' : 'Tarifa creada exitosamente',
+          );
+        }
       } catch (e) {
-        debugPrint('Error updating tarifa: $e');
+        debugPrint('Error guardando tarifa: $e');
         setState(() => _loading = false);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Error al actualizar la tarifa')),
-          );
+          TopToast.showError(context, 'Error al guardar la tarifa: $e');
+        }
+      }
+    }
+  }
+
+  Future<void> _eliminarTarifa(String id) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('¿Desactivar Tarifa?'),
+        content: const Text('Esta tarifa dejará de estar vigente para los nuevos cobros del conjunto.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Desactivar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      setState(() => _loading = true);
+      try {
+        await _repository.desactivarTarifa(id);
+        await _loadTarifas();
+        if (mounted) {
+          TopToast.showSuccess(context, 'Tarifa desactivada correctamente');
+        }
+      } catch (e) {
+        debugPrint('Error desactivando tarifa: $e');
+        setState(() => _loading = false);
+        if (mounted) {
+          TopToast.showError(context, 'Error al eliminar tarifa: $e');
         }
       }
     }
@@ -113,6 +172,7 @@ class _TarifasScreenState extends State<TarifasScreen> {
   @override
   Widget build(BuildContext context) {
     final tarifaMensual = _tarifas['MENSUAL'];
+    final tarifaId = tarifaMensual != null ? (tarifaMensual['id'] as String?) : null;
     final montoMensual = (tarifaMensual != null) ? (tarifaMensual['montoPesos'] as int? ?? 0) : 0;
     
     final montoQuincenalCalculado = (montoMensual / 2).round();
@@ -121,6 +181,16 @@ class _TarifasScreenState extends State<TarifasScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Tarifas del Conjunto'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add_circle_outline_rounded),
+            tooltip: 'Crear/Configurar Tarifa',
+            onPressed: () => _crearOEditarTarifaDialog(
+              tarifaId: tarifaId,
+              currentMonto: montoMensual > 0 ? montoMensual : 40000,
+            ),
+          ),
+        ],
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
@@ -131,9 +201,9 @@ class _TarifasScreenState extends State<TarifasScreen> {
                 Container(
                   padding: const EdgeInsets.all(AppSpacing.md),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.08),
+                    color: AppColors.primary.withOpacity(0.08),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+                    border: Border.all(color: AppColors.primary.withOpacity(0.2)),
                   ),
                   child: Row(
                     children: [
@@ -176,9 +246,23 @@ class _TarifasScreenState extends State<TarifasScreen> {
                                   ),
                                 ],
                               ),
-                              IconButton(
-                                icon: const Icon(Icons.edit_outlined),
-                                onPressed: () => _editarTarifa(tarifaMensual['id'], 'MENSUAL', montoMensual),
+                              Row(
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.edit_outlined),
+                                    tooltip: 'Editar Tarifa',
+                                    onPressed: () => _crearOEditarTarifaDialog(
+                                      tarifaId: tarifaId,
+                                      currentMonto: montoMensual,
+                                    ),
+                                  ),
+                                  if (tarifaId != null)
+                                    IconButton(
+                                      icon: Icon(Icons.delete_outline_rounded, color: AppColors.error),
+                                      tooltip: 'Desactivar Tarifa',
+                                      onPressed: () => _eliminarTarifa(tarifaId),
+                                    ),
+                                ],
                               ),
                             ],
                           ),
@@ -203,6 +287,36 @@ class _TarifasScreenState extends State<TarifasScreen> {
                           _buildDesgloseRow('Modalidad Semanal (4 cuotas):', '\$ ${NumberFormat.decimalPattern('es_CO').format(montoSemanalCalculado)} / cuota'),
                           _buildDesgloseRow('Modalidad Quincenal (2 cuotas):', '\$ ${NumberFormat.decimalPattern('es_CO').format(montoQuincenalCalculado)} / cuota'),
                           _buildDesgloseRow('Modalidad Mensual (1 cuota):', '\$ ${NumberFormat.decimalPattern('es_CO').format(montoMensual)} / cuota'),
+                        ],
+                      ),
+                    ),
+                  )
+                else
+                  Card(
+                    color: AppColors.surface,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.price_change_outlined, size: 48, color: AppColors.textSecondary.withOpacity(0.5)),
+                          const SizedBox(height: AppSpacing.md),
+                          Text(
+                            'No hay tarifa configurada',
+                            style: AppTypography.subtitle.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: AppSpacing.xs),
+                          Text(
+                            'Crea la tarifa base inicial para que el motor de recaudo calcule los cobros de las casas.',
+                            textAlign: TextAlign.center,
+                            style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                          ElevatedButton.icon(
+                            onPressed: () => _crearOEditarTarifaDialog(),
+                            icon: const Icon(Icons.add),
+                            label: const Text('Configurar Tarifa Base'),
+                          ),
                         ],
                       ),
                     ),

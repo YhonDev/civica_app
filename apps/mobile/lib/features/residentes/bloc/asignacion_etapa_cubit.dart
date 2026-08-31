@@ -69,7 +69,7 @@ class AsignacionEtapaCubit extends Cubit<AsignacionEtapaState> {
     _cobradorId = cobradorId;
     emit(state.copyWith(isLoading: true, errorMessage: null, isSuccess: false));
     try {
-      final resEtapas = await _api.get('/comunidad/etapas');
+      final resEtapas = await _api.get('/proyectos/etapas');
       final etapas = List<Map<String, dynamic>>.from(resEtapas.data as List? ?? []);
 
       final resAsignadas = await _api.get('/usuarios/$cobradorId/etapas');
