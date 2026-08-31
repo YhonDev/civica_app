@@ -189,6 +189,7 @@ class _ResidenteDetailScreenState extends State<ResidenteDetailScreen> {
   void _mostrarModalEditar(BuildContext context) {
     final nombreCtrl = TextEditingController(text: _residente.nombre);
     final telefonoCtrl = TextEditingController(text: _residente.telefono);
+    final emailCtrl = TextEditingController(text: _residente.email ?? '');
     String modalidadSeleccionada = _residente.modalidadPago.toUpperCase();
     bool guardando = false;
 
@@ -257,6 +258,17 @@ class _ResidenteDetailScreenState extends State<ResidenteDetailScreen> {
                   ),
                   const SizedBox(height: AppSpacing.md),
 
+                  TextField(
+                    controller: emailCtrl,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: const InputDecoration(
+                      labelText: 'Correo electrónico (Opcional)',
+                      prefixIcon: Icon(Icons.email_outlined),
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+
                   DropdownButtonFormField<String>(
                     initialValue: modalidadSeleccionada,
                     decoration: const InputDecoration(
@@ -296,16 +308,21 @@ class _ResidenteDetailScreenState extends State<ResidenteDetailScreen> {
                                 }
                                 setStateModal(() => guardando = true);
 
-                                final exito = await _repo.updateResidente(_residente.id, {
+                                final emailText = emailCtrl.text.trim();
+                                final payload = <String, dynamic>{
                                   'nombre': nombre,
                                   'telefono': telefonoCtrl.text.trim(),
                                   'modalidadPago': modalidadSeleccionada,
-                                });
+                                  if (emailText.isNotEmpty) 'email': emailText,
+                                };
+
+                                final exito = await _repo.updateResidente(_residente.id, payload);
 
                                 if (ctx.mounted) {
                                   if (exito) {
                                     Navigator.pop(ctx);
                                     TopToast.showSuccess(context, 'Residente actualizado correctamente');
+                                    LocalCacheRepository.instance.invalidateAll();
                                     await _recargarResidente();
                                   } else {
                                     setStateModal(() => guardando = false);
@@ -441,6 +458,7 @@ class _ResidenteDetailScreenState extends State<ResidenteDetailScreen> {
         Column(
           children: [
             BasicInformationSection(
+              emailOverride: _residente.email,
               telefonoOverride: _residente.telefono,
               modalidadOverride: _residente.modalidadPago,
               casaInfoOverride: '${_residente.etapa} - ${_residente.casa}',

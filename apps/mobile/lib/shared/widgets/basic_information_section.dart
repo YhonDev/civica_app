@@ -23,10 +23,12 @@ class BasicInfoItem {
 /// Atomic Reusable Basic Information Section (`BasicInformationSection`).
 ///
 /// Follows Atomic Design System principles. Shared across Residente, Cobrador, and Admin screens.
-/// Dynamic and reactive to real-time profile edits (phone, modality, email, house).
+/// Dynamic and reactive to real-time profile edits (phone, email, modality, house).
+/// Dynamically omits null or empty fields (e.g. email) when not present.
 class BasicInformationSection extends StatelessWidget {
   final Map<String, dynamic>? user;
   final String? proyectoNombre;
+  final String? emailOverride;
   final String? telefonoOverride;
   final String? modalidadOverride;
   final String? casaInfoOverride;
@@ -36,6 +38,7 @@ class BasicInformationSection extends StatelessWidget {
     super.key,
     this.user,
     this.proyectoNombre,
+    this.emailOverride,
     this.telefonoOverride,
     this.modalidadOverride,
     this.casaInfoOverride,
@@ -45,6 +48,8 @@ class BasicInformationSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = customItems ?? _buildDefaultItems();
+
+    if (items.isEmpty) return const SizedBox.shrink();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -73,10 +78,19 @@ class BasicInformationSection extends StatelessWidget {
   }
 
   List<BasicInfoItem> _buildDefaultItems() {
-    final email = user?['email'] as String? ?? '';
+    final rawEmail = emailOverride ?? user?['email'] as String?;
+    final email = (rawEmail != null && rawEmail.trim().isNotEmpty && rawEmail.trim() != 'null')
+        ? rawEmail.trim()
+        : null;
+
     final rol = user?['rol'] as String? ?? '';
     final tenantId = user?['tenantId'] as String? ?? '';
-    final telefono = telefonoOverride ?? user?['telefono'] as String? ?? '';
+
+    final rawTelefono = telefonoOverride ?? user?['telefono'] as String?;
+    final telefono = (rawTelefono != null && rawTelefono.trim().isNotEmpty && rawTelefono.trim() != 'null')
+        ? rawTelefono.trim()
+        : null;
+
     final modalidad = modalidadOverride ?? user?['modalidad'] as String? ?? user?['modalidadPago'] as String? ?? '';
 
     final proyecto = proyectoNombre ??
@@ -84,24 +98,42 @@ class BasicInformationSection extends StatelessWidget {
             ? 'Urbanización San Sebastián'
             : tenantId);
 
-    final list = <BasicInfoItem>[
-      BasicInfoItem(
-        icon: Icons.email_outlined,
-        label: 'Correo registrado',
-        value: email.isNotEmpty ? email : 'No se ha agregado correo',
-      ),
-      BasicInfoItem(
-        icon: Icons.phone_outlined,
-        label: 'Teléfono de contacto',
-        value: telefono.isNotEmpty ? telefono : 'Sin teléfono registrado',
-      ),
-      BasicInfoItem(
-        icon: Icons.business_outlined,
-        label: 'Proyecto / Urbanización',
-        value: proyecto,
-      ),
-    ];
+    final list = <BasicInfoItem>[];
 
+    // 1. Email (omite si es nulo o vacío)
+    if (email != null) {
+      list.add(
+        BasicInfoItem(
+          icon: Icons.email_outlined,
+          label: 'Correo registrado',
+          value: email,
+        ),
+      );
+    }
+
+    // 2. Teléfono (omite si es nulo o vacío)
+    if (telefono != null) {
+      list.add(
+        BasicInfoItem(
+          icon: Icons.phone_outlined,
+          label: 'Teléfono de contacto',
+          value: telefono,
+        ),
+      );
+    }
+
+    // 3. Proyecto / Urbanización
+    if (proyecto.isNotEmpty) {
+      list.add(
+        BasicInfoItem(
+          icon: Icons.business_outlined,
+          label: 'Proyecto / Urbanización',
+          value: proyecto,
+        ),
+      );
+    }
+
+    // 4. Modalidad de Pago
     if (modalidad.isNotEmpty) {
       list.add(
         BasicInfoItem(
@@ -112,24 +144,22 @@ class BasicInformationSection extends StatelessWidget {
       );
     }
 
-    // Role-adaptive items
-    if (rol == 'RESIDENTE' || rol == 'PROPIETARIO') {
-      final casa = casaInfoOverride ?? user?['casaInfo'] as String? ?? user?['casa'] as String? ?? '';
-      if (casa.isNotEmpty) {
-        list.add(
-          BasicInfoItem(
-            icon: Icons.home_outlined,
-            label: 'Inmueble / Casa',
-            value: casa,
-          ),
-        );
-      }
+    // 5. Inmueble / Casa según Rol
+    final casa = casaInfoOverride ?? user?['casaInfo'] as String? ?? user?['casa'] as String? ?? '';
+    if (casa.isNotEmpty) {
+      list.add(
+        BasicInfoItem(
+          icon: Icons.home_outlined,
+          label: 'Inmueble / Casa',
+          value: casa,
+        ),
+      );
     } else if (rol == 'COBRADOR') {
       final zona = user?['zonaAsignada'] as String? ?? 'Ruta Principal';
       list.add(
         BasicInfoItem(
           icon: Icons.map_outlined,
-          label: 'Zona / Ruta Asignada',
+          label: 'Zona de cobro',
           value: zona,
         ),
       );
@@ -138,16 +168,16 @@ class BasicInformationSection extends StatelessWidget {
     return list;
   }
 
-  String _formatModalidad(String mod) {
-    switch (mod.toUpperCase()) {
+  String _formatModalidad(String val) {
+    switch (val.toUpperCase()) {
       case 'SEMANAL':
-        return 'Semanal (4 cuotas/mes)';
+        return 'Semanal (4 cuotas)';
       case 'QUINCENAL':
-        return 'Quincenal (2 cuotas/mes)';
+        return 'Quincenal (2 cuotas)';
       case 'MENSUAL':
-        return 'Mensual (1 cuota/mes)';
+        return 'Mensual (1 cuota)';
       default:
-        return mod;
+        return val;
     }
   }
 }
@@ -160,7 +190,18 @@ class _InfoTileWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: Icon(item.icon, color: AppColors.textSecondary),
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: 4,
+      ),
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: AppColors.primary.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(item.icon, color: AppColors.primary, size: 20),
+      ),
       title: Text(
         item.label,
         style: AppTypography.caption.copyWith(
@@ -169,12 +210,12 @@ class _InfoTileWidget extends StatelessWidget {
       ),
       subtitle: Text(
         item.value,
-        style: AppTypography.body.copyWith(fontWeight: FontWeight.w500),
+        style: AppTypography.body.copyWith(
+          fontWeight: FontWeight.w600,
+          color: AppColors.textPrimary,
+        ),
       ),
-      trailing: item.trailing ??
-          (item.onTap != null
-              ? Icon(Icons.chevron_right_rounded, color: AppColors.textDisabled)
-              : null),
+      trailing: item.trailing,
       onTap: item.onTap,
     );
   }
