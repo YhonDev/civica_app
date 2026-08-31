@@ -179,23 +179,33 @@ class _NuevoResidenteScreenState extends State<NuevoResidenteScreen> {
             ),
           ],
         ),
+        actionsPadding: const EdgeInsets.all(AppSpacing.md),
         actions: [
-          OutlinedButton.icon(
-            onPressed: () {
-              Clipboard.setData(ClipboardData(
-                text: 'Usuario: ${resultado.username}\nContraseña: ${resultado.password}',
-              ));
-              TopToast.showSuccess(ctx, 'Credenciales copiadas al portapapeles');
-            },
-            icon: const Icon(Icons.copy_rounded, size: 16),
-            label: const Text('Copiar Credenciales'),
-          ),
-          FilledButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              context.pop(true);
-            },
-            child: const Text('Listo'),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    Clipboard.setData(ClipboardData(
+                      text: 'Usuario: ${resultado.username}\nContraseña: ${resultado.password}',
+                    ));
+                    TopToast.showSuccess(ctx, 'Credenciales copiadas al portapapeles');
+                  },
+                  icon: const Icon(Icons.copy_rounded, size: 16),
+                  label: const Text('Copiar'),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: FilledButton(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    context.pop(true);
+                  },
+                  child: const Text('Listo'),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -354,16 +364,31 @@ class _NuevoResidenteScreenState extends State<NuevoResidenteScreen> {
                     border: Border.all(color: AppColors.info.withValues(alpha: 0.3)),
                   ),
                   child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.info_outline_rounded, color: AppColors.info),
+                      Icon(Icons.home_work_outlined, color: AppColors.info, size: 22),
                       const SizedBox(width: AppSpacing.sm),
                       Expanded(
-                        child: Text(
-                          'Inmueble seleccionado: $_selectedEtapaName - $_selectedManzanaName - $_selectedCasaName',
-                          style: AppTypography.body.copyWith(
-                            color: AppColors.info,
-                            fontWeight: FontWeight.w600,
-                          ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Inmueble seleccionado',
+                              style: AppTypography.caption.copyWith(
+                                color: AppColors.info,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '${_selectedEtapaName ?? ''}, ${_selectedManzanaName ?? ''}, ${_selectedCasaName ?? ''}',
+                              style: AppTypography.body.copyWith(
+                                color: AppColors.textPrimary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],

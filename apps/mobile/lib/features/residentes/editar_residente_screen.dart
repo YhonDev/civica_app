@@ -245,16 +245,31 @@ class _EditarResidenteScreenState extends State<EditarResidenteScreen> {
                     border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
                   ),
                   child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.check_circle_rounded, color: AppColors.success),
+                      Icon(Icons.home_work_outlined, color: AppColors.success, size: 22),
                       const SizedBox(width: AppSpacing.sm),
                       Expanded(
-                        child: Text(
-                          '$_selectedEtapaName - $_selectedManzanaName - $_selectedCasaName asignada.',
-                          style: AppTypography.body.copyWith(
-                            color: AppColors.success,
-                            fontWeight: FontWeight.w600,
-                          ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Inmueble asignado',
+                              style: AppTypography.caption.copyWith(
+                                color: AppColors.success,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '${_selectedEtapaName ?? ''}, ${_selectedManzanaName ?? ''}, ${_selectedCasaName ?? ''}',
+                              style: AppTypography.body.copyWith(
+                                color: AppColors.textPrimary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
