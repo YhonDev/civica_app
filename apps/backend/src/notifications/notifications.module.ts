@@ -9,6 +9,7 @@ import { EnviarNotificacionesJob } from './infrastructure/jobs/enviar-notificaci
 import { NotificacionesController } from './infrastructure/controllers/notificaciones.controller';
 
 import { EventsGateway } from './events.gateway';
+import { FcmPushService } from './infrastructure/push/fcm-push.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Actividad, Notificacion])],
@@ -21,7 +22,8 @@ import { EventsGateway } from './events.gateway';
     EmailSender,
     EnviarNotificacionesJob,
     EventsGateway,
+    FcmPushService,
   ],
-  exports: [ActividadRepository, EmailSender, EventsGateway],
+  exports: [ActividadRepository, EmailSender, EventsGateway, FcmPushService],
 })
 export class NotificationsModule {}

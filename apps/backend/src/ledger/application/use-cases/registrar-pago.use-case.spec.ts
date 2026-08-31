@@ -16,6 +16,8 @@ import { TicketRepository } from '../../infrastructure/persistence/ticket.reposi
 import { TicketCobro } from '../../domain/ticket-cobro.entity';
 import { EventsGateway } from '../../../notifications/events.gateway';
 
+import { FcmPushService } from '../../../notifications/infrastructure/push/fcm-push.service';
+
 describe('RegistrarPagoUseCase', () => {
   let useCase: RegistrarPagoUseCase;
 
@@ -132,6 +134,7 @@ describe('RegistrarPagoUseCase', () => {
         { provide: TicketRepository, useValue: mockTicketRepo },
         { provide: PagoCobroRepository, useValue: mockPagoCobroRepo },
         { provide: EventsGateway, useValue: { emitPagoRegistrado: jest.fn() } },
+        { provide: FcmPushService, useValue: { sendPagoRegistradoPush: jest.fn() } },
       ],
     }).compile();
 

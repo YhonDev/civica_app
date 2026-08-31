@@ -16,6 +16,7 @@ import { TicketRepository } from '../../infrastructure/persistence/ticket.reposi
 import { SolicitudRepository } from '../../infrastructure/persistence/solicitud.repository';
 import { SolicitudEstado } from '../../domain/solicitud.entity';
 import { EventsGateway } from '../../../notifications/events.gateway';
+import { FcmPushService } from '../../../notifications/infrastructure/push/fcm-push.service';
 
 export interface RegistrarPagoInput {
   clientPaymentId: string;
@@ -52,6 +53,7 @@ export class RegistrarPagoUseCase {
     private readonly ticketRepo: TicketRepository,
     private readonly pagoCobroRepo: PagoCobroRepository,
     private readonly eventsGateway?: EventsGateway,
+    private readonly fcmPushService?: FcmPushService,
   ) {}
 
   async execute(input: RegistrarPagoInput): Promise<RegistrarPagoResult> {
@@ -236,6 +238,13 @@ export class RegistrarPagoUseCase {
       residenteId: input.residenteId,
       cobroId: pago.cobroId ?? (cobrosAfectados[0]?.id ?? ''),
       monto: input.monto,
+    });
+
+    this.fcmPushService?.sendPagoRegistradoPush({
+      residenteToken: undefined, // Dispatched to residente device token if registered
+      monto: input.monto,
+      pagoId: pago.id,
+      casaNombre: 'Vivienda Residente',
     });
 
     return { pago, cobrosAfectados, event, ticket };
