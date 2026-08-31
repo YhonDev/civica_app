@@ -6,9 +6,16 @@ import '../../screens/auth/auth_cubit.dart';
 import '../../core/network/api_client.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
-import '../../core/theme/app_typography.dart';
+import '../../shared/widgets/user_profile_header.dart';
+import '../../shared/widgets/basic_information_section.dart';
 import '../../shared/widgets/system_settings_section.dart';
 
+/// Screen Configuración.
+///
+/// Refactored under Design System Atomic Design architecture:
+/// 1. [UserProfileHeader] -> Avatar + Name + Role Badge.
+/// 2. [BasicInformationSection] -> Role-adaptive basic info card.
+/// 3. [SystemSettingsSection] -> Dark theme + Biometric auth + Change password.
 class ConfiguracionScreen extends StatefulWidget {
   const ConfiguracionScreen({super.key});
 
@@ -43,16 +50,7 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
   Widget build(BuildContext context) {
     final user = context.watch<AuthCubit>().state.usuario;
     final nombre = user?['nombre'] as String? ?? 'Usuario';
-    final email = user?['email'] as String? ?? '';
     final rol = user?['rol'] as String? ?? '';
-    final tenantId = user?['tenantId'] as String? ?? '';
-
-    final rolLabel = _rolName(rol);
-
-    final proyectoNombre = _proyectoNombreBackend ??
-        ((tenantId.isEmpty || tenantId.contains('-'))
-            ? 'Urbanización San Sebastián'
-            : tenantId);
 
     return Scaffold(
       appBar: AppBar(
@@ -66,96 +64,55 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
             children: [
               const SizedBox(height: AppSpacing.xl),
 
-              // Avatar
-              CircleAvatar(
-                radius: 40,
-                backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-                child: Text(
-                  nombre.split(' ').map((w) => w.isNotEmpty ? w[0] : '').take(2).join(),
-                  style: AppTypography.title.copyWith(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-
-              // Name and Role
-              Text(
-                nombre,
-                style: AppTypography.subtitle.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  rolLabel,
-                  style: AppTypography.caption.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
+              // 1. Componente Atómico: User Profile Header
+              UserProfileHeader(
+                nombre: nombre,
+                rol: rol,
               ),
 
               const SizedBox(height: AppSpacing.xl),
 
-              // Basic Info
-              _SectionCard(
-                title: 'Información Básica',
-                children: [
-                  _InfoTile(
-                    icon: Icons.email_outlined,
-                    label: 'Correo registrado',
-                    value: email.isNotEmpty ? email : 'No se ha agregado correo',
-                  ),
-                  const Divider(height: 1, indent: 56),
-                  _InfoTile(
-                    icon: Icons.business_outlined,
-                    label: 'Proyecto / Urbanización',
-                    value: proyectoNombre,
-                  ),
-                ],
+              // 2. Componente Atómico: Basic Information Section (Adaptativo por rol)
+              BasicInformationSection(
+                user: user,
+                proyectoNombre: _proyectoNombreBackend,
               ),
 
-              // Herramientas según rol
+              // Herramientas adicionales según rol
               if (rol == 'COBRADOR' || rol == 'ADMIN') ...[
                 const SizedBox(height: AppSpacing.lg),
-                _SectionCard(
-                  title: 'Herramientas',
-                  children: [
-                    if (rol == 'COBRADOR')
-                      ListTile(
-                        leading: const Icon(Icons.cloud_sync_outlined),
-                        title: const Text('Cola de Sincronización'),
-                        subtitle: const Text('Ver pagos pendientes de envío'),
-                        trailing: Icon(Icons.chevron_right_rounded, color: AppColors.textDisabled),
-                        onTap: () => context.push('/sync-queue'),
-                      ),
-                    if (rol == 'ADMIN')
-                      ListTile(
-                        leading: const Icon(Icons.mail_lock_outlined),
-                        title: const Text('Notificaciones Fallidas'),
-                        subtitle: const Text('Revisar correos no entregados'),
-                        trailing: Icon(Icons.chevron_right_rounded, color: AppColors.textDisabled),
-                        onTap: () => context.push('/notificaciones-fallidas'),
-                      ),
-                  ],
+                Card(
+                  child: Column(
+                    children: [
+                      if (rol == 'COBRADOR')
+                        ListTile(
+                          leading: const Icon(Icons.cloud_sync_outlined),
+                          title: const Text('Cola de Sincronización'),
+                          subtitle: const Text('Ver pagos pendientes de envío'),
+                          trailing: Icon(Icons.chevron_right_rounded, color: AppColors.textDisabled),
+                          onTap: () => context.push('/sync-queue'),
+                        ),
+                      if (rol == 'ADMIN')
+                        ListTile(
+                          leading: const Icon(Icons.mail_lock_outlined),
+                          title: const Text('Notificaciones Fallidas'),
+                          subtitle: const Text('Revisar correos no entregados'),
+                          trailing: Icon(Icons.chevron_right_rounded, color: AppColors.textDisabled),
+                          onTap: () => context.push('/notificaciones-fallidas'),
+                        ),
+                    ],
+                  ),
                 ),
               ],
 
               const SizedBox(height: AppSpacing.lg),
 
-              // Módulo Reutilizable: Ajustes del Sistema (Tema oscuro, Biometría, Cambiar contraseña)
+              // 3. Componente Atómico: System Settings Section (Tema oscuro, Biometría, Cambiar Contraseña)
               SystemSettingsSection(user: user),
 
               const SizedBox(height: AppSpacing.xl),
 
-              // Botón rojo para Cerrar Sesión
+              // Botón para Cerrar Sesión
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
@@ -178,77 +135,6 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  String _rolName(String rol) {
-    switch (rol) {
-      case 'ADMIN':
-        return 'Administrador';
-      case 'COBRADOR':
-        return 'Cobrador';
-      case 'PROPIETARIO':
-      case 'RESIDENTE':
-        return 'Residente';
-      default:
-        return rol;
-    }
-  }
-}
-
-class _SectionCard extends StatelessWidget {
-  final String? title;
-  final List<Widget> children;
-
-  const _SectionCard({this.title, required this.children});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (title != null) ...[
-          Padding(
-            padding: const EdgeInsets.only(left: 4, bottom: AppSpacing.sm),
-            child: Text(
-              title!,
-              style: AppTypography.bodyMedium.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-        Card(child: Column(children: children)),
-      ],
-    );
-  }
-}
-
-class _InfoTile extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-
-  const _InfoTile({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      leading: Icon(icon, color: AppColors.textSecondary),
-      title: Text(
-        label,
-        style: AppTypography.caption.copyWith(
-          color: AppColors.textSecondary,
-        ),
-      ),
-      subtitle: Text(
-        value,
-        style: AppTypography.body.copyWith(fontWeight: FontWeight.w500),
       ),
     );
   }
