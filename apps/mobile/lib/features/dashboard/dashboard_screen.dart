@@ -303,7 +303,7 @@ class _DashboardContentState extends State<_DashboardContent>
                 builder: (context) {
                   final recaudo = widget.data.recaudoMes;
                   final amountStr = '\$ ${NumberFormat.decimalPattern('es_CO').format(recaudo.toInt())}';
-                  return KpiCard(
+                  return KPICard.progress(
                     title: 'Recaudo del Mes',
                     amount: amountStr,
                     percentage: widget.data.porcentaje,

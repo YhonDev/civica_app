@@ -14,6 +14,8 @@ class KPICard extends StatelessWidget {
   final Color? color;
   final String? trendText;
   final bool? trendPositive;
+  final double? percentage;
+  final String? actionLabel;
   final VoidCallback? onTap;
 
   const KPICard({
@@ -21,12 +23,35 @@ class KPICard extends StatelessWidget {
     required this.title,
     required this.value,
     this.subtitle,
-    required this.icon,
+    this.icon = Icons.insights_rounded,
     this.color,
     this.trendText,
     this.trendPositive,
+    this.percentage,
+    this.actionLabel,
     this.onTap,
   });
+
+  /// Factory for Recaudo / Percentage Progress KPI Cards
+  factory KPICard.progress({
+    required String title,
+    required String amount,
+    double? percentage,
+    String? subtitle,
+    String? actionLabel,
+    VoidCallback? onTap,
+  }) {
+    return KPICard(
+      title: title,
+      value: amount,
+      subtitle: subtitle,
+      percentage: percentage,
+      actionLabel: actionLabel,
+      icon: Icons.account_balance_wallet_outlined,
+      color: AppColors.primary,
+      onTap: onTap,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -74,9 +99,22 @@ class KPICard extends StatelessWidget {
                   color: AppColors.textPrimary,
                 ),
               ),
-              if (subtitle != null || trendText != null) ...[
+              if (percentage != null) ...[
+                const SizedBox(height: AppSpacing.sm),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: (percentage! / 100).clamp(0.0, 1.0),
+                    backgroundColor: themeColor.withValues(alpha: 0.12),
+                    color: themeColor,
+                    minHeight: 6,
+                  ),
+                ),
+              ],
+              if (subtitle != null || trendText != null || actionLabel != null) ...[
                 const SizedBox(height: AppSpacing.xs),
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     if (trendText != null) ...[
                       Icon(
@@ -105,10 +143,18 @@ class KPICard extends StatelessWidget {
                         child: Text(
                           subtitle!,
                           style: AppTypography.caption.copyWith(
-                            color: AppColors.textDisabled,
+                            color: AppColors.textSecondary,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    if (actionLabel != null)
+                      Text(
+                        actionLabel!,
+                        style: AppTypography.caption.copyWith(
+                          color: themeColor,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                   ],
@@ -121,3 +167,6 @@ class KPICard extends StatelessWidget {
     );
   }
 }
+
+/// Compatibility typedef for older call sites.
+typedef KpiCard = KPICard;

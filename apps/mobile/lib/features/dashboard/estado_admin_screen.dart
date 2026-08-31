@@ -112,7 +112,7 @@ class _EstadoContentState extends State<_EstadoContent> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 1. Estado General del Año
-          KpiCard(
+          KPICard.progress(
             title: 'Acumulado ${widget.data.anio}',
             amount: '\$${_formatAmount(widget.data.acumuladoAnual)}',
             percentage: widget.data.metaAnual > 0
