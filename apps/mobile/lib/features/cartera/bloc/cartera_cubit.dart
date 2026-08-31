@@ -75,25 +75,37 @@ class CarteraState extends Equatable {
 // CUBIT
 // ════════════════════════════════════════════════════════════
 
+import '../../../core/network/local_cache_repository.dart';
+
 class CarteraCubit extends Cubit<CarteraState> {
   final CarteraRepository _repository;
 
   CarteraCubit(this._repository) : super(const CarteraState());
 
   /// Carga los cobros de la cartera y calcula el resumen de forma local.
-  Future<void> loadCobros() async {
-    emit(state.copyWith(isLoading: true, error: null));
-    try {
-      final cobros = await _repository.getCobros();
-      final resumen = CarteraRepository.computeResumen(cobros);
-      emit(state.copyWith(
-        cobros: cobros,
-        resumen: resumen,
-        isLoading: false,
-      ));
-    } catch (e) {
-      emit(state.copyWith(isLoading: false, error: e.toString()));
+  Future<void> loadCobros({bool silent = false}) async {
+    if (!silent && LocalCacheRepository.instance.getCached('cartera:cobros') == null) {
+      emit(state.copyWith(isLoading: true, error: null));
     }
+
+    await LocalCacheRepository.instance.executeSWR<List<CobroItem>>(
+      key: 'cartera:cobros',
+      fetcher: () => _repository.getCobros(),
+      onData: (cobros, isStale) {
+        final resumen = CarteraRepository.computeResumen(cobros);
+        emit(state.copyWith(
+          cobros: cobros,
+          resumen: resumen,
+          isLoading: false,
+          error: null,
+        ));
+      },
+      onError: (e) {
+        if (!silent && LocalCacheRepository.instance.getCached('cartera:cobros') == null) {
+          emit(state.copyWith(isLoading: false, error: e.toString()));
+        }
+      },
+    );
   }
 
   /// Cambia el filtro de estado de cuenta seleccionado.

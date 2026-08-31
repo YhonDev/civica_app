@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../core/network/api_client.dart';
+import '../../core/network/local_cache_repository.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../screens/auth/auth_cubit.dart';
 import '../../shared/widgets/status_badge.dart';
 import '../residentes/widgets/security_section.dart';
+
+import '../../core/widgets/lifecycle_observer_mixin.dart';
 
 class MiCasaScreen extends StatefulWidget {
   const MiCasaScreen({super.key});
@@ -16,7 +19,7 @@ class MiCasaScreen extends StatefulWidget {
   State<MiCasaScreen> createState() => _MiCasaScreenState();
 }
 
-class _MiCasaScreenState extends State<MiCasaScreen> {
+class _MiCasaScreenState extends State<MiCasaScreen> with LifecycleObserverMixin {
   bool _loading = true;
   String _casaDireccion = 'Casa 1';
   String _etapaNombre = 'Etapa 1';
@@ -26,16 +29,29 @@ class _MiCasaScreenState extends State<MiCasaScreen> {
   StatusType _status = StatusType.alDia;
 
   @override
+  void onAppResumed() {
+    _cargarDatosInmueble();
+  }
+
+  @override
   void initState() {
     super.initState();
     _cargarDatosInmueble();
   }
 
   Future<void> _cargarDatosInmueble() async {
-    try {
-      final response = await ApiClient.instance.get<Map<String, dynamic>>('/dashboard/residente');
-      if (mounted && response.data != null) {
-        final data = response.data!;
+    if (LocalCacheRepository.instance.getCached('dashboard:residente') == null) {
+      setState(() => _loading = true);
+    }
+
+    await LocalCacheRepository.instance.executeSWR<Map<String, dynamic>>(
+      key: 'dashboard:residente',
+      fetcher: () async {
+        final response = await ApiClient.instance.get<Map<String, dynamic>>('/dashboard/residente');
+        return response.data!;
+      },
+      onData: (data, isStale) {
+        if (!mounted) return;
         final resInfo = data['residenteInfo'] as Map<String, dynamic>? ?? {};
 
         final statusStr = data['status'] as String? ?? 'AL_DIA';
@@ -62,10 +78,13 @@ class _MiCasaScreenState extends State<MiCasaScreen> {
           _status = statusEnum;
           _loading = false;
         });
-      }
-    } catch (_) {
-      if (mounted) setState(() => _loading = false);
-    }
+      },
+      onError: (_) {
+        if (mounted && LocalCacheRepository.instance.getCached('dashboard:residente') == null) {
+          setState(() => _loading = false);
+        }
+      },
+    );
 
     // Cargar nombre del proyecto real
     try {

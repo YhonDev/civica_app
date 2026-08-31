@@ -1,8 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 
 import '../../core/network/auth_api.dart';
 import '../../core/network/api_exceptions.dart';
+import '../../core/network/realtime_socket_service.dart';
 
 // ════════════════════════════════════════════════════════════
 // STATE
@@ -57,6 +59,23 @@ class AuthCubit extends Cubit<AuthState> {
       : _authApi = authApi ?? AuthApi(),
         super(const AuthState.initial());
 
+  void _initRealtimeSocket(Map<String, dynamic> user) {
+    try {
+      final tenantId = user['tenantId'] as String? ?? '00000000-0000-0000-0000-000000000001';
+      final userId = user['id'] as String? ?? '';
+      final residenteId = user['residenteId'] as String?;
+
+      RealtimeSocketService.instance.init(
+        serverUrl: 'http://127.0.0.1:3000',
+        tenantId: tenantId,
+        userId: userId,
+        residenteId: residenteId,
+      );
+    } catch (e) {
+      debugPrint('[AuthCubit] RealtimeSocket init skipped: $e');
+    }
+  }
+
   /// Verifica si hay sesión activa (al iniciar la app).
   Future<void> checkSession() async {
     emit(const AuthState.loading());
@@ -67,16 +86,12 @@ class AuthCubit extends Cubit<AuthState> {
         return;
       }
 
-      // Intentar refrescar el access token con el refresh token guardado.
-      // Si el refresh es válido → sesión restaurada. Si no → login obligatorio.
-      // refreshSession() ya retorna el usuario directo (AuthApi.refreshSession
-      // devuelve `usuario` o lo que hubiera guardado); NO es un mapa con clave 'usuario'.
       final user = await _authApi.refreshSession();
       if (user != null) {
+        _initRealtimeSocket(user);
         emit(AuthState.authenticated(user));
         return;
       }
-      // Refresh falló → sesión expirada, limpiar y pedir login
       await _authApi.logout();
       emit(const AuthState.unauthenticated());
     } catch (_) {
@@ -96,6 +111,7 @@ class AuthCubit extends Cubit<AuthState> {
         username: username,
         password: password,
       );
+      _initRealtimeSocket(result.usuario);
       emit(AuthState.authenticated(result.usuario));
     } on AuthException {
       emit(const AuthState.error('Credenciales inválidas'));
@@ -111,6 +127,7 @@ class AuthCubit extends Cubit<AuthState> {
   /// Cierra sesión.
   Future<void> logout() async {
     try {
+      RealtimeSocketService.instance.disconnect();
       await _authApi.logout();
     } catch (_) {
       // Ignorar errores en logout

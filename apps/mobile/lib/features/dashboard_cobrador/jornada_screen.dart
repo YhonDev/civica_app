@@ -30,6 +30,8 @@ class JornadaScreen extends StatelessWidget {
   }
 }
 
+import '../../core/widgets/lifecycle_observer_mixin.dart';
+
 class _JornadaView extends StatefulWidget {
   const _JornadaView();
 
@@ -37,7 +39,12 @@ class _JornadaView extends StatefulWidget {
   State<_JornadaView> createState() => _JornadaViewState();
 }
 
-class _JornadaViewState extends State<_JornadaView> {
+class _JornadaViewState extends State<_JornadaView> with LifecycleObserverMixin {
+  @override
+  void onAppResumed() {
+    context.read<DashboardCobradorCubit>().loadDashboard(silent: true);
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = context.watch<AuthCubit>().state.usuario;

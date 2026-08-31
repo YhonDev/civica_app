@@ -14,6 +14,7 @@ import '../../shared/widgets/ticket_bottom_sheet.dart';
 import '../../shared/widgets/solicitud_bottom_sheet.dart';
 import '../../shared/widgets/timeline_widget.dart';
 import '../../core/network/api_client.dart';
+import '../../core/network/local_cache_repository.dart';
 import '../solicitudes/solicitudes_repository.dart';
 import '../dashboard/widgets/skeleton_loading.dart';
 
@@ -40,7 +41,7 @@ class ResidenteDashboardScreen extends StatefulWidget {
 }
 
 class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, LifecycleObserverMixin {
   // ── Animation controllers for stagger effect ─────────────────────
   late final List<AnimationController> _controllers;
   late final List<Animation<double>> _fadeAnimations;
@@ -63,6 +64,11 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
   final _solicitudesRepo = SolicitudesRepository();
 
   @override
+  void onAppResumed() {
+    _loadDashboardData(silent: true);
+  }
+
+  @override
   void initState() {
     super.initState();
     _initAnimations();
@@ -72,61 +78,68 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
   }
 
   Future<void> _loadDashboardData({bool silent = false}) async {
-    if (!silent) {
+    if (!silent && LocalCacheRepository.instance.getCached('dashboard:residente') == null) {
       setState(() => _loading = true);
     }
-    try {
-      final response = await ApiClient.instance.get<Map<String, dynamic>>('/dashboard/residente');
-      final data = response.data!;
 
-      final listPendientes = await _solicitudesRepo.getMisSolicitudes();
+    await LocalCacheRepository.instance.executeSWR<Map<String, dynamic>>(
+      key: 'dashboard:residente',
+      fetcher: () async {
+        final response = await ApiClient.instance.get<Map<String, dynamic>>('/dashboard/residente');
+        return response.data!;
+      },
+      onData: (data, isStale) async {
+        final listPendientes = await _solicitudesRepo.getMisSolicitudes();
 
-      if (mounted) {
-        setState(() {
-          _saldo = data['saldo'] as int;
-          
-          final statusStr = data['status'] as String;
-          _status = switch (statusStr) {
-            'AL_DIA' => StatusType.alDia,
-            'PENDIENTE' => StatusType.pendiente,
-            'MORA' => StatusType.mora,
-            _ => StatusType.alDia,
-          };
+        if (mounted) {
+          setState(() {
+            _saldo = data['saldo'] as int;
 
-          _proximoCobro = data['proximoCobro'] as String?;
-          _proximoPago = data['proximoPago'] as Map<String, dynamic>?;
-          _tarifaActual = data['tarifaActual'] as Map<String, dynamic>?;
-          
-          final listMovs = data['movimientos'] as List<dynamic>;
-          _movimientos = listMovs.map((m) {
-            final isPago = m['tipo'] == 'pago';
-            final dateStr = m['fecha'] as String;
-            final date = DateTime.parse(dateStr);
-            final formattedDate = DateFormat('dd MMM', 'es').format(date);
-            return TimelineItem(
-              id: m['id'] as String,
-              tipo: m['tipo'] as String,
-              descripcion: m['descripcion'] as String,
-              usuario: isPago ? 'Pago realizado' : 'Cuota programada',
-              timestamp: date,
-              hace: '\$${m['monto']} · $formattedDate',
-              monto: m['monto'] as int,
-            );
-          }).toList();
+            final statusStr = data['status'] as String;
+            _status = switch (statusStr) {
+              'AL_DIA' => StatusType.alDia,
+              'PENDIENTE' => StatusType.pendiente,
+              'MORA' => StatusType.mora,
+              _ => StatusType.alDia,
+            };
 
-          _solicitudesPendientes = listPendientes;
-          _loading = false;
-        });
-      }
-    } catch (e) {
-      debugPrint('Error loading dashboard: $e');
-      if (mounted && !silent) {
-        setState(() {
-          _loading = false;
-          _hasError = true;
-        });
-      }
-    }
+            _proximoCobro = data['proximoCobro'] as String?;
+            _proximoPago = data['proximoPago'] as Map<String, dynamic>?;
+            _tarifaActual = data['tarifaActual'] as Map<String, dynamic>?;
+
+            final listMovs = data['movimientos'] as List<dynamic>;
+            _movimientos = listMovs.map((m) {
+              final isPago = m['tipo'] == 'pago';
+              final dateStr = m['fecha'] as String;
+              final date = DateTime.parse(dateStr);
+              final formattedDate = DateFormat('dd MMM', 'es').format(date);
+              return TimelineItem(
+                id: m['id'] as String,
+                tipo: m['tipo'] as String,
+                descripcion: m['descripcion'] as String,
+                usuario: isPago ? 'Pago realizado' : 'Cuota programada',
+                timestamp: date,
+                hace: '\$${m['monto']} · $formattedDate',
+                monto: m['monto'] as int,
+              );
+            }).toList();
+
+            _solicitudesPendientes = listPendientes;
+            _loading = false;
+            _hasError = false;
+          });
+        }
+      },
+      onError: (e) {
+        debugPrint('Error loading dashboard: $e');
+        if (mounted && !silent && LocalCacheRepository.instance.getCached('dashboard:residente') == null) {
+          setState(() {
+            _loading = false;
+            _hasError = true;
+          });
+        }
+      },
+    );
   }
 
   void _initAnimations() {

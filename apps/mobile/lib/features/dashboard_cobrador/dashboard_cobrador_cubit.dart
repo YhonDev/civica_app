@@ -95,6 +95,8 @@ class CobradorDashboardError extends CobradorDashboardState {
 // CUBIT
 // ════════════════════════════════════════════════════════════
 
+import '../../core/network/local_cache_repository.dart';
+
 class DashboardCobradorCubit extends Cubit<CobradorDashboardState> {
   final ApiClient _api;
 
@@ -103,20 +105,26 @@ class DashboardCobradorCubit extends Cubit<CobradorDashboardState> {
         super(const CobradorDashboardInitial());
 
   Future<void> loadDashboard({bool silent = false}) async {
-    if (!silent) {
+    if (!silent && LocalCacheRepository.instance.getCached('dashboard:cobrador') == null) {
       emit(const CobradorDashboardLoading());
     }
-    try {
-      final response = await _api.get('/dashboard/cobrador');
-      final data = CobradorDashboardData.fromJson(
-        response.data as Map<String, dynamic>,
-      );
-      emit(CobradorDashboardLoaded(data));
-    } catch (e) {
-      if (!silent) {
-        emit(CobradorDashboardError('Error al cargar jornada: $e'));
-      }
-    }
+
+    await LocalCacheRepository.instance.executeSWR<Map<String, dynamic>>(
+      key: 'dashboard:cobrador',
+      fetcher: () async {
+        final response = await _api.get('/dashboard/cobrador');
+        return response.data as Map<String, dynamic>;
+      },
+      onData: (json, isStale) {
+        final data = CobradorDashboardData.fromJson(json);
+        emit(CobradorDashboardLoaded(data));
+      },
+      onError: (e) {
+        if (!silent && LocalCacheRepository.instance.getCached('dashboard:cobrador') == null) {
+          emit(CobradorDashboardError('Error al cargar jornada: $e'));
+        }
+      },
+    );
   }
 
   Future<void> refresh({bool silent = true}) async {

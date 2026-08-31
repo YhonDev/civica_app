@@ -38,6 +38,8 @@ class CarteraScreen extends StatelessWidget {
   }
 }
 
+import '../../core/widgets/lifecycle_observer_mixin.dart';
+
 class _CarteraScreenContent extends StatefulWidget {
   const _CarteraScreenContent();
 
@@ -45,9 +47,14 @@ class _CarteraScreenContent extends StatefulWidget {
   State<_CarteraScreenContent> createState() => _CarteraScreenContentState();
 }
 
-class _CarteraScreenContentState extends State<_CarteraScreenContent> {
+class _CarteraScreenContentState extends State<_CarteraScreenContent> with LifecycleObserverMixin {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+
+  @override
+  void onAppResumed() {
+    context.read<CarteraCubit>().loadCobros(silent: true);
+  }
 
   @override
   void dispose() {

@@ -30,6 +30,8 @@ class CasasExplorerScreen extends StatelessWidget {
   }
 }
 
+import '../../core/widgets/lifecycle_observer_mixin.dart';
+
 class _CasasExplorerView extends StatefulWidget {
   const _CasasExplorerView();
 
@@ -37,7 +39,12 @@ class _CasasExplorerView extends StatefulWidget {
   State<_CasasExplorerView> createState() => _CasasExplorerViewState();
 }
 
-class _CasasExplorerViewState extends State<_CasasExplorerView> {
+class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleObserverMixin {
+  @override
+  void onAppResumed() {
+    context.read<CasasCubit>().loadViviendas(silent: true);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

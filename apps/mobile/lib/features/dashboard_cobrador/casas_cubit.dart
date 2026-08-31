@@ -117,6 +117,8 @@ class ViviendasError extends CasasState {
 // CUBIT
 // ════════════════════════════════════════════════════════════
 
+import '../../core/network/local_cache_repository.dart';
+
 class CasasCubit extends Cubit<CasasState> {
   final ApiClient _api;
 
@@ -124,21 +126,32 @@ class CasasCubit extends Cubit<CasasState> {
       : _api = api ?? ApiClient.instance,
         super(const ViviendasInitial());
 
-  Future<void> loadViviendas() async {
-    emit(const ViviendasLoading());
-    try {
-      final response = await _api.get('/dashboard/cobrador/viviendas');
-      final data = response.data as Map<String, dynamic>;
-      final etapas = (data['etapas'] as List? ?? [])
-          .map((e) => EtapaExplorer.fromJson(e as Map<String, dynamic>))
-          .toList();
-      emit(ViviendasLoaded(etapas));
-    } catch (e) {
-      emit(ViviendasError('Error al cargar casas: $e'));
+  Future<void> loadViviendas({bool silent = false}) async {
+    if (!silent && LocalCacheRepository.instance.getCached('cobrador:viviendas') == null) {
+      emit(const ViviendasLoading());
     }
+
+    await LocalCacheRepository.instance.executeSWR<Map<String, dynamic>>(
+      key: 'cobrador:viviendas',
+      fetcher: () async {
+        final response = await _api.get('/dashboard/cobrador/viviendas');
+        return response.data as Map<String, dynamic>;
+      },
+      onData: (data, isStale) {
+        final etapas = (data['etapas'] as List? ?? [])
+            .map((e) => EtapaExplorer.fromJson(e as Map<String, dynamic>))
+            .toList();
+        emit(ViviendasLoaded(etapas));
+      },
+      onError: (e) {
+        if (!silent && LocalCacheRepository.instance.getCached('cobrador:viviendas') == null) {
+          emit(ViviendasError('Error al cargar casas: $e'));
+        }
+      },
+    );
   }
 
   Future<void> refresh() async {
-    await loadViviendas();
+    await loadViviendas(silent: true);
   }
 }
