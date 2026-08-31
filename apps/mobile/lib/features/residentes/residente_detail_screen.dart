@@ -12,6 +12,7 @@ import 'models/residentes_models.dart';
 import 'residentes_repository.dart';
 import 'widgets/security_section.dart';
 import '../../core/widgets/top_toast.dart';
+import '../../core/network/local_cache_repository.dart';
 
 class ResidenteDetailScreen extends StatefulWidget {
   final ResidenteItem residente;
@@ -155,11 +156,9 @@ class _ResidenteDetailScreenState extends State<ResidenteDetailScreen> {
     setState(() => _eliminando = true);
 
     try {
-      if (_residente.usuarioId != null) {
-        await ApiClient.instance.delete('/usuarios/${_residente.usuarioId}');
-      } else {
-        await ApiClient.instance.delete('/residentes/${_residente.id}');
-      }
+      await ApiClient.instance.delete('/residentes/${_residente.id}');
+
+      LocalCacheRepository.instance.invalidateAll();
 
       if (mounted) {
         TopToast.showSuccess(context, 'Residente eliminado correctamente');
