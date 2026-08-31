@@ -6,6 +6,8 @@ import '../../core/theme/app_typography.dart';
 /// Atomic Design Molecule: KPI Metric Card (`KPICard`).
 ///
 /// Standardized card for displaying key performance metrics across Admin, Cobrador, and Residente dashboards.
+/// Uses FittedBox for value text so large amounts ($200.000) or long dates (5 de septiembre)
+/// auto-scale down smoothly without breaking into multiple lines or breaking symmetry.
 class KPICard extends StatelessWidget {
   final String title;
   final String value;
@@ -62,7 +64,10 @@ class KPICard extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.cardPadding),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 10,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -82,37 +87,43 @@ class KPICard extends StatelessWidget {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
                       color: themeColor.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Icon(icon, color: themeColor, size: 20),
+                    child: Icon(icon, color: themeColor, size: 18),
                   ),
                 ],
               ),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                value,
-                style: AppTypography.title.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
+              const SizedBox(height: 6),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  value,
+                  style: AppTypography.title.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
+                    fontSize: 18,
+                  ),
+                  maxLines: 1,
                 ),
               ),
               if (percentage != null) ...[
-                const SizedBox(height: AppSpacing.sm),
+                const SizedBox(height: 6),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(4),
                   child: LinearProgressIndicator(
                     value: (percentage! / 100).clamp(0.0, 1.0),
                     backgroundColor: themeColor.withValues(alpha: 0.12),
                     color: themeColor,
-                    minHeight: 6,
+                    minHeight: 5,
                   ),
                 ),
               ],
               if (subtitle != null || trendText != null || actionLabel != null) ...[
-                const SizedBox(height: AppSpacing.xs),
+                const SizedBox(height: 4),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -121,7 +132,7 @@ class KPICard extends StatelessWidget {
                         (trendPositive ?? true)
                             ? Icons.trending_up_rounded
                             : Icons.trending_down_rounded,
-                        size: 14,
+                        size: 13,
                         color: (trendPositive ?? true)
                             ? AppColors.success
                             : AppColors.error,
@@ -134,6 +145,7 @@ class KPICard extends StatelessWidget {
                               ? AppColors.success
                               : AppColors.error,
                           fontWeight: FontWeight.w600,
+                          fontSize: 11,
                         ),
                       ),
                       const SizedBox(width: 6),
@@ -144,6 +156,7 @@ class KPICard extends StatelessWidget {
                           subtitle!,
                           style: AppTypography.caption.copyWith(
                             color: AppColors.textSecondary,
+                            fontSize: 11,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -155,6 +168,7 @@ class KPICard extends StatelessWidget {
                         style: AppTypography.caption.copyWith(
                           color: themeColor,
                           fontWeight: FontWeight.w600,
+                          fontSize: 11,
                         ),
                       ),
                   ],
