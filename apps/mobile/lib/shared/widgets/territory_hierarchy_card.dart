@@ -7,14 +7,15 @@ import 'status_badge.dart';
 /// Atomic Organism: Territory Hierarchy Card (`TerritoryHierarchyCard`).
 ///
 /// Standardized card representation for physical domain hierarchy:
-/// `Etapa → Manzana → Casa`.
-/// Respects ubiquitous language: Casa (never "vivienda"), Residente, Etapa, Manzana.
+/// `Etapa X • Manzana Y • Casa Z`.
+/// Intelligently sanitizes duplicate prefix words ("Etapa Etapa 1" -> "Etapa 1").
 class TerritoryHierarchyCard extends StatelessWidget {
   final String etapa;
   final String manzana;
   final String casaNumero;
   final String? residenteNombre;
   final String? estadoRecaudo;
+  final bool showResidenteName;
   final VoidCallback? onTap;
 
   const TerritoryHierarchyCard({
@@ -24,11 +25,23 @@ class TerritoryHierarchyCard extends StatelessWidget {
     required this.casaNumero,
     this.residenteNombre,
     this.estadoRecaudo,
+    this.showResidenteName = false,
     this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final cleanEtapa = _cleanValue(etapa, 'Etapa');
+    final cleanManzana = _cleanValue(manzana, 'Manzana');
+    final cleanCasa = _cleanValue(casaNumero, 'Casa');
+
+    final parts = <String>[];
+    if (cleanEtapa.isNotEmpty) parts.add('Etapa $cleanEtapa');
+    if (cleanManzana.isNotEmpty) parts.add('Manzana $cleanManzana');
+    if (cleanCasa.isNotEmpty) parts.add('Casa $cleanCasa');
+
+    final hierarchyLabel = parts.join(' • ');
+
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -56,12 +69,12 @@ class TerritoryHierarchyCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Etapa $etapa • Manzana $manzana • Casa $casaNumero',
+                      hierarchyLabel.isNotEmpty ? hierarchyLabel : 'Inmueble Asignado',
                       style: AppTypography.subtitle.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    if (residenteNombre != null && residenteNombre!.isNotEmpty) ...[
+                    if (showResidenteName && residenteNombre != null && residenteNombre!.isNotEmpty) ...[
                       const SizedBox(height: 2),
                       Text(
                         'Residente: $residenteNombre',
@@ -87,5 +100,12 @@ class TerritoryHierarchyCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _cleanValue(String val, String prefix) {
+    final trimmed = val.trim();
+    if (trimmed.isEmpty) return '';
+    final reg = RegExp('^$prefix\\s*', caseSensitive: false);
+    return trimmed.replaceAll(reg, '').trim();
   }
 }

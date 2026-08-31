@@ -122,8 +122,21 @@ class _ResidenteDetailScreenState extends State<ResidenteDetailScreen> {
   String _proximoVencimiento() {
     final cobros = _getProximosCobros();
     final pendientes = cobros.where((c) => c.status != _CobroStatus.pagado);
-    if (pendientes.isEmpty) return 'Sin vencimientos';
-    return DateFormat("d 'de' MMMM", 'es').format(pendientes.first.fecha);
+    if (pendientes.isNotEmpty) {
+      return DateFormat("d 'de' MMMM", 'es').format(pendientes.first.fecha);
+    }
+    // Proyección automática de la próxima cuota si no hay vencidos
+    final now = DateTime.now();
+    final modalidad = _residente.modalidadPago.toUpperCase();
+    DateTime proxima;
+    if (modalidad == 'SEMANAL') {
+      proxima = _sabadoCercano(now.add(const Duration(days: 6)));
+    } else if (modalidad == 'QUINCENAL') {
+      proxima = DateTime(now.year, now.month + (now.day > 15 ? 1 : 0), now.day > 15 ? 1 : 15);
+    } else {
+      proxima = DateTime(now.year, now.month + 1, 1);
+    }
+    return DateFormat("d 'de' MMMM", 'es').format(proxima);
   }
 
   Future<void> _confirmarEliminar(BuildContext context) async {
@@ -384,39 +397,43 @@ class _ResidenteDetailScreenState extends State<ResidenteDetailScreen> {
         ),
         const SizedBox(height: AppSpacing.md),
 
-        // 2. Territory Hierarchy Card
+        // 2. Territory Hierarchy Card (Sin redundancia del nombre ya que está arriba)
         TerritoryHierarchyCard(
           etapa: _residente.etapa,
           manzana: '',
           casaNumero: _residente.casa,
           residenteNombre: _residente.nombre,
           estadoRecaudo: _residente.estadoFinanciero,
+          showResidenteName: false,
         ),
         const SizedBox(height: AppSpacing.md),
 
-        // 3. KPI Cards Row
-        Row(
-          children: [
-            Expanded(
-              child: KPICard(
-                title: 'Deuda Actual',
-                value: '\$${_residente.saldoPendiente.toStringAsFixed(2)}',
-                subtitle: _residente.estadoFinanciero,
-                icon: Icons.account_balance_wallet_outlined,
-                color: _residente.saldoPendiente > 0 ? AppColors.error : AppColors.success,
+        // 3. KPI Cards Row (Simétricos en altura con IntrinsicHeight)
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: KPICard(
+                  title: 'Deuda Actual',
+                  value: '\$${_residente.saldoPendiente.toStringAsFixed(0)}',
+                  subtitle: _residente.estadoFinanciero,
+                  icon: Icons.account_balance_wallet_outlined,
+                  color: _residente.saldoPendiente > 0 ? AppColors.error : AppColors.success,
+                ),
               ),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: KPICard(
-                title: 'Próximo Venc.',
-                value: _proximoVencimiento(),
-                subtitle: _residente.modalidadPago,
-                icon: Icons.event_outlined,
-                color: AppColors.info,
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: KPICard(
+                  title: 'Próximo Venc.',
+                  value: _proximoVencimiento(),
+                  subtitle: 'Modalidad ${_residente.modalidadPago}',
+                  icon: Icons.event_outlined,
+                  color: AppColors.info,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         const SizedBox(height: AppSpacing.md),
 
