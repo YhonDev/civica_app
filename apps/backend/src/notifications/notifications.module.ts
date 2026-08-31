@@ -8,6 +8,8 @@ import { EmailSender } from './infrastructure/email/email-sender';
 import { EnviarNotificacionesJob } from './infrastructure/jobs/enviar-notificaciones.job';
 import { NotificacionesController } from './infrastructure/controllers/notificaciones.controller';
 
+import { EventsGateway } from './events.gateway';
+
 @Module({
   imports: [TypeOrmModule.forFeature([Actividad, Notificacion])],
   controllers: [NotificacionesController],
@@ -18,7 +20,8 @@ import { NotificacionesController } from './infrastructure/controllers/notificac
     },
     EmailSender,
     EnviarNotificacionesJob,
+    EventsGateway,
   ],
-  exports: [ActividadRepository, EmailSender],
+  exports: [ActividadRepository, EmailSender, EventsGateway],
 })
 export class NotificationsModule {}

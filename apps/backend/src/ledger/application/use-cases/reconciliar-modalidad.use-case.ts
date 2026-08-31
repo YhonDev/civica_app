@@ -6,6 +6,7 @@ import { TarifaRepository } from '../../infrastructure/persistence/tarifa.reposi
 import { Periodo, Money, pagosPorMes } from '../../../shared/common/value-objects';
 import type { ModalidadRecaudo } from '../../../shared/common/value-objects';
 import { Cobro } from '../../domain/cobro.entity';
+import { EventsGateway } from '../../../notifications/events.gateway';
 
 @Injectable()
 export class ReconciliarModalidadUseCase {
@@ -16,6 +17,7 @@ export class ReconciliarModalidadUseCase {
     private readonly periodoCobroRepository: PeriodoCobroRepository,
     private readonly cobroRepository: CobroRepository,
     private readonly tarifaRepository: TarifaRepository,
+    private readonly eventsGateway?: EventsGateway,
   ) {}
 
   async execute(residenteId: string, nuevaModalidad: ModalidadRecaudo): Promise<void> {
@@ -137,5 +139,11 @@ export class ReconciliarModalidadUseCase {
     this.logger.log(
       `Reconciliación exitosa: ${nuevosCobros.length} cuota(s) reestructurada(s) para ${nuevaModalidad} con $${totalPagadoCentavos / 100} abonados previa/mente.`,
     );
+
+    this.eventsGateway?.emitModalidadCambiada({
+      tenantId: plan.tenantId,
+      residenteId,
+      nuevaModalidad,
+    });
   }
 }

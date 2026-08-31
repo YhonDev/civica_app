@@ -15,6 +15,7 @@ import { TicketRepository } from '../../infrastructure/persistence/ticket.reposi
 
 import { SolicitudRepository } from '../../infrastructure/persistence/solicitud.repository';
 import { SolicitudEstado } from '../../domain/solicitud.entity';
+import { EventsGateway } from '../../../notifications/events.gateway';
 
 export interface RegistrarPagoInput {
   clientPaymentId: string;
@@ -50,6 +51,7 @@ export class RegistrarPagoUseCase {
     private readonly generarTicketUC: GenerarTicketUseCase,
     private readonly ticketRepo: TicketRepository,
     private readonly pagoCobroRepo: PagoCobroRepository,
+    private readonly eventsGateway?: EventsGateway,
   ) {}
 
   async execute(input: RegistrarPagoInput): Promise<RegistrarPagoResult> {
@@ -228,6 +230,13 @@ export class RegistrarPagoUseCase {
     this.logger.log(
       `Pago registrado: ${pago.id} | ${input.monto} centavos → ${cobrosAfectados.length} cobro(s) afectado(s) | Ticket: ${ticket.numero}`,
     );
+
+    this.eventsGateway?.emitPagoRegistrado({
+      tenantId: input.tenantId,
+      residenteId: input.residenteId,
+      cobroId: pago.cobroId ?? (cobrosAfectados[0]?.id ?? ''),
+      monto: input.monto,
+    });
 
     return { pago, cobrosAfectados, event, ticket };
   }

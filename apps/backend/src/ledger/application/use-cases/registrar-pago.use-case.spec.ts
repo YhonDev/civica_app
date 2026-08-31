@@ -14,6 +14,7 @@ import { Money } from '../../../shared/common/value-objects';
 import { GenerarTicketUseCase } from './generar-ticket.use-case';
 import { TicketRepository } from '../../infrastructure/persistence/ticket.repository';
 import { TicketCobro } from '../../domain/ticket-cobro.entity';
+import { EventsGateway } from '../../../notifications/events.gateway';
 
 describe('RegistrarPagoUseCase', () => {
   let useCase: RegistrarPagoUseCase;
@@ -130,6 +131,7 @@ describe('RegistrarPagoUseCase', () => {
         { provide: GenerarTicketUseCase, useValue: mockGenerarTicketUC },
         { provide: TicketRepository, useValue: mockTicketRepo },
         { provide: PagoCobroRepository, useValue: mockPagoCobroRepo },
+        { provide: EventsGateway, useValue: { emitPagoRegistrado: jest.fn() } },
       ],
     }).compile();
 
