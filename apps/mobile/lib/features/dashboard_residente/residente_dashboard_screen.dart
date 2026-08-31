@@ -311,7 +311,8 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 
 
