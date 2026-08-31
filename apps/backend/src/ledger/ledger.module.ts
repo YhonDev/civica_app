@@ -59,6 +59,7 @@ import { TicketsController } from './infrastructure/controllers/tickets.controll
 // Jobs
 import { GenerarCobrosJob } from './infrastructure/jobs/generar-cobros.job';
 import { MarcarVencidasJob } from './infrastructure/jobs/marcar-vencidas.job';
+import { PurgaSolicitudesJob } from './infrastructure/jobs/purga-solicitudes.job';
 
 // Shared
 import { NotificationsModule } from '../notifications/notifications.module';
@@ -133,6 +134,7 @@ import { Reflector } from '@nestjs/core';
     // Jobs
     GenerarCobrosJob,
     MarcarVencidasJob,
+    PurgaSolicitudesJob,
 
     // Interceptors
     Reflector,
@@ -147,6 +149,7 @@ import { Reflector } from '@nestjs/core';
     SolicitudRepository,
     GenerarCobrosUseCase,
     ReconciliarModalidadUseCase,
+    PurgaSolicitudesJob,
     CarteraViviendaResumenQuery,
   ],
 })
