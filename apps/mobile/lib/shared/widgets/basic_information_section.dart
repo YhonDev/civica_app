@@ -8,6 +8,7 @@ class BasicInfoItem {
   final IconData icon;
   final String label;
   final String value;
+  final Color? iconColor;
   final Widget? trailing;
   final VoidCallback? onTap;
 
@@ -15,6 +16,7 @@ class BasicInfoItem {
     required this.icon,
     required this.label,
     required this.value,
+    this.iconColor,
     this.trailing,
     this.onTap,
   });
@@ -24,7 +26,7 @@ class BasicInfoItem {
 ///
 /// Follows Atomic Design System principles. Shared across Residente, Cobrador, and Admin screens.
 /// Dynamic and reactive to real-time profile edits (phone, email, modality, house).
-/// Dynamically omits null or empty fields (e.g. email) when not present.
+/// Dynamically omits null or empty fields (e.g. email) when not present and styles icons with distinct palette colors.
 class BasicInformationSection extends StatelessWidget {
   final Map<String, dynamic>? user;
   final String? proyectoNombre;
@@ -100,51 +102,55 @@ class BasicInformationSection extends StatelessWidget {
 
     final list = <BasicInfoItem>[];
 
-    // 1. Email (omite si es nulo o vacío)
+    // 1. Email (omite si es nulo o vacío) - Morado suave / Info
     if (email != null) {
       list.add(
         BasicInfoItem(
           icon: Icons.email_outlined,
           label: 'Correo registrado',
           value: email,
+          iconColor: const Color(0xFF7C4DFF),
         ),
       );
     }
 
-    // 2. Teléfono (omite si es nulo o vacío)
+    // 2. Teléfono (omite si es nulo o vacío) - Verde Esmeralda
     if (telefono != null) {
       list.add(
         BasicInfoItem(
           icon: Icons.phone_outlined,
           label: 'Teléfono de contacto',
           value: telefono,
+          iconColor: AppColors.success,
         ),
       );
     }
 
-    // 3. Proyecto / Urbanización
+    // 3. Proyecto / Urbanización - Azul Primario
     if (proyecto.isNotEmpty) {
       list.add(
         BasicInfoItem(
           icon: Icons.business_outlined,
           label: 'Proyecto / Urbanización',
           value: proyecto,
+          iconColor: AppColors.primary,
         ),
       );
     }
 
-    // 4. Modalidad de Pago
+    // 4. Modalidad de Pago - Cyan / Info
     if (modalidad.isNotEmpty) {
       list.add(
         BasicInfoItem(
           icon: Icons.calendar_today_outlined,
           label: 'Modalidad de Pago',
           value: _formatModalidad(modalidad),
+          iconColor: AppColors.info,
         ),
       );
     }
 
-    // 5. Inmueble / Casa según Rol
+    // 5. Inmueble / Casa según Rol - Naranja / Turquesa Accent
     final casa = casaInfoOverride ?? user?['casaInfo'] as String? ?? user?['casa'] as String? ?? '';
     if (casa.isNotEmpty) {
       list.add(
@@ -152,6 +158,7 @@ class BasicInformationSection extends StatelessWidget {
           icon: Icons.home_outlined,
           label: 'Inmueble / Casa',
           value: casa,
+          iconColor: const Color(0xFFFF6D00),
         ),
       );
     } else if (rol == 'COBRADOR') {
@@ -161,6 +168,7 @@ class BasicInformationSection extends StatelessWidget {
           icon: Icons.map_outlined,
           label: 'Zona de cobro',
           value: zona,
+          iconColor: const Color(0xFF00BFA5),
         ),
       );
     }
@@ -189,6 +197,8 @@ class _InfoTileWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeColor = item.iconColor ?? AppColors.primary;
+
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.md,
@@ -197,10 +207,10 @@ class _InfoTileWidget extends StatelessWidget {
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: AppColors.primary.withValues(alpha: 0.08),
+          color: themeColor.withValues(alpha: 0.10),
           borderRadius: BorderRadius.circular(10),
         ),
-        child: Icon(item.icon, color: AppColors.primary, size: 20),
+        child: Icon(item.icon, color: themeColor, size: 20),
       ),
       title: Text(
         item.label,
