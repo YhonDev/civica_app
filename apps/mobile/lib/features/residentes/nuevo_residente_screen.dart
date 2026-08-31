@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/widgets/top_toast.dart';
 import 'comunidad_repository.dart';
 import 'residentes_repository.dart';
 
@@ -178,6 +180,16 @@ class _NuevoResidenteScreenState extends State<NuevoResidenteScreen> {
           ],
         ),
         actions: [
+          OutlinedButton.icon(
+            onPressed: () {
+              Clipboard.setData(ClipboardData(
+                text: 'Usuario: ${resultado.username}\nContraseña: ${resultado.password}',
+              ));
+              TopToast.showSuccess(ctx, 'Credenciales copiadas al portapapeles');
+            },
+            icon: const Icon(Icons.copy_rounded, size: 16),
+            label: const Text('Copiar Credenciales'),
+          ),
           FilledButton(
             onPressed: () {
               Navigator.pop(ctx);
@@ -330,26 +342,26 @@ class _NuevoResidenteScreenState extends State<NuevoResidenteScreen> {
               },
             ),
             
-            // Indicador visual de selección exitosa
+            // Indicador visual de selección de inmueble
             if (_selectedCasaId != null)
               Padding(
                 padding: const EdgeInsets.only(top: AppSpacing.md),
                 child: Container(
                   padding: const EdgeInsets.all(AppSpacing.md),
                   decoration: BoxDecoration(
-                    color: AppColors.success.withValues(alpha: 0.1),
+                    color: AppColors.info.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
+                    border: Border.all(color: AppColors.info.withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.check_circle_rounded, color: AppColors.success),
+                      Icon(Icons.info_outline_rounded, color: AppColors.info),
                       const SizedBox(width: AppSpacing.sm),
                       Expanded(
                         child: Text(
-                          '$_selectedEtapaName - $_selectedManzanaName - $_selectedCasaName asignada correctamente.',
+                          'Inmueble seleccionado: $_selectedEtapaName - $_selectedManzanaName - $_selectedCasaName',
                           style: AppTypography.body.copyWith(
-                            color: AppColors.success,
+                            color: AppColors.info,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -384,6 +396,8 @@ class _NuevoResidenteScreenState extends State<NuevoResidenteScreen> {
     return TextField(
       controller: controller,
       keyboardType: keyboardType,
+      autofillHints: null,
+      enableSuggestions: false,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon, color: AppColors.textDisabled),

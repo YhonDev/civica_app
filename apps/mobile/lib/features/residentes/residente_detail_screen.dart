@@ -26,7 +26,6 @@ class ResidenteDetailScreen extends StatefulWidget {
 class _ResidenteDetailScreenState extends State<ResidenteDetailScreen> {
   late ResidenteItem _residente;
   bool _cargando = false;
-  bool _eliminando = false;
 
   final _repo = ResidentesRepository();
 
@@ -153,8 +152,6 @@ class _ResidenteDetailScreenState extends State<ResidenteDetailScreen> {
 
     if (seguro != true || !mounted) return;
 
-    setState(() => _eliminando = true);
-
     try {
       await ApiClient.instance.delete('/residentes/${_residente.id}');
 
@@ -167,7 +164,6 @@ class _ResidenteDetailScreenState extends State<ResidenteDetailScreen> {
     } catch (e) {
       if (mounted) {
         TopToast.showError(context, 'Error al eliminar residente: $e');
-        setState(() => _eliminando = false);
       }
     }
   }
