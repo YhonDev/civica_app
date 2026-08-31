@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/network/local_cache_repository.dart';
+import '../../../core/security/biometric_auth_service.dart';
 import '../../../core/widgets/top_toast.dart';
+import '../../../screens/auth/auth_cubit.dart';
 
 /// Sección de Seguridad reutilizable para residentes y cobradores.
 ///
@@ -86,8 +90,15 @@ class _SecuritySectionState extends State<SecuritySection> {
 
       if (mounted) {
         setState(() => _isEditingUsername = false);
-        TopToast.showSuccess(context, 'Usuario actualizado correctamente');
-        widget.onCredentialsUpdated?.call();
+        if (!widget.isAdmin) {
+          await BiometricAuthService.instance.setBiometricsEnabled(false);
+          LocalCacheRepository.instance.invalidateAll();
+          TopToast.showSuccess(context, 'Usuario actualizado. Inicia sesión nuevamente.');
+          context.read<AuthCubit>().logout();
+        } else {
+          TopToast.showSuccess(context, 'Usuario actualizado correctamente');
+          widget.onCredentialsUpdated?.call();
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -155,7 +166,15 @@ class _SecuritySectionState extends State<SecuritySection> {
         _currentPasswordCtrl.clear();
         _newPasswordCtrl.clear();
         _confirmPasswordCtrl.clear();
-        TopToast.showSuccess(context, 'Contraseña actualizada correctamente');
+        
+        if (!widget.isAdmin) {
+          await BiometricAuthService.instance.setBiometricsEnabled(false);
+          LocalCacheRepository.instance.invalidateAll();
+          TopToast.showSuccess(context, 'Contraseña actualizada. Inicia sesión con tu nueva contraseña.');
+          context.read<AuthCubit>().logout();
+        } else {
+          TopToast.showSuccess(context, 'Contraseña actualizada correctamente');
+        }
       }
     } catch (e) {
       if (mounted) {
