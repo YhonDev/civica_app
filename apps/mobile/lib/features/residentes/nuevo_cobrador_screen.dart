@@ -6,6 +6,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/top_toast.dart';
+import '../../shared/widgets/credentials_dialog.dart';
 import 'comunidad_repository.dart';
 
 class _ResultadoCrearCobrador {
@@ -109,117 +110,13 @@ class _NuevoCobradorScreenState extends State<NuevoCobradorScreen> {
   }
 
   void _mostrarCredenciales(_ResultadoCrearCobrador resultado) {
-    bool copiado = false;
-
-    showDialog(
+    CredentialsDialog.show(
       context: context,
-      barrierDismissible: false,
-      builder: (ctx) => StatefulBuilder(
-        builder: (dialogCtx, setDialogState) => AlertDialog(
-          title: Row(
-            children: [
-              Icon(Icons.check_circle_rounded, color: AppColors.success),
-              const SizedBox(width: AppSpacing.sm),
-              const Expanded(child: Text('Cobrador creado')),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '${resultado.nombre} ha sido registrado correctamente.',
-                style: AppTypography.body,
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Container(
-                padding: const EdgeInsets.all(AppSpacing.md),
-                decoration: BoxDecoration(
-                  color: AppColors.info.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.info.withValues(alpha: 0.3)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.person_outline, size: 16, color: AppColors.info),
-                        const SizedBox(width: AppSpacing.sm),
-                        Text('Usuario:', style: AppTypography.small.copyWith(fontWeight: FontWeight.w600)),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    SelectableText(
-                      resultado.username,
-                      style: AppTypography.body.copyWith(
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'monospace',
-                        fontSize: 16,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    Row(
-                      children: [
-                        Icon(Icons.lock_outline, size: 16, color: AppColors.info),
-                        const SizedBox(width: AppSpacing.sm),
-                        Text('Contraseña:', style: AppTypography.small.copyWith(fontWeight: FontWeight.w600)),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    SelectableText(
-                      resultado.password,
-                      style: AppTypography.body.copyWith(
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'monospace',
-                        fontSize: 16,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                'Copia o guarda estas credenciales para entregarlas al cobrador.',
-                style: AppTypography.small.copyWith(color: AppColors.textSecondary),
-              ),
-            ],
-          ),
-          actions: [
-            OutlinedButton.icon(
-              onPressed: () {
-                final textoCopiar = 'Usuario: ${resultado.username}\nContraseña: ${resultado.password}';
-                Clipboard.setData(ClipboardData(text: textoCopiar));
-                setDialogState(() => copiado = true);
-                TopToast.showSuccess(dialogCtx, 'Credenciales copiadas al portapapeles');
-              },
-              icon: Icon(
-                copiado ? Icons.check_rounded : Icons.copy_rounded,
-                color: copiado ? AppColors.success : AppColors.primary,
-              ),
-              label: Text(
-                copiado ? '¡Copiado!' : 'Copiar Credenciales',
-                style: TextStyle(
-                  color: copiado ? AppColors.success : AppColors.primary,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(
-                  color: copiado ? AppColors.success : AppColors.primary,
-                ),
-              ),
-            ),
-            FilledButton(
-              onPressed: () {
-                Navigator.pop(ctx);
-                context.pop(true);
-              },
-              child: const Text('Listo'),
-            ),
-          ],
-        ),
-      ),
+      title: 'Cobrador creado',
+      nombre: resultado.nombre,
+      username: resultado.username,
+      password: resultado.password,
+      onDismiss: () => context.pop(true),
     );
   }
 

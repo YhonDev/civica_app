@@ -5,6 +5,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/top_toast.dart';
+import '../../shared/widgets/credentials_dialog.dart';
 import 'comunidad_repository.dart';
 import 'residentes_repository.dart';
 
@@ -106,109 +107,13 @@ class _NuevoResidenteScreenState extends State<NuevoResidenteScreen> {
   }
 
   void _mostrarCredenciales(_ResultadoCrearResidente resultado) {
-    showDialog(
+    CredentialsDialog.show(
       context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(Icons.check_circle_rounded, color: AppColors.success),
-            const SizedBox(width: AppSpacing.sm),
-            const Expanded(child: Text('Residente creado')),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '${resultado.nombre} ha sido registrado correctamente.',
-              style: AppTypography.body,
-            ),
-            const SizedBox(height: AppSpacing.md),
-            Container(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              decoration: BoxDecoration(
-                color: AppColors.info.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.info.withValues(alpha: 0.3)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.person_outline, size: 16, color: AppColors.info),
-                      const SizedBox(width: AppSpacing.sm),
-                      Text('Usuario:', style: AppTypography.small.copyWith(fontWeight: FontWeight.w600)),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  SelectableText(
-                    resultado.username,
-                    style: AppTypography.body.copyWith(
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'monospace',
-                      fontSize: 16,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  Row(
-                    children: [
-                      Icon(Icons.lock_outline, size: 16, color: AppColors.info),
-                      const SizedBox(width: AppSpacing.sm),
-                      Text('Contraseña:', style: AppTypography.small.copyWith(fontWeight: FontWeight.w600)),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  SelectableText(
-                    resultado.password,
-                    style: AppTypography.body.copyWith(
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'monospace',
-                      fontSize: 16,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              'Guarda estas credenciales. No se mostrarán nuevamente.',
-              style: AppTypography.small.copyWith(color: AppColors.textSecondary),
-            ),
-          ],
-        ),
-        actionsPadding: const EdgeInsets.all(AppSpacing.md),
-        actions: [
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    Clipboard.setData(ClipboardData(
-                      text: 'Usuario: ${resultado.username}\nContraseña: ${resultado.password}',
-                    ));
-                    TopToast.showSuccess(ctx, 'Credenciales copiadas al portapapeles');
-                  },
-                  icon: const Icon(Icons.copy_rounded, size: 16),
-                  label: const Text('Copiar'),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: FilledButton(
-                  onPressed: () {
-                    Navigator.pop(ctx);
-                    context.pop(true);
-                  },
-                  child: const Text('Listo'),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+      title: 'Residente creado',
+      nombre: resultado.nombre,
+      username: resultado.username,
+      password: resultado.password,
+      onDismiss: () => context.pop(true),
     );
   }
 
