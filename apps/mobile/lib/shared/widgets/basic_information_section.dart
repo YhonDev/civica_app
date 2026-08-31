@@ -158,7 +158,7 @@ class BasicInformationSection extends StatelessWidget {
           icon: Icons.home_outlined,
           label: 'Inmueble / Casa',
           value: casa,
-          iconColor: AppColors.accentOrange,
+          iconColor: AppColors.error,
         ),
       );
     } else if (rol == 'COBRADOR') {
