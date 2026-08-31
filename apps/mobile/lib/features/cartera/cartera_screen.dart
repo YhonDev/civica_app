@@ -13,6 +13,7 @@ import 'widgets/calendar_view.dart';
 import 'bloc/cartera_cubit.dart';
 import '../../shared/widgets/ticket_bottom_sheet.dart';
 import '../../shared/widgets/empty_state.dart';
+import '../../core/widgets/lifecycle_observer_mixin.dart';
 import '../dashboard/widgets/skeleton_loading.dart';
 import '../solicitudes/solicitudes_repository.dart';
 
@@ -37,8 +38,6 @@ class CarteraScreen extends StatelessWidget {
     );
   }
 }
-
-import '../../core/widgets/lifecycle_observer_mixin.dart';
 
 class _CarteraScreenContent extends StatefulWidget {
   const _CarteraScreenContent();

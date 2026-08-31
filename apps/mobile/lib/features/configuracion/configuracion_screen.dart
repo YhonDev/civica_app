@@ -7,10 +7,7 @@ import '../../core/network/api_client.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
-import '../../core/theme/app_theme.dart';
-import '../../core/security/biometric_auth_service.dart';
-import '../../core/widgets/top_toast.dart';
-import '../residentes/widgets/security_section.dart';
+import '../../shared/widgets/system_settings_section.dart';
 
 class ConfiguracionScreen extends StatefulWidget {
   const ConfiguracionScreen({super.key});
@@ -21,50 +18,11 @@ class ConfiguracionScreen extends StatefulWidget {
 
 class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
   String? _proyectoNombreBackend;
-  bool _isBiometricsSupported = false;
-  bool _isBiometricsEnabled = false;
 
   @override
   void initState() {
     super.initState();
     _cargarDatosBackend();
-    _cargarBiometriaState();
-  }
-
-  Future<void> _cargarBiometriaState() async {
-    final supported = await BiometricAuthService.instance.isHardwareSupported();
-    final enabled = await BiometricAuthService.instance.isBiometricsEnabled();
-    if (mounted) {
-      setState(() {
-        _isBiometricsSupported = supported;
-        _isBiometricsEnabled = enabled;
-      });
-    }
-  }
-
-  Future<void> _toggleBiometria(bool newValue) async {
-    if (newValue == true) {
-      final authSuccess = await BiometricAuthService.instance.authenticate(
-        localizedReason: 'Escanea tu huella para activar el acceso biométrico',
-      );
-      if (authSuccess) {
-        await BiometricAuthService.instance.setBiometricsEnabled(true);
-        if (mounted) {
-          setState(() => _isBiometricsEnabled = true);
-          TopToast.showSuccess(context, 'Autenticación biométrica activada');
-        }
-      } else {
-        if (mounted) {
-          TopToast.showError(context, 'No se pudo verificar la huella dactilar');
-        }
-      }
-    } else {
-      await BiometricAuthService.instance.setBiometricsEnabled(false);
-      if (mounted) {
-        setState(() => _isBiometricsEnabled = false);
-        TopToast.showSuccess(context, 'Autenticación biométrica desactivada');
-      }
-    }
   }
 
   Future<void> _cargarDatosBackend() async {
@@ -91,7 +49,6 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
 
     final rolLabel = _rolName(rol);
 
-    // Obtención dinámica del nombre del proyecto desde el backend
     final proyectoNombre = _proyectoNombreBackend ??
         ((tenantId.isEmpty || tenantId.contains('-'))
             ? 'Urbanización San Sebastián'
@@ -193,57 +150,8 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
 
               const SizedBox(height: AppSpacing.lg),
 
-              // Configuration / Settings
-              _SectionCard(
-                title: 'Ajustes del Sistema',
-                children: [
-                  ValueListenableBuilder<bool>(
-                    valueListenable: darkThemeNotifier,
-                    builder: (context, isDark, _) {
-                      return ListTile(
-                        leading: const Icon(Icons.palette_outlined),
-                        title: const Text('Tema oscuro'),
-                        trailing: Switch(
-                          value: isDark,
-                          onChanged: (value) {
-                            darkThemeNotifier.value = value;
-                          },
-                          activeThumbColor: AppColors.primary,
-                        ),
-                      );
-                    },
-                  ),
-                  const Divider(height: 1),
-                  ListTile(
-                    leading: Icon(
-                      Icons.fingerprint_rounded,
-                      color: _isBiometricsSupported ? AppColors.primary : AppColors.textDisabled,
-                    ),
-                    title: const Text('Iniciar sesión con huella / Face ID'),
-                    subtitle: Text(
-                      _isBiometricsSupported
-                          ? (_isBiometricsEnabled ? 'Habilitado para acceso rápido' : 'Deshabilitado')
-                          : 'No disponible en este dispositivo',
-                      style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
-                    ),
-                    trailing: _isBiometricsSupported
-                        ? Switch(
-                            value: _isBiometricsEnabled,
-                            onChanged: _toggleBiometria,
-                            activeThumbColor: AppColors.primary,
-                          )
-                        : null,
-                  ),
-                  const Divider(height: 1),
-                  ListTile(
-                    leading: const Icon(Icons.lock_outlined),
-                    title: const Text('Cambiar contraseña'),
-                    subtitle: const Text('Actualiza tu clave de acceso'),
-                    trailing: Icon(Icons.chevron_right_rounded, color: AppColors.textDisabled),
-                    onTap: () => _mostrarModalCambiarPassword(context, user),
-                  ),
-                ],
-              ),
+              // Módulo Reutilizable: Ajustes del Sistema (Tema oscuro, Biometría, Cambiar contraseña)
+              SystemSettingsSection(user: user),
 
               const SizedBox(height: AppSpacing.xl),
 
@@ -271,64 +179,6 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
           ),
         ),
       ),
-    );
-  }
-
-  void _mostrarModalCambiarPassword(BuildContext context, Map<String, dynamic>? user) {
-    final usuarioId = user?['id'] as String? ?? '';
-    final nombre = user?['nombre'] as String? ?? 'Usuario';
-    final username = user?['username'] as String? ?? user?['email'] as String? ?? '';
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) {
-        return Container(
-          decoration: BoxDecoration(
-            color: AppColors.background,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          padding: EdgeInsets.only(
-            left: AppSpacing.md,
-            right: AppSpacing.md,
-            top: AppSpacing.md,
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + AppSpacing.lg,
-          ),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Drag handle indicator
-                Center(
-                  child: Container(
-                    width: 36,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: AppColors.border,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                SecuritySection(
-                  usuarioId: usuarioId,
-                  nombre: nombre,
-                  initialUsername: username,
-                  isAdmin: false,
-                  autoExpandPassword: true,
-                  onCredentialsUpdated: () {
-                    Navigator.of(ctx).pop();
-                  },
-                  onCancel: () {
-                    Navigator.of(ctx).pop();
-                  },
-                ),
-              ],
-            ),
-          ),
-        );
-      },
     );
   }
 

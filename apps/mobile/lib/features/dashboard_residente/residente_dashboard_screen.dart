@@ -17,6 +17,7 @@ import '../../core/network/api_client.dart';
 import '../../core/network/local_cache_repository.dart';
 import '../solicitudes/solicitudes_repository.dart';
 import '../dashboard/widgets/skeleton_loading.dart';
+import '../../core/widgets/lifecycle_observer_mixin.dart';
 
 /// Residente Dashboard — "Mi Estado"
 ///

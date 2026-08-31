@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
+import '../../../core/network/local_cache_repository.dart';
 import '../cartera_repository.dart';
 import '../models/cartera_models.dart';
 
@@ -74,8 +75,6 @@ class CarteraState extends Equatable {
 // ════════════════════════════════════════════════════════════
 // CUBIT
 // ════════════════════════════════════════════════════════════
-
-import '../../../core/network/local_cache_repository.dart';
 
 class CarteraCubit extends Cubit<CarteraState> {
   final CarteraRepository _repository;

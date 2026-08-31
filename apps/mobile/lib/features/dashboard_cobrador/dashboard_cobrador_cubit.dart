@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../../core/network/api_client.dart';
+import '../../core/network/local_cache_repository.dart';
 
 // ════════════════════════════════════════════════════════════
 // DATA MODEL
@@ -94,8 +95,6 @@ class CobradorDashboardError extends CobradorDashboardState {
 // ════════════════════════════════════════════════════════════
 // CUBIT
 // ════════════════════════════════════════════════════════════
-
-import '../../core/network/local_cache_repository.dart';
 
 class DashboardCobradorCubit extends Cubit<CobradorDashboardState> {
   final ApiClient _api;

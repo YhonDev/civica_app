@@ -6,6 +6,7 @@ import '../../screens/auth/auth_cubit.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/widgets/lifecycle_observer_mixin.dart';
 
 import '../cartera/models/cartera_models.dart';
 import '../cartera/widgets/registrar_pago_bottom_sheet.dart';
@@ -29,8 +30,6 @@ class JornadaScreen extends StatelessWidget {
     );
   }
 }
-
-import '../../core/widgets/lifecycle_observer_mixin.dart';
 
 class _JornadaView extends StatefulWidget {
   const _JornadaView();

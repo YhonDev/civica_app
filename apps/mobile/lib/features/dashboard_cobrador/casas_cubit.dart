@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../../core/network/api_client.dart';
+import '../../core/network/local_cache_repository.dart';
 
 // ════════════════════════════════════════════════════════════
 // DATA MODELS
@@ -116,8 +117,6 @@ class ViviendasError extends CasasState {
 // ════════════════════════════════════════════════════════════
 // CUBIT
 // ════════════════════════════════════════════════════════════
-
-import '../../core/network/local_cache_repository.dart';
 
 class CasasCubit extends Cubit<CasasState> {
   final ApiClient _api;
