@@ -26,7 +26,7 @@ class BasicInfoItem {
 ///
 /// Follows Atomic Design System principles. Shared across Residente, Cobrador, and Admin screens.
 /// Dynamic and reactive to real-time profile edits (phone, email, modality, house).
-/// Dynamically omits null or empty fields (e.g. email) when not present and styles icons with distinct palette colors.
+/// Dynamically omits null or empty fields (e.g. email) and uses tokens from AppColors palette.
 class BasicInformationSection extends StatelessWidget {
   final Map<String, dynamic>? user;
   final String? proyectoNombre;
@@ -102,19 +102,19 @@ class BasicInformationSection extends StatelessWidget {
 
     final list = <BasicInfoItem>[];
 
-    // 1. Email (omite si es nulo o vacío) - Morado suave / Info
+    // 1. Email (omite si es nulo o vacío) - AppColors.accentPurple
     if (email != null) {
       list.add(
         BasicInfoItem(
           icon: Icons.email_outlined,
           label: 'Correo registrado',
           value: email,
-          iconColor: const Color(0xFF7C4DFF),
+          iconColor: AppColors.accentPurple,
         ),
       );
     }
 
-    // 2. Teléfono (omite si es nulo o vacío) - Verde Esmeralda
+    // 2. Teléfono (omite si es nulo o vacío) - AppColors.success
     if (telefono != null) {
       list.add(
         BasicInfoItem(
@@ -126,7 +126,7 @@ class BasicInformationSection extends StatelessWidget {
       );
     }
 
-    // 3. Proyecto / Urbanización - Azul Primario
+    // 3. Proyecto / Urbanización - AppColors.primary
     if (proyecto.isNotEmpty) {
       list.add(
         BasicInfoItem(
@@ -138,19 +138,19 @@ class BasicInformationSection extends StatelessWidget {
       );
     }
 
-    // 4. Modalidad de Pago - Cyan / Info
+    // 4. Modalidad de Pago - AppColors.warning (Ámbar Dorado)
     if (modalidad.isNotEmpty) {
       list.add(
         BasicInfoItem(
           icon: Icons.calendar_today_outlined,
           label: 'Modalidad de Pago',
           value: _formatModalidad(modalidad),
-          iconColor: AppColors.info,
+          iconColor: AppColors.warning,
         ),
       );
     }
 
-    // 5. Inmueble / Casa según Rol - Naranja / Turquesa Accent
+    // 5. Inmueble / Casa según Rol - AppColors.accentOrange / AppColors.accentTeal
     final casa = casaInfoOverride ?? user?['casaInfo'] as String? ?? user?['casa'] as String? ?? '';
     if (casa.isNotEmpty) {
       list.add(
@@ -158,7 +158,7 @@ class BasicInformationSection extends StatelessWidget {
           icon: Icons.home_outlined,
           label: 'Inmueble / Casa',
           value: casa,
-          iconColor: const Color(0xFFFF6D00),
+          iconColor: AppColors.accentOrange,
         ),
       );
     } else if (rol == 'COBRADOR') {
@@ -168,7 +168,7 @@ class BasicInformationSection extends StatelessWidget {
           icon: Icons.map_outlined,
           label: 'Zona de cobro',
           value: zona,
-          iconColor: const Color(0xFF00BFA5),
+          iconColor: AppColors.accentTeal,
         ),
       );
     }

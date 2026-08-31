@@ -33,6 +33,11 @@ class AppColors {
   static Color get warning => const Color(0xFFF59E0B);
   static Color get info => const Color(0xFF3B82F6);
 
+  // ── Category & Feature Accents ────────────────────
+  static Color get accentPurple => const Color(0xFF8B5CF6);
+  static Color get accentOrange => const Color(0xFFF97316);
+  static Color get accentTeal => const Color(0xFF14B8A6);
+
   // ── Borders ────────────────────────────────────────
   static Color get border => _isDark ? const Color(0xFF32373E) : const Color(0xFFCBD5E1);
 }
