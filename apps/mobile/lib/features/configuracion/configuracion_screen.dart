@@ -8,6 +8,8 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/security/biometric_auth_service.dart';
+import '../../core/widgets/top_toast.dart';
 import '../residentes/widgets/security_section.dart';
 
 class ConfiguracionScreen extends StatefulWidget {
@@ -19,11 +21,50 @@ class ConfiguracionScreen extends StatefulWidget {
 
 class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
   String? _proyectoNombreBackend;
+  bool _isBiometricsSupported = false;
+  bool _isBiometricsEnabled = false;
 
   @override
   void initState() {
     super.initState();
     _cargarDatosBackend();
+    _cargarBiometriaState();
+  }
+
+  Future<void> _cargarBiometriaState() async {
+    final supported = await BiometricAuthService.instance.isHardwareSupported();
+    final enabled = await BiometricAuthService.instance.isBiometricsEnabled();
+    if (mounted) {
+      setState(() {
+        _isBiometricsSupported = supported;
+        _isBiometricsEnabled = enabled;
+      });
+    }
+  }
+
+  Future<void> _toggleBiometria(bool newValue) async {
+    if (newValue == true) {
+      final authSuccess = await BiometricAuthService.instance.authenticate(
+        localizedReason: 'Escanea tu huella para activar el acceso biométrico',
+      );
+      if (authSuccess) {
+        await BiometricAuthService.instance.setBiometricsEnabled(true);
+        if (mounted) {
+          setState(() => _isBiometricsEnabled = true);
+          TopToast.showSuccess(context, 'Autenticación biométrica activada');
+        }
+      } else {
+        if (mounted) {
+          TopToast.showError(context, 'No se pudo verificar la huella dactilar');
+        }
+      }
+    } else {
+      await BiometricAuthService.instance.setBiometricsEnabled(false);
+      if (mounted) {
+        setState(() => _isBiometricsEnabled = false);
+        TopToast.showSuccess(context, 'Autenticación biométrica desactivada');
+      }
+    }
   }
 
   Future<void> _cargarDatosBackend() async {
@@ -171,6 +212,27 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
                         ),
                       );
                     },
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: Icon(
+                      Icons.fingerprint_rounded,
+                      color: _isBiometricsSupported ? AppColors.primary : AppColors.textDisabled,
+                    ),
+                    title: const Text('Iniciar sesión con huella / Face ID'),
+                    subtitle: Text(
+                      _isBiometricsSupported
+                          ? (_isBiometricsEnabled ? 'Habilitado para acceso rápido' : 'Deshabilitado')
+                          : 'No disponible en este dispositivo',
+                      style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+                    ),
+                    trailing: _isBiometricsSupported
+                        ? Switch(
+                            value: _isBiometricsEnabled,
+                            onChanged: _toggleBiometria,
+                            activeThumbColor: AppColors.primary,
+                          )
+                        : null,
                   ),
                   const Divider(height: 1),
                   ListTile(

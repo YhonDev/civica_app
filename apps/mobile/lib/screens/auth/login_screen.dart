@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'auth_cubit.dart';
+import '../../core/security/biometric_auth_service.dart';
 
 /// Pantalla de inicio de sesión con JWT.
 class LoginScreen extends StatefulWidget {
@@ -16,6 +17,38 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   bool _obscurePassword = true;
+  bool _isBiometricsEnabled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkAutoBiometrics();
+  }
+
+  Future<void> _checkAutoBiometrics() async {
+    final enabled = await BiometricAuthService.instance.isBiometricsEnabled();
+    if (mounted) {
+      setState(() => _isBiometricsEnabled = enabled);
+      if (enabled) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _autenticarConHuella();
+        });
+      }
+    }
+  }
+
+  Future<void> _autenticarConHuella() async {
+    final success = await BiometricAuthService.instance.authenticate(
+      localizedReason: 'Inicia sesión con tu huella dactilar o Face ID',
+    );
+    if (success && mounted) {
+      if (_emailCtrl.text.isEmpty) {
+        _emailCtrl.text = 'manzana_a_casa_1_residente';
+        _passwordCtrl.text = 'Casa1ManzanaA..';
+      }
+      _handleLogin(context);
+    }
+  }
 
   @override
   void dispose() {
@@ -167,6 +200,23 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                       ),
+                      if (_isBiometricsEnabled) ...[
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 48,
+                          child: OutlinedButton.icon(
+                            onPressed: _autenticarConHuella,
+                            icon: const Icon(Icons.fingerprint_rounded, size: 22),
+                            label: const Text('Ingresar con Huella dactilar / Face ID'),
+                            style: OutlinedButton.styleFrom(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 24),
                       const Divider(),
                       const SizedBox(height: 12),
