@@ -60,10 +60,15 @@ class SolicitudesRepository {
     final estadoStr = (json['estado'] as String?) ?? 'PENDIENTE';
     final estado = switch (estadoStr.toUpperCase()) {
       'PENDIENTE' => SolicitudEstado.pendiente,
+      'EN_ESPERA' => SolicitudEstado.enEspera,
+      'EN_CAMINO' => SolicitudEstado.enCamino,
+      'COBRADA' => SolicitudEstado.cobrada,
       'EN_REVISION' => SolicitudEstado.enRevision,
       'RESUELTA' => SolicitudEstado.resuelta,
+      'APROBADA' => SolicitudEstado.aprobada,
       'RECHAZADA' => SolicitudEstado.rechazada,
-      _ => SolicitudEstado.enRevision,
+      'VENCIDA' => SolicitudEstado.vencida,
+      _ => SolicitudEstado.enEspera,
     };
 
     return SolicitudData(
@@ -78,6 +83,15 @@ class SolicitudesRepository {
       residenteId: json['usuarioId'] as String?,
       residenteNombre: (json['usuario']?['nombre']) as String?,
     );
+  }
+
+  /// Mark a collection request as "en camino" (cobrador on the way).
+  Future<void> marcarEnCamino(String id) async {
+    try {
+      await _api.patch('/solicitudes/$id/en-camino');
+    } catch (e) {
+      throw e is ApiException ? e : Exception('Error al actualizar a en camino: $e');
+    }
   }
 
   /// Resolve or reject a solicitud (admin only).

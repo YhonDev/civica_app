@@ -31,6 +31,8 @@ export class SolicitudRepository extends BaseTenantRepository<Solicitud> {
     return this.repo.find({
       where: [
         { usuarioId, estado: SolicitudEstado.PENDIENTE },
+        { usuarioId, estado: SolicitudEstado.EN_ESPERA },
+        { usuarioId, estado: SolicitudEstado.EN_CAMINO },
         { usuarioId, estado: SolicitudEstado.EN_REVISION },
       ],
       relations: { usuario: true },
@@ -45,7 +47,10 @@ export class SolicitudRepository extends BaseTenantRepository<Solicitud> {
     });
 
     return results.filter(s => 
-      s.estado === SolicitudEstado.PENDIENTE || s.estado === SolicitudEstado.EN_REVISION
+      s.estado === SolicitudEstado.PENDIENTE ||
+      s.estado === SolicitudEstado.EN_ESPERA ||
+      s.estado === SolicitudEstado.EN_CAMINO ||
+      s.estado === SolicitudEstado.EN_REVISION
     );
   }
 

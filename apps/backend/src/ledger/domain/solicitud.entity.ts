@@ -12,10 +12,14 @@ import { Cobro } from './cobro.entity';
 
 export enum SolicitudEstado {
   PENDIENTE = 'PENDIENTE',
+  EN_ESPERA = 'EN_ESPERA',
+  EN_CAMINO = 'EN_CAMINO',
   EN_REVISION = 'EN_REVISION',
   RESUELTA = 'RESUELTA',
+  COBRADA = 'COBRADA',
   RECHAZADA = 'RECHAZADA',
   APROBADA = 'APROBADA',
+  VENCIDA = 'VENCIDA',
 }
 
 @Entity('solicitudes')
@@ -53,7 +57,7 @@ export class Solicitud {
     name: 'estado',
     type: 'varchar',
     length: 20,
-    default: SolicitudEstado.EN_REVISION,
+    default: SolicitudEstado.EN_ESPERA,
   })
   estado: SolicitudEstado;
 
@@ -87,6 +91,7 @@ export class Solicitud {
     cobroId: string,
     tipo: string,
     descripcion: string,
+    estadoInicial?: SolicitudEstado,
   ): Solicitud {
     const solicitud = new Solicitud();
     solicitud.tenantId = tenantId;
@@ -98,7 +103,17 @@ export class Solicitud {
     
     solicitud.tipo = tipo;
     solicitud.descripcion = descripcion;
-    solicitud.estado = SolicitudEstado.EN_REVISION;
+
+    if (estadoInicial) {
+      solicitud.estado = estadoInicial;
+    } else {
+      const tipoLower = (tipo || '').toLowerCase();
+      if (tipoLower.includes('cobro') || tipoLower.includes('solicitud_cobro')) {
+        solicitud.estado = SolicitudEstado.EN_ESPERA;
+      } else {
+        solicitud.estado = SolicitudEstado.EN_REVISION;
+      }
+    }
     solicitud.fecha = new Date();
     return solicitud;
   }

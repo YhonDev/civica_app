@@ -190,14 +190,14 @@ export class RegistrarPagoUseCase {
               `SELECT id FROM solicitudes 
                WHERE tenant_id = $1 
                  AND (residente_id = $2 OR cobro_id IN (${cobrosAfectados.map((_, i) => `$${i + 3}`).join(',') || 'NULL'}))
-                 AND estado IN ('PENDIENTE', 'EN_REVISION')`,
+                 AND estado IN ('PENDIENTE', 'EN_ESPERA', 'EN_CAMINO', 'EN_REVISION')`,
               [input.tenantId, input.residenteId, ...cobrosAfectados.map((c) => c.id)],
             );
             if (Array.isArray(pendingSolicitudes)) {
               for (const sol of pendingSolicitudes) {
                 await queryRunner.query(
                   `UPDATE solicitudes 
-                   SET estado = 'RESUELTA', pago_id = $1, respuesta = 'Pago registrado exitosamente por el cobrador.', fecha_respuesta = NOW() 
+                   SET estado = 'COBRADA', pago_id = $1, respuesta = 'Pago registrado exitosamente por el cobrador.', fecha_respuesta = NOW() 
                    WHERE id = $2`,
                   [pago.id, sol.id],
                 );

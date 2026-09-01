@@ -91,13 +91,36 @@ export class SolicitudesController {
     return this.solicitudRepo.findPendingByTenant(tenantId);
   }
 
+  @Patch(':id/en-camino')
+  @UseGuards(RolesGuard)
+  @Roles(RolUsuario.COBRADOR, RolUsuario.ADMIN)
+  @UseInterceptors(ActividadInterceptor)
+  @RegistrarActividad({
+    tipo: 'SOLICITUD',
+    descripcionFn: (r) => `Cobrador en camino a la casa para la solicitud ${r.nroRecibo}`,
+    metadataFn: (r) => ({
+      solicitudId: r.id,
+      cobroId: r.cobroId,
+      tipo: r.tipo,
+      estado: r.estado,
+    }),
+  })
+  async marcarEnCamino(@Param('id') id: string) {
+    const solicitud = await this.solicitudRepo.findById(id);
+    if (!solicitud) {
+      throw new NotFoundException(`Solicitud ${id} no encontrada`);
+    }
+    solicitud.estado = SolicitudEstado.EN_CAMINO;
+    return this.solicitudRepo.save(solicitud);
+  }
+
   @Patch(':id/resolver')
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN, RolUsuario.COBRADOR)
   @UseInterceptors(ActividadInterceptor)
   @RegistrarActividad({
     tipo: 'SOLICITUD',
-    descripcionFn: (r) => `Solicitud ${r.estado === 'RESUELTA' ? 'Resuelta' : 'Rechazada'}: ${r.respuesta ?? ''}`,
+    descripcionFn: (r) => `Solicitud ${r.estado}: ${r.respuesta ?? ''}`,
     metadataFn: (r) => ({
       solicitudId: r.id,
       cobroId: r.cobroId,
@@ -108,26 +131,30 @@ export class SolicitudesController {
   })
   async resolver(
     @Param('id') id: string,
-    @Body() dto: { estado: string; respuesta: string },
+    @Body() dto: { estado: string; respuesta?: string },
   ) {
     const solicitud = await this.solicitudRepo.findById(id);
     if (!solicitud) {
       throw new NotFoundException(`Solicitud ${id} no encontrada`);
     }
 
-    const estadoValido = dto.estado === 'RESUELTA' || dto.estado === 'RECHAZADA';
-    if (!estadoValido) {
+    const estadosValidos = [
+      SolicitudEstado.RESUELTA,
+      SolicitudEstado.COBRADA,
+      SolicitudEstado.APROBADA,
+      SolicitudEstado.RECHAZADA,
+      SolicitudEstado.EN_CAMINO,
+    ];
+    if (!estadosValidos.includes(dto.estado as SolicitudEstado)) {
       throw new BadRequestException(
-        'Estado debe ser RESUELTA o RECHAZADA',
+        `Estado no válido: ${dto.estado}. Debe ser uno de ${estadosValidos.join(', ')}`,
       );
     }
 
-    if (!dto.respuesta || dto.respuesta.trim().length === 0) {
-      throw new BadRequestException('La respuesta es obligatoria');
-    }
-
     solicitud.estado = dto.estado as SolicitudEstado;
-    solicitud.respuesta = dto.respuesta.trim();
+    if (dto.respuesta && dto.respuesta.trim().length > 0) {
+      solicitud.respuesta = dto.respuesta.trim();
+    }
     solicitud.fechaRespuesta = new Date();
 
     return this.solicitudRepo.save(solicitud);

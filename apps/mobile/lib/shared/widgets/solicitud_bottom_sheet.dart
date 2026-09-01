@@ -72,22 +72,30 @@ class _SolicitudBottomSheetState extends State<SolicitudBottomSheet> {
 
   Color get _statusColor => switch (widget.solicitud.estado) {
         SolicitudEstado.pendiente => AppColors.warning,
+        SolicitudEstado.enEspera => AppColors.warning,
+        SolicitudEstado.enCamino => AppColors.info,
+        SolicitudEstado.cobrada => AppColors.success,
         SolicitudEstado.enRevision => AppColors.info,
         SolicitudEstado.resuelta => AppColors.success,
+        SolicitudEstado.aprobada => AppColors.success,
         SolicitudEstado.rechazada => AppColors.error,
+        SolicitudEstado.vencida => AppColors.error,
       };
 
   String get _statusText {
-    if (widget.solicitud.estado == SolicitudEstado.enRevision &&
-        (widget.solicitud.tipo.toLowerCase().contains('pago') ||
-            widget.solicitud.tipo.toLowerCase().contains('pagad'))) {
-      return 'Pago en revisión';
-    }
+    final tipoLower = widget.solicitud.tipo.toLowerCase();
+    final isCobro = tipoLower.contains('cobro') || tipoLower.contains('solicitud_cobro');
+
     return switch (widget.solicitud.estado) {
-      SolicitudEstado.pendiente => 'Pendiente',
-      SolicitudEstado.enRevision => 'En revisión',
+      SolicitudEstado.pendiente => isCobro ? 'Esperando cobrador' : 'Pendiente',
+      SolicitudEstado.enEspera => isCobro ? 'Esperando cobrador' : 'En espera',
+      SolicitudEstado.enCamino => 'Cobrador en camino',
+      SolicitudEstado.cobrada => 'Cobrado',
+      SolicitudEstado.enRevision => 'Pago en revisión',
       SolicitudEstado.resuelta => 'Resuelta',
+      SolicitudEstado.aprobada => 'Pago verificado',
       SolicitudEstado.rechazada => 'Rechazada',
+      SolicitudEstado.vencida => 'Vencida',
     };
   }
 
