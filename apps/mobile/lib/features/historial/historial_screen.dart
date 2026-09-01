@@ -5,15 +5,15 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../shared/widgets/status_badge.dart';
-import '../../shared/widgets/cobro_card.dart';
 import '../../shared/widgets/ticket_bottom_sheet.dart';
 import '../../shared/widgets/empty_state.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../screens/auth/auth_cubit.dart';
+import '../../features/auth/auth_cubit.dart';
 import '../../core/network/api_client.dart';
 import '../solicitudes/solicitudes_repository.dart';
 import '../../shared/widgets/solicitud_card.dart';
 import '../../shared/widgets/screen_header.dart';
+import '../cartera/widgets/cobro_card.dart';
 
 /// Historial screen — Timeline of cuotas/payments.
 ///

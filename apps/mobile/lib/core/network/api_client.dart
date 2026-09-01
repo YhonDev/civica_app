@@ -141,8 +141,11 @@ class AuthInterceptor extends Interceptor {
     DioException err,
     ErrorInterceptorHandler handler,
   ) async {
-    // Solo intentamos refresh en 401
-    if (err.response?.statusCode != 401) {
+    final path = err.requestOptions.path;
+    final isAuthEndpoint = path.contains('/auth/login') || path.contains('/auth/refresh');
+
+    // Solo intentamos refresh en 401 que no corresponda a un endpoint de autenticación
+    if (err.response?.statusCode != 401 || isAuthEndpoint) {
       handler.next(err);
       return;
     }
@@ -150,6 +153,7 @@ class AuthInterceptor extends Interceptor {
     final refreshToken = await _tokenStorage.getRefreshToken();
     if (refreshToken == null) {
       await _tokenStorage.clearTokens();
+      ApiClient.instance.onUnauthorized?.call();
       handler.reject(
         DioException(
           requestOptions: err.requestOptions,
@@ -193,6 +197,7 @@ class AuthInterceptor extends Interceptor {
         _flushPendingRequests(newAccess);
       } catch (e) {
         await _tokenStorage.clearTokens();
+        ApiClient.instance.onUnauthorized?.call();
         _rejectAllPending(err.requestOptions);
 
         handler.reject(
@@ -257,6 +262,9 @@ class ApiClient {
   late final Dio _dio;
   late final TokenStorage tokenStorage;
   late final AuthInterceptor _authInterceptor;
+
+  /// Callback triggered when authorization fails (401) and session cannot be refreshed.
+  void Function()? onUnauthorized;
 
   ApiClient._({
     required String baseUrl,
@@ -416,6 +424,14 @@ ApiException mapDioError(DioException error) {
       final data = error.response?.data;
 
       if (status == 401) {
+        final path = error.requestOptions.path;
+        if (path.contains('/auth/login')) {
+          return ApiException(
+            message: _extractMessage(data) ?? 'Usuario o contraseña incorrectos',
+            statusCode: 401,
+            data: data,
+          );
+        }
         return const AuthException();
       }
       if (status == 409) {

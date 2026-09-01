@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
-import '../../screens/auth/auth_cubit.dart';
+import '../../features/auth/auth_cubit.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
@@ -518,13 +518,14 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
   }
 
   Future<void> _solicitarCobro(dynamic item) async {
-    final controller = TextEditingController();
     final user = context.read<AuthCubit>().state.usuario;
     if (user == null) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final controller = TextEditingController();
 
     final result = await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Solicitar Cobro'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -547,11 +548,14 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancelar'),
           ),
           FilledButton(
-            onPressed: () => Navigator.pop(context, controller.text),
+            onPressed: () {
+              final text = controller.text;
+              Navigator.pop(dialogContext, text);
+            },
             child: const Text('Enviar Solicitud'),
           ),
         ],
@@ -560,45 +564,41 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
 
     controller.dispose();
 
-    if (!mounted) return;
+    if (!mounted || result == null) return;
 
-    if (result != null) {
-      final messenger = ScaffoldMessenger.of(context);
-      try {
-        final rawId = (item is Map) ? (item['cobroId'] ?? item['id']) : null;
-        final validCobroId = (rawId != null && rawId.toString().length > 20 && !rawId.toString().startsWith('future-'))
-            ? rawId.toString()
-            : (_movimientos.isNotEmpty ? _movimientos.first.id : null);
+    try {
+      final rawId = (item is Map) ? (item['cobroId'] ?? item['id']) : null;
+      final validCobroId = (rawId != null && rawId.toString().length > 20 && !rawId.toString().startsWith('future-'))
+          ? rawId.toString()
+          : (_movimientos.isNotEmpty ? _movimientos.first.id : null);
 
-        if (validCobroId == null) {
-          throw Exception('No se encontró un cobro válido asignado.');
-        }
+      if (validCobroId == null) {
+        throw Exception('No se encontró un cobro válido asignado.');
+      }
 
-        final userId = (user['id'] ?? user['sub'] ?? '').toString();
+      final userId = (user['id'] ?? user['sub'] ?? '').toString();
 
-        await _solicitudesRepo.crearSolicitud(
-          cobroId: validCobroId,
-          tipo: 'SOLICITUD_COBRO',
-          descripcion: result.isEmpty ? 'Solicita cobro en casa.' : result,
-          residenteId: userId,
+      await _solicitudesRepo.crearSolicitud(
+        cobroId: validCobroId,
+        tipo: 'SOLICITUD_COBRO',
+        descripcion: result.isEmpty ? 'Solicita cobro en casa.' : result,
+        residenteId: userId,
+      );
+
+      LocalCacheRepository.instance.invalidate('dashboard:residente');
+      LocalCacheRepository.instance.invalidate('dashboard:administrador');
+
+      if (mounted) {
+        messenger.showSnackBar(
+          const SnackBar(content: Text('Solicitud de cobro enviada al administrador/cobrador')),
         );
-
-        LocalCacheRepository.instance.invalidate('dashboard:residente');
-        LocalCacheRepository.instance.invalidate('dashboard:administrador');
-
-        if (mounted) {
-          messenger.showSnackBar(
-            const SnackBar(content: Text('Solicitud de cobro enviada al administrador/cobrador')),
-          );
-          await _loadDashboardData(silent: true);
-        }
-      } catch (e) {
-        if (mounted) {
-          setState(() => _loading = false);
-          messenger.showSnackBar(
-            SnackBar(content: Text('Error al enviar solicitud: $e')),
-          );
-        }
+        await _loadDashboardData(silent: true);
+      }
+    } catch (e) {
+      if (mounted) {
+        messenger.showSnackBar(
+          SnackBar(content: Text('Error al enviar solicitud: $e')),
+        );
       }
     }
   }
