@@ -385,7 +385,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
                     indent: 12,
                     endIndent: 12,
                   ),
-                _buildDesgloseRow(desglose[i]),
+                _buildDesgloseRow(desglose[i], i),
               ],
             ],
           ),
@@ -394,7 +394,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
     );
   }
 
-  Widget _buildDesgloseRow(dynamic item) {
+  Widget _buildDesgloseRow(dynamic item, int index) {
     final rawFecha = item['fecha'] as String;
     final fecha = _formatFecha(rawFecha) ?? 'Fecha no disp.';
     final dateObj = DateTime.tryParse(rawFecha) ?? DateTime.now();
@@ -403,14 +403,19 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
 
     final montoValue = NumberFormat.decimalPattern('es_CO').format(item['monto'] as int);
     final montoStr = '\$ $montoValue';
-    final numeroCuota = item['numeroPago'] ?? '1';
+    final numeroCuota = item['numeroPago'] ?? '${index + 1}';
 
     final bool isProgramada = item['cobroId'] == null;
     final String? itemCobroId = item['cobroId'] as String?;
 
     final bool hasActiveRequest = _solicitudesPendientes.isNotEmpty;
     final bool isThisCuotaRequested = hasActiveRequest &&
-        _solicitudesPendientes.any((s) => s.cobroId == itemCobroId || (itemCobroId != null && s.cobroId == itemCobroId));
+        _solicitudesPendientes.any((s) {
+          final itemId = (item['id'] ?? '').toString();
+          if (s.cobroId.isNotEmpty && s.cobroId == itemId) return true;
+          if (s.cobroId.isNotEmpty && itemCobroId != null && s.cobroId == itemCobroId && index == 0) return true;
+          return false;
+        });
 
     Widget rightWidget;
 
@@ -569,17 +574,23 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
           throw Exception('No se encontró un cobro válido asignado.');
         }
 
+        final userId = (user['id'] ?? user['sub'] ?? '').toString();
+
         await _solicitudesRepo.crearSolicitud(
           cobroId: validCobroId,
           tipo: 'SOLICITUD_COBRO',
           descripcion: result.isEmpty ? 'Solicita cobro en casa.' : result,
-          residenteId: user['id'],
+          residenteId: userId,
         );
+
+        LocalCacheRepository.instance.invalidate('dashboard:residente');
+        LocalCacheRepository.instance.invalidate('dashboard:administrador');
+
         if (mounted) {
           messenger.showSnackBar(
             const SnackBar(content: Text('Solicitud de cobro enviada al administrador/cobrador')),
           );
-          _loadDashboardData(silent: true);
+          await _loadDashboardData(silent: true);
         }
       } catch (e) {
         if (mounted) {

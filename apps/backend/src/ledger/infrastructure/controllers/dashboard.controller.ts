@@ -586,7 +586,8 @@ export class DashboardController {
       const next = pendingCobros[0];
       const pagosEsperados = pagosPorMes(modalidad);
       const pagosRegistrados = pagos.filter((p) => p.cobroId === next.id).length;
-      const montoParcial = calcularMontoParcial(next.monto, modalidad).amount;
+      const cuotaMontoCentavos = next.monto;
+      const montoParcial = cuotaMontoCentavos;
 
       const desglose: any[] = [];
       const [nextY, nextM] = next.periodoInicio.split('-').map(Number);
@@ -611,8 +612,9 @@ export class DashboardController {
         const cobroForMonth = cobros.find(c => c.periodoInicio === periodStr);
 
         const cobroId = cobroForMonth ? cobroForMonth.id : null;
-        const cobroMonto = cobroForMonth ? cobroForMonth.monto : (tarifaMensual ? tarifaMensual.monto : 0);
-        const cobroMontoParcial = calcularMontoParcial(cobroMonto, modalidad).amount;
+        const cobroMontoCuota = cobroForMonth
+          ? cobroForMonth.monto
+          : (tarifaMensual ? Math.round(tarifaMensual.monto / pagosEsperados) : 0);
 
         let pRegistrados = 0;
         if (cobroForMonth) {
@@ -631,7 +633,7 @@ export class DashboardController {
               id: cobroId ? `${cobroId}-${pRegistrados + i + 1}` : `future-${periodStr}-${pRegistrados + i + 1}`,
               cobroId: cobroId,
               fecha: remainingFechas[i],
-              monto: Math.round(cobroMontoParcial / 100),
+              monto: Math.round(cobroMontoCuota / 100),
               numeroPago: pRegistrados + i + 1,
               mes: mesNombre,
             });

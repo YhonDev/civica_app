@@ -160,7 +160,7 @@ export class PagosController {
         casaDireccion: casa?.direccionInterna ?? 'Inmueble',
         manzanaNombre: manzana?.nombre ?? 'Manzana',
         etapaNombre: etapa?.nombre ?? 'Etapa',
-        esViaSolicitud: Boolean(pago.solicitudId),
+        esViaSolicitud: Boolean((pago as any).solicitudId),
       };
     });
   }
@@ -193,7 +193,7 @@ export class PagosController {
         casaDireccion: casa?.direccionInterna ?? 'Inmueble',
         manzanaNombre: manzana?.nombre ?? 'Manzana',
         etapaNombre: etapa?.nombre ?? 'Etapa',
-        esViaSolicitud: Boolean(pago.solicitudId),
+        esViaSolicitud: Boolean((pago as any).solicitudId),
         residente: residente ? {
           id: residente.id,
           nombre: residente.nombre,

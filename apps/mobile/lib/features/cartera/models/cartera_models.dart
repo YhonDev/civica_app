@@ -167,6 +167,28 @@ class CobroItem extends Equatable {
     );
   }
 
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'residenteId': residenteId,
+      'residenteNombre': nombre,
+      'casaDireccion': casa,
+      'manzanaNombre': manzana,
+      'etapaNombre': etapa,
+      'monto': monto,
+      'montoPagado': montoPagado,
+      'saldo': saldo,
+      'estado': estado,
+      'modalidad': modalidad,
+      'fechaVencimiento': fechaVencimiento,
+      'periodoInicio': periodoInicio,
+      'periodoFin': periodoFin,
+      'concepto': concepto,
+      'nroRecibo': nroRecibo,
+      'cobradorNombre': cobradorNombre,
+    };
+  }
+
   @override
   List<Object?> get props => [
         id,
