@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../screens/auth/login_screen.dart';
-import '../../screens/auth/auth_cubit.dart';
+import '../../features/auth/login_screen.dart';
+import '../../features/auth/auth_cubit.dart';
 import '../../features/shell/scaffold_with_bottom_nav.dart';
 import '../../features/dashboard/dashboard_screen.dart';
 import '../../features/dashboard_cobrador/jornada_screen.dart';

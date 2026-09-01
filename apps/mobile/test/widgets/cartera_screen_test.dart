@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'package:civica_pago_mobile/core/network/api_client.dart';
-import 'package:civica_pago_mobile/screens/auth/auth_cubit.dart';
+import 'package:civica_pago_mobile/features/auth/auth_cubit.dart';
 import 'package:civica_pago_mobile/features/cartera/cartera_screen.dart';
 import 'fake_repositories.dart';
 

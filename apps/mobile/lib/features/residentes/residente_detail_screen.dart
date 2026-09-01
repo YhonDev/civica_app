@@ -7,7 +7,7 @@ import '../../core/network/api_client.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
-import '../../screens/auth/auth_cubit.dart';
+import '../../features/auth/auth_cubit.dart';
 import 'models/residentes_models.dart';
 import 'residentes_repository.dart';
 import 'widgets/security_section.dart';

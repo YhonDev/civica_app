@@ -8,7 +8,7 @@ import '../../../core/network/api_client.dart';
 import '../../../core/network/local_cache_repository.dart';
 import '../../../core/security/biometric_auth_service.dart';
 import '../../../core/widgets/top_toast.dart';
-import '../../../screens/auth/auth_cubit.dart';
+import '../../../features/auth/auth_cubit.dart';
 
 /// Sección de Seguridad reutilizable para residentes y cobradores.
 ///

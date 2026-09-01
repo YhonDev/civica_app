@@ -8,7 +8,7 @@ import '../../shared/widgets/solicitud_card.dart';
 import '../../shared/widgets/solicitud_bottom_sheet.dart';
 import '../../shared/widgets/mini_stat_card.dart';
 import '../../shared/widgets/empty_state.dart';
-import '../../screens/auth/auth_cubit.dart';
+import '../../features/auth/auth_cubit.dart';
 import 'solicitudes_repository.dart';
 
 /// Pantalla de Solicitudes — Módulo completo.

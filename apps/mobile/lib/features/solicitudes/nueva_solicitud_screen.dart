@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
-import '../../screens/auth/auth_cubit.dart';
+import '../../features/auth/auth_cubit.dart';
 import '../../core/network/api_client.dart';
 import 'solicitudes_repository.dart';
 import '../../core/theme/app_spacing.dart';

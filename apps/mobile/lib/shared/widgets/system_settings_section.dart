@@ -7,7 +7,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/security/biometric_auth_service.dart';
 import '../../core/widgets/top_toast.dart';
 import '../../features/residentes/widgets/security_section.dart';
-import '../../screens/auth/auth_cubit.dart';
+import '../../features/auth/auth_cubit.dart';
 
 /// Reusable System Settings Section (Ajustes del Sistema).
 ///

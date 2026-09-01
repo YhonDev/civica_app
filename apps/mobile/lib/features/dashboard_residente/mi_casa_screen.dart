@@ -6,7 +6,7 @@ import '../../core/network/local_cache_repository.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
-import '../../screens/auth/auth_cubit.dart';
+import '../../features/auth/auth_cubit.dart';
 import '../../shared/widgets/basic_information_section.dart';
 import '../../shared/widgets/status_badge.dart';
 

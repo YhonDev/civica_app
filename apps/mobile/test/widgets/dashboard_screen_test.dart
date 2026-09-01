@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'package:civica_pago_mobile/core/network/api_client.dart';
-import 'package:civica_pago_mobile/screens/auth/auth_cubit.dart';
+import 'package:civica_pago_mobile/features/auth/auth_cubit.dart';
 import 'package:civica_pago_mobile/features/dashboard/dashboard_screen.dart';
 import 'package:civica_pago_mobile/features/dashboard/dashboard_cubit.dart';
 import 'package:civica_pago_mobile/features/dashboard/models/dashboard_data.dart';

@@ -10,7 +10,7 @@ import 'core/sync/sync_service.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/app_colors.dart';
 import 'core/router/app_router.dart';
-import 'screens/auth/auth_cubit.dart';
+import 'features/auth/auth_cubit.dart';
 
 String _detectBaseUrl() {
   const envUrl = String.fromEnvironment('API_BASE_URL');
