@@ -14,6 +14,7 @@ import '../solicitudes/solicitudes_repository.dart';
 import '../../shared/widgets/solicitud_card.dart';
 import '../../shared/widgets/screen_header.dart';
 import '../cartera/widgets/cobro_card.dart';
+import '../cartera/models/cartera_models.dart';
 
 /// Historial screen — Timeline of cuotas/payments.
 ///
@@ -291,37 +292,26 @@ class _HistorialScreenState extends State<HistorialScreen> {
 
                             final monto = (c['monto'] as int? ?? 0) ~/ 100;
                             final montoPagado = (c['montoPagado'] as int? ?? 0) ~/ 100;
-                            final pagosEsperados = c['pagosEsperados'] as int?;
-                            final pagosRegistrados = c['pagosRegistrados'] as int?;
-
-                            final matchingList = _solicitudes.where((s) => s.cobroId == c['id']).toList();
-                            final hasSolicitud = matchingList.isNotEmpty;
-
-                            final StatusType status = hasSolicitud
-                                ? StatusType.revision
-                                : c['estado'] == 'PAGADA'
-                                    ? StatusType.alDia
-                                    : c['estado'] == 'VENCIDA'
-                                        ? StatusType.mora
-                                        : c['estado'] == 'PARCIAL'
-                                            ? StatusType.pendiente
-                                        : StatusType.pendiente;
-
-                            final DateTime? fechaPago = c['estado'] == 'PAGADA'
-                                ? DateTime.tryParse(c['updatedAt'] as String? ?? '')
-                                : null;
-
-                            final String? cobrador = c['estado'] == 'PAGADA' ? 'Administración' : null;
+                            final cobroItem = CobroItem(
+                              id: (c['id'] ?? '').toString(),
+                              residenteId: (c['residenteId'] ?? '').toString(),
+                              nombre: (c['residenteNombre'] ?? '').toString(),
+                              casa: (c['casaDireccion'] ?? '').toString(),
+                              manzana: (c['manzanaNombre'] ?? '').toString(),
+                              etapa: (c['etapaNombre'] ?? '').toString(),
+                              monto: monto.toDouble(),
+                              montoPagado: montoPagado.toDouble(),
+                              saldo: (monto - montoPagado).toDouble(),
+                              estado: c['estado'] == 'PAGADA' ? 'Pagado' : (c['estado'] == 'VENCIDA' ? 'Mora' : 'Pendiente'),
+                              modalidad: (c['modalidad'] ?? 'Mensual').toString(),
+                              fechaVencimiento: (c['fechaVencimiento'] ?? '').toString(),
+                              periodoInicio: (c['periodoInicio'] ?? '').toString(),
+                              periodoFin: (c['periodoFin'] ?? '').toString(),
+                              concepto: period,
+                            );
 
                             return CobroCard(
-                              periodo: period,
-                              monto: monto,
-                              montoPagado: montoPagado,
-                              pagosEsperados: pagosEsperados,
-                              pagosRegistrados: pagosRegistrados,
-                              status: status,
-                              fechaPago: fechaPago,
-                              cobrador: cobrador,
+                              cobro: cobroItem,
                               onTap: () => _handleCuotaTap(c),
                             );
                           },
