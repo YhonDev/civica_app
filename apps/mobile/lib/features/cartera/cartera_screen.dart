@@ -17,6 +17,8 @@ import '../../core/widgets/lifecycle_observer_mixin.dart';
 import '../dashboard/widgets/skeleton_loading.dart';
 import '../solicitudes/solicitudes_repository.dart';
 
+import '../../shared/widgets/screen_header.dart';
+
 class CarteraScreen extends StatelessWidget {
   /// Optional pre-configured repository (for testing).
   final CarteraRepository? repository;
@@ -49,6 +51,7 @@ class _CarteraScreenContent extends StatefulWidget {
 class _CarteraScreenContentState extends State<_CarteraScreenContent> with LifecycleObserverMixin {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  String _selectedStatusFilter = 'TODOS';
 
   @override
   void onAppResumed() {
@@ -61,6 +64,40 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
     super.dispose();
   }
 
+  Widget _buildFilterChip(String key, String label, Color activeColor) {
+    final isSelected = _selectedStatusFilter == key;
+    return FilterChip(
+      selected: isSelected,
+      showCheckmark: false,
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      labelPadding: EdgeInsets.zero,
+      label: Center(
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            label,
+            style: AppTypography.caption.copyWith(
+              color: isSelected ? Colors.white : AppColors.textPrimary,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+              fontSize: 11.5,
+            ),
+          ),
+        ),
+      ),
+      selectedColor: activeColor,
+      backgroundColor: AppColors.card,
+      side: BorderSide(
+        color: isSelected ? activeColor : AppColors.border.withValues(alpha: 0.5),
+      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      onSelected: (_) {
+        setState(() {
+          _selectedStatusFilter = key;
+        });
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = context.read<AuthCubit>().state.usuario;
@@ -69,8 +106,8 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
     final canRegisterPago = !isResidente;
 
     String getTitle() {
-      if (isResidente) return 'Mis Pagos';
-      return 'Gestión de Cartera';
+      if (isResidente) return 'Gestión de Pago';
+      return 'Gestión de Cobro';
     }
 
     String getSubtitle() {
@@ -92,31 +129,7 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: AppSpacing.lg),
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.screenPadding,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    getTitle(),
-                    style: AppTypography.title.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    getSubtitle(),
-                    style: AppTypography.body.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
+            ScreenHeader(title: getTitle()),
             
             Expanded(
               child: BlocBuilder<CarteraCubit, CarteraState>(
@@ -142,12 +155,21 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                     );
                   }
 
-                  // Aplicar filtro de búsqueda por Etapa, Manzana, Casa o Residente
+                  // Aplicar filtro de búsqueda y de estado (1-Tap)
                   final searchLower = _searchQuery.trim().toLowerCase();
                   final List<CobroItem> displayCobros = state.filteredCobros.where((c) {
-                    if (searchLower.isEmpty) return true;
-                    final target = '${c.etapa} ${c.manzana} ${c.casa} ${c.nombre} ${c.concepto}'.toLowerCase();
-                    return target.contains(searchLower);
+                    final target = '${c.etapa} ${c.manzana} ${c.casa} ${c.nombre} ${c.concepto} ${c.tituloCuota}'.toLowerCase();
+                    final matchSearch = searchLower.isEmpty || target.contains(searchLower);
+                    if (!matchSearch) return false;
+
+                    if (_selectedStatusFilter == 'PENDIENTE') {
+                      return c.estado == 'Pendiente' || c.estado == 'PENDIENTE';
+                    } else if (_selectedStatusFilter == 'MORA') {
+                      return c.estado == 'Mora' || c.estado == 'MORA' || c.estado == 'VENCIDA';
+                    } else if (_selectedStatusFilter == 'PAGADO') {
+                      return c.estado == 'Pagado' || c.estado == 'PAGADO';
+                    }
+                    return true;
                   }).toList();
 
                   return RefreshIndicator(
@@ -163,67 +185,88 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                         ),
                         
                         const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
-                        
-                        // Barra de Búsqueda por Etapa / Manzana / Casa / Residente
+                                              // Fila Unificada: Buscador + Selector de Vista (Lista / Calendario)
                         SliverToBoxAdapter(
                           child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
-                            child: TextField(
-                              controller: _searchController,
-                              onChanged: (value) {
-                                setState(() {
-                                  _searchQuery = value;
-                                });
-                              },
-                              decoration: InputDecoration(
-                                hintText: 'Buscar por Etapa, Manzana, Casa o Residente...',
-                                hintStyle: AppTypography.caption.copyWith(
-                                  color: AppColors.textSecondary,
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: TextField(
+                                    controller: _searchController,
+                                    onChanged: (value) {
+                                      setState(() {
+                                        _searchQuery = value;
+                                      });
+                                    },
+                                    decoration: InputDecoration(
+                                      hintText: isResidente ? 'Buscar por mes o concepto (ej. Agosto)...' : 'Buscar por mes, casa o residente...',
+                                      hintStyle: AppTypography.caption.copyWith(
+                                        color: AppColors.textSecondary,
+                                      ),
+                                      prefixIcon: const Icon(Icons.search_rounded, size: 20),
+                                      suffixIcon: _searchQuery.isNotEmpty
+                                          ? IconButton(
+                                              icon: const Icon(Icons.clear_rounded, size: 18),
+                                              onPressed: () {
+                                                _searchController.clear();
+                                                setState(() {
+                                                  _searchQuery = '';
+                                                });
+                                              },
+                                            )
+                                          : null,
+                                      filled: true,
+                                      fillColor: Theme.of(context).brightness == Brightness.dark
+                                          ? const Color(0xFF1E293B)
+                                          : const Color(0xFFF1F5F9),
+                                      contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: BorderSide.none,
+                                      ),
+                                    ),
+                                  ),
                                 ),
-                                prefixIcon: const Icon(Icons.search_rounded, size: 20),
-                                suffixIcon: _searchQuery.isNotEmpty
-                                    ? IconButton(
-                                        icon: const Icon(Icons.clear_rounded, size: 18),
-                                        onPressed: () {
-                                          _searchController.clear();
-                                          setState(() {
-                                            _searchQuery = '';
-                                          });
-                                        },
-                                      )
-                                    : null,
-                                filled: true,
-                                fillColor: Theme.of(context).brightness == Brightness.dark
-                                    ? const Color(0xFF1E293B)
-                                    : const Color(0xFFF1F5F9),
-                                contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide.none,
+                                const SizedBox(width: AppSpacing.xs),
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context).brightness == Brightness.dark
+                                        ? const Color(0xFF1E293B)
+                                        : const Color(0xFFF1F5F9),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: IconButton(
+                                    tooltip: state.showCalendar ? 'Ver Lista' : 'Ver Calendario',
+                                    icon: Icon(
+                                      state.showCalendar ? Icons.list_rounded : Icons.calendar_month_rounded,
+                                      color: AppColors.primary,
+                                      size: 22,
+                                    ),
+                                    onPressed: () {
+                                      context.read<CarteraCubit>().toggleView();
+                                    },
+                                  ),
                                 ),
-                              ),
+                              ],
                             ),
                           ),
                         ),
                         const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.sm)),
 
-                        // Toggle View: Lista | Calendario
+                        // Chips de Filtro Rápido en 1-Tap (4 en 1 sola fila sin desplazamiento)
                         SliverToBoxAdapter(
                           child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
                             child: Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
                               children: [
-                                SegmentedButton<bool>(
-                                  segments: const [
-                                    ButtonSegment(value: false, label: Text('Lista'), icon: Icon(Icons.list_rounded)),
-                                    ButtonSegment(value: true, label: Text('Calendario'), icon: Icon(Icons.calendar_month_rounded)),
-                                  ],
-                                  selected: {state.showCalendar},
-                                  onSelectionChanged: (val) {
-                                    context.read<CarteraCubit>().toggleView();
-                                  },
-                                ),
+                                Expanded(child: _buildFilterChip('TODOS', 'Todas (${state.filteredCobros.length})', AppColors.primary)),
+                                const SizedBox(width: 4),
+                                Expanded(child: _buildFilterChip('PENDIENTE', 'Pendientes (${state.resumen.cantidadPendientes})', AppColors.warning)),
+                                const SizedBox(width: 4),
+                                Expanded(child: _buildFilterChip('MORA', 'Mora (${state.resumen.cantidadMora})', AppColors.error)),
+                                const SizedBox(width: 4),
+                                Expanded(child: _buildFilterChip('PAGADO', 'Pagadas (${state.resumen.cantidadPagados})', AppColors.success)),
                               ],
                             ),
                           ),
@@ -262,14 +305,7 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                             ),
                           )
                         else ...[
-                          // Filtros (Chips)
-                          SliverToBoxAdapter(
-                            child: _buildFilters(context, state.activeFilter),
-                          ),
-                          
-                          const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.md)),
-
-                          // Lista
+                          // Lista de Registros
                           if (displayCobros.isEmpty)
                             SliverToBoxAdapter(
                               child: Padding(
@@ -279,7 +315,7 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                                   title: 'Sin registros',
                                   description: _searchQuery.isNotEmpty
                                       ? 'No se encontraron resultados para "$_searchQuery".'
-                                      : 'No hay registros en estado "${state.activeFilter}".',
+                                      : 'No hay registros para la categoría seleccionada.',
                                 ),
                               ),
                             )

@@ -101,10 +101,11 @@ class ViviendasLoading extends CasasState {
 
 class ViviendasLoaded extends CasasState {
   final List<EtapaExplorer> etapas;
+  final List<Map<String, dynamic>> solicitudes;
 
-  const ViviendasLoaded(this.etapas);
+  const ViviendasLoaded(this.etapas, {this.solicitudes = const []});
   @override
-  List<Object?> get props => [etapas];
+  List<Object?> get props => [etapas, solicitudes];
 }
 
 class ViviendasError extends CasasState {
@@ -125,7 +126,11 @@ class CasasCubit extends Cubit<CasasState> {
       : _api = api ?? ApiClient.instance,
         super(const ViviendasInitial());
 
-  Future<void> loadViviendas({bool silent = false}) async {
+  Future<void> loadViviendas({bool silent = false, bool forceFresh = true}) async {
+    if (forceFresh) {
+      LocalCacheRepository.instance.invalidate('cobrador:viviendas');
+    }
+
     if (!silent && LocalCacheRepository.instance.getCached('cobrador:viviendas') == null) {
       emit(const ViviendasLoading());
     }
@@ -140,7 +145,8 @@ class CasasCubit extends Cubit<CasasState> {
         final etapas = (data['etapas'] as List? ?? [])
             .map((e) => EtapaExplorer.fromJson(e as Map<String, dynamic>))
             .toList();
-        emit(ViviendasLoaded(etapas));
+        final solicitudes = List<Map<String, dynamic>>.from(data['solicitudes'] as List? ?? []);
+        emit(ViviendasLoaded(etapas, solicitudes: solicitudes));
       },
       onError: (e) {
         if (!silent && LocalCacheRepository.instance.getCached('cobrador:viviendas') == null) {
@@ -150,7 +156,22 @@ class CasasCubit extends Cubit<CasasState> {
     );
   }
 
+  void cambiarEstadoSolicitud(String solicitudId, String nuevoEstado) {
+    if (state is! ViviendasLoaded) return;
+    final current = state as ViviendasLoaded;
+    final updatedSolicitudes = current.solicitudes.map((s) {
+      if (s['id'] == solicitudId) {
+        final map = Map<String, dynamic>.from(s);
+        map['estado'] = nuevoEstado;
+        return map;
+      }
+      return s;
+    }).toList();
+
+    emit(ViviendasLoaded(current.etapas, solicitudes: updatedSolicitudes));
+  }
+
   Future<void> refresh() async {
-    await loadViviendas(silent: true);
+    await loadViviendas(silent: false, forceFresh: true);
   }
 }

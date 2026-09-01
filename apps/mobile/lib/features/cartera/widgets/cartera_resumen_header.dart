@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -24,86 +25,141 @@ class CarteraResumenHeader extends StatelessWidget {
     final label2 = isResidente ? 'En Mora' : 'Mora';
     final label3 = isResidente ? 'Pagado' : 'Recaudado';
 
-    final unitCuota = isResidente ? 'cuotas' : 'residentes';
-    final unitPago = isResidente ? 'pagos' : 'residentes';
+    final unitCuota = isResidente ? 'cuotas' : 'casas';
+    final unitPago = isResidente ? 'pagos' : 'recaudos';
 
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.cardPadding),
+      padding: const EdgeInsets.all(AppSpacing.cardInnerPadding),
       decoration: BoxDecoration(
-        color: AppColors.primary,
-        borderRadius: BorderRadius.circular(16),
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.6)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildMetric(
-            context,
-            label: label1,
-            amount: resumen.totalPendiente,
-            count: resumen.cantidadPendientes,
-            unitLabel: unitCuota,
-            color: Colors.white,
+          Row(
+            children: [
+              Icon(Icons.account_balance_wallet_outlined, size: 18, color: AppColors.primary),
+              const SizedBox(width: AppSpacing.xs),
+              Text(
+                isResidente ? 'Estado de Cuenta' : 'Resumen de Cartera',
+                style: AppTypography.caption.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
           ),
-          Container(width: 1, height: 40, color: Colors.white24),
-          _buildMetric(
-            context,
-            label: label2,
-            amount: resumen.totalMora,
-            count: resumen.cantidadMora,
-            unitLabel: unitCuota,
-            color: Colors.white,
-          ),
-          Container(width: 1, height: 40, color: Colors.white24),
-          _buildMetric(
-            context,
-            label: label3,
-            amount: resumen.totalPagado,
-            count: resumen.cantidadPagados,
-            unitLabel: unitPago,
-            color: Colors.white,
+          const SizedBox(height: AppSpacing.sm),
+          Row(
+            children: [
+              Expanded(
+                child: _buildMetricTile(
+                  label: label1,
+                  amount: resumen.totalPendiente,
+                  count: resumen.cantidadPendientes,
+                  unitLabel: unitCuota,
+                  badgeColor: AppColors.warning,
+                  icon: Icons.hourglass_top_rounded,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              Expanded(
+                child: _buildMetricTile(
+                  label: label2,
+                  amount: resumen.totalMora,
+                  count: resumen.cantidadMora,
+                  unitLabel: unitCuota,
+                  badgeColor: AppColors.error,
+                  icon: Icons.warning_amber_rounded,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              Expanded(
+                child: _buildMetricTile(
+                  label: label3,
+                  amount: resumen.totalPagado,
+                  count: resumen.cantidadPagados,
+                  unitLabel: unitPago,
+                  badgeColor: AppColors.success,
+                  icon: Icons.check_circle_outline_rounded,
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _buildMetric(
-    BuildContext context, {
+  Widget _buildMetricTile({
     required String label,
     required double amount,
     required int count,
     required String unitLabel,
-    required Color color,
+    required Color badgeColor,
+    required IconData icon,
   }) {
-    // Formato abreviado (e.g. 7.8M, 20K)
-    final amountString = amount >= 1000000
-        ? '${(amount / 1000000).toStringAsFixed(1)}M'
-        : '${(amount / 1000).toStringAsFixed(0)}K';
+    final amountFormatted = r'$ ' + NumberFormat('#,##0', 'es_CO').format(amount.round());
 
-    return Column(
-      children: [
-        Text(
-          label,
-          style: AppTypography.small.copyWith(
-            color: color.withValues(alpha: 0.8),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+      decoration: BoxDecoration(
+        color: badgeColor.withValues(alpha: 0.03),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: badgeColor.withValues(alpha: 0.12)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 14, color: badgeColor),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  label,
+                  style: AppTypography.smallBold.copyWith(
+                    color: badgeColor,
+                    fontSize: 10.5,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
           ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          '\$$amountString',
-          style: AppTypography.title.copyWith(
-            color: color,
-            fontWeight: FontWeight.w700,
+          const SizedBox(height: 6),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              amountFormatted,
+              style: AppTypography.bodyMedium.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
+              ),
+            ),
           ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          '$count $unitLabel',
-          style: AppTypography.caption.copyWith(
-            color: color.withValues(alpha: 0.6),
+          const SizedBox(height: 2),
+          Text(
+            '$count $unitLabel',
+            style: AppTypography.small.copyWith(
+              color: AppColors.textSecondary,
+              fontSize: 10,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

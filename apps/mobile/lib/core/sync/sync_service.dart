@@ -178,8 +178,34 @@ class SyncService {
               'monto': p.monto,
               'fechaPago': p.fechaPago,
               'residenteId': p.residenteId,
+              'syncStatus': p.syncStatus,
             })
         .toList();
+  }
+
+  /// Obtiene la totalidad de los elementos en la cola (pendientes, en verde sincronizados u OK, y errores).
+  Future<List<Map<String, dynamic>>> getAllQueueItems() async {
+    final items = await _pagoDao.getAllQueueItems();
+    return items
+        .map((p) => {
+              'id': p.id,
+              'clientPaymentId': p.clientPaymentId,
+              'monto': p.monto,
+              'fechaPago': p.fechaPago,
+              'residenteId': p.residenteId,
+              'syncStatus': p.syncStatus,
+              'fechaSync': p.fechaSync?.toIso8601String(),
+            })
+        .toList();
+  }
+
+  /// Limpia los pagos ya sincronizados (en verde) de la lista.
+  Future<int> limpiarSincronizados() => _pagoDao.limpiarSincronizados();
+
+  /// Reintenta manualmente la sincronización de un pago con error o conflicto.
+  Future<void> reintentarPago(String id) async {
+    await _pagoDao.reintentarPago(id);
+    await requestSync();
   }
 
   Future<SyncResult> _executeSync() async {

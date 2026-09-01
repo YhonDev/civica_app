@@ -40,21 +40,9 @@ class AccionesRapidasSection extends StatelessWidget {
         ActionCard(
           icon: Icons.payments_rounded,
           title: 'Registrar Pago',
-          onTap: () {},
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        ActionCard(
-          icon: Icons.shield_rounded,
-          title: 'Crear Cobrador',
-          onTap: () async {
-            await context.push('/nuevo-cobrador');
+          onTap: () {
+            context.go('/cartera');
           },
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        ActionCard(
-          icon: Icons.holiday_village_rounded,
-          title: 'Nueva Vivienda',
-          onTap: () {},
         ),
       ],
     );

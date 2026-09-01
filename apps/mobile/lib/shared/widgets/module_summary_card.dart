@@ -8,11 +8,13 @@ class ModuleSummaryItem {
   final String label;
   final String value;
   final Color? color;
+  final VoidCallback? onTap;
 
   const ModuleSummaryItem({
     required this.label,
     required this.value,
     this.color,
+    this.onTap,
   });
 }
 
@@ -24,6 +26,7 @@ class ModuleSummaryCard extends StatelessWidget {
   final String actionLabel;
   final VoidCallback onActionTap;
   final bool isGrid;
+  final bool highlightBorder;
   final Widget? extraContent;
 
   const ModuleSummaryCard({
@@ -33,6 +36,7 @@ class ModuleSummaryCard extends StatelessWidget {
     required this.actionLabel,
     required this.onActionTap,
     this.isGrid = false,
+    this.highlightBorder = false,
     this.extraContent,
   });
 
@@ -42,9 +46,14 @@ class ModuleSummaryCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.card,
         borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+        border: highlightBorder
+            ? Border.all(color: AppColors.warning.withValues(alpha: 0.5), width: 1.5)
+            : Border.all(color: AppColors.border.withValues(alpha: 0.6)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: highlightBorder
+                ? AppColors.warning.withValues(alpha: 0.08)
+                : Colors.black.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -64,7 +73,7 @@ class ModuleSummaryCard extends StatelessWidget {
             child: Text(
               title.toUpperCase(),
               style: AppTypography.caption.copyWith(
-                color: AppColors.textSecondary,
+                color: highlightBorder ? AppColors.warning : AppColors.textSecondary,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1.0,
               ),
@@ -84,33 +93,37 @@ class ModuleSummaryCard extends StatelessWidget {
                 isGrid
                     ? Row(
                         children: items.map((item) {
+                          final content = Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                item.value,
+                                style: AppTypography.title.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                  color: item.color ?? AppColors.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                item.label,
+                                style: AppTypography.small.copyWith(
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          );
+
                           return Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  item.value,
-                                  style: AppTypography.title.copyWith(
-                                    fontWeight: FontWeight.w800,
-                                    color: item.color ?? AppColors.textPrimary,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  item.label,
-                                  style: AppTypography.small.copyWith(
-                                    color: AppColors.textSecondary,
-                                  ),
-                                ),
-                              ],
-                            ),
+                            child: item.onTap != null
+                                ? InkWell(onTap: item.onTap, child: content)
+                                : content,
                           );
                         }).toList(),
                       )
                     : Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: items.map((item) {
-                          return Padding(
+                          final rowContent = Padding(
                             padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                             child: Row(
                               children: [
@@ -130,9 +143,23 @@ class ModuleSummaryCard extends StatelessWidget {
                                     ),
                                   ),
                                 ),
+                                if (item.onTap != null)
+                                  Icon(
+                                    Icons.chevron_right_rounded,
+                                    size: 18,
+                                    color: AppColors.textSecondary,
+                                  ),
                               ],
                             ),
                           );
+
+                          return item.onTap != null
+                              ? InkWell(
+                                  onTap: item.onTap,
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: rowContent,
+                                )
+                              : rowContent;
                         }).toList(),
                       ),
                 if (extraContent != null) ...[

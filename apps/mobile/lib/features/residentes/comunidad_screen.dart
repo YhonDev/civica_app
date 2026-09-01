@@ -4,6 +4,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../shared/widgets/action_card.dart';
+import '../../shared/widgets/screen_header.dart';
 
 class ComunidadScreen extends StatelessWidget {
   const ComunidadScreen({super.key});
@@ -12,22 +13,16 @@ class ComunidadScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: AppSpacing.lg),
-              Text(
-                'Comunidad',
-                style: AppTypography.title.copyWith(fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              Text(
-                'Gestión de usuarios y estructura',
-                style: AppTypography.body.copyWith(color: AppColors.textSecondary),
-              ),
-              const SizedBox(height: AppSpacing.xl),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const ScreenHeader(title: 'Comunidad'),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
               
               Text(
                 'Gestión de Usuarios',
@@ -65,13 +60,16 @@ class ComunidadScreen extends StatelessWidget {
                 onTap: () => context.go('/comunidad/urbanizacion'),
               ),
               const SizedBox(height: AppSpacing.sm),
-              ActionCard(
-                icon: Icons.payments_outlined,
-                title: 'Configuración de Tarifas',
-                onTap: () => context.go('/comunidad/tarifas'),
+                    ActionCard(
+                      icon: Icons.payments_outlined,
+                      title: 'Configuración de Tarifas',
+                      onTap: () => context.go('/comunidad/tarifas'),
+                    ),
+                  ],
+                ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

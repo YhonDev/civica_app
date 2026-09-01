@@ -13,6 +13,7 @@ import '../../shared/widgets/solicitud_card.dart';
 import '../../shared/widgets/ticket_bottom_sheet.dart';
 import '../../shared/widgets/solicitud_bottom_sheet.dart';
 import '../../shared/widgets/timeline_widget.dart';
+import '../../shared/widgets/recaudo_timeline_widget.dart';
 import '../../core/network/api_client.dart';
 import '../../core/network/local_cache_repository.dart';
 import '../solicitudes/solicitudes_repository.dart';
@@ -123,7 +124,8 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
                 hace: '\$${m['monto']} · $formattedDate',
                 monto: m['monto'] as int,
               );
-            }).toList();
+            }).toList()
+              ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
 
             _solicitudesPendientes = listPendientes;
             _loading = false;
@@ -280,6 +282,23 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
                 ),
               ),
 
+              const SizedBox(height: AppSpacing.md),
+
+              // ── Section 1.5: Recaudo Timeline Widget ───────────────
+              _buildAnimatedSection(
+                index: 1,
+                child: RecaudoTimelineWidget(
+                  cuotasPagadas: _movimientos.where((m) => m.tipo == 'pago').length,
+                  totalCuotas: (_tarifaActual?['modalidad'] == 'SEMANAL' || _tarifaActual?['modalidad'] == null) ? 4 : (_tarifaActual?['modalidad'] == 'QUINCENAL' ? 2 : 1),
+                  montoPagado: _movimientos
+                      .where((m) => m.tipo == 'pago')
+                      .fold(0.0, (sum, m) => sum + (m.monto ?? 0)),
+                  saldoPendiente: _saldo.toDouble(),
+                  modalidad: _tarifaActual?['modalidad'] as String? ?? 'SEMANAL',
+                  onAccionTap: () => context.go('/cartera'),
+                ),
+              ),
+
               // ── Próximo pago (si hay cuota pendiente) ─────────────
               if (_proximoPago != null) ...[
                 const SizedBox(height: AppSpacing.md),
@@ -292,10 +311,13 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
               const SizedBox(height: AppSpacing.lg),
 
               // ── Section 2: Timeline (últimos 2 movimientos) ────────
-              _buildAnimatedSection(
-                index: 2,
-                child: _buildMovimientos(),
-              ),
+              if (_movimientos.isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.lg),
+                _buildAnimatedSection(
+                  index: 2,
+                  child: _buildMovimientos(),
+                ),
+              ],
 
               // ── Section 3: Solicitudes (solo si hay pendientes) ────
               if (_solicitudesPendientes.isNotEmpty) ...[
@@ -317,96 +339,145 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
 
 
 
-  // ── Próximo pago section ──────────────────────────────────────────
+  // ── Próximos Pagos section (Módulo Encapsulado) ──────────────────────
   Widget _buildProximoPago(Map<String, dynamic> pago) {
-    final concepto = pago['concepto'] as String;
     final desglose = (pago['desglose'] as List<dynamic>?) ?? [];
-    
-    return InkWell(
-      onTap: () => context.go('/cartera'),
-      borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(AppSpacing.cardPadding),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-          border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    if (desglose.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
           children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: AppColors.info.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    Icons.event_outlined,
-                    color: AppColors.info,
-                    size: 22,
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Próximo pago',
-                        style: AppTypography.caption.copyWith(
-                          color: AppColors.info,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        concepto.replaceAll(RegExp(r' - .*'), ''),
-                        style: AppTypography.bodyMedium.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: AppColors.textSecondary,
-                  size: 24,
-                ),
-              ],
+            Icon(Icons.event_outlined, size: 18, color: AppColors.primary),
+            const SizedBox(width: AppSpacing.xs),
+            Text(
+              'Próximos Pagos',
+              style: AppTypography.caption.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppColors.textSecondary,
+              ),
             ),
-            const SizedBox(height: AppSpacing.md),
-            // Desglose (Partial Payments)
-            if (desglose.isNotEmpty)
-              ...desglose.map((item) => _buildDesgloseItem(item)),
           ],
         ),
-      ),
+        const SizedBox(height: AppSpacing.xs),
+        Container(
+          decoration: BoxDecoration(
+            color: AppColors.card,
+            borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+            border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              for (int i = 0; i < desglose.length; i++) ...[
+                if (i > 0)
+                  Divider(
+                    height: 1,
+                    thickness: 1,
+                    color: AppColors.border.withValues(alpha: 0.3),
+                    indent: 12,
+                    endIndent: 12,
+                  ),
+                _buildDesgloseRow(desglose[i]),
+              ],
+            ],
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildDesgloseItem(dynamic item) {
+  Widget _buildDesgloseRow(dynamic item) {
     final rawFecha = item['fecha'] as String;
     final fecha = _formatFecha(rawFecha) ?? 'Fecha no disp.';
-    final dateObj = DateTime.parse(rawFecha);
+    final dateObj = DateTime.tryParse(rawFecha) ?? DateTime.now();
     final fallbackMonth = toBeginningOfSentenceCase(DateFormat('MMMM', 'es').format(dateObj));
     final monthName = item['mes'] ?? fallbackMonth;
-    
+
     final montoValue = NumberFormat.decimalPattern('es_CO').format(item['monto'] as int);
     final montoStr = '\$ $montoValue';
+    final numeroCuota = item['numeroPago'] ?? '1';
 
-    return Container(
-      margin: const EdgeInsets.only(top: AppSpacing.sm),
-      padding: const EdgeInsets.all(AppSpacing.sm),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
-      ),
+    final bool isProgramada = item['cobroId'] == null;
+    final String? itemCobroId = item['cobroId'] as String?;
+
+    final bool hasActiveRequest = _solicitudesPendientes.isNotEmpty;
+    final bool isThisCuotaRequested = hasActiveRequest &&
+        _solicitudesPendientes.any((s) => s.cobroId == itemCobroId || (itemCobroId != null && s.cobroId == itemCobroId));
+
+    Widget rightWidget;
+
+    if (isProgramada) {
+      rightWidget = Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: AppColors.border.withValues(alpha: 0.2),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Text(
+          'Programada',
+          style: AppTypography.small.copyWith(
+            color: AppColors.textSecondary,
+            fontSize: 10.5,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      );
+    } else if (isThisCuotaRequested) {
+      rightWidget = Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: AppColors.warning.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: AppColors.warning.withValues(alpha: 0.4)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.hourglass_top_rounded, size: 12, color: AppColors.warning),
+            const SizedBox(width: 4),
+            Text(
+              'En Solicitud',
+              style: AppTypography.small.copyWith(
+                color: AppColors.warning,
+                fontSize: 10.5,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      );
+    } else if (hasActiveRequest) {
+      rightWidget = const SizedBox.shrink();
+    } else {
+      rightWidget = OutlinedButton.icon(
+        onPressed: () => _solicitarCobro(item),
+        icon: Icon(Icons.front_hand_outlined, size: 14, color: AppColors.success),
+        label: Text(
+          'Solicitar Cobro',
+          style: TextStyle(color: AppColors.success, fontSize: 11.5, fontWeight: FontWeight.bold),
+        ),
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          minimumSize: Size.zero,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          side: BorderSide(color: AppColors.success.withValues(alpha: 0.5)),
+          foregroundColor: AppColors.success,
+          backgroundColor: AppColors.success.withValues(alpha: 0.05),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -415,29 +486,27 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '$monthName — Cuota ${item['numeroPago'] ?? ''}',
-                  style: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
+                  '$monthName — Cuota $numeroCuota',
+                  style: AppTypography.bodyMedium.copyWith(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
+                const SizedBox(height: 2),
                 Text(
                   '$montoStr · Vence $fecha',
-                  style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+                  style: AppTypography.caption.copyWith(
+                    color: AppColors.textSecondary,
+                    fontSize: 11.5,
+                  ),
                 ),
               ],
             ),
           ),
-          OutlinedButton.icon(
-            onPressed: () => _solicitarCobro(item),
-            icon: Icon(Icons.front_hand_outlined, size: 16, color: AppColors.success),
-            label: Text('Solicitar Cobro', style: TextStyle(color: AppColors.success)),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              side: BorderSide(color: AppColors.success.withValues(alpha: 0.5)),
-              foregroundColor: AppColors.success,
-              backgroundColor: AppColors.success.withValues(alpha: 0.05),
-            ),
-          ),
+          const SizedBox(width: 8),
+          rightWidget,
         ],
       ),
     );
@@ -592,11 +661,14 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
 
   // ── Movimientos section ───────────────────────────────────────────
   Widget _buildMovimientos() {
+    if (_movimientos.isEmpty) return const SizedBox.shrink();
+
     return Container(
       padding: const EdgeInsets.all(AppSpacing.cardPadding),
       decoration: BoxDecoration(
         color: AppColors.card,
         borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
@@ -608,36 +680,34 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Últimos movimientos',
-            style: AppTypography.bodyMedium.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Últimos movimientos',
+                style: AppTypography.bodyMedium.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              InkWell(
+                onTap: () => context.go('/cartera'),
+                child: Text(
+                  'Ver historial →',
+                  style: AppTypography.caption.copyWith(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: AppSpacing.md),
 
-          // List of PagoCards
+          // List of PagoCards (máximo 2 registros para no saturar)
           ..._movimientos.take(2).map((item) => Padding(
-            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+            padding: const EdgeInsets.only(bottom: AppSpacing.xs),
             child: _buildPagoCard(item),
           )),
-
-          const SizedBox(height: AppSpacing.sm),
-
-          // "Ver todos" → navigates to /historial
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: () => context.go('/cartera'),
-              child: Text(
-                'Ver historial completo ›',
-                style: AppTypography.body.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-          ),
         ],
       ),
     );

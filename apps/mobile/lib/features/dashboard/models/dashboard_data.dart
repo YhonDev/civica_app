@@ -243,6 +243,7 @@ class ActividadItem extends Equatable {
   final String usuario;
   final DateTime timestamp;
   final String hace;
+  final Map<String, dynamic> metadata;
 
   const ActividadItem({
     required this.id,
@@ -251,6 +252,7 @@ class ActividadItem extends Equatable {
     required this.usuario,
     required this.timestamp,
     required this.hace,
+    this.metadata = const {},
   });
 
   factory ActividadItem.fromJson(Map<String, dynamic> json) {
@@ -262,11 +264,12 @@ class ActividadItem extends Equatable {
       timestamp: DateTime.tryParse(json['timestamp'] as String? ?? '') ??
           DateTime.now(),
       hace: json['hace'] as String? ?? '',
+      metadata: json['metadata'] as Map<String, dynamic>? ?? {},
     );
   }
 
   @override
-  List<Object?> get props => [id, tipo, descripcion, usuario, timestamp, hace];
+  List<Object?> get props => [id, tipo, descripcion, usuario, timestamp, hace, metadata];
 }
 
 class CobroSemanaItem extends Equatable {

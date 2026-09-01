@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/widgets/top_toast.dart';
 import 'comunidad_repository.dart';
 import '../../shared/widgets/empty_state.dart';
 
@@ -35,9 +36,7 @@ class _UrbanizacionScreenState extends State<UrbanizacionScreen> {
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al cargar proyectos: $e')),
-        );
+        TopToast.showError(context, 'Error al cargar proyectos: $e');
       }
     }
   }
@@ -94,10 +93,21 @@ class _UrbanizacionScreenState extends State<UrbanizacionScreen> {
                 child: FilledButton(
                   onPressed: () async {
                     if (formKey.currentState!.validate()) {
+                      final name = nombreController.text;
                       Navigator.pop(ctx);
                       setState(() => _isLoading = true);
-                      await _comunidadRepo.createProyecto(nombreController.text);
-                      await _loadProyectos();
+                      try {
+                        await _comunidadRepo.createProyecto(name);
+                        await _loadProyectos();
+                        if (mounted) {
+                          TopToast.showSuccess(context, 'Proyecto "$name" creado exitosamente');
+                        }
+                      } catch (e) {
+                        setState(() => _isLoading = false);
+                        if (mounted) {
+                          TopToast.showError(context, 'Error al crear proyecto: $e');
+                        }
+                      }
                     }
                   },
                   child: const Text('Crear Proyecto'),

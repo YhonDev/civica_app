@@ -88,14 +88,15 @@ class EstadoCuentaCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.1),
+                        color: AppColors.surface,
                         borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
                       ),
                       child: Text(
                         'Tarifa: \$${NumberFormat.decimalPattern('es_CO').format((tarifaActual!['cobroMensual'] ?? tarifaActual!['cuotaMensual'] ?? tarifaActual!['montoSegunModalidad'] as num?)?.toInt() ?? 40000)}',
                         style: AppTypography.caption.copyWith(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w700,
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),

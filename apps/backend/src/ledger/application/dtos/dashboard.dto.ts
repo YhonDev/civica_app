@@ -33,6 +33,7 @@ export interface ActividadItem {
   usuario: string;
   timestamp: string;
   hace: string;
+  metadata?: Record<string, any>;
 }
 
 export interface MesHistorico {

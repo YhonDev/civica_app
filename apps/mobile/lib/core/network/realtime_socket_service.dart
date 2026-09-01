@@ -63,6 +63,7 @@ class RealtimeSocketService {
         LocalCacheRepository.instance.invalidate('dashboard:residente');
         LocalCacheRepository.instance.invalidate('cartera:cobros');
         LocalCacheRepository.instance.invalidate('dashboard:cobrador');
+        LocalCacheRepository.instance.invalidate('dashboard:administrador');
         
         for (final listener in _onPagoListeners) {
           listener();
@@ -73,6 +74,7 @@ class RealtimeSocketService {
         debugPrint('[RealtimeSocket] Event MODALIDAD_CAMBIADA received: $data');
         LocalCacheRepository.instance.invalidate('dashboard:residente');
         LocalCacheRepository.instance.invalidate('cartera:cobros');
+        LocalCacheRepository.instance.invalidate('dashboard:administrador');
         
         for (final listener in _onModalidadListeners) {
           listener();
@@ -83,6 +85,7 @@ class RealtimeSocketService {
         debugPrint('[RealtimeSocket] Event SOLICITUD_CREADA received: $data');
         LocalCacheRepository.instance.invalidate('dashboard:cobrador');
         LocalCacheRepository.instance.invalidate('cobrador:viviendas');
+        LocalCacheRepository.instance.invalidate('dashboard:administrador');
       });
 
       _socket?.onDisconnect((_) {

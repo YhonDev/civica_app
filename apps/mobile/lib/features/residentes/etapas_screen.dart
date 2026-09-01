@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
-
+import '../../core/widgets/top_toast.dart';
 import '../../shared/widgets/empty_state.dart';
 import 'comunidad_repository.dart';
 
@@ -47,9 +47,7 @@ class _EtapasScreenState extends State<EtapasScreen> {
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al cargar etapas: $e')),
-        );
+        TopToast.showError(context, 'Error al cargar etapas: $e');
       }
     }
   }
@@ -64,12 +62,13 @@ class _EtapasScreenState extends State<EtapasScreen> {
       
       await _repo.createEtapa(nombre, pId);
       await _loadEtapas();
+      if (mounted) {
+        TopToast.showSuccess(context, '$nombre creada exitosamente');
+      }
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al crear etapa: $e')),
-        );
+        TopToast.showError(context, 'Error al crear etapa: $e');
       }
     }
   }
@@ -125,9 +124,7 @@ class _EtapasScreenState extends State<EtapasScreen> {
                         IconButton(
                           icon: Icon(Icons.edit_rounded, color: AppColors.info, size: 20),
                           onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Editar Etapa')),
-                            );
+                            TopToast.show(context, message: 'Editar Etapa', icon: Icons.edit_rounded);
                           },
                         ),
                         IconButton(
@@ -207,16 +204,12 @@ class _EtapasScreenState extends State<EtapasScreen> {
                 await _repo.deleteEtapa(id);
                 await _loadEtapas();
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('$nombreEtapa y todo su contenido ha sido eliminado')),
-                  );
+                  TopToast.showSuccess(context, '$nombreEtapa eliminada correctamente');
                 }
               } catch (e) {
                 setState(() => _isLoading = false);
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error al eliminar: $e')),
-                  );
+                  TopToast.showError(context, 'Error al eliminar etapa: $e');
                 }
               }
             },
@@ -308,16 +301,12 @@ class _EtapasScreenState extends State<EtapasScreen> {
       
       await _loadEtapas();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$cantidad etapas creadas con éxito')),
-        );
+        TopToast.showSuccess(context, '$cantidad etapas creadas con éxito');
       }
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al crear etapas: $e')),
-        );
+        TopToast.showError(context, 'Error al crear etapas: $e');
       }
     }
   }

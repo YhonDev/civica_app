@@ -7,8 +7,8 @@ import '../../core/network/api_client.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../shared/widgets/user_profile_header.dart';
-import '../../shared/widgets/basic_information_section.dart';
 import '../../shared/widgets/system_settings_section.dart';
+import '../../shared/widgets/screen_header.dart';
 
 /// Screen Configuración.
 ///
@@ -53,85 +53,77 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
     final rol = user?['rol'] as String? ?? '';
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Configuración'),
-      ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: AppSpacing.xl),
-
-              // 1. Componente Atómico: User Profile Header
-              UserProfileHeader(
-                nombre: nombre,
-                rol: rol,
-              ),
-
-              const SizedBox(height: AppSpacing.xl),
-
-              // 2. Componente Atómico: Basic Information Section (Adaptativo por rol)
-              BasicInformationSection(
-                user: user,
-                proyectoNombre: _proyectoNombreBackend,
-              ),
-
-              // Herramientas adicionales según rol
-              if (rol == 'COBRADOR' || rol == 'ADMIN') ...[
-                const SizedBox(height: AppSpacing.lg),
-                Card(
-                  child: Column(
-                    children: [
-                      if (rol == 'COBRADOR')
-                        ListTile(
-                          leading: const Icon(Icons.cloud_sync_outlined),
-                          title: const Text('Cola de Sincronización'),
-                          subtitle: const Text('Ver pagos pendientes de envío'),
-                          trailing: Icon(Icons.chevron_right_rounded, color: AppColors.textDisabled),
-                          onTap: () => context.push('/sync-queue'),
-                        ),
-                      if (rol == 'ADMIN')
-                        ListTile(
-                          leading: const Icon(Icons.mail_lock_outlined),
-                          title: const Text('Notificaciones Fallidas'),
-                          subtitle: const Text('Revisar correos no entregados'),
-                          trailing: Icon(Icons.chevron_right_rounded, color: AppColors.textDisabled),
-                          onTap: () => context.push('/notificaciones-fallidas'),
-                        ),
-                    ],
-                  ),
-                ),
-              ],
-
-              const SizedBox(height: AppSpacing.lg),
-
-              // 3. Componente Atómico: System Settings Section (Tema oscuro, Biometría, Cambiar Contraseña)
-              SystemSettingsSection(user: user),
-
-              const SizedBox(height: AppSpacing.xl),
-
-              // Botón para Cerrar Sesión
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    context.read<AuthCubit>().logout();
-                  },
-                  icon: const Icon(Icons.logout_rounded, size: 18),
-                  label: const Text('Cerrar sesión'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.error,
-                    side: BorderSide(
-                      color: AppColors.error.withValues(alpha: 0.3),
+              ScreenHeader(title: 'Configuración'),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
+                child: Column(
+                  children: [
+                    UserProfileHeader(
+                      nombre: nombre,
+                      rol: rol,
                     ),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
+                    const SizedBox(height: AppSpacing.lg),
+
+                    // Herramientas adicionales según rol
+                    if (rol == 'COBRADOR' || rol == 'ADMIN') ...[
+                      Card(
+                        child: Column(
+                          children: [
+                            if (rol == 'COBRADOR')
+                              ListTile(
+                                leading: const Icon(Icons.cloud_sync_outlined),
+                                title: const Text('Cola de Sincronización'),
+                                subtitle: const Text('Ver pagos pendientes de envío'),
+                                trailing: Icon(Icons.chevron_right_rounded, color: AppColors.textDisabled),
+                                onTap: () => context.push('/sync-queue'),
+                              ),
+                            if (rol == 'ADMIN')
+                              ListTile(
+                                leading: const Icon(Icons.mail_lock_outlined),
+                                title: const Text('Notificaciones Fallidas'),
+                                subtitle: const Text('Revisar correos no entregados'),
+                                trailing: Icon(Icons.chevron_right_rounded, color: AppColors.textDisabled),
+                                onTap: () => context.push('/notificaciones-fallidas'),
+                              ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                    ],
+
+                    // 2. Componente Atómico: System Settings Section (Tema oscuro, Biometría, Notificaciones, Seguridad en modal)
+                    SystemSettingsSection(user: user),
+
+                    const SizedBox(height: AppSpacing.xl),
+
+                    // Botón para Cerrar Sesión
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          context.read<AuthCubit>().logout();
+                        },
+                        icon: const Icon(Icons.logout_rounded, size: 18),
+                        label: const Text('Cerrar sesión'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.error,
+                          side: BorderSide(
+                            color: AppColors.error.withValues(alpha: 0.3),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: AppSpacing.xl),
+                  ],
                 ),
               ),
-
-              const SizedBox(height: AppSpacing.xl),
             ],
           ),
         ),

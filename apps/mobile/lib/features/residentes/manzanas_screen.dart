@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/widgets/top_toast.dart';
 import '../../shared/widgets/empty_state.dart';
 import 'comunidad_repository.dart';
 
@@ -42,9 +43,7 @@ class _ManzanasScreenState extends State<ManzanasScreen> {
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al cargar manzanas: $e')),
-        );
+        TopToast.showError(context, 'Error al cargar manzanas: $e');
       }
     }
   }
@@ -58,12 +57,13 @@ class _ManzanasScreenState extends State<ManzanasScreen> {
     try {
       await _repo.createManzana(nombre, etapaId);
       await _loadData();
+      if (mounted) {
+        TopToast.showSuccess(context, '$nombre creada exitosamente');
+      }
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al crear manzana: $e')),
-        );
+        TopToast.showError(context, 'Error al crear manzana: $e');
       }
     }
   }
@@ -186,9 +186,7 @@ class _ManzanasScreenState extends State<ManzanasScreen> {
                   IconButton(
                     icon: Icon(Icons.edit_rounded, color: AppColors.info, size: 20),
                     onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Editar Manzana')),
-                      );
+                      TopToast.show(context, message: 'Editar Manzana', icon: Icons.edit_rounded);
                     },
                   ),
                   IconButton(
@@ -260,16 +258,12 @@ class _ManzanasScreenState extends State<ManzanasScreen> {
                 await _repo.deleteManzana(id);
                 await _loadData();
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('$nombreManzana eliminada')),
-                  );
+                  TopToast.showSuccess(context, '$nombreManzana eliminada correctamente');
                 }
               } catch (e) {
                 setState(() => _isLoading = false);
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error al eliminar: $e')),
-                  );
+                  TopToast.showError(context, 'Error al eliminar: $e');
                 }
               }
             },
@@ -416,16 +410,12 @@ class _ManzanasScreenState extends State<ManzanasScreen> {
       
       await _loadData();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Manzanas de la $letraInicio a la $letraFin creadas con casas del $inicio al $fin')),
-        );
+        TopToast.showSuccess(context, 'Manzanas ($letraInicio ➔ $letraFin) creadas exitosamente con casas');
       }
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al crear: $e')),
-        );
+        TopToast.showError(context, 'Error al crear manzanas: $e');
       }
     }
   }

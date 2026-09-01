@@ -73,12 +73,17 @@ class CobroCard extends StatelessWidget {
     final String mainTitle;
     final String? cuotaSubtitle;
 
-    if (houseParts.isNotEmpty) {
+    if (cobro.tituloCuota.isNotEmpty) {
+      mainTitle = cobro.tituloCuota;
+      cuotaSubtitle = houseParts.isNotEmpty
+          ? (cobro.etapa.isNotEmpty ? '${cobro.etapa} — ${houseParts.join(' — ')}' : houseParts.join(' — '))
+          : null;
+    } else if (houseParts.isNotEmpty) {
       final loc = houseParts.join(' — ');
       mainTitle = cobro.etapa.isNotEmpty ? '$loc (${cobro.etapa})' : loc;
-      cuotaSubtitle = cobro.tituloCuota;
+      cuotaSubtitle = null;
     } else {
-      mainTitle = cobro.tituloCuota;
+      mainTitle = 'Cuota de Recaudo';
       cuotaSubtitle = null;
     }
 

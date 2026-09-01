@@ -197,13 +197,9 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _enviando = false);
-        TopToast.show(
+        TopToast.showError(
           context,
-          title: 'Error al registrar el pago',
-          message: e.toString().replaceAll('Exception: ', ''),
-          icon: Icons.error_outline_rounded,
-          accentColor: AppColors.error,
+          'Error al registrar recaudo: ${e.toString().replaceAll('Exception: ', '')}',
         );
       }
     }

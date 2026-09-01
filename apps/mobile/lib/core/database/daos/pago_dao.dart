@@ -61,4 +61,25 @@ class PagoDao extends DatabaseAccessor<AppDatabase> {
     return (db.select(db.pagos)..where((t) => t.clientPaymentId.equals(clientPaymentId)))
         .getSingleOrNull();
   }
+
+  /// Obtiene todos los elementos en la cola (pendientes, sincronizados OK, y conflictos/errores).
+  Future<List<Pago>> getAllQueueItems() {
+    return (db.select(db.pagos)
+          ..orderBy([(t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc)]))
+        .get();
+  }
+
+  /// Limpia de la memoria local los pagos que ya se sincronizaron exitosamente (verde).
+  Future<int> limpiarSincronizados() {
+    return (db.delete(db.pagos)..where((t) => t.syncStatus.equals('SYNC_OK'))).go();
+  }
+
+  /// Restablece un pago con error/conflicto para reintentar la sincronización.
+  Future<void> reintentarPago(String id) {
+    return (db.update(db.pagos)..where((t) => t.id.equals(id))).write(
+      const PagosCompanion(
+        syncStatus: Value('PENDIENTE_SYNC'),
+      ),
+    );
+  }
 }

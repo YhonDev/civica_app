@@ -6,6 +6,7 @@ import '../../core/theme/app_typography.dart';
 import '../../shared/widgets/mini_stat_card.dart';
 import '../../shared/widgets/donut_chart.dart';
 import '../../shared/widgets/month_selector.dart';
+import '../../shared/widgets/screen_header.dart';
 import 'reportes_repository.dart';
 
 class ReportesScreen extends StatefulWidget {
@@ -46,12 +47,15 @@ class _ReportesScreenState extends State<ReportesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Reportes de Recaudo'),
-      ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const ScreenHeader(title: 'Reportes'),
+            Expanded(
+              child: _loading
+                  ? const Center(child: CircularProgressIndicator())
+                  : SingleChildScrollView(
               padding: const EdgeInsets.all(AppSpacing.md),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -199,6 +203,10 @@ class _ReportesScreenState extends State<ReportesScreen> {
                   ],
                 ),
               ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

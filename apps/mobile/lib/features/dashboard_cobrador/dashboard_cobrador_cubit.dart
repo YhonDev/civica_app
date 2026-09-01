@@ -18,6 +18,7 @@ class CobradorDashboardData extends Equatable {
   final List<Map<String, dynamic>> casas;
   final Map<String, dynamic>? proximaVivienda;
   final List<Map<String, dynamic>> ultimosCobros;
+  final List<Map<String, dynamic>> solicitudes;
 
   const CobradorDashboardData({
     required this.cobradorNombre,
@@ -30,6 +31,7 @@ class CobradorDashboardData extends Equatable {
     required this.casas,
     this.proximaVivienda,
     required this.ultimosCobros,
+    required this.solicitudes,
   });
 
   factory CobradorDashboardData.fromJson(Map<String, dynamic> json) {
@@ -45,13 +47,14 @@ class CobradorDashboardData extends Equatable {
       casas: List<Map<String, dynamic>>.from(json['viviendas'] as List? ?? json['casas'] as List? ?? []),
       proximaVivienda: json['proximaVivienda'] as Map<String, dynamic>?,
       ultimosCobros: List<Map<String, dynamic>>.from(json['ultimosCobros'] as List? ?? []),
+      solicitudes: List<Map<String, dynamic>>.from(json['solicitudes'] as List? ?? []),
     );
   }
 
   @override
   List<Object?> get props => [
     cobradorNombre, totalViviendas, cobradosHoy, montoCobradoHoy,
-    pendientes, vencidas, montoEsperado, casas, proximaVivienda, ultimosCobros,
+    pendientes, vencidas, montoEsperado, casas, proximaVivienda, ultimosCobros, solicitudes,
   ];
 }
 
@@ -166,6 +169,12 @@ class DashboardCobradorCubit extends Cubit<CobradorDashboardState> {
       newProxima = null;
     }
 
+    // 3. Remover cualquier solicitud resuelta para este residente
+    final updatedSolicitudes = currentData.solicitudes.where((s) {
+      final rId = s['residenteId'] as String? ?? s['usuarioId'] as String? ?? '';
+      return rId != residenteId;
+    }).toList();
+
     final newData = CobradorDashboardData(
       cobradorNombre: currentData.cobradorNombre,
       totalViviendas: currentData.totalViviendas,
@@ -177,6 +186,7 @@ class DashboardCobradorCubit extends Cubit<CobradorDashboardState> {
       casas: updatedCasas,
       proximaVivienda: newProxima,
       ultimosCobros: currentData.ultimosCobros,
+      solicitudes: updatedSolicitudes,
     );
 
     emit(CobradorDashboardLoaded(newData));

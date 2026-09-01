@@ -7,8 +7,8 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../screens/auth/auth_cubit.dart';
+import '../../shared/widgets/basic_information_section.dart';
 import '../../shared/widgets/status_badge.dart';
-import '../residentes/widgets/security_section.dart';
 
 import '../../core/widgets/lifecycle_observer_mixin.dart';
 
@@ -119,22 +119,19 @@ class _MiCasaScreenState extends State<MiCasaScreen> with LifecycleObserverMixin
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header Card
+                  // Header Card (Soft Tinted Modern Style)
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(AppSpacing.lg),
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [AppColors.primary, AppColors.primaryDark],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(20),
+                      color: AppColors.card,
+                      borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+                      border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.primaryDark.withValues(alpha: 0.3),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
+                          color: Colors.black.withValues(alpha: 0.03),
+                          blurRadius: 10,
+                          offset: const Offset(0, 2),
                         ),
                       ],
                     ),
@@ -147,10 +144,10 @@ class _MiCasaScreenState extends State<MiCasaScreen> with LifecycleObserverMixin
                             Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.2),
+                                color: AppColors.primary.withValues(alpha: 0.08),
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: const Icon(Icons.home_rounded, color: Colors.white, size: 28),
+                              child: Icon(Icons.home_work_rounded, color: AppColors.primary, size: 26),
                             ),
                             StatusBadge(status: _status),
                           ],
@@ -158,7 +155,10 @@ class _MiCasaScreenState extends State<MiCasaScreen> with LifecycleObserverMixin
                         const SizedBox(height: AppSpacing.md),
                         Text(
                           _proyectoNombre,
-                          style: AppTypography.subtitle.copyWith(color: Colors.white.withValues(alpha: 0.9)),
+                          style: AppTypography.caption.copyWith(
+                            color: AppColors.textSecondary,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                         const SizedBox(height: 4),
                         Text(
@@ -167,89 +167,34 @@ class _MiCasaScreenState extends State<MiCasaScreen> with LifecycleObserverMixin
                             if (_casaDireccion.isNotEmpty) _casaDireccion,
                             if (_etapaNombre.isNotEmpty) _etapaNombre,
                           ].join(' — '),
-                          style: AppTypography.title.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
+                          style: AppTypography.title.copyWith(
+                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                          ),
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(height: AppSpacing.lg),
 
-                  // Resident Info Section
-                  Text('Información de Ocupación', style: AppTypography.subtitle.copyWith(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: AppSpacing.sm),
-                  Card(
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      side: BorderSide(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
-                    ),
-                    child: Column(
-                      children: [
-                        ListTile(
-                          leading: const Icon(Icons.person_outline_rounded),
-                          title: const Text('Titular / Residente'),
-                          subtitle: Text(nombre),
-                        ),
-                        const Divider(height: 1),
-                        ListTile(
-                          leading: const Icon(Icons.alternate_email_rounded),
-                          title: const Text('Usuario registrado'),
-                          subtitle: Text(username.isNotEmpty ? username : 'Sin usuario'),
-                        ),
-                        const Divider(height: 1),
-                        ListTile(
-                          leading: const Icon(Icons.badge_outlined),
-                          title: const Text('Modalidad de Pago'),
-                          subtitle: Text(_modalidadPago),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-
-                  // History of tenancy / info
-                  Text('Detalles del Inmueble', style: AppTypography.subtitle.copyWith(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: AppSpacing.sm),
-                  Card(
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      side: BorderSide(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
-                    ),
-                    child: Column(
-                      children: [
-                        ListTile(
-                          leading: const Icon(Icons.location_on_outlined),
-                          title: const Text('Etapa'),
-                          subtitle: Text(_etapaNombre),
-                        ),
-                        const Divider(height: 1),
-                        ListTile(
-                          leading: const Icon(Icons.apartment_rounded),
-                          title: const Text('Manzana'),
-                          subtitle: Text(_manzanaNombre),
-                        ),
-                        const Divider(height: 1),
-                        ListTile(
-                          leading: const Icon(Icons.home_outlined),
-                          title: const Text('Casa'),
-                          subtitle: Text(_casaDireccion),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-
-                  // ── Módulo de Seguridad (Cambiar Contraseña propia) ──
-                  SecuritySection(
-                    usuarioId: usuarioId,
+                  // ── Módulo Atómico: Información de Ocupación ──
+                  InformacionOcupacionSection(
                     nombre: nombre,
-                    initialUsername: username,
-                    isAdmin: false, // Exige contraseña actual
-                    onCredentialsUpdated: () {
-                      _cargarDatosInmueble();
-                    },
+                    username: username,
+                    modalidadPago: _modalidadPago,
+                    email: email.isNotEmpty ? email : null,
                   ),
+                  const SizedBox(height: AppSpacing.lg),
+
+                  // ── Módulo Atómico: Detalles del Inmueble ──
+                  DetalleInmuebleSection(
+                    proyectoNombre: _proyectoNombre,
+                    etapaNombre: _etapaNombre,
+                    manzanaNombre: _manzanaNombre,
+                    casaDireccion: _casaDireccion,
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
                 ],
               ),
             ),

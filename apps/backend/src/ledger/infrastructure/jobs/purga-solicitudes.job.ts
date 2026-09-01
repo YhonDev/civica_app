@@ -47,7 +47,7 @@ export class PurgaSolicitudesJob {
           for (const row of result[0] ?? result) {
             try {
               if (this.actividadRepo && row.tenant_id) {
-                await this.actividadRepo.registrar(
+                await (this.actividadRepo as any).registrar?.(
                   row.tenant_id,
                   'SOLICITUD_EXPIRADA',
                   `Solicitud ${row.id} expiró automáticamente al vencer el ciclo de 24h.`,

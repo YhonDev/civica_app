@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/widgets/top_toast.dart';
 import '../../shared/widgets/action_card.dart';
 import 'residentes_repository.dart';
 import 'comunidad_repository.dart';
@@ -113,9 +114,7 @@ class _ProyectoDetailScreenState extends State<ProyectoDetailScreen> {
                     color: AppColors.primary,
                     tooltip: 'Editar Proyecto',
                     onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Editar detalles del proyecto')),
-                      );
+                      TopToast.show(context, message: 'Editar detalles del proyecto', icon: Icons.edit_rounded);
                     },
                   )
                 ],

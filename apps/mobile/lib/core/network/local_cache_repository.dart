@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'api_client.dart';
+
 
 /// Enterprise SWR (Stale-While-Revalidate) Cache Repository.
 ///
@@ -16,7 +16,7 @@ class LocalCacheRepository {
   final Map<String, dynamic> _memoryCache = {};
   final Map<String, DateTime> _timestamps = {};
 
-  final TokenStorage _tokenStorage = TokenStorage();
+
 
   /// Reads cached value synchronously from memory, or asynchronously from persistent storage.
   dynamic getCached(String key) {
@@ -28,16 +28,6 @@ class LocalCacheRepository {
 
   /// Asynchronously loads persistent cache into memory if not present.
   Future<dynamic> getCachedAsync(String key) async {
-    if (_memoryCache.containsKey(key)) {
-      return _memoryCache[key];
-    }
-
-    try {
-      final raw = await _tokenStorage.getUser(); // reuses storage adapter if needed
-      // Check memory cache fallback
-      final storedStr = await TokenStorage().getAccessToken(); // test storage
-    } catch (_) {}
-
     return _memoryCache[key];
   }
 

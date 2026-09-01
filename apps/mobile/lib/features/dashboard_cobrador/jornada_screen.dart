@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../screens/auth/auth_cubit.dart';
@@ -137,44 +138,47 @@ class _JornadaViewState extends State<_JornadaView> with LifecycleObserverMixin 
   // ── Content ───────────────────────────────────────────────────────
 
   Widget _buildContent(CobradorDashboardData data, String nombre, String hoy) {
-    return RefreshIndicator(
-      color: AppColors.primary,
-      onRefresh: () => context.read<DashboardCobradorCubit>().refresh(),
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: AppSpacing.lg),
+    return SafeArea(
+      child: RefreshIndicator(
+        color: AppColors.primary,
+        onRefresh: () => context.read<DashboardCobradorCubit>().refresh(),
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: AppSpacing.md),
 
-            // ── Header ──────────────────────────────────────────────
-            Text(
-              'Buenos días,',
-              style: AppTypography.body.copyWith(color: AppColors.textSecondary),
-            ),
-            Text(
-              nombre.split(' ').first,
-              style: AppTypography.title.copyWith(fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              hoy[0].toUpperCase() + hoy.substring(1),
-              style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
-            ),
+              // ── Header ──────────────────────────────────────────────
+              Text(
+                nombre,
+                style: AppTypography.title.copyWith(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 26,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                hoy[0].toUpperCase() + hoy.substring(1),
+                style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+              ),
 
-            const SizedBox(height: AppSpacing.lg),
+              const SizedBox(height: AppSpacing.xl),
 
-            // ── Stats: resumen de la jornada ────────────────────────
-            _buildStatsRow(data),
+              // ── Stats: resumen de la jornada ────────────────────────
+              _buildStatsRow(data),
 
-            const SizedBox(height: AppSpacing.lg),
+              const SizedBox(height: AppSpacing.xl),
 
             // ── Próxima vivienda a visitar (Héroe interactivo) ──────
             if (data.proximaVivienda != null) ...[
               _buildProximaVivienda(data.proximaVivienda!),
               const SizedBox(height: AppSpacing.lg),
             ],
+
+            // ── Solicitudes de Cobro Prioritarias en Domicilio (Opcional si hay solicitudes activas) ─
+            _buildSolicitudesDomicilioSection(data),
 
             // ── Card de Acceso Directo a Gestión de Cartera ─────────
             _buildCarteraDirectAccessBanner(data),
@@ -183,8 +187,9 @@ class _JornadaViewState extends State<_JornadaView> with LifecycleObserverMixin 
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   // ── Stats Row ────────────────────────────────────────────────────
 
@@ -213,7 +218,7 @@ class _JornadaViewState extends State<_JornadaView> with LifecycleObserverMixin 
             ),
           ],
         ),
-        const SizedBox(height: AppSpacing.sm),
+        const SizedBox(height: AppSpacing.md),
         // Fila secundaria de indicadores
         Row(
           children: [
@@ -375,13 +380,146 @@ class _JornadaViewState extends State<_JornadaView> with LifecycleObserverMixin 
       );
   }
 
+  Widget _buildSolicitudesDomicilioSection(CobradorDashboardData data) {
+    if (data.solicitudes.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return InkWell(
+      onTap: () => context.push('/casas-explorer'),
+      borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: AppSpacing.lg),
+        padding: const EdgeInsets.all(AppSpacing.cardPadding),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E293B) : Colors.white,
+          borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+          border: Border.all(
+            color: AppColors.warning.withValues(alpha: 0.4),
+            width: 1.2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.warning.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        Icons.mark_email_unread_rounded,
+                        color: AppColors.warning,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Text(
+                      'Solicitudes en Domicilio',
+                      style: AppTypography.subtitle.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.warning.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      Text(
+                        '${data.solicitudes.length} activas',
+                        style: AppTypography.caption.copyWith(
+                          color: AppColors.warning,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 11,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(Icons.arrow_forward_ios_rounded, size: 10, color: AppColors.warning),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.md),
+            ...data.solicitudes.take(2).map((solicitud) {
+              final nombreResidente = solicitud['residenteNombre'] as String? ?? 'Residente';
+              final casaInfo = '${solicitud['manzanaNombre'] ?? ''} — ${solicitud['casaDireccion'] ?? ''}';
+              final nota = solicitud['descripcion'] as String? ?? 'Solicita atención/cobro presencial';
+
+              return Container(
+                margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.home_outlined, size: 20, color: AppColors.primary),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            nombreResidente,
+                            style: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
+                          ),
+                          Text(
+                            casaInfo,
+                            style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+                          ),
+                          if (nota.isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              '"$nota"',
+                              style: AppTypography.caption.copyWith(
+                                fontStyle: FontStyle.italic,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildCarteraDirectAccessBanner(CobradorDashboardData data) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final count = data.casas.length;
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.cardPadding),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
@@ -392,81 +530,55 @@ class _JornadaViewState extends State<_JornadaView> with LifecycleObserverMixin 
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
+            blurRadius: 6,
             offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  Icons.account_balance_wallet_outlined,
-                  color: AppColors.primary,
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Gestión de Cartera',
-                      style: AppTypography.subtitle.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    Text(
-                      '$count viviendas registradas en ruta',
-                      style: AppTypography.caption.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Text(
-            'Gestiona todos los cobros, filtros por Manzana/Casa y liquidaciones desde el módulo oficial de Cartera.',
-            style: AppTypography.body.copyWith(
-              color: AppColors.textSecondary,
-              fontSize: 13,
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              Icons.directions_walk_rounded,
+              color: AppColors.primary,
+              size: 22,
             ),
           ),
-          const SizedBox(height: AppSpacing.md),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () {
-                // Navigate to Cartera tab using DefaultTabController or BottomNavigationBar switch
-                final mainTabState = context.findAncestorStateOfType<State>();
-                if (mainTabState != null && mainTabState.mounted) {
-                  // Fallback: reload state
-                }
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Selecciona la pestaña "Cobrar" en el menú inferior para gestionar la cartera.'),
-                    duration: Duration(seconds: 2),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Rutas y Solicitudes',
+                  style: AppTypography.subtitle.copyWith(
+                    fontWeight: FontWeight.w700,
                   ),
-                );
-              },
-              icon: const Icon(Icons.arrow_forward_rounded, size: 18),
-              label: const Text('Ir a Gestión de Cartera'),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                foregroundColor: AppColors.primary,
-                side: BorderSide(color: AppColors.primary.withValues(alpha: 0.5)),
+                ),
+                Text(
+                  '$count casas asignadas en tu ruta',
+                  style: AppTypography.caption.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          OutlinedButton.icon(
+            onPressed: () => context.push('/casas-explorer'),
+            icon: const Icon(Icons.arrow_forward_rounded, size: 16),
+            label: const Text('Ir'),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              foregroundColor: AppColors.primary,
+              side: BorderSide(color: AppColors.primary.withValues(alpha: 0.5)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
               ),
             ),
           ),

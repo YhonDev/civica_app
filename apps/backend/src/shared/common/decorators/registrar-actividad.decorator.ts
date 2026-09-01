@@ -16,6 +16,7 @@ export const REGISTRAR_ACTIVIDAD_KEY = 'registrar_actividad';
 export interface RegistrarActividadOptions {
   tipo: string;
   descripcionFn: (result: any) => string;
+  metadataFn?: (result: any) => Record<string, any>;
 }
 
 /**
@@ -60,12 +61,14 @@ export class ActividadInterceptor implements NestInterceptor {
 
         try {
           const descripcion = options.descripcionFn(result);
+          const metadata = options.metadataFn ? options.metadataFn(result) : {};
           const actividad = Actividad.crear(
             user.tenantId,
             options.tipo,
             descripcion,
             user.nombre ?? 'Sistema',
             user.id,
+            metadata,
           );
 
           // Fire-and-forget: persist without blocking the response

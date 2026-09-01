@@ -10,7 +10,7 @@ export interface PushPayload {
 @Injectable()
 export class FcmPushService {
   private readonly logger = new Logger(FcmPushService.name);
-  private firebaseApp: admin.app.App | null = null;
+  private firebaseApp: any = null;
 
   constructor() {
     this.initFirebase();
@@ -18,19 +18,20 @@ export class FcmPushService {
 
   private initFirebase() {
     try {
-      if (admin.apps.length > 0) {
-        this.firebaseApp = admin.apps[0]!;
+      const fbAdmin = admin as any;
+      if (fbAdmin.apps && fbAdmin.apps.length > 0) {
+        this.firebaseApp = fbAdmin.apps[0];
       } else if (process.env.FIREBASE_CREDENTIALS) {
         const serviceAccount = JSON.parse(process.env.FIREBASE_CREDENTIALS);
-        this.firebaseApp = admin.initializeApp({
-          credential: admin.credential.cert(serviceAccount),
+        this.firebaseApp = fbAdmin.initializeApp({
+          credential: fbAdmin.credential.cert(serviceAccount),
         });
         this.logger.log('Firebase Admin SDK inicializado exitosamente');
       } else {
         this.logger.warn('FIREBASE_CREDENTIALS no configurado. Ejecutando FcmPushService en modo Simulado/Dev.');
       }
-    } catch (e) {
-      this.logger.warn(`Error inicializando Firebase Admin SDK: ${e}. Modo simulación activo.`);
+    } catch (error) {
+      this.logger.error('Error al inicializar Firebase Admin SDK:', error);
     }
   }
 
@@ -45,7 +46,8 @@ export class FcmPushService {
     }
 
     try {
-      await admin.messaging(this.firebaseApp).send({
+      const fbAdmin = admin as any;
+      await fbAdmin.messaging(this.firebaseApp).send({
         token,
         notification: {
           title: payload.title,
