@@ -50,5 +50,39 @@ void main() {
       expect(emittedValues[1]['status'], equals('FRESH'));
       expect(isStaleValues[1], isFalse);
     });
+
+    test('getCached returns null when maxAge TTL is exceeded', () async {
+      repository.setCache('ttl:key', 'data');
+      
+      // Immediate lookup within TTL
+      expect(repository.getCached('ttl:key', maxAge: const Duration(seconds: 5)), equals('data'));
+
+      // Lookup with 0s TTL (expired immediately)
+      expect(repository.getCached('ttl:key', maxAge: Duration.zero), isNull);
+    });
+
+    test('executeSWR updates UI with fresh backend data unconditionally', () async {
+      repository.setCache('swr:fresh_override', 'STALE_DATA');
+
+      final emitted = <String>[];
+      await repository.executeSWR<String>(
+        key: 'swr:fresh_override',
+        fetcher: () async => 'FRESH_BACKEND_DATA',
+        onData: (data, isStale) => emitted.add(data),
+      );
+
+      expect(emitted, equals(['STALE_DATA', 'FRESH_BACKEND_DATA']));
+      expect(repository.getCached('swr:fresh_override'), equals('FRESH_BACKEND_DATA'));
+    });
+
+    test('invalidateAll clears all cache keys on logout or real-time event', () {
+      repository.setCache('key1', 'data1');
+      repository.setCache('key2', 'data2');
+
+      repository.invalidateAll();
+
+      expect(repository.getCached('key1'), isNull);
+      expect(repository.getCached('key2'), isNull);
+    });
   });
 }
