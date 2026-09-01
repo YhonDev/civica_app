@@ -232,8 +232,8 @@ CREATE TABLE solicitudes (
   nro_recibo      VARCHAR(20) NOT NULL,
   tipo            VARCHAR(255) NOT NULL,
   descripcion     TEXT NOT NULL,
-  estado          VARCHAR(20) NOT NULL DEFAULT 'EN_REVISION'
-                  CHECK (estado IN ('PENDIENTE', 'EN_REVISION', 'RESUELTA', 'RECHAZADA', 'APROBADA')),
+  estado          VARCHAR(20) NOT NULL DEFAULT 'EN_ESPERA'
+                  CHECK (estado IN ('PENDIENTE', 'EN_ESPERA', 'EN_CAMINO', 'COBRADA', 'EN_REVISION', 'RESUELTA', 'APROBADA', 'RECHAZADA', 'VENCIDA')),
   fecha           TIMESTAMPTZ NOT NULL DEFAULT now(),
   respuesta       TEXT,
   fecha_respuesta TIMESTAMPTZ,
