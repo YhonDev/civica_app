@@ -8,6 +8,7 @@ import '../../core/network/api_client.dart';
 import 'solicitudes_repository.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/widgets/top_toast.dart';
 
 /// Pantalla para crear una solicitud de revisión (P07)
 ///
@@ -86,12 +87,7 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
 
   void _enviarSolicitud() async {
     if (!_formKey.currentState!.validate() || _cobroIdSeleccionada == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Por favor, selecciona un período y escribe la descripción.'),
-          backgroundColor: AppColors.error,
-        ),
-      );
+      TopToast.showError(context, 'Por favor, selecciona un período y escribe la descripción.');
       return;
     }
 
@@ -125,13 +121,7 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
           _enviando = false;
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Solicitud de revisión registrada con éxito.'),
-            backgroundColor: AppColors.success,
-          ),
-        );
-
+        TopToast.showSuccess(context, 'Solicitud de revisión registrada con éxito.');
         context.pop(true); // Return true to indicate a reload is needed
       }
     } catch (e) {
@@ -140,12 +130,7 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
         setState(() {
           _enviando = false;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al enviar la solicitud: $e'),
-            backgroundColor: AppColors.error,
-          ),
-        );
+        TopToast.showError(context, 'Error al enviar la solicitud: $e');
       }
     }
   }

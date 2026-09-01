@@ -19,6 +19,7 @@ import '../../core/network/local_cache_repository.dart';
 import '../solicitudes/solicitudes_repository.dart';
 import '../dashboard/widgets/skeleton_loading.dart';
 import '../../core/widgets/lifecycle_observer_mixin.dart';
+import '../../core/widgets/top_toast.dart';
 
 /// Residente Dashboard — "Mi Estado"
 ///
@@ -588,22 +589,12 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
       LocalCacheRepository.instance.invalidate('dashboard:administrador');
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Solicitud de cobro enviada al administrador/cobrador'),
-            backgroundColor: AppColors.success,
-          ),
-        );
+        TopToast.showSuccess(context, 'Solicitud de cobro enviada al administrador/cobrador');
         await _loadDashboardData(silent: true);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al enviar solicitud: $e'),
-            backgroundColor: AppColors.error,
-          ),
-        );
+        TopToast.showError(context, 'Error al enviar solicitud: $e');
       }
     }
   }
@@ -706,7 +697,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
                 ),
               ),
               InkWell(
-                onTap: () => context.go('/cartera'),
+                onTap: () => context.push('/historial'),
                 child: Text(
                   'Ver historial →',
                   style: AppTypography.caption.copyWith(
@@ -881,12 +872,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
         LocalCacheRepository.instance.invalidate('dashboard:residente');
         LocalCacheRepository.instance.invalidate('dashboard:administrador');
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Solicitud cancelada exitosamente'),
-              backgroundColor: AppColors.success,
-            ),
-          );
+          TopToast.showSuccess(context, 'Solicitud cancelada exitosamente');
           await _loadDashboardData(silent: true);
         }
       },

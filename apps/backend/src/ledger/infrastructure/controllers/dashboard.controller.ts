@@ -748,18 +748,6 @@ export class DashboardController {
         descripcion: 'Pago registrado',
       });
     }
-    for (const sol of solicitudesResidente) {
-      const fechaStr = sol.createdAt
-        ? new Date(sol.createdAt).toISOString().split('T')[0]
-        : new Date(sol.fecha).toISOString().split('T')[0];
-      movimientos.push({
-        id: sol.id,
-        tipo: 'solicitud',
-        monto: 0,
-        fecha: fechaStr,
-        descripcion: `Solicitud ${sol.nroRecibo} (${sol.estado})`,
-      });
-    }
     
     // Sort merged by date descending
     movimientos.sort((a, b) => b.fecha.localeCompare(a.fecha));
