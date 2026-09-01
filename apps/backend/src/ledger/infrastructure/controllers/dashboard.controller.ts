@@ -539,12 +539,12 @@ export class DashboardController {
       Periodo.esVisible(c.periodoInicio, modalidad, hoy),
     );
 
-    let saldo = 0;
+    let saldoMora = 0;
     let hasVencida = false;
-    for (const cobro of cobros) {
+    for (const cobro of cobrosRaw) {
       if (cobro.monto > cobro.montoPagado) {
-        saldo += (cobro.monto - cobro.montoPagado);
         if (cobro.estado === 'VENCIDA' || cobro.fechaVencimiento < hoyStr) {
+          saldoMora += (cobro.monto - cobro.montoPagado);
           hasVencida = true;
         }
       }
@@ -552,13 +552,9 @@ export class DashboardController {
 
     // Convert from cents (backend) to COP standard units (frontend)
     // Mobile UI expects raw values (e.g. 40000 COP, backend stores 4000000 cents)
-    const saldoFrontend = Math.round(saldo / 100);
+    const saldoFrontend = Math.round(saldoMora / 100);
 
-    const status = hasVencida
-      ? 'MORA'
-      : saldo > 0
-        ? 'PENDIENTE'
-        : 'AL_DIA';
+    const status = hasVencida ? 'MORA' : 'AL_DIA';
 
     let proximoCobro: string | null = null;
     let proximoPago: {

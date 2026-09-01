@@ -110,20 +110,6 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
       return 'Gestión de Cobro';
     }
 
-    String getSubtitle() {
-      switch (rol) {
-        case 'ADMIN':
-          return 'Resumen general de tu comunidad';
-        case 'COBRADOR':
-          return 'Resumen de cobros por ruta';
-        case 'PROPIETARIO':
-        case 'RESIDENTE':
-          return 'Estado de tus cuotas y abonos';
-        default:
-          return 'Administración de cobros y residentes';
-      }
-    }
-
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -260,7 +246,7 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
                             child: Row(
                               children: [
-                                Expanded(child: _buildFilterChip('TODOS', 'Todas (${state.filteredCobros.length})', AppColors.primary)),
+                                Expanded(child: _buildFilterChip('TODOS', 'Todas (${state.cobros.length})', AppColors.primary)),
                                 const SizedBox(width: 4),
                                 Expanded(child: _buildFilterChip('PENDIENTE', 'Pendientes (${state.resumen.cantidadPendientes})', AppColors.warning)),
                                 const SizedBox(width: 4),
@@ -447,47 +433,6 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
         ),
       ),
     ];
-  }
-
-  Widget _buildFilters(BuildContext context, String activeFilter) {
-    final filters = ['Pendiente', 'Mora', 'Pagado', 'Todos'];
-    
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
-      child: Row(
-        children: filters.map((filter) {
-          final isSelected = activeFilter == filter;
-          return Padding(
-            padding: const EdgeInsets.only(right: AppSpacing.sm),
-            child: FilterChip(
-              label: Text(
-                filter,
-                style: AppTypography.small.copyWith(
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                  color: isSelected ? Colors.white : AppColors.textPrimary,
-                ),
-              ),
-              selected: isSelected,
-              onSelected: (selected) {
-                if (selected) {
-                  context.read<CarteraCubit>().setFilter(filter);
-                }
-              },
-              backgroundColor: AppColors.surface,
-              selectedColor: AppColors.primary,
-              checkmarkColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-                side: BorderSide(
-                  color: isSelected ? AppColors.primary : AppColors.border,
-                ),
-              ),
-            ),
-          );
-        }).toList(),
-      ),
-    );
   }
 }
 

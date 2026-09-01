@@ -248,7 +248,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
     }
 
     final saldoFormatted = NumberFormat.decimalPattern('es_CO').format(_saldo);
-    final saldoLabelText = _saldo > 0 ? 'Deuda actual: \$$saldoFormatted' : 'Saldo actual: \$$saldoFormatted';
+    final saldoLabelText = _saldo > 0 ? 'Deuda total: \$$saldoFormatted' : 'Deuda total: \$0';
 
     return Scaffold(
       body: SafeArea(
