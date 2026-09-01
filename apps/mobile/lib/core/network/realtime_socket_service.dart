@@ -60,11 +60,7 @@ class RealtimeSocketService {
 
       _socket?.on('pago:registrado', (data) {
         debugPrint('[RealtimeSocket] Event PAGO_REGISTRADO received: $data');
-        LocalCacheRepository.instance.invalidate('dashboard:residente');
-        LocalCacheRepository.instance.invalidate('cartera:cobros');
-        LocalCacheRepository.instance.invalidate('dashboard:cobrador');
-        LocalCacheRepository.instance.invalidate('dashboard:administrador');
-        
+        LocalCacheRepository.instance.invalidateAll();
         for (final listener in _onPagoListeners) {
           listener();
         }
@@ -72,10 +68,7 @@ class RealtimeSocketService {
 
       _socket?.on('modalidad:cambiada', (data) {
         debugPrint('[RealtimeSocket] Event MODALIDAD_CAMBIADA received: $data');
-        LocalCacheRepository.instance.invalidate('dashboard:residente');
-        LocalCacheRepository.instance.invalidate('cartera:cobros');
-        LocalCacheRepository.instance.invalidate('dashboard:administrador');
-        
+        LocalCacheRepository.instance.invalidateAll();
         for (final listener in _onModalidadListeners) {
           listener();
         }
@@ -83,9 +76,12 @@ class RealtimeSocketService {
 
       _socket?.on('solicitud:creada', (data) {
         debugPrint('[RealtimeSocket] Event SOLICITUD_CREADA received: $data');
-        LocalCacheRepository.instance.invalidate('dashboard:cobrador');
-        LocalCacheRepository.instance.invalidate('cobrador:viviendas');
-        LocalCacheRepository.instance.invalidate('dashboard:administrador');
+        LocalCacheRepository.instance.invalidateAll();
+      });
+
+      _socket?.on('solicitud:cerrada', (data) {
+        debugPrint('[RealtimeSocket] Event SOLICITUD_CERRADA received: $data');
+        LocalCacheRepository.instance.invalidateAll();
       });
 
       _socket?.onDisconnect((_) {
