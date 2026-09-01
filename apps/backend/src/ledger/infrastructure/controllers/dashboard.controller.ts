@@ -494,11 +494,12 @@ export class DashboardController {
       await this.marcarVencidasUC.execute().catch(() => {});
     }
 
-    const [cobrosRaw, pagos, cuenta, residente] = await Promise.all([
+    const [cobrosRaw, pagos, cuenta, residente, solicitudesResidente] = await Promise.all([
       this.cobroRepository.findByResidente(user.residenteId, tenantId),
       this.pagoRepository.findByPropietario(user.residenteId, tenantId),
       this.planDeCobroRepository.findByResidente(user.residenteId),
       this.residenteRepository.findByIdWithRelations(user.residenteId),
+      this.solicitudRepository.findByUsuario(user.id),
     ]);
 
     // Build residenteInfo from relations
@@ -745,6 +746,18 @@ export class DashboardController {
         monto: Math.round(pago.monto / 100),
         fecha: pago.fechaPago,
         descripcion: 'Pago registrado',
+      });
+    }
+    for (const sol of solicitudesResidente) {
+      const fechaStr = sol.createdAt
+        ? new Date(sol.createdAt).toISOString().split('T')[0]
+        : new Date(sol.fecha).toISOString().split('T')[0];
+      movimientos.push({
+        id: sol.id,
+        tipo: 'solicitud',
+        monto: 0,
+        fecha: fechaStr,
+        descripcion: `Solicitud ${sol.nroRecibo} (${sol.estado})`,
       });
     }
     

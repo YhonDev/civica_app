@@ -98,8 +98,10 @@ export class Solicitud {
     solicitud.usuarioId = usuarioId;
     solicitud.cobroId = cobroId;
     
+    const tipoLower = (tipo || '').toLowerCase();
+    const prefix = (tipoLower.includes('revision') || tipoLower.includes('solicitud_revision')) ? 'SR' : 'SC';
     const randomNum = Math.floor(100000 + Math.random() * 900000);
-    solicitud.nroRecibo = `TK-${randomNum}`;
+    solicitud.nroRecibo = `${prefix}-${randomNum}`;
     
     solicitud.tipo = tipo;
     solicitud.descripcion = descripcion;

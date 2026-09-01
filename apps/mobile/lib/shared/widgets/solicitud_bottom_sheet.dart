@@ -495,7 +495,7 @@ class _SolicitudBottomSheetState extends State<SolicitudBottomSheet> {
                               )
                             : Icon(Icons.delete_outline_rounded, color: AppColors.error),
                         label: Text(
-                          'Cancelar Solicitud',
+                          'Cancelar',
                           style: TextStyle(color: AppColors.error),
                         ),
                         style: OutlinedButton.styleFrom(
