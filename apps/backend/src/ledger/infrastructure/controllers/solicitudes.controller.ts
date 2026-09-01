@@ -7,6 +7,7 @@ import {
   Query,
   Body,
   UseGuards,
+  UseInterceptors,
   BadRequestException,
   NotFoundException,
 } from '@nestjs/common';
@@ -18,6 +19,10 @@ import { CurrentTenant } from '../../../shared/tenant/current-tenant.decorator';
 import { RolesGuard } from '../../../shared/auth/guards/roles.guard';
 import { Roles } from '../../../shared/auth/decorators/roles.decorator';
 import { Usuario, RolUsuario } from '../../../iam/domain/usuario.entity';
+import {
+  RegistrarActividad,
+  ActividadInterceptor,
+} from '../../../shared/common/decorators/registrar-actividad.decorator';
 
 @Controller('solicitudes')
 @UseGuards(JwtAuthGuard)
@@ -27,6 +32,18 @@ export class SolicitudesController {
   @Post()
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.RESIDENTE, RolUsuario.ADMIN)
+  @UseInterceptors(ActividadInterceptor)
+  @RegistrarActividad({
+    tipo: 'SOLICITUD',
+    descripcionFn: (r) => `Nueva solicitud creada: ${r.tipo ?? 'Solicitud de cobro'}`,
+    metadataFn: (r) => ({
+      solicitudId: r.id,
+      cobroId: r.cobroId,
+      tipo: r.tipo,
+      estado: r.estado,
+      descripcion: r.descripcion,
+    }),
+  })
   async crear(
     @Body() dto: { cuotaId?: string; cobroId?: string; tipo: string; descripcion: string },
     @CurrentUser() user: Usuario,
@@ -77,6 +94,18 @@ export class SolicitudesController {
   @Patch(':id/resolver')
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN, RolUsuario.COBRADOR)
+  @UseInterceptors(ActividadInterceptor)
+  @RegistrarActividad({
+    tipo: 'SOLICITUD',
+    descripcionFn: (r) => `Solicitud ${r.estado === 'RESUELTA' ? 'Resuelta' : 'Rechazada'}: ${r.respuesta ?? ''}`,
+    metadataFn: (r) => ({
+      solicitudId: r.id,
+      cobroId: r.cobroId,
+      tipo: r.tipo,
+      estado: r.estado,
+      respuesta: r.respuesta,
+    }),
+  })
   async resolver(
     @Param('id') id: string,
     @Body() dto: { estado: string; respuesta: string },

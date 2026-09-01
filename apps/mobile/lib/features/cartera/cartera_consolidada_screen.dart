@@ -6,6 +6,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../shared/widgets/status_badge.dart';
 import '../../shared/widgets/empty_state.dart';
+import '../../shared/widgets/screen_header.dart';
 import 'bloc/consolidated_cubit.dart';
 
 class ResidentConsolidadoItem {
@@ -48,263 +49,359 @@ class CarteraConsolidadaScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final currencyFormat = NumberFormat.currency(symbol: '\$', decimalDigits: 0, locale: 'es_CO');
+    final currencyFormat = NumberFormat.currency(symbol: '\$ ', decimalDigits: 0, locale: 'es_CO');
 
     return BlocProvider(
       create: (context) => ConsolidatedCubit()..load(),
       child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Cartera Consolidada'),
-          centerTitle: false,
-        ),
-        body: BlocBuilder<ConsolidatedCubit, ConsolidatedState>(
-          builder: (context, state) {
-            if (state.isLoading && state.items.isEmpty) {
-              return const Center(child: CircularProgressIndicator());
-            }
+        body: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const ScreenHeader(title: 'Cobros'),
+              Expanded(
+                child: BlocBuilder<ConsolidatedCubit, ConsolidatedState>(
+                  builder: (context, state) {
+                    if (state.isLoading && state.items.isEmpty) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
 
-            return RefreshIndicator(
-              onRefresh: () => context.read<ConsolidatedCubit>().load(
-                    etapaId: state.selectedEtapaId,
-                    manzanaId: state.selectedManzanaId,
-                  ),
-              child: Column(
-                children: [
-                  // ════════════════════════════════════════════════════════════
-                  // SUMMARY METRICS HEADER
-                  // ════════════════════════════════════════════════════════════
-                  Padding(
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    child: Card(
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        side: BorderSide(color: AppColors.border),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(AppSpacing.md),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: _MetricItem(
-                                title: 'En Mora',
-                                value: currencyFormat.format(state.totalMora),
-                                color: AppColors.error,
-                              ),
-                            ),
-                            Container(width: 1, height: 40, color: AppColors.border),
-                            Expanded(
-                              child: _MetricItem(
-                                title: 'Pendiente',
-                                value: currencyFormat.format(state.totalPorCobrar),
-                                color: AppColors.warning,
-                              ),
-                            ),
-                            Container(width: 1, height: 40, color: AppColors.border),
-                            Expanded(
-                              child: _MetricItem(
-                                title: 'Total Adeudado',
-                                value: currencyFormat.format(state.totalAdeudado),
-                                color: AppColors.primary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  // ════════════════════════════════════════════════════════════
-                  // DROPDOWN FILTERS (ETAPA / MANZANA)
-                  // ════════════════════════════════════════════════════════════
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                    child: Row(
+                    return Column(
                       children: [
-                        Expanded(
-                          child: DropdownButtonFormField<String?>(
-                            decoration: InputDecoration(
-                              labelText: 'Etapa',
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        // ── CARTERA RESUMEN HEADER (CARTERA CARD ESTÁNDAR) ───
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
+                          child: Container(
+                            padding: const EdgeInsets.all(AppSpacing.cardInnerPadding),
+                            decoration: BoxDecoration(
+                              color: AppColors.card,
+                              borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+                              border: Border.all(color: AppColors.border.withValues(alpha: 0.6)),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.04),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
                             ),
-                            initialValue: state.selectedEtapaId,
-                            items: [
-                              const DropdownMenuItem(value: null, child: Text('Todas')),
-                              ...state.etapas.map((e) => DropdownMenuItem(
-                                    value: e['id'] as String?,
-                                    child: Text(e['nombre'] ?? 'Etapa'),
-                                  )),
-                            ],
-                            onChanged: (etapaId) {
-                              context.read<ConsolidatedCubit>().selectEtapa(etapaId);
-                            },
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(Icons.account_balance_wallet_outlined, size: 18, color: AppColors.primary),
+                                    const SizedBox(width: AppSpacing.xs),
+                                    Text(
+                                      'Resumen de Cartera Consolidada',
+                                      style: AppTypography.caption.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: AppSpacing.sm),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: _buildMetricTile(
+                                        label: 'Mora',
+                                        amount: state.totalMora.toDouble(),
+                                        count: state.items.where((i) => i.estado == 'EN_MORA').length,
+                                        badgeColor: AppColors.error,
+                                        icon: Icons.warning_amber_rounded,
+                                      ),
+                                    ),
+                                    const SizedBox(width: AppSpacing.xs),
+                                    Expanded(
+                                      child: _buildMetricTile(
+                                        label: 'Por Cobrar',
+                                        amount: state.totalPorCobrar.toDouble(),
+                                        count: state.items.where((i) => i.estado == 'PENDIENTE').length,
+                                        badgeColor: AppColors.warning,
+                                        icon: Icons.hourglass_top_rounded,
+                                      ),
+                                    ),
+                                    const SizedBox(width: AppSpacing.xs),
+                                    Expanded(
+                                      child: _buildMetricTile(
+                                        label: 'Total Adeudado',
+                                        amount: state.totalAdeudado.toDouble(),
+                                        count: state.items.length,
+                                        badgeColor: AppColors.primary,
+                                        icon: Icons.check_circle_outline_rounded,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                        const SizedBox(width: AppSpacing.md),
-                        Expanded(
-                          child: DropdownButtonFormField<String?>(
-                            decoration: InputDecoration(
-                              labelText: 'Manzana',
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                            ),
-                            initialValue: state.selectedManzanaId,
-                            items: [
-                              const DropdownMenuItem(value: null, child: Text('Todas')),
-                              ...state.manzanas.map((m) => DropdownMenuItem(
-                                    value: m['id'] as String?,
-                                    child: Text(m['nombre'] ?? 'Manzana'),
-                                  )),
+
+                        const SizedBox(height: AppSpacing.xs),
+
+                        // ── FILTER CHIPS ─────────────────────────────────────
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.screenPadding,
+                            vertical: AppSpacing.xs,
+                          ),
+                          child: Row(
+                            children: [
+                              _buildFilterChip(context, 'EN_MORA', 'En Mora (${state.items.where((i) => i.estado == "EN_MORA").length})', state.activeFilter, AppColors.error),
+                              const SizedBox(width: 8),
+                              _buildFilterChip(context, 'PENDIENTE', 'Pendiente (${state.items.where((i) => i.estado == "PENDIENTE").length})', state.activeFilter, AppColors.warning),
+                              const SizedBox(width: 8),
+                              _buildFilterChip(context, 'AL_DIA', 'Al Día (${state.items.where((i) => i.estado == "AL_DIA").length})', state.activeFilter, AppColors.success),
+                              const SizedBox(width: 8),
+                              _buildFilterChip(context, 'TODOS', 'Todos (${state.items.length})', state.activeFilter, AppColors.primary),
                             ],
-                            onChanged: state.selectedEtapaId == null
-                                ? null
-                                : (manzanaId) {
-                                    context.read<ConsolidatedCubit>().selectManzana(manzanaId);
-                                  },
+                          ),
+                        ),
+
+                        // ── RESIDENTS LIST ───────────────────────────────────
+                        Expanded(
+                          child: RefreshIndicator(
+                            onRefresh: () => context.read<ConsolidatedCubit>().load(
+                                  etapaId: state.selectedEtapaId,
+                                  manzanaId: state.selectedManzanaId,
+                                ),
+                            child: state.filteredItems.isEmpty
+                                ? const SingleChildScrollView(
+                                    physics: AlwaysScrollableScrollPhysics(),
+                                    child: EmptyState(
+                                      icon: Icons.people_outline_rounded,
+                                      title: 'Sin residentes',
+                                      description: 'No se encontraron residentes con este filtro.',
+                                    ),
+                                  )
+                                : ListView.builder(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: AppSpacing.screenPadding,
+                                      vertical: AppSpacing.xs,
+                                    ),
+                                    itemCount: state.filteredItems.length,
+                                    itemBuilder: (context, index) {
+                                      final item = state.filteredItems[index];
+                                      return _buildResidentCobroCard(context, item, currencyFormat);
+                                    },
+                                  ),
                           ),
                         ),
                       ],
-                    ),
-                  ),
-
-                  const SizedBox(height: AppSpacing.sm),
-
-                  // ════════════════════════════════════════════════════════════
-                  // STATUS FILTER CHIPS
-                  // ════════════════════════════════════════════════════════════
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
-                    child: Row(
-                      children: [
-                        _buildFilterChip(context, 'EN_MORA', 'En Mora (${state.items.where((i) => i.estado == "EN_MORA").length})', state.activeFilter),
-                        const SizedBox(width: 8),
-                        _buildFilterChip(context, 'PENDIENTE', 'Pendiente (${state.items.where((i) => i.estado == "PENDIENTE").length})', state.activeFilter),
-                        const SizedBox(width: 8),
-                        _buildFilterChip(context, 'AL_DIA', 'Al Día (${state.items.where((i) => i.estado == "AL_DIA").length})', state.activeFilter),
-                        const SizedBox(width: 8),
-                        _buildFilterChip(context, 'TODOS', 'Todos (${state.items.length})', state.activeFilter),
-                      ],
-                    ),
-                  ),
-
-                  // ════════════════════════════════════════════════════════════
-                  // RESIDENTS LIST
-                  // ════════════════════════════════════════════════════════════
-                  Expanded(
-                    child: state.isLoading
-                        ? const Center(child: CircularProgressIndicator())
-                        : state.filteredItems.isEmpty
-                            ? const EmptyState(
-                                icon: Icons.people_outline_rounded,
-                                title: 'Sin residentes',
-                                description: 'No se encontraron residentes con este filtro.',
-                              )
-                            : ListView.separated(
-                                padding: const EdgeInsets.all(AppSpacing.md),
-                                itemCount: state.filteredItems.length,
-                                separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
-                                itemBuilder: (context, index) {
-                                  final item = state.filteredItems[index];
-                                  StatusType statusType;
-                                  if (item.estado == 'EN_MORA') {
-                                    statusType = StatusType.mora;
-                                  } else if (item.estado == 'PENDIENTE') {
-                                    statusType = StatusType.pendiente;
-                                  } else {
-                                    statusType = StatusType.alDia;
-                                  }
-
-                                  return Card(
-                                    elevation: 0,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                      side: BorderSide(color: AppColors.border),
-                                    ),
-                                    child: ListTile(
-                                      contentPadding: const EdgeInsets.symmetric(
-                                        horizontal: AppSpacing.md,
-                                        vertical: AppSpacing.xs,
-                                      ),
-                                      title: Text(
-                                        item.nombre,
-                                        style: AppTypography.subtitle.copyWith(fontWeight: FontWeight.bold),
-                                      ),
-                                      subtitle: Text(
-                                        item.email ?? item.telefono ?? 'Sin contacto',
-                                        style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
-                                      ),
-                                      trailing: Column(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        crossAxisAlignment: CrossAxisAlignment.end,
-                                        children: [
-                                          StatusBadge(status: statusType),
-                                          const SizedBox(height: 4),
-                                          if (item.totalAdeudado > 0)
-                                            Text(
-                                              currencyFormat.format(item.totalAdeudado),
-                                              style: AppTypography.caption.copyWith(
-                                                fontWeight: FontWeight.bold,
-                                                color: item.estado == 'EN_MORA' ? AppColors.error : AppColors.warning,
-                                              ),
-                                            ),
-                                        ],
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                  ),
-                ],
+                    );
+                  },
+                ),
               ),
-            );
-          },
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildFilterChip(BuildContext context, String value, String label, String activeFilter) {
-    final selected = activeFilter == value;
+  Widget _buildMetricTile({
+    required String label,
+    required double amount,
+    required int count,
+    required Color badgeColor,
+    required IconData icon,
+  }) {
+    final amountFormatted = r'$ ' + NumberFormat('#,##0', 'es_CO').format(amount.round());
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+      decoration: BoxDecoration(
+        color: badgeColor.withValues(alpha: 0.03),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: badgeColor.withValues(alpha: 0.12)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 14, color: badgeColor),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  label,
+                  style: AppTypography.smallBold.copyWith(
+                    color: badgeColor,
+                    fontSize: 10.5,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              amountFormatted,
+              style: AppTypography.bodyMedium.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
+              ),
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            '$count casas',
+            style: AppTypography.small.copyWith(
+              color: AppColors.textSecondary,
+              fontSize: 10,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterChip(BuildContext context, String key, String label, String activeFilter, Color activeColor) {
+    final isSelected = activeFilter == key;
     return FilterChip(
-      selected: selected,
-      label: Text(label),
+      selected: isSelected,
+      showCheckmark: false,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      labelPadding: EdgeInsets.zero,
+      label: Text(
+        label,
+        style: AppTypography.caption.copyWith(
+          color: isSelected ? Colors.white : AppColors.textPrimary,
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+          fontSize: 12,
+        ),
+      ),
+      selectedColor: activeColor,
+      backgroundColor: AppColors.card,
+      side: BorderSide(
+        color: isSelected ? activeColor : AppColors.border.withValues(alpha: 0.5),
+      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       onSelected: (_) {
-        context.read<ConsolidatedCubit>().setFilter(value);
+        context.read<ConsolidatedCubit>().setFilter(key);
       },
     );
   }
-}
 
-class _MetricItem extends StatelessWidget {
-  final String title;
-  final String value;
-  final Color color;
+  Widget _buildResidentCobroCard(BuildContext context, ResidentConsolidadoItem item, NumberFormat currencyFormat) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isOverdue = item.estado == 'EN_MORA';
+    final cardBorderColor = isOverdue
+        ? AppColors.error.withValues(alpha: 0.4)
+        : (isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0));
 
-  const _MetricItem({
-    required this.title,
-    required this.value,
-    required this.color,
-  });
+    StatusType statusType;
+    if (item.estado == 'EN_MORA') {
+      statusType = StatusType.mora;
+    } else if (item.estado == 'PENDIENTE') {
+      statusType = StatusType.pendiente;
+    } else {
+      statusType = StatusType.alDia;
+    }
 
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          title,
-          style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: cardBorderColor,
+          width: isOverdue ? 1.5 : 1.0,
         ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: AppTypography.bodyMedium.copyWith(
-            fontWeight: FontWeight.bold,
-            color: color,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: isOverdue
+                    ? AppColors.error.withValues(alpha: 0.1)
+                    : AppColors.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                isOverdue ? Icons.home_work_outlined : Icons.person_outline_rounded,
+                color: isOverdue ? AppColors.error : AppColors.primary,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.nombre,
+                    style: AppTypography.subtitle.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    item.email ?? item.telefono ?? 'Sin contacto asignado',
+                    style: AppTypography.caption.copyWith(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                StatusBadge(status: statusType),
+                const SizedBox(height: 6),
+                if (item.totalAdeudado > 0)
+                  Text(
+                    currencyFormat.format(item.totalAdeudado),
+                    style: AppTypography.caption.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                      color: isOverdue ? AppColors.error : AppColors.warning,
+                    ),
+                  )
+                else
+                  Text(
+                    'Al día',
+                    style: AppTypography.caption.copyWith(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                      color: AppColors.success,
+                    ),
+                  ),
+              ],
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }

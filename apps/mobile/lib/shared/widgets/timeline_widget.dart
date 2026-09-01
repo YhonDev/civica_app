@@ -211,7 +211,7 @@ class _TimelineRow extends StatelessWidget {
                             // Description
                             if (item.descripcion.isNotEmpty)
                               Text(
-                                item.descripcion,
+                                item.descripcion.replaceAll(': undefined', '').replaceAll(': null', ''),
                                 style: TextStyle(
                                   fontSize: 14,
                                   color: AppColors.textPrimary,

@@ -121,6 +121,7 @@ export class DashboardQuery {
         usuario: a.usuarioNombre,
         timestamp: a.createdAt?.toISOString() || new Date().toISOString(),
         hace: a.createdAt ? this.relativeTime(a.createdAt) : 'ahora',
+        metadata: a.metadata || {},
       }));
       // Calcular historial de los últimos 12 meses
       const historialPromesas = [];

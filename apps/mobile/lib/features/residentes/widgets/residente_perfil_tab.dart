@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../shared/widgets/basic_information_section.dart';
 import '../models/residentes_models.dart';
 import '../residentes_repository.dart';
 
@@ -74,41 +75,20 @@ class _ResidentePerfilTabState extends State<ResidentePerfilTab> {
 
           const SizedBox(height: AppSpacing.xl),
 
-          // Basic Info
-          _SectionCard(
-            title: 'Información Básica',
-            children: [
-              _InfoTile(
-                icon: Icons.phone_outlined,
-                label: 'Teléfono',
-                value: propietario.telefono,
-              ),
-              const Divider(height: 1, indent: 56),
-              _InfoTile(
-                icon: Icons.payment_outlined,
-                label: 'Modalidad de Pago',
-                value: propietario.modalidadPago,
-              ),
-            ],
+          // Atomic Occupation Info Section
+          InformacionOcupacionSection(
+            nombre: propietario.nombre,
+            username: propietario.telefono,
+            modalidadPago: propietario.modalidadPago,
           ),
           const SizedBox(height: AppSpacing.lg),
 
-          // Inmueble Info
-          _SectionCard(
-            title: 'Inmueble Asignado',
-            children: [
-              _InfoTile(
-                icon: Icons.home_outlined,
-                label: 'Casa',
-                value: propietario.casa,
-              ),
-              const Divider(height: 1, indent: 56),
-              _InfoTile(
-                icon: Icons.location_on_outlined,
-                label: 'Etapa / Manzana',
-                value: propietario.etapa,
-              ),
-            ],
+          // Atomic Property Details Section
+          DetalleInmuebleSection(
+            proyectoNombre: 'Urbanización San Sebastián',
+            etapaNombre: propietario.etapa,
+            manzanaNombre: 'Manzana',
+            casaDireccion: propietario.casa,
           ),
           const SizedBox(height: AppSpacing.lg),
 

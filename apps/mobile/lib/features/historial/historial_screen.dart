@@ -13,6 +13,7 @@ import '../../screens/auth/auth_cubit.dart';
 import '../../core/network/api_client.dart';
 import '../solicitudes/solicitudes_repository.dart';
 import '../../shared/widgets/solicitud_card.dart';
+import '../../shared/widgets/screen_header.dart';
 
 /// Historial screen — Timeline of cuotas/payments.
 ///
@@ -56,6 +57,25 @@ class _HistorialScreenState extends State<HistorialScreen> {
     }
     try {
       final user = context.read<AuthCubit>().state.usuario;
+      final rol = user?['rol'] as String? ?? 'RESIDENTE';
+
+      if (rol == 'COBRADOR') {
+        try {
+          final response = await ApiClient.instance.get<List<dynamic>>('/pagos/cobrador/mis-cobros');
+          final listPagos = (response.data ?? []).map((item) => item as Map<String, dynamic>).toList();
+          if (mounted) {
+            setState(() {
+              _cuotasDb = listPagos;
+              _solicitudes = [];
+              _loading = false;
+            });
+          }
+          return;
+        } catch (e) {
+          debugPrint('Error fetching cobrador pagos: $e');
+        }
+      }
+
       final residenteId = (user?['residenteId'] as String?) ?? (user?['id'] as String?);
       if (residenteId == null) {
         if (mounted && !silent) {
@@ -67,7 +87,7 @@ class _HistorialScreenState extends State<HistorialScreen> {
       }
 
       final response = await ApiClient.instance.get<List<dynamic>>('/cobros/residente/$residenteId');
-      final listCuotas = response.data!.map((item) => item as Map<String, dynamic>).toList();
+      final listCuotas = (response.data ?? []).map((item) => item as Map<String, dynamic>).toList();
 
       // Ordenar: si están pagadas o en el módulo de pagos, las más recientes primero
       listCuotas.sort((a, b) {
@@ -102,39 +122,15 @@ class _HistorialScreenState extends State<HistorialScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final user = context.watch<AuthCubit>().state.usuario;
+    final isCobrador = user?['rol'] == 'COBRADOR';
+
     return Scaffold(
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: AppSpacing.lg),
-
-            // ── Header ────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.screenPadding,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Historial',
-                    style: AppTypography.title.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    'Movimientos de tu cuenta',
-                    style: AppTypography.body.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: AppSpacing.md),
+            ScreenHeader(title: isCobrador ? 'Actividad' : 'Historial'),
 
             // ── Cuota list ────────────────────────────────────────
             Expanded(
@@ -160,14 +156,141 @@ class _HistorialScreenState extends State<HistorialScreen> {
                               return _buildVerMas();
                             }
 
+                            if (isCobrador) {
+                              final c = _cuotasDb[index];
+                              final fechaStr = c['fechaPago'] as String? ?? c['createdAt'] as String? ?? '';
+                              final fecha = DateTime.tryParse(fechaStr) ?? DateTime.now();
+                              final dateFormatted = DateFormat('dd/MM/yyyy - hh:mm a').format(fecha);
+                              final rawMonto = c['monto'] as int? ?? 0;
+                              final monto = rawMonto > 1000 ? (rawMonto / 100).round() : rawMonto;
+                              final residente = c['residenteNombre'] as String? ?? 'Residente';
+                              final casa = c['casaDireccion'] as String? ?? 'Inmueble';
+                              final manzana = c['manzanaNombre'] as String? ?? '';
+                              final etapa = c['etapaNombre'] as String? ?? '';
+                              final nroRecibo = c['nroRecibo'] as String? ?? 'TK-000000';
+                              final esViaSolicitud = c['esViaSolicitud'] == true;
+
+                              return Card(
+                                margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  side: BorderSide(color: AppColors.success.withValues(alpha: 0.3)),
+                                ),
+                                color: Theme.of(context).brightness == Brightness.dark
+                                    ? const Color(0xFF0F172A)
+                                    : Colors.white,
+                                elevation: 1,
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(16),
+                                  onTap: () {
+                                    TicketBottomSheet.show(
+                                      context,
+                                      TicketData(
+                                        numero: nroRecibo,
+                                        fecha: fecha,
+                                        residente: residente,
+                                        casa: '$etapa $manzana $casa',
+                                        monto: monto,
+                                        metodo: 'Efectivo',
+                                        estado: 'Cobrado',
+                                        cobrador: user?['nombre'] as String? ?? 'Ricardo Arrieta',
+                                      ),
+                                    );
+                                  },
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(16),
+                                    child: Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(10),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.success.withValues(alpha: 0.12),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Icon(
+                                            Icons.check_circle_rounded,
+                                            color: AppColors.success,
+                                            size: 22,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 14),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Row(
+                                                children: [
+                                                  Expanded(
+                                                    child: Text(
+                                                      '$manzana $casa',
+                                                      style: AppTypography.subtitle.copyWith(
+                                                        fontWeight: FontWeight.w700,
+                                                        fontSize: 15,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  if (esViaSolicitud)
+                                                    Container(
+                                                      margin: const EdgeInsets.only(left: 6),
+                                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                                      decoration: BoxDecoration(
+                                                        color: AppColors.primary.withValues(alpha: 0.12),
+                                                        borderRadius: BorderRadius.circular(8),
+                                                        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                                                      ),
+                                                      child: Text(
+                                                        '📩 Vía Solicitud',
+                                                        style: TextStyle(
+                                                          fontSize: 10,
+                                                          fontWeight: FontWeight.w800,
+                                                          color: AppColors.primary,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                residente,
+                                                style: AppTypography.caption.copyWith(
+                                                  color: AppColors.textSecondary,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                '$dateFormatted • $nroRecibo',
+                                                style: TextStyle(
+                                                  fontSize: 11,
+                                                  color: AppColors.textSecondary.withValues(alpha: 0.8),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          '\$$monto',
+                                          style: AppTypography.subtitle.copyWith(
+                                            fontWeight: FontWeight.w900,
+                                            color: AppColors.success,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }
+
                             final c = _cuotasDb[index];
-                            final periodoInicioStr = c['periodoInicio'] as String;
-                            final date = DateTime.parse(periodoInicioStr);
+                            final periodoInicioStr = c['periodoInicio'] as String? ?? DateTime.now().toIso8601String();
+                            final date = DateTime.tryParse(periodoInicioStr) ?? DateTime.now();
                             final rawPeriod = DateFormat.yMMMM('es').format(date);
                             final period = rawPeriod[0].toUpperCase() + rawPeriod.substring(1);
 
-                            final monto = (c['monto'] as int) ~/ 100;
-                            final montoPagado = (c['montoPagado'] as int) ~/ 100;
+                            final monto = (c['monto'] as int? ?? 0) ~/ 100;
+                            final montoPagado = (c['montoPagado'] as int? ?? 0) ~/ 100;
                             final pagosEsperados = c['pagosEsperados'] as int?;
                             final pagosRegistrados = c['pagosRegistrados'] as int?;
 
@@ -185,7 +308,7 @@ class _HistorialScreenState extends State<HistorialScreen> {
                                         : StatusType.pendiente;
 
                             final DateTime? fechaPago = c['estado'] == 'PAGADA'
-                                ? DateTime.parse(c['updatedAt'] as String)
+                                ? DateTime.tryParse(c['updatedAt'] as String? ?? '')
                                 : null;
 
                             final String? cobrador = c['estado'] == 'PAGADA' ? 'Administración' : null;

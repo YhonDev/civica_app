@@ -68,7 +68,7 @@ export class ResidentesController {
   @UseInterceptors(ActividadInterceptor)
   @RegistrarActividad({
     tipo: 'RESIDENTE',
-    descripcionFn: (result: any) => `Nuevo residente registrado: ${result.nombre}`,
+    descripcionFn: (result: any) => `Nuevo residente registrado: ${result?.nombre ?? result?.residente?.nombre ?? 'Residente'}`,
   })
   async registrar(
     @Body() dto: RegistrarResidenteDto,

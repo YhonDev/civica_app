@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/widgets/top_toast.dart';
 import '../../core/network/api_exceptions.dart';
 import 'comunidad_repository.dart';
 
@@ -25,6 +26,7 @@ class _ProyectoAjustesScreenState extends State<ProyectoAjustesScreen> {
   late bool _recordatoriosAutomaticos;
   late bool _permitirPagosParciales;
   late bool _modoMantenimiento;
+  bool _modoInmersivoRuta = true;
 
   @override
   void initState() {
@@ -118,24 +120,11 @@ class _ProyectoAjustesScreenState extends State<ProyectoAjustesScreen> {
   }
 
   void _mostrarSnackExito(String mensaje) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(mensaje),
-        backgroundColor: AppColors.success,
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    TopToast.showSuccess(context, mensaje);
   }
 
   void _mostrarSnackError(String mensaje) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(mensaje),
-        backgroundColor: AppColors.error,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    TopToast.showError(context, mensaje);
   }
 
   @override
@@ -264,6 +253,23 @@ class _ProyectoAjustesScreenState extends State<ProyectoAjustesScreen> {
                       permitePagosParciales: val,
                       modoMantenimiento: null,
                     );
+                  },
+                ),
+                const Divider(height: 1),
+                SwitchListTile(
+                  title: Text('Modo Inmersivo de Ruta (Ruta Focus)',
+                      style: AppTypography.bodyMedium
+                          .copyWith(fontWeight: FontWeight.w600)),
+                  subtitle: Text(
+                      'Muestra el botón "Modo Focus" en las rutas del cobrador para navegación inmersiva.',
+                      style: AppTypography.caption),
+                  activeTrackColor: AppColors.primary,
+                  value: _modoInmersivoRuta,
+                  onChanged: (val) {
+                    setState(() => _modoInmersivoRuta = val);
+                    _mostrarSnackExito(val
+                        ? 'Modo Inmersivo activado para la ruta'
+                        : 'Modo Inmersivo desactivado');
                   },
                 ),
               ],

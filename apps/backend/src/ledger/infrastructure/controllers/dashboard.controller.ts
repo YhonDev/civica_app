@@ -370,8 +370,8 @@ export class DashboardController {
         p.id AS prop_id, p.nombre AS prop_nombre, p.telefono AS prop_telefono,
         t.id AS tenencia_id
       FROM etapas e
-      JOIN manzanas m ON m.etapa_id = e.id
-      JOIN casas c ON c.manzana_id = m.id
+      LEFT JOIN manzanas m ON m.etapa_id = e.id
+      LEFT JOIN casas c ON c.manzana_id = m.id
       LEFT JOIN tenencias t ON t.casa_id = c.id AND t.fecha_fin IS NULL
       LEFT JOIN residentes p ON p.id = t.residente_id
       WHERE e.id = ANY($1::uuid[])
@@ -433,26 +433,30 @@ export class DashboardController {
       }
       const etapa = etapasMap.get(r.etapa_id);
 
-      if (!etapa.manzanas.has(r.manzana_id)) {
-        etapa.manzanas.set(r.manzana_id, {
-          id: r.manzana_id,
-          nombre: r.manzana_nombre,
-          casas: [],
-        });
+      if (r.manzana_id) {
+        if (!etapa.manzanas.has(r.manzana_id)) {
+          etapa.manzanas.set(r.manzana_id, {
+            id: r.manzana_id,
+            nombre: r.manzana_nombre,
+            casas: [],
+          });
+        }
+        const manzana = etapa.manzanas.get(r.manzana_id);
+
+        if (r.casa_id) {
+          // Buscar status para esta casa (a través del residente)
+          const resStatus = r.prop_id ? statusPorCasa.get(r.prop_id) : null;
+
+          manzana.casas.push({
+            id: r.casa_id,
+            direccion: r.casa_direccion,
+            residenteNombre: r.prop_nombre ?? 'Sin residente',
+            residenteTelefono: r.prop_telefono ?? '',
+            estado: resStatus?.estado ?? 'AL_DIA',
+            saldo: resStatus?.saldo ?? 0,
+          });
+        }
       }
-      const manzana = etapa.manzanas.get(r.manzana_id);
-
-      // Buscar status para esta casa (a través del residente)
-      const resStatus = r.prop_id ? statusPorCasa.get(r.prop_id) : null;
-
-      manzana.casas.push({
-        id: r.casa_id,
-        direccion: r.casa_direccion,
-        residenteNombre: r.prop_nombre ?? 'Sin residente',
-        residenteTelefono: r.prop_telefono ?? '',
-        estado: resStatus?.estado ?? 'AL_DIA',
-        saldo: resStatus?.saldo ?? 0,
-      });
     }
 
     // Convertir Maps a arrays

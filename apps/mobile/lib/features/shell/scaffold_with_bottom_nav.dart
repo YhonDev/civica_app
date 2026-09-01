@@ -27,24 +27,33 @@ class ScaffoldWithBottomNav extends StatelessWidget {
           );
         }
 
-        return Scaffold(
-          body: Column(
-            children: [
-              const ConnectivityBanner(),
-              Expanded(
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 250),
-                  switchInCurve: Curves.easeOutCubic,
-                  switchOutCurve: Curves.easeInCubic,
-                  child: KeyedSubtree(
-                    key: ValueKey(currentLocation),
-                    child: child,
+        return PopScope(
+          canPop: false,
+          onPopInvokedWithResult: (didPop, result) {
+            if (didPop) return;
+            if (currentIndex > 0) {
+              _onTabTap(context, tabs[0]);
+            }
+          },
+          child: Scaffold(
+            body: Column(
+              children: [
+                const ConnectivityBanner(),
+                Expanded(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 250),
+                    switchInCurve: Curves.easeOutCubic,
+                    switchOutCurve: Curves.easeInCubic,
+                    child: KeyedSubtree(
+                      key: ValueKey(currentLocation),
+                      child: child,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
+            bottomNavigationBar: _buildBottomNav(context, tabs, currentIndex),
           ),
-          bottomNavigationBar: _buildBottomNav(context, tabs, currentIndex),
         );
       },
     );
@@ -93,7 +102,7 @@ class ScaffoldWithBottomNav extends StatelessWidget {
             route: '/',
           ),
           _TabItem(
-            label: 'Cobrar',
+            label: 'Cobros',
             icon: const Icon(Icons.payments_outlined),
             iconActive: const Icon(Icons.payments_rounded),
             route: '/cartera',

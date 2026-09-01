@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -19,42 +18,32 @@ class ActividadSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Only count activities with today's date (or all recent activities since they are the ones loaded)
-    final pagosList = actividad.where((a) => a.tipo == 'PAGO' || a.tipo == 'pago' || a.tipo == 'pago_registrado').toList();
-    final residentesList = actividad.where((a) => a.tipo == 'RESIDENTE' || a.tipo == 'residente').toList();
-    final solicitudesList = actividad.where((a) => a.tipo == 'SOLICITUD' || a.tipo == 'solicitud').toList();
-
-    double recaudoHoy = 0.0;
-    for (final act in pagosList) {
-      // Find match for "$[0-9]+" in description
-      final match = RegExp(r'\$(\d+)').firstMatch(act.descripcion);
-      if (match != null) {
-        recaudoHoy += double.tryParse(match.group(1) ?? '') ?? 0.0;
-      } else {
-        // Fallback to 20.000 if not specified in text
-        recaudoHoy += 20000;
-      }
+    // Rule: If there are no real activities, do not show the section at all.
+    if (actividad.isEmpty) {
+      return const SizedBox.shrink();
     }
 
-    final hasTodayActivity = pagosList.isNotEmpty || residentesList.isNotEmpty || solicitudesList.isNotEmpty;
+    // Display the top 2 most recent real activities from the database
+    final items = actividad.take(2).map((a) {
+      final cleanDesc = a.descripcion.replaceAll(': undefined', '').replaceAll(': null', '');
+      final isPago = a.tipo.toLowerCase().contains('pago') || a.tipo.toLowerCase().contains('cobro');
+      final isSolicitud = a.tipo.toLowerCase().contains('solicitud');
+      final isResidente = a.tipo.toLowerCase().contains('residente');
 
-    final items = actividad.map((a) {
-      final isPago = a.tipo == 'PAGO' || a.tipo == 'pago' || a.tipo == 'pago_registrado';
-      final nro = a.id.hashCode.abs() % 1000;
-      final mz = a.id.hashCode % 5 + 1;
-      final casa = a.id.hashCode % 50 + 1;
-      final contextStr = isPago
-          ? 'Pago #$nro - Mz $mz, Casa $casa, 1ra etapa'
-          : 'Solicitud - Mz $mz, Casa $casa, 1ra etapa';
+      final contextTitle = isPago
+          ? 'Pago Registrado'
+          : (isSolicitud
+              ? 'Solicitud de Revisión'
+              : (isResidente ? 'Residente Actualizado' : 'Jornada / Sistema'));
 
       return TimelineItem(
         id: a.id,
         tipo: a.tipo,
-        descripcion: a.descripcion,
-        usuario: isPago ? 'Cobrador: ${a.usuario}' : 'Residente: ${a.usuario}',
+        descripcion: cleanDesc,
+        usuario: a.usuario,
         timestamp: a.timestamp,
         hace: a.hace,
-        contexto: contextStr,
+        contexto: contextTitle,
       );
     }).toList();
 
@@ -89,97 +78,170 @@ class ActividadSection extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.md),
 
-          // Dynamic "Resumen de hoy" block if there is today's activity
-          if (hasTodayActivity) ...[
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(AppSpacing.md),
-              margin: const EdgeInsets.only(bottom: AppSpacing.lg),
-              decoration: BoxDecoration(
-                color: AppColors.success.withValues(alpha: 0.06),
-                borderRadius: BorderRadius.circular(AppSpacing.cardRadius - 4),
-                border: Border.all(color: AppColors.success.withValues(alpha: 0.15)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.auto_awesome, color: AppColors.success, size: 16),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Resumen de hoy',
-                        style: AppTypography.bodyMedium.copyWith(
-                          color: AppColors.success,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  if (pagosList.isNotEmpty) ...[
-                    Text('• Se registraron ${pagosList.length} pago(s).', style: AppTypography.body),
-                    const SizedBox(height: 2),
-                  ],
-                  if (solicitudesList.isNotEmpty) ...[
-                    Text('• Se crearon ${solicitudesList.length} solicitud(es).', style: AppTypography.body),
-                    const SizedBox(height: 2),
-                  ],
-                  if (residentesList.isNotEmpty) ...[
-                    Text('• ${residentesList.length} residente(s) nuevo(s).', style: AppTypography.body),
-                    const SizedBox(height: 2),
-                  ],
-                  if (recaudoHoy > 0) ...[
-                    Text(
-                      '• Recaudo del día: \$ ${NumberFormat.decimalPattern('es_CO').format(recaudoHoy.toInt())}.',
-                      style: AppTypography.body,
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ],
-
           TimelineWidget(
             items: items,
             onItemTap: (item) {
               final orig = actividad.firstWhere((a) => a.id == item.id);
-              final isPago = item.tipo == 'PAGO' || item.tipo == 'pago' || item.tipo == 'pago_registrado';
-              final mz = item.id.hashCode % 5 + 1;
-              final casa = item.id.hashCode % 50 + 1;
-              final rawCasa = 'Mz $mz, Casa $casa, 1ra etapa';
+              final isPago = item.tipo.toLowerCase().contains('pago') || item.tipo.toLowerCase().contains('cobro');
+              final isJornada = item.tipo.toLowerCase().contains('jornada') || item.tipo.toLowerCase().contains('ruta');
 
-              if (isPago) {
-                // Parse exact amount from description
-                final match = RegExp(r'\$(\d+)').firstMatch(orig.descripcion);
-                final parsedMonto = match != null ? (int.tryParse(match.group(1) ?? '') ?? 20000) * 100 : 2000000;
+              if (isJornada) {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                  ),
+                  builder: (context) => Padding(
+                    padding: const EdgeInsets.all(AppSpacing.cardPadding),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withValues(alpha: 0.12),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.alt_route_rounded,
+                                color: AppColors.primary,
+                                size: 22,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Resumen de Jornada de Cobro',
+                                    style: AppTypography.title.copyWith(fontSize: 16, fontWeight: FontWeight.bold),
+                                  ),
+                                  Text(
+                                    'Cobrador / Usuario: ${item.usuario}',
+                                    style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        // Summary cards for Jornada / Ruta (dynamic from metadata)
+                        Builder(
+                          builder: (context) {
+                            final meta = orig.metadata;
+                            final rec = meta['totalRecaudado'] as num?;
+                            final recStr = rec != null ? '\$ ${(rec / 100).toStringAsFixed(0)}' : 'Recaudo de Jornada';
+                            final hInicio = meta['horaInicio'] as String?;
+                            final hFin = meta['horaFin'] as String?;
+                            final horarioStr = (hInicio != null && hFin != null) ? '$hInicio - $hFin' : item.hace;
+                            final cobradasStr = meta['casasCobradas'] != null ? '${meta['casasCobradas']} Cobradas' : 'Ruta completada';
+                            final pendientesStr = meta['casasPendientes'] != null ? '${meta['casasPendientes']} Pendientes' : 'Al día';
+                            final moraStr = meta['casasMora'] != null ? '${meta['casasMora']} en Mora' : 'Sin mora';
+
+                            return Column(
+                              children: [
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(AppSpacing.md),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.success.withValues(alpha: 0.08),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: AppColors.success.withValues(alpha: 0.2)),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'TOTAL RECAUDADO EN EFECTIVO A ENTREGAR',
+                                        style: AppTypography.caption.copyWith(
+                                          color: AppColors.success,
+                                          fontWeight: FontWeight.w700,
+                                          letterSpacing: 0.5,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        recStr,
+                                        style: AppTypography.title.copyWith(
+                                          color: AppColors.success,
+                                          fontWeight: FontWeight.w900,
+                                          fontSize: 22,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: AppSpacing.md),
+
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: _buildTile('Horario Ruta', horarioStr, Icons.schedule_rounded, AppColors.primary),
+                                    ),
+                                    const SizedBox(width: AppSpacing.sm),
+                                    Expanded(
+                                      child: _buildTile('Casas Visitadas', cobradasStr, Icons.home_rounded, AppColors.success),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: AppSpacing.sm),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: _buildTile('Casas Pendientes', pendientesStr, Icons.pending_actions_rounded, AppColors.warning),
+                                    ),
+                                    const SizedBox(width: AppSpacing.sm),
+                                    Expanded(
+                                      child: _buildTile('Casas en Mora', moraStr, Icons.warning_rounded, AppColors.error),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
+                      ],
+                    ),
+                  ),
+                );
+              } else if (isPago) {
+                // Real ticket bottom sheet
+                final montoRaw = orig.metadata['monto'] as num?;
+                final montoVal = montoRaw != null ? montoRaw.toInt() : 0;
+                final cobradorVal = orig.metadata['cobradorNombre'] as String? ?? orig.usuario;
 
                 TicketBottomSheet.show(
                   context,
                   TicketData(
-                    numero: 'TK-${item.id.hashCode.abs().toString().padLeft(6, '0')}',
+                    numero: 'REC-${item.id.substring(0, 8).toUpperCase()}',
                     fecha: item.timestamp,
-                    residente: 'Residente Casa $casa',
-                    casa: rawCasa,
-                    monto: parsedMonto,
+                    residente: orig.usuario,
+                    casa: orig.descripcion.replaceAll(': undefined', ''),
+                    monto: montoVal,
                     metodo: 'Efectivo',
                     estado: 'Pagado',
-                    cobrador: orig.usuario,
+                    cobrador: cobradorVal,
                   ),
                 );
               } else {
+                // Real solicitud bottom sheet
                 SolicitudBottomSheet.show(
                   context,
                   SolicitudData(
                     id: item.id,
                     cobroId: '',
-                    nroRecibo: 'TK-${item.id.hashCode.abs().toString().padLeft(6, '0')}',
-                    tipo: orig.descripcion,
-                    descripcion: 'Solicito revisión del pago ya que el monto fue diferente.',
+                    nroRecibo: 'SOL-${item.id.substring(0, 8).toUpperCase()}',
+                    tipo: orig.tipo,
+                    descripcion: orig.descripcion.replaceAll(': undefined', ''),
                     estado: SolicitudEstado.enRevision,
                     fecha: item.timestamp,
                   ),
-                  montoStr: '\$ 120.000',
                 );
               }
             },
@@ -216,10 +278,49 @@ class ActividadSection extends StatelessWidget {
                         ),
                       ),
                     ),
+                    Icon(
+                      Icons.arrow_forward_rounded,
+                      size: 20,
+                      color: AppColors.primary,
+                    ),
                   ],
                 ),
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTile(String title, String value, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.sm),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 16, color: color),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  title,
+                  style: AppTypography.caption.copyWith(color: AppColors.textSecondary, fontSize: 11),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: AppTypography.caption.copyWith(fontWeight: FontWeight.bold, color: AppColors.textPrimary),
           ),
         ],
       ),

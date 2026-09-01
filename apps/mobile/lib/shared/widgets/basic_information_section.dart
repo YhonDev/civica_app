@@ -28,6 +28,7 @@ class BasicInfoItem {
 /// Dynamic and reactive to real-time profile edits (phone, email, modality, house).
 /// Dynamically omits null or empty fields (e.g. email) and uses tokens from AppColors palette.
 class BasicInformationSection extends StatelessWidget {
+  final String? title;
   final Map<String, dynamic>? user;
   final String? proyectoNombre;
   final String? emailOverride;
@@ -38,6 +39,7 @@ class BasicInformationSection extends StatelessWidget {
 
   const BasicInformationSection({
     super.key,
+    this.title,
     this.user,
     this.proyectoNombre,
     this.emailOverride,
@@ -59,13 +61,25 @@ class BasicInformationSection extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.only(left: 4, bottom: AppSpacing.sm),
           child: Text(
-            'Información Básica',
+            title ?? 'Información Básica',
             style: AppTypography.bodyMedium.copyWith(
               fontWeight: FontWeight.w600,
             ),
           ),
         ),
-        Card(
+        Container(
+          decoration: BoxDecoration(
+            color: AppColors.card,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.02),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
           child: Column(
             children: [
               for (int i = 0; i < items.length; i++) ...[
@@ -227,6 +241,118 @@ class _InfoTileWidget extends StatelessWidget {
       ),
       trailing: item.trailing,
       onTap: item.onTap,
+    );
+  }
+}
+
+/// Atomic Reusable Section for Occupancy Info (`InformacionOcupacionSection`).
+class InformacionOcupacionSection extends StatelessWidget {
+  final String nombre;
+  final String username;
+  final String modalidadPago;
+  final String? email;
+
+  const InformacionOcupacionSection({
+    super.key,
+    required this.nombre,
+    required this.username,
+    required this.modalidadPago,
+    this.email,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return BasicInformationSection(
+      title: 'Información de Ocupación',
+      customItems: [
+        BasicInfoItem(
+          icon: Icons.person_outline_rounded,
+          label: 'Titular / Residente',
+          value: nombre.isNotEmpty ? nombre : 'Sin titular',
+          iconColor: AppColors.primary,
+        ),
+        BasicInfoItem(
+          icon: Icons.alternate_email_rounded,
+          label: 'Usuario registrado',
+          value: username.isNotEmpty ? username : 'Sin usuario',
+          iconColor: AppColors.accentPurple,
+        ),
+        if (email != null && email!.trim().isNotEmpty && email!.trim() != 'null')
+          BasicInfoItem(
+            icon: Icons.email_outlined,
+            label: 'Correo registrado',
+            value: email!,
+            iconColor: AppColors.accentTeal,
+          ),
+        BasicInfoItem(
+          icon: Icons.calendar_today_outlined,
+          label: 'Modalidad de Pago',
+          value: _formatModalidad(modalidadPago),
+          iconColor: AppColors.warning,
+        ),
+      ],
+    );
+  }
+
+  static String _formatModalidad(String val) {
+    switch (val.toUpperCase()) {
+      case 'SEMANAL':
+        return 'Semanal (4 cuotas)';
+      case 'QUINCENAL':
+        return 'Quincenal (2 cuotas)';
+      case 'MENSUAL':
+        return 'Mensual (1 cuota)';
+      default:
+        return val.isNotEmpty ? val : 'No asignada';
+    }
+  }
+}
+
+/// Atomic Reusable Section for Property Details (`DetalleInmuebleSection`).
+class DetalleInmuebleSection extends StatelessWidget {
+  final String proyectoNombre;
+  final String etapaNombre;
+  final String manzanaNombre;
+  final String casaDireccion;
+
+  const DetalleInmuebleSection({
+    super.key,
+    required this.proyectoNombre,
+    required this.etapaNombre,
+    required this.manzanaNombre,
+    required this.casaDireccion,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return BasicInformationSection(
+      title: 'Detalles del Inmueble',
+      customItems: [
+        BasicInfoItem(
+          icon: Icons.business_rounded,
+          label: 'Proyecto / Urbanización',
+          value: proyectoNombre.isNotEmpty ? proyectoNombre : 'Urbanización San Sebastián',
+          iconColor: AppColors.primary,
+        ),
+        BasicInfoItem(
+          icon: Icons.layers_outlined,
+          label: 'Etapa',
+          value: etapaNombre.isNotEmpty ? etapaNombre : 'Sin etapa',
+          iconColor: AppColors.accentPurple,
+        ),
+        BasicInfoItem(
+          icon: Icons.grid_view_rounded,
+          label: 'Manzana',
+          value: manzanaNombre.isNotEmpty ? manzanaNombre : 'Sin manzana',
+          iconColor: AppColors.accentTeal,
+        ),
+        BasicInfoItem(
+          icon: Icons.home_outlined,
+          label: 'Casa / Ubicación',
+          value: casaDireccion.isNotEmpty ? casaDireccion : 'Sin casa',
+          iconColor: AppColors.error,
+        ),
+      ],
     );
   }
 }

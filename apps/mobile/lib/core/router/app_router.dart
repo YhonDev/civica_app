@@ -8,6 +8,8 @@ import '../../features/shell/scaffold_with_bottom_nav.dart';
 import '../../features/dashboard/dashboard_screen.dart';
 import '../../features/dashboard_cobrador/jornada_screen.dart';
 import '../../features/dashboard_cobrador/casas_explorer_screen.dart';
+import '../../features/dashboard_cobrador/modo_inmersivo_ruta_screen.dart';
+import '../../features/dashboard_cobrador/casas_cubit.dart';
 import '../../features/dashboard_residente/residente_dashboard_screen.dart';
 import '../../features/cartera/cartera_screen.dart';
 import '../../features/residentes/nuevo_residente_screen.dart';
@@ -110,12 +112,29 @@ final GoRouter appRouter = GoRouter(
             return _carteraForRol(rol);
           },
         ),
-
-        // Viviendas Explorer (Cobrador)
         GoRoute(
           path: '/casas',
           name: 'casas',
           builder: (_, _) => const CasasExplorerScreen(),
+        ),
+        GoRoute(
+          path: '/casas-explorer',
+          name: 'casas-explorer',
+          builder: (_, _) => const CasasExplorerScreen(),
+        ),
+        GoRoute(
+          path: '/modo-inmersivo-ruta',
+          name: 'modo-inmersivo-ruta',
+          builder: (context, state) {
+            final extra = state.extra as Map<String, dynamic>? ?? {};
+            return ModoInmersivoRutaScreen(
+              etapas: extra['etapas'] as List<EtapaExplorer>? ?? [],
+              solicitudes: extra['solicitudes'] as List<dynamic>? ?? [],
+              selectedEtapaId: extra['selectedEtapaId'] as String? ?? 'TODAS',
+              selectedEstadoFiltro: extra['selectedEstadoFiltro'] as String? ?? 'TODAS',
+              sentidoInverso: extra['sentidoInverso'] as bool? ?? false,
+            );
+          },
         ),
 
         // Módulo Comunidad (Hub) y sub-rutas
@@ -343,12 +362,7 @@ Widget _dashboardForRol(String? rol) {
 
 /// Returns the appropriate cartera/payment screen for the given role.
 Widget _carteraForRol(String? rol) {
-  switch (rol) {
-    case 'ADMIN':
-      return const CarteraConsolidadaScreen();
-    default:
-      return const CarteraScreen();
-  }
+  return const CarteraScreen();
 }
 
 /// Placeholder for screens not yet implemented.

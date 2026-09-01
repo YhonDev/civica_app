@@ -35,6 +35,17 @@ export class PagoRepository extends BaseTenantRepository<Pago> {
     });
   }
 
+  async findByCobrador(cobradorId: string, tenantId: string): Promise<Pago[]> {
+    return this.repo.find({
+      where: { cobradorId, tenantId },
+      relations: {
+        residente: { casaActual: { manzana: { etapa: true } } },
+        cobro: { casa: { manzana: { etapa: true } } },
+      },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
   async findByCobro(cobroId: string): Promise<Pago[]> {
     return this.repo.find({
       where: { cobroId },

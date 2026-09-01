@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/widgets/top_toast.dart';
 import '../../shared/widgets/empty_state.dart';
 import 'comunidad_repository.dart';
 
@@ -73,9 +74,7 @@ class _CasasScreenState extends State<CasasScreen> {
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al cargar casas: $e')),
-        );
+        TopToast.showError(context, 'Error al cargar casas: $e');
       }
     }
   }
@@ -89,12 +88,13 @@ class _CasasScreenState extends State<CasasScreen> {
     try {
       await _repo.createCasa(nombre, manzanaId);
       await _loadData();
+      if (mounted) {
+        TopToast.showSuccess(context, '$nombre creada exitosamente');
+      }
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al crear casa: $e')),
-        );
+        TopToast.showError(context, 'Error al crear casa: $e');
       }
     }
   }
@@ -224,9 +224,7 @@ class _CasasScreenState extends State<CasasScreen> {
               IconButton(
                 icon: Icon(Icons.edit_rounded, color: AppColors.info, size: 20),
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Editar Casa')),
-                  );
+                  TopToast.show(context, message: 'Editar Casa', icon: Icons.edit_rounded);
                 },
               ),
               IconButton(
@@ -271,16 +269,12 @@ class _CasasScreenState extends State<CasasScreen> {
                 await _repo.deleteCasa(id);
                 await _loadData();
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('$nombreCasa eliminada')),
-                  );
+                  TopToast.showSuccess(context, '$nombreCasa eliminada correctamente');
                 }
               } catch (e) {
                 setState(() => _isLoading = false);
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error al eliminar: $e')),
-                  );
+                  TopToast.showError(context, 'Error al eliminar casa: $e');
                 }
               }
             },
@@ -357,16 +351,12 @@ class _CasasScreenState extends State<CasasScreen> {
       
       await _loadData();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$cantidad casas creadas con éxito')),
-        );
+        TopToast.showSuccess(context, '$cantidad casas creadas con éxito');
       }
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al crear casas: $e')),
-        );
+        TopToast.showError(context, 'Error al crear casas: $e');
       }
     }
   }

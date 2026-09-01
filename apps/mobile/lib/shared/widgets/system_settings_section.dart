@@ -28,6 +28,7 @@ class SystemSettingsSection extends StatefulWidget {
 class _SystemSettingsSectionState extends State<SystemSettingsSection> {
   bool _isBiometricsSupported = false;
   bool _isBiometricsEnabled = false;
+  bool _notificacionesEnabled = true;
 
   @override
   void initState() {
@@ -143,15 +144,41 @@ class _SystemSettingsSectionState extends State<SystemSettingsSection> {
             ),
           ),
         ),
-        Card(
+        Container(
+          decoration: BoxDecoration(
+            color: AppColors.card,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.02),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
           child: Column(
             children: [
               ValueListenableBuilder<bool>(
                 valueListenable: darkThemeNotifier,
                 builder: (context, isDark, _) {
                   return ListTile(
-                    leading: const Icon(Icons.palette_outlined),
-                    title: const Text('Tema oscuro'),
+                    leading: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.accentPurple.withValues(alpha: 0.10),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(Icons.palette_outlined, color: AppColors.accentPurple, size: 20),
+                    ),
+                    title: Text(
+                      'Tema oscuro',
+                      style: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
+                    ),
+                    subtitle: Text(
+                      isDark ? 'Modo noche activo' : 'Modo claro activo',
+                      style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+                    ),
                     trailing: Switch(
                       value: isDark,
                       onChanged: (value) {
@@ -162,16 +189,23 @@ class _SystemSettingsSectionState extends State<SystemSettingsSection> {
                   );
                 },
               ),
-              const Divider(height: 1),
+              const Divider(height: 1, indent: 56),
               ListTile(
-                leading: Icon(
-                  Icons.fingerprint_rounded,
-                  color: _isBiometricsSupported ? AppColors.primary : AppColors.textDisabled,
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(Icons.fingerprint_rounded, color: AppColors.primary, size: 20),
                 ),
-                title: const Text('Iniciar sesión con huella / Face ID'),
+                title: Text(
+                  'Acceso Biométrico / Face ID',
+                  style: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
+                ),
                 subtitle: Text(
                   _isBiometricsSupported
-                      ? (_isBiometricsEnabled ? 'Habilitado para acceso rápido' : 'Deshabilitado')
+                      ? (_isBiometricsEnabled ? 'Habilitado para inicio rápido' : 'Deshabilitado')
                       : 'No disponible en este dispositivo',
                   style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
                 ),
@@ -183,11 +217,54 @@ class _SystemSettingsSectionState extends State<SystemSettingsSection> {
                       )
                     : null,
               ),
-              const Divider(height: 1),
+              const Divider(height: 1, indent: 56),
               ListTile(
-                leading: const Icon(Icons.lock_outlined),
-                title: const Text('Cambiar contraseña'),
-                subtitle: const Text('Actualiza tu clave de acceso'),
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.warning.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(Icons.notifications_active_outlined, color: AppColors.warning, size: 20),
+                ),
+                title: Text(
+                  'Notificaciones y Recordatorios',
+                  style: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
+                ),
+                subtitle: Text(
+                  _notificacionesEnabled ? 'Avisos de cobros y vencimientos' : 'Alertas desactivadas',
+                  style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+                ),
+                trailing: Switch(
+                  value: _notificacionesEnabled,
+                  onChanged: (val) {
+                    setState(() => _notificacionesEnabled = val);
+                    TopToast.showSuccess(
+                      context,
+                      val ? 'Notificaciones activadas' : 'Notificaciones pausadas',
+                    );
+                  },
+                  activeThumbColor: AppColors.primary,
+                ),
+              ),
+              const Divider(height: 1, indent: 56),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(Icons.lock_outlined, color: AppColors.error, size: 20),
+                ),
+                title: Text(
+                  'Seguridad y Contraseña',
+                  style: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
+                ),
+                subtitle: Text(
+                  'Actualiza tu clave de acceso',
+                  style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+                ),
                 trailing: Icon(Icons.chevron_right_rounded, color: AppColors.textDisabled),
                 onTap: () => _mostrarModalCambiarPassword(context),
               ),

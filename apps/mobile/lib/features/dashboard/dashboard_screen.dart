@@ -116,9 +116,9 @@ class _DashboardHeader extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(
             AppSpacing.screenPadding,
-            AppSpacing.md,
-            AppSpacing.screenPadding,
             AppSpacing.sm,
+            AppSpacing.screenPadding,
+            AppSpacing.xs,
           ),
           child: Row(
             children: [
@@ -141,14 +141,15 @@ class _DashboardHeader extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      nombre.split(' ').first,
-                      style: AppTypography.body.copyWith(
-                        fontWeight: FontWeight.w600,
+                      nombre,
+                      style: AppTypography.title.copyWith(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 22,
                       ),
                     ),
                     Text(
                       rolLabel,
-                      style: AppTypography.small.copyWith(
+                      style: AppTypography.caption.copyWith(
                         color: AppColors.textSecondary,
                       ),
                     ),
@@ -321,21 +322,25 @@ class _DashboardContentState extends State<_DashboardContent>
               index: 1,
               child: ModuleSummaryCard(
                 title: '⚠ Centro de Atención',
+                highlightBorder: widget.data.solicitudesPendientes > 0 || widget.data.residentesMora > 0 || widget.data.pagosRevision > 0,
                 items: [
                   ModuleSummaryItem(
                     label: 'Solicitudes pendientes',
                     value: widget.data.solicitudesPendientes.toString(),
                     color: AppColors.warning,
+                    onTap: () => context.push('/solicitudes'),
                   ),
                   ModuleSummaryItem(
                     label: 'Residentes en mora',
                     value: widget.data.residentesMora.toString(),
                     color: AppColors.error,
+                    onTap: () => context.go('/cartera'),
                   ),
                   ModuleSummaryItem(
                     label: 'Pagos requieren revisión',
                     value: widget.data.pagosRevision.toString(),
                     color: AppColors.info,
+                    onTap: () => context.push('/solicitudes'),
                   ),
                 ],
                 actionLabel: 'Abrir módulo',
@@ -408,39 +413,16 @@ class _DashboardContentState extends State<_DashboardContent>
             ),
             const SizedBox(height: AppSpacing.xl),
 
-            // 4. Actividad (Hoy)
+            // 4. Actividad
             _buildAnimatedSection(
               index: 3,
               child: ActividadSection(actividad: widget.data.actividadReciente),
             ),
-            const SizedBox(height: AppSpacing.lg),
-
-            // 5. Comunidad
-            _buildAnimatedSection(
-              index: 4,
-              child: ModuleSummaryCard(
-                title: 'Comunidad',
-                items: [
-                  ModuleSummaryItem(
-                    label: 'Residentes registrados',
-                    value: widget.data.totalResidentes.toString(),
-                    color: AppColors.textPrimary,
-                  ),
-                  ModuleSummaryItem(
-                    label: 'Nuevos esta semana',
-                    value: widget.data.nuevosResidentesSemana.toString(),
-                    color: AppColors.info,
-                  ),
-                ],
-                actionLabel: 'Abrir módulo',
-                onActionTap: () => context.go('/comunidad'),
-              ),
-            ),
             const SizedBox(height: AppSpacing.xl),
 
-            // 6. Acciones rápidas
+            // 5. Acciones rápidas
             _buildAnimatedSection(
-              index: 5,
+              index: 4,
               child: const AccionesRapidasSection(),
             ),
             const SizedBox(height: AppSpacing.xl),

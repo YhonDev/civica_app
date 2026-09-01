@@ -265,7 +265,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           ActionChip(
                             avatar: const Icon(Icons.home_outlined, size: 16),
-                            label: const Text('Residente Mz B Casa 1'),
+                            label: const Text('Residente Mz B (Carmen Cabarca)'),
                             onPressed: () {
                               setState(() {
                                 _emailCtrl.text = 'manzana_b_casa_1_residente';
@@ -275,7 +275,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           ActionChip(
                             avatar: const Icon(Icons.home_outlined, size: 16),
-                            label: const Text('Residente Mz C Casa 1'),
+                            label: const Text('Residente Mz C (Yhon Barrios)'),
                             onPressed: () {
                               setState(() {
                                 _emailCtrl.text = 'manzana_c_casa_1_residente';

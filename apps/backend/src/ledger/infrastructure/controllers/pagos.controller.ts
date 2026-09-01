@@ -50,6 +50,15 @@ export class PagosController {
     tipo: 'PAGO',
     descripcionFn: (result) =>
       `Pago registrado: $${(result.pago.monto / 100).toFixed(0)} COP (${result.cuotasAfectadas.length} cuota(s))`,
+    metadataFn: (result) => ({
+      pagoId: result.pago?.id,
+      monto: result.pago?.monto,
+      residenteId: result.pago?.residenteId,
+      cobradorId: result.pago?.cobradorId,
+      cobradorNombre: result.pago?.cobradorNombre,
+      clientPaymentId: result.pago?.clientPaymentId,
+      solicitudId: result.pago?.solicitudId,
+    }),
   })
   async registrar(
     @Body() dto: RegistrarPagoDto,
@@ -129,6 +138,33 @@ export class PagosController {
     return pago;
   }
 
+  @Get('cobrador/mis-cobros')
+  @UseGuards(RolesGuard)
+  @Roles(RolUsuario.ADMIN, RolUsuario.COBRADOR)
+  async listCobrosPorCobrador(
+    @CurrentUser() user: Usuario,
+    @CurrentTenant() tenantId: string,
+  ) {
+    const pagos = await this.pagoRepo.findByCobrador(user.id, tenantId);
+    return pagos.map((pago) => {
+      const residente = pago.residente;
+      const casa = pago.cobro?.casa ?? residente?.casaActual;
+      const manzana = casa?.manzana;
+      const etapa = manzana?.etapa;
+
+      return {
+        ...pago,
+        residenteNombre: residente?.nombre ?? 'Residente',
+        cobradorNombre: pago.cobrador?.nombre ?? user.nombre,
+        nroRecibo: pago.clientPaymentId || (`TK-${pago.id.replace(/-/g, '').substring(0, 6).toUpperCase()}`),
+        casaDireccion: casa?.direccionInterna ?? 'Inmueble',
+        manzanaNombre: manzana?.nombre ?? 'Manzana',
+        etapaNombre: etapa?.nombre ?? 'Etapa',
+        esViaSolicitud: Boolean(pago.solicitudId),
+      };
+    });
+  }
+
   @Get()
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN, RolUsuario.COBRADOR, RolUsuario.RESIDENTE)
@@ -157,6 +193,7 @@ export class PagosController {
         casaDireccion: casa?.direccionInterna ?? 'Inmueble',
         manzanaNombre: manzana?.nombre ?? 'Manzana',
         etapaNombre: etapa?.nombre ?? 'Etapa',
+        esViaSolicitud: Boolean(pago.solicitudId),
         residente: residente ? {
           id: residente.id,
           nombre: residente.nombre,
