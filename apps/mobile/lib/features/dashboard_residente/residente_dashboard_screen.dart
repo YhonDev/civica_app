@@ -520,7 +520,6 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
   Future<void> _solicitarCobro(dynamic item) async {
     final user = context.read<AuthCubit>().state.usuario;
     if (user == null) return;
-    final messenger = ScaffoldMessenger.of(context);
     final controller = TextEditingController();
 
     final result = await showDialog<String>(
@@ -589,15 +588,21 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
       LocalCacheRepository.instance.invalidate('dashboard:administrador');
 
       if (mounted) {
-        messenger.showSnackBar(
-          const SnackBar(content: Text('Solicitud de cobro enviada al administrador/cobrador')),
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Solicitud de cobro enviada al administrador/cobrador'),
+            backgroundColor: AppColors.success,
+          ),
         );
         await _loadDashboardData(silent: true);
       }
     } catch (e) {
       if (mounted) {
-        messenger.showSnackBar(
-          SnackBar(content: Text('Error al enviar solicitud: $e')),
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al enviar solicitud: $e'),
+            backgroundColor: AppColors.error,
+          ),
         );
       }
     }
