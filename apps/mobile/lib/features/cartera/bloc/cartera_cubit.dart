@@ -83,12 +83,13 @@ class CarteraCubit extends Cubit<CarteraState> {
 
   /// Carga los cobros de la cartera y calcula el resumen de forma local.
   Future<void> loadCobros({bool silent = false}) async {
-    if (!silent && LocalCacheRepository.instance.getCached('cartera:cobros') == null) {
+    final key = _repository.cacheKey;
+    if (!silent && LocalCacheRepository.instance.getCached(key) == null) {
       emit(state.copyWith(isLoading: true, error: null));
     }
 
     await LocalCacheRepository.instance.executeSWR<List<CobroItem>>(
-      key: 'cartera:cobros',
+      key: key,
       fetcher: () => _repository.getCobros(),
       onData: (cobros, isStale) {
         final resumen = CarteraRepository.computeResumen(cobros);
@@ -100,7 +101,7 @@ class CarteraCubit extends Cubit<CarteraState> {
         ));
       },
       onError: (e) {
-        if (!silent && LocalCacheRepository.instance.getCached('cartera:cobros') == null) {
+        if (!silent && LocalCacheRepository.instance.getCached(key) == null) {
           emit(state.copyWith(isLoading: false, error: e.toString()));
         }
       },

@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
 
 
@@ -18,17 +17,25 @@ class LocalCacheRepository {
 
 
 
-  /// Reads cached value synchronously from memory, or asynchronously from persistent storage.
-  dynamic getCached(String key) {
+  /// Reads cached value synchronously from memory if within maxAge TTL.
+  dynamic getCached(String key, {Duration? maxAge}) {
     if (_memoryCache.containsKey(key)) {
+      final timestamp = _timestamps[key];
+      if (maxAge != null && timestamp != null) {
+        if (DateTime.now().difference(timestamp) > maxAge) {
+          _memoryCache.remove(key);
+          _timestamps.remove(key);
+          return null;
+        }
+      }
       return _memoryCache[key];
     }
     return null;
   }
 
   /// Asynchronously loads persistent cache into memory if not present.
-  Future<dynamic> getCachedAsync(String key) async {
-    return _memoryCache[key];
+  Future<dynamic> getCachedAsync(String key, {Duration? maxAge}) async {
+    return getCached(key, maxAge: maxAge);
   }
 
   /// Saves data to memory and persistent cache.
@@ -50,16 +57,17 @@ class LocalCacheRepository {
 
   /// Core Enterprise SWR Execution Workflow.
   ///
-  /// 1. Immediately yields cached data to [onData] (0ms latency).
+  /// 1. Immediately yields cached data to [onData] (0ms latency) if available within TTL.
   /// 2. Runs [fetcher] in background.
-  /// 3. If fresh data differs from cached data, updates cache and invokes [onData].
+  /// 3. Updates cache and invokes [onData] with fresh backend data unconditionally.
   Future<void> executeSWR<T>({
     required String key,
     required Future<T> Function() fetcher,
     required void Function(T data, bool isStale) onData,
     void Function(Object error)? onError,
+    Duration maxAge = const Duration(minutes: 3),
   }) async {
-    final cached = getCached(key);
+    final cached = getCached(key, maxAge: maxAge);
     bool hasCached = false;
 
     if (cached != null) {
@@ -73,13 +81,8 @@ class LocalCacheRepository {
 
     try {
       final fresh = await fetcher();
-      final freshEncoded = jsonEncode(fresh);
-      final cachedEncoded = hasCached ? jsonEncode(cached) : null;
-
-      if (!hasCached || freshEncoded != cachedEncoded) {
-        setCache(key, fresh);
-        onData(fresh, false);
-      }
+      setCache(key, fresh);
+      onData(fresh, false);
     } catch (e) {
       debugPrint('[SWR] Background fetch failed for key $key: $e');
       if (!hasCached && onError != null) {

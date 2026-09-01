@@ -10,6 +10,9 @@ class CarteraRepository {
   CarteraRepository({ApiClient? apiClient, this._role, this._residenteId})
       : _api = apiClient ?? ApiClient.instance;
 
+  /// Unique cache key scoped to user role and residente ID.
+  String get cacheKey => 'cartera:cobros:${_residenteId ?? _role ?? "all"}';
+
   /// Returns the correct cuotas endpoint based on user role.
   String get _cuotasEndpoint {
     if ((_role == 'PROPIETARIO' || _role == 'RESIDENTE') && _residenteId != null) {
@@ -29,14 +32,15 @@ class CarteraRepository {
     int cantidadPagados = 0;
 
     for (var cobro in cobros) {
-      if (cobro.estado == 'Pagado') {
+      final st = cobro.estado.toUpperCase();
+      if (st == 'PAGADO' || st == 'PAGADA') {
         totalPagado += cobro.montoPagado;
         cantidadPagados++;
-      } else if (cobro.estado == 'Mora') {
+      } else if (st == 'MORA' || st == 'VENCIDA') {
         totalMora += cobro.saldo;
         totalPagado += cobro.montoPagado;
         cantidadMora++;
-      } else if (cobro.estado == 'Pendiente') {
+      } else {
         totalPendiente += cobro.saldo;
         totalPagado += cobro.montoPagado;
         cantidadPendientes++;
