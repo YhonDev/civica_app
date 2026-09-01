@@ -88,4 +88,8 @@ export class Usuario {
   esCobrador(): boolean {
     return this.rol === RolUsuario.COBRADOR;
   }
+
+  esResidente(): boolean {
+    return this.rol === RolUsuario.RESIDENTE || this.rol === RolUsuario.PROPIETARIO;
+  }
 }

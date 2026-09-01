@@ -109,4 +109,13 @@ class SolicitudesRepository {
       throw e is ApiException ? e : Exception('Error al resolver solicitud: $e');
     }
   }
+
+  /// Delete or cancel a solicitud.
+  Future<void> eliminarSolicitud(String id) async {
+    try {
+      await _api.delete('/solicitudes/$id');
+    } catch (e) {
+      throw e is ApiException ? e : Exception('Error al eliminar solicitud: $e');
+    }
+  }
 }

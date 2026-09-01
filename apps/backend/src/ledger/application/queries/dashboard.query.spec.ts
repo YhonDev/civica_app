@@ -246,6 +246,7 @@ describe('DashboardQuery', () => {
         tipo: 'PAGO_REGISTRADO',
         descripcion: 'Pago de cuota mensual',
         usuario: 'Juan Perez',
+        metadata: {},
         timestamp: '2026-06-15T10:30:00.000Z',
         hace: expect.any(String),
       });

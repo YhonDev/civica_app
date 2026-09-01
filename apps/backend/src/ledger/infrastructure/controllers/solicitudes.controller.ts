@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Param,
   Query,
   Body,
@@ -158,5 +159,28 @@ export class SolicitudesController {
     solicitud.fechaRespuesta = new Date();
 
     return this.solicitudRepo.save(solicitud);
+  }
+
+  @Delete(':id')
+  @UseGuards(RolesGuard)
+  @Roles(RolUsuario.RESIDENTE, RolUsuario.ADMIN, RolUsuario.COBRADOR)
+  @UseInterceptors(ActividadInterceptor)
+  @RegistrarActividad({
+    tipo: 'SOLICITUD',
+    descripcionFn: (r) => `Solicitud ${r.id} eliminada / cancelada`,
+    metadataFn: (r) => ({
+      solicitudId: r.id,
+    }),
+  })
+  async eliminar(@Param('id') id: string) {
+    const solicitud = await this.solicitudRepo.findById(id);
+    if (!solicitud) {
+      throw new NotFoundException(`Solicitud ${id} no encontrada`);
+    }
+    if (solicitud.estado === SolicitudEstado.COBRADA || solicitud.estado === SolicitudEstado.APROBADA) {
+      throw new BadRequestException('No se puede cancelar una solicitud que ya ha sido procesada.');
+    }
+    await this.solicitudRepo.delete(id);
+    return { ok: true, message: 'Solicitud cancelada exitosamente', id };
   }
 }

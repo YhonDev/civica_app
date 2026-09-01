@@ -161,19 +161,36 @@ class SolicitudCard extends StatelessWidget {
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                          const SizedBox(width: 6),
-                          Text(
-                            '·',
-                            style: TextStyle(
-                              color: AppColors.textDisabled,
-                              fontSize: 12,
+                          if (solicitud.nroRecibo.isNotEmpty) ...[
+                            const SizedBox(width: 6),
+                            Text(
+                              '·',
+                              style: TextStyle(
+                                color: AppColors.textDisabled,
+                                fontSize: 12,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 6),
+                            const SizedBox(width: 6),
+                            Text(
+                              solicitud.nroRecibo,
+                              style: AppTypography.small.copyWith(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          Icon(Icons.access_time_rounded, size: 12, color: AppColors.textSecondary),
+                          const SizedBox(width: 4),
                           Text(
-                            DateFormat('dd/MM/yyyy').format(solicitud.fecha),
-                            style: AppTypography.small.copyWith(
+                            DateFormat("dd/MM/yyyy · hh:mm a", 'es').format(solicitud.fecha),
+                            style: AppTypography.caption.copyWith(
                               color: AppColors.textSecondary,
+                              fontSize: 11,
                             ),
                           ),
                         ],

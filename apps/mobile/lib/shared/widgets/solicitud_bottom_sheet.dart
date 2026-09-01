@@ -17,6 +17,7 @@ class SolicitudBottomSheet extends StatefulWidget {
   final String? montoStr;
   final bool isAdmin;
   final Future<void> Function(String estado, String respuesta)? onResolve;
+  final Future<void> Function()? onDelete;
 
   const SolicitudBottomSheet({
     super.key,
@@ -24,6 +25,7 @@ class SolicitudBottomSheet extends StatefulWidget {
     this.montoStr,
     this.isAdmin = false,
     this.onResolve,
+    this.onDelete,
   });
 
   static Future<void> show(
@@ -32,6 +34,7 @@ class SolicitudBottomSheet extends StatefulWidget {
     String? montoStr,
     bool isAdmin = false,
     Future<void> Function(String estado, String respuesta)? onResolve,
+    Future<void> Function()? onDelete,
   }) {
     return showModalBottomSheet(
       context: context,
@@ -46,6 +49,7 @@ class SolicitudBottomSheet extends StatefulWidget {
         montoStr: montoStr,
         isAdmin: isAdmin,
         onResolve: onResolve,
+        onDelete: onDelete,
       ),
     );
   }
@@ -144,7 +148,7 @@ class _SolicitudBottomSheetState extends State<SolicitudBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final dateStr = DateFormat('dd/MM/yyyy').format(widget.solicitud.fecha);
+    final dateStr = DateFormat("dd/MM/yyyy · hh:mm a", 'es').format(widget.solicitud.fecha);
 
     final isPago = widget.solicitud.tipo.toLowerCase().contains('pago') ||
         widget.solicitud.tipo.toLowerCase().contains('pagad');
@@ -434,15 +438,83 @@ class _SolicitudBottomSheetState extends State<SolicitudBottomSheet> {
               ),
             ],
 
-            // Close button (non-admin or already resolved)
+            // Close & Cancel buttons (non-admin or already resolved)
             if (!_canResolve) ...[
-              const SizedBox(height: AppSpacing.sm),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Cerrar'),
-                ),
+              const SizedBox(height: AppSpacing.md),
+              Row(
+                children: [
+                  if (widget.onDelete != null &&
+                      widget.solicitud.estado != SolicitudEstado.cobrada &&
+                      widget.solicitud.estado != SolicitudEstado.aprobada) ...[
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _enviando
+                            ? null
+                            : () async {
+                                final confirm = await showDialog<bool>(
+                                  context: context,
+                                  builder: (dlgContext) => AlertDialog(
+                                    title: const Text('Cancelar Solicitud'),
+                                    content: const Text(
+                                      '¿Estás seguro de que deseas cancelar esta solicitud de cobro?',
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(dlgContext, false),
+                                        child: const Text('Volver'),
+                                      ),
+                                      FilledButton(
+                                        onPressed: () => Navigator.pop(dlgContext, true),
+                                        style: FilledButton.styleFrom(
+                                          backgroundColor: AppColors.error,
+                                        ),
+                                        child: const Text('Cancelar Solicitud'),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                                if (confirm == true) {
+                                  if (!context.mounted) return;
+                                  final nav = Navigator.of(context);
+                                  setState(() => _enviando = true);
+                                  try {
+                                    await widget.onDelete!();
+                                    if (mounted) {
+                                      nav.pop();
+                                    }
+                                  } finally {
+                                    if (mounted) setState(() => _enviando = false);
+                                  }
+                                }
+                              },
+                        icon: _enviando
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : Icon(Icons.delete_outline_rounded, color: AppColors.error),
+                        label: Text(
+                          'Cancelar Solicitud',
+                          style: TextStyle(color: AppColors.error),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(color: AppColors.error),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                  ],
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cerrar'),
+                    ),
+                  ),
+                ],
               ),
             ],
           ],

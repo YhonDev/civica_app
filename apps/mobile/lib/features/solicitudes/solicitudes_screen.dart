@@ -374,6 +374,10 @@ class _SolicitudesScreenState extends State<SolicitudesScreen>
               await _loadSolicitudes();
             }
           : null,
+      onDelete: () async {
+        await _repo.eliminarSolicitud(solicitud.id);
+        await _loadSolicitudes();
+      },
     );
   }
 }

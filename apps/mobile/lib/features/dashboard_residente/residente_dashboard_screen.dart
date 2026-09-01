@@ -872,7 +872,25 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
           ).format(_proximoPago!['monto'] as int)
         : '—';
 
-    SolicitudBottomSheet.show(context, solicitud, montoStr: montoStr);
+    SolicitudBottomSheet.show(
+      context,
+      solicitud,
+      montoStr: montoStr,
+      onDelete: () async {
+        await _solicitudesRepo.eliminarSolicitud(solicitud.id);
+        LocalCacheRepository.instance.invalidate('dashboard:residente');
+        LocalCacheRepository.instance.invalidate('dashboard:administrador');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Solicitud cancelada exitosamente'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+          await _loadDashboardData(silent: true);
+        }
+      },
+    );
   }
 
   // ── Animated section wrapper ──────────────────────────────────────
