@@ -548,11 +548,15 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
+            onPressed: () {
+              FocusScope.of(dialogContext).unfocus();
+              Navigator.pop(dialogContext);
+            },
             child: const Text('Cancelar'),
           ),
           FilledButton(
             onPressed: () {
+              FocusScope.of(dialogContext).unfocus();
               final text = controller.text;
               Navigator.pop(dialogContext, text);
             },
@@ -562,6 +566,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
       ),
     );
 
+    await Future.microtask(() {});
     controller.dispose();
 
     if (!mounted || result == null) return;
