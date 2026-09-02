@@ -465,6 +465,7 @@ class _JornadaViewState extends State<_JornadaView> with LifecycleObserverMixin 
               final nombreResidente = solicitud['residenteNombre'] as String? ?? 'Residente';
               final casaInfo = '${solicitud['manzanaNombre'] ?? ''} — ${solicitud['casaDireccion'] ?? ''}';
               final nota = solicitud['descripcion'] as String? ?? 'Solicita atención/cobro presencial';
+              final saldo = (solicitud['saldo'] as num? ?? 20000.0).toDouble();
 
               return Container(
                 margin: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -502,6 +503,46 @@ class _JornadaViewState extends State<_JornadaView> with LifecycleObserverMixin 
                           ],
                         ],
                       ),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        final cobradorCubit = context.read<DashboardCobradorCubit>();
+                        final cobroItem = CobroItem(
+                          id: solicitud['cobroId'] as String? ?? solicitud['casaId'] as String? ?? '0',
+                          concepto: 'Cuota de Recaudo',
+                          monto: (solicitud['monto'] as num? ?? 20000.0).toDouble(),
+                          montoPagado: 0,
+                          saldo: saldo,
+                          estado: solicitud['cobroEstado'] as String? ?? 'PENDIENTE',
+                          modalidad: solicitud['modalidadPago'] as String? ?? 'Mensual',
+                          casa: solicitud['casaDireccion'] as String? ?? '',
+                          manzana: solicitud['manzanaNombre'] as String? ?? '',
+                          etapa: solicitud['etapaNombre'] as String? ?? '',
+                          residenteId: solicitud['residenteId'] as String? ?? '',
+                          nombre: nombreResidente,
+                        );
+
+                        RegistrarPagoBottomSheet.show(
+                          context,
+                          cobro: cobroItem,
+                          initialQuickMode: true,
+                          onSuccess: () {
+                            cobradorCubit.optimisticRegistrarPago(
+                              residenteId: cobroItem.residenteId,
+                              montoPesos: saldo > 0 ? saldo.toInt() : 20000,
+                            );
+                            cobradorCubit.refresh(silent: true);
+                          },
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        backgroundColor: AppColors.success,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      child: const Text('Cobrar', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                     ),
                   ],
                 ),

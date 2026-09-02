@@ -390,19 +390,55 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                           ),
                         ],
                         const SizedBox(height: AppSpacing.sm),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: enCamino
-                              ? ElevatedButton.icon(
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            if ((solicitud['saldo'] as num? ?? 0) > 0)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  '\$${NumberFormat('#,###', 'es_CO').format((solicitud['saldo'] as num? ?? 20000).toInt())} COP',
+                                  style: AppTypography.caption.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.primary,
+                                  ),
+                                ),
+                              )
+                            else
+                              const SizedBox.shrink(),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (!enCamino) ...[
+                                  OutlinedButton.icon(
+                                    onPressed: () {
+                                      context.read<CasasCubit>().cambiarEstadoSolicitud(id, 'EN_CAMINO');
+                                    },
+                                    icon: const Icon(Icons.directions_car_rounded, size: 14),
+                                    label: const Text('En camino'),
+                                    style: OutlinedButton.styleFrom(
+                                      visualDensity: VisualDensity.compact,
+                                      foregroundColor: AppColors.info,
+                                      side: BorderSide(color: AppColors.info.withValues(alpha: 0.5)),
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    ),
+                                  ),
+                                  const SizedBox(width: AppSpacing.xs),
+                                ],
+                                ElevatedButton.icon(
                                   onPressed: () {
                                     final cobroItem = CobroItem(
-                                      id: solicitud['casaId'] as String? ?? '0',
-                                      concepto: 'Cuota Actual',
+                                      id: solicitud['cobroId'] as String? ?? solicitud['casaId'] as String? ?? '0',
+                                      concepto: 'Cuota de Recaudo',
                                       monto: (solicitud['monto'] as num? ?? 20000.0).toDouble(),
                                       montoPagado: 0,
                                       saldo: (solicitud['saldo'] as num? ?? 20000.0).toDouble(),
-                                      estado: 'PENDIENTE',
-                                      modalidad: 'Mensual',
+                                      estado: solicitud['cobroEstado'] as String? ?? 'PENDIENTE',
+                                      modalidad: solicitud['modalidadPago'] as String? ?? 'Mensual',
                                       casa: solicitud['casaDireccion'] as String? ?? '',
                                       manzana: solicitud['manzanaNombre'] as String? ?? '',
                                       etapa: solicitud['etapaNombre'] as String? ?? '',
@@ -413,29 +449,24 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                                     RegistrarPagoBottomSheet.show(
                                       context,
                                       cobro: cobroItem,
+                                      initialQuickMode: true,
                                       onSuccess: () {
                                         context.read<CasasCubit>().refresh();
                                       },
                                     );
                                   },
                                   icon: const Icon(Icons.flash_on_rounded, size: 16),
-                                  label: const Text('Registrar Cobro'),
+                                  label: const Text('Cobrar'),
                                   style: ElevatedButton.styleFrom(
+                                    visualDensity: VisualDensity.compact,
                                     backgroundColor: AppColors.success,
                                     foregroundColor: Colors.white,
-                                  ),
-                                )
-                              : OutlinedButton.icon(
-                                  onPressed: () {
-                                    context.read<CasasCubit>().cambiarEstadoSolicitud(id, 'EN_CAMINO');
-                                  },
-                                  icon: const Icon(Icons.directions_car_rounded, size: 16),
-                                  label: const Text('Ir a Cobrar'),
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: AppColors.primary,
-                                    side: BorderSide(color: AppColors.primary),
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                   ),
                                 ),
+                              ],
+                            ),
+                          ],
                         ),
                       ],
                     ),

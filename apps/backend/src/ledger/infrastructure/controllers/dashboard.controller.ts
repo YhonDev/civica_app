@@ -187,63 +187,7 @@ export class DashboardController {
       await this.pagoRepository.findByCobradorToday(user.id);
 
     // 3.5. Buscar solicitudes activas del tenant para el cobrador (orden cronológico ascendente: FIFO)
-    const rawSolicitudes = await this.dataSource.query(
-      `SELECT 
-        s.id,
-        s.cobro_id AS "cobroId",
-        s.nro_recibo AS "nroRecibo",
-        s.tipo,
-        s.descripcion,
-        s.estado,
-        s.fecha,
-        s.created_at AS "createdAt",
-        s.residente_id AS "residenteId",
-        COALESCE(r.nombre, u.nombre, 'Residente') AS "residenteNombre",
-        COALESCE(r.telefono, '') AS "residenteTelefono",
-        COALESCE(r.modalidad_pago, 'MENSUAL') AS "modalidadPago",
-        c.id AS "casaId",
-        COALESCE(c.direccion_interna, '') AS "casaDireccion",
-        COALESCE(m.nombre, '') AS "manzanaNombre",
-        COALESCE(e.nombre, '') AS "etapaNombre",
-        COALESCE(cb.monto, 2000000) AS "monto",
-        COALESCE(cb.monto_pagado, 0) AS "montoPagado",
-        COALESCE(cb.estado, 'PENDIENTE') AS "cobroEstado"
-      FROM solicitudes s
-      LEFT JOIN usuarios u ON u.id = s.usuario_id
-      LEFT JOIN cobros cb ON cb.id = s.cobro_id
-      LEFT JOIN residentes r ON (r.id = s.residente_id OR r.id = cb.residente_id OR r.usuario_id = s.usuario_id)
-      LEFT JOIN tenencias t ON (t.residente_id = r.id AND t.fecha_fin IS NULL)
-      LEFT JOIN casas c ON (c.id = s.casa_id OR c.id = cb.casa_id OR c.id = t.casa_id OR c.id = r.casa_actual_id)
-      LEFT JOIN manzanas m ON m.id = c.manzana_id
-      LEFT JOIN etapas e ON e.id = m.etapa_id
-      WHERE s.tenant_id = $1
-        AND s.estado IN ('EN_ESPERA', 'PENDIENTE', 'EN_CAMINO', 'EN_REVISION')
-        ${etapaIds.length > 0 ? 'AND (e.id IS NULL OR e.id = ANY($2::uuid[]))' : ''}
-      ORDER BY s.created_at ASC`,
-      etapaIds.length > 0 ? [tenantId, etapaIds] : [tenantId],
-    );
-
-    const listaSolicitudes = rawSolicitudes.map((s: any) => ({
-      id: s.id,
-      cobroId: s.cobroId,
-      cuotaId: s.cobroId,
-      nroRecibo: s.nroRecibo,
-      tipo: s.tipo,
-      descripcion: s.descripcion,
-      estado: s.estado,
-      fecha: s.fecha ? new Date(s.fecha).toISOString() : new Date().toISOString(),
-      residenteId: s.residenteId || '',
-      residenteNombre: s.residenteNombre || 'Residente',
-      residenteTelefono: s.residenteTelefono || '',
-      modalidadPago: s.modalidadPago || 'MENSUAL',
-      casaId: s.casaId || '',
-      casaDireccion: s.casaDireccion || '',
-      manzanaNombre: s.manzanaNombre || '',
-      etapaNombre: s.etapaNombre || '',
-      monto: Math.round((Number(s.monto) || 0) / 100),
-      saldo: Math.round(((Number(s.monto) || 0) - (Number(s.montoPagado) || 0)) / 100),
-      cobroEstado: s.cobroEstado,
-    }));
+    const listaSolicitudes = await this.getSolicitudesActivasCobrador(tenantId, etapaIds);
 
     const casaSolicitudMap = new Map<string, { id: string; descripcion: string }>();
     const cobroSolicitudSet = new Set<string>();
@@ -391,6 +335,7 @@ export class DashboardController {
         monto: Math.round(p.monto / 100),
         fecha: p.fechaPago,
       })),
+      solicitudes: listaSolicitudes,
     };
   }
 
@@ -409,7 +354,7 @@ export class DashboardController {
     const etapaIds: string[] = asignaciones.map((a: any) => a.etapa_id);
 
     if (etapaIds.length === 0) {
-      return { etapas: [] };
+      return { etapas: [], solicitudes: [] };
     }
 
     // 2. Obtener la jerarquía completa: etapas → manzanas → casas con sus residentes
@@ -517,7 +462,70 @@ export class DashboardController {
       manzanas: Array.from(e.manzanas.values()),
     }));
 
-    return { etapas };
+    // 6. Obtener solicitudes activas de la ruta
+    const solicitudes = await this.getSolicitudesActivasCobrador(tenantId, etapaIds);
+
+    return { etapas, solicitudes };
+  }
+
+  private async getSolicitudesActivasCobrador(tenantId: string, etapaIds: string[]) {
+    const rawSolicitudes = await this.dataSource.query(
+      `SELECT 
+        s.id,
+        s.cobro_id AS "cobroId",
+        s.nro_recibo AS "nroRecibo",
+        s.tipo,
+        s.descripcion,
+        s.estado,
+        s.fecha,
+        s.created_at AS "createdAt",
+        s.residente_id AS "residenteId",
+        COALESCE(r.nombre, u.nombre, 'Residente') AS "residenteNombre",
+        COALESCE(r.telefono, '') AS "residenteTelefono",
+        COALESCE(r.modalidad_pago, 'MENSUAL') AS "modalidadPago",
+        c.id AS "casaId",
+        COALESCE(c.direccion_interna, '') AS "casaDireccion",
+        COALESCE(m.nombre, '') AS "manzanaNombre",
+        COALESCE(e.nombre, '') AS "etapaNombre",
+        COALESCE(cb.monto, 2000000) AS "monto",
+        COALESCE(cb.monto_pagado, 0) AS "montoPagado",
+        COALESCE(cb.estado, 'PENDIENTE') AS "cobroEstado"
+      FROM solicitudes s
+      LEFT JOIN usuarios u ON u.id = s.usuario_id
+      LEFT JOIN cobros cb ON cb.id = s.cobro_id
+      LEFT JOIN residentes r ON (r.id = s.residente_id OR r.id = cb.residente_id OR r.usuario_id = s.usuario_id)
+      LEFT JOIN tenencias t ON (t.residente_id = r.id AND t.fecha_fin IS NULL)
+      LEFT JOIN casas c ON (c.id = s.casa_id OR c.id = cb.casa_id OR c.id = t.casa_id OR c.id = r.casa_actual_id)
+      LEFT JOIN manzanas m ON m.id = c.manzana_id
+      LEFT JOIN etapas e ON e.id = m.etapa_id
+      WHERE s.tenant_id = $1
+        AND s.estado IN ('EN_ESPERA', 'PENDIENTE', 'EN_CAMINO', 'EN_REVISION')
+        ${etapaIds.length > 0 ? 'AND (e.id IS NULL OR e.id = ANY($2::uuid[]))' : ''}
+      ORDER BY s.created_at ASC`,
+      etapaIds.length > 0 ? [tenantId, etapaIds] : [tenantId],
+    );
+
+    return rawSolicitudes.map((s: any) => ({
+      id: s.id,
+      cobroId: s.cobroId,
+      cuotaId: s.cobroId,
+      nroRecibo: s.nroRecibo,
+      tipo: s.tipo,
+      descripcion: s.descripcion,
+      estado: s.estado,
+      fecha: s.fecha ? new Date(s.fecha).toISOString() : new Date().toISOString(),
+      residenteId: s.residenteId || '',
+      residenteNombre: s.residenteNombre || 'Residente',
+      residenteTelefono: s.residenteTelefono || '',
+      modalidadPago: s.modalidadPago || 'MENSUAL',
+      casaId: s.casaId || '',
+      casaDireccion: s.casaDireccion || '',
+      manzanaNombre: s.manzanaNombre || '',
+      etapaNombre: s.etapaNombre || '',
+      monto: Math.round((Number(s.monto) || 0) / 100),
+      saldo: Math.round(((Number(s.monto) || 0) - (Number(s.montoPagado) || 0)) / 100),
+      cobroEstado: s.cobroEstado,
+    }));
   }
 
   @Get(['dashboard/residente', 'dashboard/propietario'])
