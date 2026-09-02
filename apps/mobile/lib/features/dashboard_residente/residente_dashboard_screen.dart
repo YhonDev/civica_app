@@ -92,7 +92,14 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
         return response.data!;
       },
       onData: (data, isStale) async {
-        final listPendientes = await _solicitudesRepo.getMisSolicitudes();
+        final listMisSolicitudes = await _solicitudesRepo.getMisSolicitudes();
+        // Solo solicitudes activas/pendientes deben mostrarse en el widget y marcar cuotas como en proceso
+        final listPendientes = listMisSolicitudes.where((s) =>
+          s.estado == SolicitudEstado.pendiente ||
+          s.estado == SolicitudEstado.enEspera ||
+          s.estado == SolicitudEstado.enCamino ||
+          s.estado == SolicitudEstado.enRevision
+        ).toList();
 
         if (mounted) {
           setState(() {
@@ -416,12 +423,16 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
     final String? itemCobroId = item['cobroId'] as String?;
 
     final bool hasActiveRequest = _solicitudesPendientes.isNotEmpty;
+    SolicitudData? requestedSolicitud;
     final bool isThisCuotaRequested = hasActiveRequest &&
         _solicitudesPendientes.any((s) {
           final itemId = (item['id'] ?? '').toString();
-          if (s.cobroId.isNotEmpty && s.cobroId == itemId) return true;
-          if (s.cobroId.isNotEmpty && itemCobroId != null && s.cobroId == itemCobroId && index == 0) return true;
-          return false;
+          final matches = s.cobroId.isNotEmpty &&
+              (s.cobroId == itemId || (itemCobroId != null && s.cobroId == itemCobroId));
+          if (matches) {
+            requestedSolicitud = s;
+          }
+          return matches;
         });
 
     Widget rightWidget;
@@ -443,22 +454,27 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
         ),
       );
     } else if (isThisCuotaRequested) {
+      final isEnCamino = requestedSolicitud?.estado == SolicitudEstado.enCamino;
+      final badgeColor = isEnCamino ? AppColors.info : AppColors.warning;
+      final badgeIcon = isEnCamino ? Icons.directions_bike_rounded : Icons.hourglass_top_rounded;
+      final badgeLabel = isEnCamino ? 'En camino' : 'En solicitud';
+
       rightWidget = Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: AppColors.warning.withValues(alpha: 0.15),
+          color: badgeColor.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: AppColors.warning.withValues(alpha: 0.4)),
+          border: Border.all(color: badgeColor.withValues(alpha: 0.4)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.hourglass_top_rounded, size: 12, color: AppColors.warning),
+            Icon(badgeIcon, size: 12, color: badgeColor),
             const SizedBox(width: 4),
             Text(
-              'En Solicitud',
+              badgeLabel,
               style: AppTypography.small.copyWith(
-                color: AppColors.warning,
+                color: badgeColor,
                 fontSize: 10.5,
                 fontWeight: FontWeight.bold,
               ),
@@ -621,6 +637,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
       );
 
       LocalCacheRepository.instance.invalidate('dashboard:residente');
+      LocalCacheRepository.instance.invalidate('dashboard:cobrador');
       LocalCacheRepository.instance.invalidate('dashboard:administrador');
 
       if (mounted) {

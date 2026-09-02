@@ -646,73 +646,90 @@ export class DashboardController {
       const montoParcial = cuotaMontoCentavos;
 
       const desglose: any[] = [];
-      const [nextY, nextM] = next.periodoInicio.split('-').map(Number);
-      const hoyY = hoy.getFullYear();
-      const hoyM = hoy.getMonth(); // 0-indexed (e.g., August = 7)
-
-      // Start desglose from current month (hoy) if oldest pending cobro is from a past month
-      let currentYear = hoyY;
-      let currentMonth = hoyM;
-      if (nextY > hoyY || (nextY === hoyY && (nextM - 1) > hoyM)) {
-        currentYear = nextY;
-        currentMonth = nextM - 1;
-      }
-
       const mesesEsp = [
         'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
         'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
       ];
 
-      while (desglose.length < pagosEsperados) {
-        const periodStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`;
-        const cobroForMonth = cobros.find(c => c.periodoInicio === periodStr);
+      // 1. Encolar los cobros pendientes REALES de la base de datos (FIFO)
+      for (const cobro of pendingCobros) {
+        if (desglose.length >= pagosEsperados) break;
 
-        const cobroId = cobroForMonth ? cobroForMonth.id : null;
-        const cobroMontoCuota = cobroForMonth
-          ? cobroForMonth.monto
-          : (tarifaMensual ? Math.round(tarifaMensual.monto / pagosEsperados) : 0);
-
-        let pRegistrados = 0;
-        if (cobroForMonth) {
-          pRegistrados = pagos.filter((p) => p.cobroId === cobroForMonth.id).length;
+        let mesNombre = 'Mes';
+        let numPago = 1;
+        const match = cobro.concepto?.match(/^(.*?)\s*—\s*Cuota\s*(\d+)/i);
+        if (match) {
+          mesNombre = match[1].trim();
+          numPago = parseInt(match[2], 10);
+        } else {
+          const d = new Date(cobro.fechaVencimiento);
+          mesNombre = mesesEsp[d.getMonth()] ?? 'Mes';
         }
 
-        const fechas = Periodo.fechasCobroParciales(modalidad, currentYear, currentMonth);
-        const remainingFechas = fechas.slice(pRegistrados);
-        const mesNombre = mesesEsp[currentMonth];
+        desglose.push({
+          id: cobro.id,
+          cobroId: cobro.id,
+          cuotaId: cobro.id,
+          fecha: cobro.fechaVencimiento,
+          monto: Math.round((cobro.monto - cobro.montoPagado) / 100),
+          numeroPago: numPago,
+          mes: mesNombre,
+        });
+      }
 
-        for (let i = 0; i < remainingFechas.length; i++) {
-          if (desglose.length >= pagosEsperados) break;
-          // Solo mostrar en desglose cuotas cuya fecha sea >= hoy (próximos pagos)
-          if (remainingFechas[i] >= hoyStr) {
+      // 2. Si faltan para completar pagosEsperados (ej. cuotas ya pagadas este mes),
+      // proyectar cuotas del próximo mes encoladas abajo
+      if (desglose.length < pagosEsperados) {
+        const ultimaFechaStr = desglose.length > 0 ? desglose[desglose.length - 1].fecha : next.fechaVencimiento;
+        const ultD = new Date(ultimaFechaStr);
+        let projYear = ultD.getFullYear();
+        let projMonth = ultD.getMonth() + 1; // siguiente mes
+        if (projMonth > 11) {
+          projMonth = 0;
+          projYear++;
+        }
+
+        const montoCuotaEst = tarifaMensual
+          ? Math.round(tarifaMensual.monto / pagosEsperados / 100)
+          : Math.round(next.monto / 100);
+
+        while (desglose.length < pagosEsperados) {
+          const periodStr = `${projYear}-${String(projMonth + 1).padStart(2, '0')}-01`;
+          const fechas = Periodo.fechasCobroParciales(modalidad, projYear, projMonth);
+          const mesNombre = mesesEsp[projMonth];
+
+          for (let i = 0; i < fechas.length; i++) {
+            if (desglose.length >= pagosEsperados) break;
             desglose.push({
-              id: cobroId ? `${cobroId}-${pRegistrados + i + 1}` : `future-${periodStr}-${pRegistrados + i + 1}`,
-              cobroId: cobroId,
-              fecha: remainingFechas[i],
-              monto: Math.round(cobroMontoCuota / 100),
-              numeroPago: pRegistrados + i + 1,
+              id: `future-${periodStr}-${i + 1}`,
+              cobroId: null,
+              cuotaId: null,
+              fecha: fechas[i],
+              monto: montoCuotaEst,
+              numeroPago: i + 1,
               mes: mesNombre,
             });
           }
-        }
 
-        currentMonth++;
-        if (currentMonth > 11) {
-          currentMonth = 0;
-          currentYear++;
+          projMonth++;
+          if (projMonth > 11) {
+            projMonth = 0;
+            projYear++;
+          }
         }
       }
 
-      proximoCobro = desglose.length > 0 ? desglose[0].fecha : next.fechaVencimiento;
+      proximoCobro = next.fechaVencimiento;
+      const cuotaMontoPendiente = next.monto - next.montoPagado;
       proximoPago = {
         concepto: next.concepto,
-        fechaVencimiento: proximoCobro ?? next.fechaVencimiento,
-        monto: Math.round(montoParcial / 100),
+        fechaVencimiento: next.fechaVencimiento,
+        monto: Math.round(cuotaMontoPendiente / 100),
         montoTotal: Math.round(next.monto / 100),
         montoPagado: Math.round(next.montoPagado / 100),
         pagosEsperados,
         pagosRegistrados,
-        montoParcial: Math.round(montoParcial / 100),
+        montoParcial: Math.round(cuotaMontoPendiente / 100),
         desglose,
       };
     } else {
