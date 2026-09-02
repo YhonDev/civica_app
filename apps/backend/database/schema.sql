@@ -194,6 +194,19 @@ CREATE INDEX idx_pagos_residente     ON pagos (residente_id);
 CREATE INDEX idx_pagos_cobro         ON pagos (cobro_id);
 CREATE INDEX idx_pagos_cobrador      ON pagos (cobrador_id);
 
+-- ── 12b. PagoCobros (Vínculo FIFO exacto) ────────────────
+CREATE TABLE pago_cobros (
+  id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  pago_id        UUID NOT NULL,
+  cobro_id       UUID NOT NULL,
+  monto_aplicado INTEGER NOT NULL,
+  tenant_id      UUID NOT NULL,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_pago_cobros_pago   ON pago_cobros (pago_id);
+CREATE INDEX idx_pago_cobros_cobro  ON pago_cobros (cobro_id);
+CREATE INDEX idx_pago_cobros_tenant ON pago_cobros (tenant_id);
+
 -- ── 13. Usuarios ────────────────────────────────────────
 CREATE TABLE usuarios (
   id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),

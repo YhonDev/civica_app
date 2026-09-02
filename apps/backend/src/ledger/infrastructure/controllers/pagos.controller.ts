@@ -10,6 +10,7 @@ import {
   UseGuards,
   UseInterceptors,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { RegistrarPagoUseCase } from '../../application/use-cases/registrar-pago.use-case';
@@ -52,7 +53,7 @@ export class PagosController {
   @RegistrarActividad({
     tipo: 'PAGO',
     descripcionFn: (result) =>
-      `Pago registrado: $${(result.pago.monto / 100).toFixed(0)} COP (${result.cuotasAfectadas.length} cuota(s))`,
+      `Pago registrado: $${((result.pago?.monto ?? 0) / 100).toFixed(0)} COP (${(result.cobrosAfectados?.length ?? result.cuotasAfectadas?.length ?? 0)} cuota(s))`,
     metadataFn: (result) => ({
       pagoId: result.pago?.id,
       monto: result.pago?.monto,
