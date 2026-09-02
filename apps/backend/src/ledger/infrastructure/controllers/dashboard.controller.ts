@@ -493,7 +493,7 @@ export class DashboardController {
       FROM solicitudes s
       LEFT JOIN usuarios u ON u.id = s.usuario_id
       LEFT JOIN cobros cb ON cb.id = s.cobro_id
-      LEFT JOIN residentes r ON (r.id = s.residente_id OR r.id = cb.residente_id OR r.usuario_id = s.usuario_id)
+      LEFT JOIN residentes r ON (r.id = s.residente_id OR r.id = cb.residente_id OR r.id = u.residente_id)
       LEFT JOIN tenencias t ON (t.residente_id = r.id AND t.fecha_fin IS NULL)
       LEFT JOIN casas c ON (c.id = s.casa_id OR c.id = cb.casa_id OR c.id = t.casa_id OR c.id = r.casa_actual_id)
       LEFT JOIN manzanas m ON m.id = c.manzana_id
