@@ -1,5 +1,6 @@
 import '../../core/network/api_client.dart';
 import '../../core/network/api_exceptions.dart';
+import '../../core/network/local_cache_repository.dart';
 import 'models/cartera_models.dart';
 
 class CarteraRepository {
@@ -88,6 +89,11 @@ class CarteraRepository {
         'monto': montoCentavos,
         'fechaPago': DateTime.now().toIso8601String(),
       });
+      LocalCacheRepository.instance.invalidate('dashboard:cobrador');
+      LocalCacheRepository.instance.invalidate('cobrador:viviendas');
+      LocalCacheRepository.instance.invalidate('dashboard:residente');
+      LocalCacheRepository.instance.invalidate('dashboard:administrador');
+      LocalCacheRepository.instance.invalidate(cacheKey);
       return response.data as Map<String, dynamic>;
     } catch (e) {
       throw e is ApiException ? e : Exception('Error al registrar pago: $e');

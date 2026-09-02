@@ -133,9 +133,9 @@ void main() {
       expect(cobros[2].estado, 'Pendiente');
       expect(cobros[2].nombre, 'Pedro López');
       expect(cobros[2].saldo, 50000);
-      expect(cobros[2].casa, 'Sin casa');
-      expect(cobros[2].manzana, 'Sin manzana');
-      expect(cobros[2].etapa, 'Sin etapa');
+      expect(cobros[2].casa, 'Inmueble');
+      expect(cobros[2].manzana, 'Manzana');
+      expect(cobros[2].etapa, 'Etapa');
     });
 
     test('propietario nulo usa valores por defecto', () async {
@@ -152,11 +152,11 @@ void main() {
       final cobros = await repository.getCobros();
 
       expect(cobros.length, 1);
-      expect(cobros[0].nombre, 'Desconocido');
+      expect(cobros[0].nombre, 'Residente');
       expect(cobros[0].residenteId, '');
-      expect(cobros[0].casa, 'Sin casa');
-      expect(cobros[0].manzana, 'Sin manzana');
-      expect(cobros[0].etapa, 'Sin etapa');
+      expect(cobros[0].casa, 'Inmueble');
+      expect(cobros[0].manzana, 'Manzana');
+      expect(cobros[0].etapa, 'Etapa');
     });
   });
 
