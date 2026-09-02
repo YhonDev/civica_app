@@ -8,18 +8,32 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import { Usuario } from '../../iam/domain/usuario.entity';
+import { AuthSession } from '../../iam/domain/auth-session.entity';
+import { TokenRevocationService } from './token-revocation.service';
+
+export interface DeviceInfo {
+  deviceId?: string;
+  deviceName?: string;
+  ipAddress?: string;
+  userAgent?: string;
+}
 
 @Injectable()
 export class AuthService {
-  // Blacklist de refresh tokens revocados (en memoria; en producción usar Redis o DB)
-  private readonly revokedRefreshTokens = new Set<string>();
-
   constructor(
     @InjectRepository(Usuario)
     private readonly usuarioRepository: Repository<Usuario>,
+    @InjectRepository(AuthSession)
+    private readonly sessionRepository: Repository<AuthSession>,
     private readonly jwtService: JwtService,
+    private readonly tokenRevocation: TokenRevocationService,
   ) {}
+
+  private hashToken(token: string): string {
+    return crypto.createHash('sha256').update(token).digest('hex');
+  }
 
   async validateUser(username: string, password: string): Promise<Usuario> {
     const user = await this.usuarioRepository.findOne({
@@ -43,6 +57,7 @@ export class AuthService {
 
   async login(
     usuario: Usuario,
+    deviceInfo?: DeviceInfo,
   ): Promise<{ accessToken: string; refreshToken: string; usuario: Usuario }> {
     const payload = {
       sub: usuario.id,
@@ -51,11 +66,24 @@ export class AuthService {
       tenantId: usuario.tenantId,
     };
 
-    const accessToken = this.jwtService.sign(payload, { expiresIn: '1h' });
+    const accessToken = this.jwtService.sign(payload, { expiresIn: '15m' });
     const refreshToken = this.jwtService.sign(
       { sub: usuario.id, type: 'refresh' },
       { expiresIn: '30d' },
     );
+
+    const session = new AuthSession();
+    session.usuarioId = usuario.id;
+    session.refreshTokenHash = this.hashToken(refreshToken);
+    session.deviceId = deviceInfo?.deviceId ?? null;
+    session.deviceName = deviceInfo?.deviceName ?? null;
+    session.ipAddress = deviceInfo?.ipAddress ?? null;
+    session.userAgent = deviceInfo?.userAgent ?? null;
+    session.expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    session.isRevoked = false;
+    session.lastUsedAt = new Date();
+
+    await this.sessionRepository.save(session);
 
     return { accessToken, refreshToken, usuario };
   }
@@ -63,8 +91,8 @@ export class AuthService {
   async refreshToken(
     token: string,
   ): Promise<{ accessToken: string; refreshToken: string; usuario: Usuario }> {
-    // Verificar si el refresh token fue revocado
-    if (this.revokedRefreshTokens.has(token)) {
+    const isRevokedInRedis = await this.tokenRevocation.isRevoked(token);
+    if (isRevokedInRedis) {
       throw new UnauthorizedException('Sesión cerrada. Inicia sesión nuevamente.');
     }
 
@@ -90,6 +118,34 @@ export class AuthService {
         throw new UnauthorizedException('Usuario inactivo');
       }
 
+      const incomingHash = this.hashToken(token);
+
+      const session = await this.sessionRepository.findOne({
+        where: { usuarioId: user.id, refreshTokenHash: incomingHash },
+      });
+
+      if (!session) {
+        const revokedSession = await this.sessionRepository.findOne({
+          where: { refreshTokenHash: incomingHash },
+        });
+
+        if (revokedSession) {
+          await this.sessionRepository.update(
+            { usuarioId: user.id },
+            { isRevoked: true },
+          );
+          throw new UnauthorizedException(
+            'Se detectó un intento de reutilización de token. Por seguridad, todas las sesiones han sido cerradas.',
+          );
+        }
+
+        throw new UnauthorizedException('Sesión no encontrada o expirada. Inicia sesión nuevamente.');
+      }
+
+      if (session.isRevoked || session.expiresAt < new Date()) {
+        throw new UnauthorizedException('Sesión expirada o revocada. Inicia sesión nuevamente.');
+      }
+
       const newPayload = {
         sub: user.id,
         email: user.email,
@@ -97,13 +153,18 @@ export class AuthService {
         tenantId: user.tenantId,
       };
 
-        const accessToken = this.jwtService.sign(newPayload, { expiresIn: '1h' });
-        const refreshToken = this.jwtService.sign(
-          { sub: user.id, type: 'refresh' },
-          { expiresIn: '30d' },
-        );
+      const newAccessToken = this.jwtService.sign(newPayload, { expiresIn: '15m' });
+      const newRefreshToken = this.jwtService.sign(
+        { sub: user.id, type: 'refresh' },
+        { expiresIn: '30d' },
+      );
 
-        return { accessToken, refreshToken, usuario: user };
+      session.refreshTokenHash = this.hashToken(newRefreshToken);
+      session.lastUsedAt = new Date();
+      session.expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+      await this.sessionRepository.save(session);
+
+      return { accessToken: newAccessToken, refreshToken: newRefreshToken, usuario: user };
     } catch (error) {
       if (error instanceof UnauthorizedException || error instanceof NotFoundException) {
         throw error;
@@ -112,12 +173,40 @@ export class AuthService {
     }
   }
 
-  /** Revoca un refresh token (logout). Idempotente. */
-  revokeRefreshToken(token: string): void {
-    this.revokedRefreshTokens.add(token);
+  async revokeRefreshToken(token: string): Promise<void> {
+    await this.tokenRevocation.revoke(token);
+    const hash = this.hashToken(token);
+    await this.sessionRepository.update(
+      { refreshTokenHash: hash },
+      { isRevoked: true },
+    );
   }
 
-  /** Regenera la password de un usuario (residente o cobrador) y retorna las nuevas credenciales. */
+  async revokeAllSessionsForUser(usuarioId: string): Promise<void> {
+    await this.sessionRepository.update(
+      { usuarioId },
+      { isRevoked: true },
+    );
+  }
+
+  async getUserSessions(usuarioId: string): Promise<AuthSession[]> {
+    return this.sessionRepository.find({
+      where: { usuarioId, isRevoked: false },
+      order: { lastUsedAt: 'DESC' },
+    });
+  }
+
+  async revokeSessionById(sessionId: string, usuarioId: string): Promise<void> {
+    const session = await this.sessionRepository.findOne({
+      where: { id: sessionId, usuarioId },
+    });
+    if (!session) {
+      throw new NotFoundException('Sesión no encontrada');
+    }
+    session.isRevoked = true;
+    await this.sessionRepository.save(session);
+  }
+
   async resetPasswordForUser(params: {
     residenteId?: string;
     usuarioId?: string;
@@ -126,12 +215,10 @@ export class AuthService {
     let usuario: Usuario | null = null;
 
     if (params.usuarioId) {
-      // Buscar por ID de usuario directo (para cobradores)
       usuario = await this.usuarioRepository.findOne({
         where: { id: params.usuarioId, tenantId: params.tenantId },
       });
     } else if (params.residenteId) {
-      // Buscar por residenteId (para residentes)
       usuario = await this.usuarioRepository.findOne({
         where: { residenteId: params.residenteId, tenantId: params.tenantId },
       });
@@ -141,11 +228,11 @@ export class AuthService {
       throw new NotFoundException('No se encontró usuario para este ID');
     }
 
-    // Generar nueva password de 10 caracteres
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+    const randomBytes = crypto.randomBytes(12);
     let nuevaPassword = '';
-    for (let i = 0; i < 10; i++) {
-      nuevaPassword += chars.charAt(Math.floor(Math.random() * chars.length));
+    for (let i = 0; i < 12; i++) {
+      nuevaPassword += chars.charAt(randomBytes[i] % chars.length);
     }
 
     const passwordHash = await bcrypt.hash(nuevaPassword, 10);
@@ -155,7 +242,6 @@ export class AuthService {
     return { username: usuario.email, password: nuevaPassword };
   }
 
-  /** Actualiza credenciales (username y/o password) de un usuario. */
   async updateCredentials(params: {
     usuarioId?: string;
     tenantId: string;
@@ -171,7 +257,6 @@ export class AuthService {
       throw new NotFoundException('Usuario no encontrado');
     }
 
-    // Si se proporciona password actual, verificarla
     if (params.currentPassword) {
       const valid = await bcrypt.compare(params.currentPassword, usuario.passwordHash);
       if (!valid) {
@@ -179,9 +264,7 @@ export class AuthService {
       }
     }
 
-    // Actualizar username si se proporciona
     if (params.newUsername && params.newUsername !== usuario.email) {
-      // Verificar que el nuevo username no exista
       const existente = await this.usuarioRepository.findOne({
         where: { email: params.newUsername, tenantId: params.tenantId },
       });
@@ -191,7 +274,6 @@ export class AuthService {
       usuario.email = params.newUsername;
     }
 
-    // Actualizar password si se proporciona
     if (params.newPassword) {
       const passwordHash = await bcrypt.hash(params.newPassword, 10);
       usuario.passwordHash = passwordHash;
@@ -202,7 +284,6 @@ export class AuthService {
     return { username: usuario.email };
   }
 
-  /** Retorna el username de un usuario (para admin). */
   async getCredentials(usuarioId: string, tenantId: string): Promise<{ username: string }> {
     const usuario = await this.usuarioRepository.findOne({
       where: { id: usuarioId, tenantId },

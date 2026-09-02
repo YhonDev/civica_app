@@ -1,4 +1,5 @@
 import { Controller, Get, Post, Param, UseGuards, NotFoundException } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { JwtAuthGuard } from '../../../shared/auth/jwt-auth.guard';
@@ -8,6 +9,8 @@ import { RolUsuario } from '../../../iam/domain/usuario.entity';
 import { Notificacion, EstadoNotificacion } from '../../domain/notificacion.entity';
 import { CurrentTenant } from '../../../shared/tenant/current-tenant.decorator';
 
+@ApiTags('Notificaciones')
+@ApiBearerAuth('jwt-auth')
 @Controller('notificaciones')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class NotificacionesController {
@@ -18,6 +21,7 @@ export class NotificacionesController {
 
   @Get('fallidas')
   @Roles(RolUsuario.ADMIN)
+  @ApiOperation({ summary: 'Listar notificaciones fallidas' })
   async listarFallidas(@CurrentTenant() tenantId: string) {
     return this.notificacionRepository.find({
       where: { tenantId, estado: EstadoNotificacion.FALLIDA },
@@ -27,6 +31,7 @@ export class NotificacionesController {
 
   @Post(':id/reintentar')
   @Roles(RolUsuario.ADMIN)
+  @ApiOperation({ summary: 'Reintentar notificación fallida' })
   async reintentar(@Param('id') id: string, @CurrentTenant() tenantId: string) {
     const notif = await this.notificacionRepository.findOne({
       where: { id, tenantId },

@@ -238,11 +238,12 @@ class _LoginScreenState extends State<LoginScreen> {
                             label: const Text('Admin'),
                             onPressed: () {
                               setState(() {
-                                _emailCtrl.text = 'admin@vigivecino.com';
-                                _passwordCtrl.text = 'Admin123!';
+                                _emailCtrl.text = 'admin';
+                                _passwordCtrl.text = 'Admin2026!';
                               });
                             },
                           ),
+
                           ActionChip(
                             avatar: const Icon(Icons.badge_outlined, size: 16),
                             label: const Text('Cobrador (Ricardo Arrieta)'),

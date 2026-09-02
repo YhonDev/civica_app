@@ -92,11 +92,13 @@ export class RegistrarResidenteUseCase {
     }
 
     if (params.casaId && casa) {
+      const etapaNombre = casa.manzana?.etapa?.nombre;
       const manzanaNombre = casa.manzana?.nombre ?? 'mz';
       const casaDireccion = casa.direccionInterna ?? params.casaId;
       username = this.generarCredenciales.generarUsernameResidente(
         manzanaNombre,
         casaDireccion,
+        etapaNombre,
       );
       password = this.generarCredenciales.generarPasswordResidente(
         manzanaNombre,
@@ -106,6 +108,15 @@ export class RegistrarResidenteUseCase {
       username = `residente_${saved.id.substring(0, 8)}`;
       password = this.generarCredenciales.generarPasswordAleatoria();
     }
+
+    // Asegurar unicidad de username si ya existiese
+    const baseUsername = username;
+    let counter = 1;
+    while (await this.usuarioRepository.findOne({ where: { email: username } })) {
+      counter++;
+      username = `${baseUsername}_${counter}`;
+    }
+
     const passwordHash = await bcrypt.hash(password, 10);
 
     // Crear el usuario automáticamente

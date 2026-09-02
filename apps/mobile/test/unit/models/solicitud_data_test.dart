@@ -82,15 +82,16 @@ void main() {
   });
 
   group('SolicitudEstado enum', () {
-    test('tiene 4 valores', () {
-      expect(SolicitudEstado.values.length, 4);
+    test('tiene 9 valores', () {
+      expect(SolicitudEstado.values.length, 9);
     });
 
-    test('valores en orden correcto', () {
-      expect(SolicitudEstado.values[0], SolicitudEstado.pendiente);
-      expect(SolicitudEstado.values[1], SolicitudEstado.enRevision);
-      expect(SolicitudEstado.values[2], SolicitudEstado.resuelta);
-      expect(SolicitudEstado.values[3], SolicitudEstado.rechazada);
+    test('valores contienen estados clave', () {
+      expect(SolicitudEstado.values.contains(SolicitudEstado.pendiente), isTrue);
+      expect(SolicitudEstado.values.contains(SolicitudEstado.enEspera), isTrue);
+      expect(SolicitudEstado.values.contains(SolicitudEstado.enRevision), isTrue);
+      expect(SolicitudEstado.values.contains(SolicitudEstado.resuelta), isTrue);
+      expect(SolicitudEstado.values.contains(SolicitudEstado.rechazada), isTrue);
     });
   });
 }

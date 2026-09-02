@@ -113,7 +113,12 @@ describe('AuthController', () => {
         'test@test.com',
         'correct-password',
       );
-      expect(authService.login).toHaveBeenCalledWith(mockUsuario);
+      expect(authService.login).toHaveBeenCalledWith(mockUsuario, {
+        deviceId: undefined,
+        deviceName: undefined,
+        ipAddress: undefined,
+        userAgent: undefined,
+      });
     });
   });
 

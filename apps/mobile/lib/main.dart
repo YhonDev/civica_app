@@ -1,25 +1,17 @@
-import 'package:flutter/foundation.dart' show kReleaseMode, defaultTargetPlatform, TargetPlatform;
+import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'core/database/app_database.dart';
 import 'core/network/api_client.dart';
+import 'core/network/base_url.dart';
 import 'core/sync/connectivity_detector.dart';
 import 'core/sync/sync_service.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/app_colors.dart';
 import 'core/router/app_router.dart';
 import 'features/auth/auth_cubit.dart';
-
-String _detectBaseUrl() {
-  const envUrl = String.fromEnvironment('API_BASE_URL');
-  if (envUrl.isNotEmpty) return envUrl;
-  if (defaultTargetPlatform == TargetPlatform.android) {
-    return 'http://10.0.2.2:3000/api';
-  }
-  return 'http://localhost:3000/api';
-}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,7 +26,7 @@ void main() async {
   }
 
   ApiClient.init(
-    baseUrl: _detectBaseUrl(),
+    baseUrl: detectBaseUrl(),
     enableLogging: !kReleaseMode,
   );
 

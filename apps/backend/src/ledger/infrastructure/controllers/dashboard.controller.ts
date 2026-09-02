@@ -7,6 +7,7 @@ import {
   DefaultValuePipe,
   Optional,
 } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { DashboardQuery } from '../../application/queries/dashboard.query';
 import { CobroRepository } from '../persistence/cobro.repository';
 import { PagoRepository } from '../persistence/pago.repository';
@@ -27,6 +28,8 @@ import { CurrentUser } from '../../../shared/tenant/current-user.decorator';
 import { RolUsuario, Usuario } from '../../../iam/domain/usuario.entity';
 import { DataSource } from 'typeorm';
 
+@ApiTags('Dashboard')
+@ApiBearerAuth('jwt-auth')
 @Controller()
 @UseGuards(JwtAuthGuard)
 export class DashboardController {

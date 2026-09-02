@@ -11,6 +11,7 @@ import {
   UseInterceptors,
   NotFoundException,
 } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { RegistrarPagoUseCase } from '../../application/use-cases/registrar-pago.use-case';
 import { EliminarPagoUseCase } from '../../application/use-cases/eliminar-pago.use-case';
 import { CorregirPagoUseCase } from '../../application/use-cases/corregir-pago.use-case';
@@ -30,6 +31,8 @@ import {
   ActividadInterceptor,
 } from '../../../shared/common/decorators/registrar-actividad.decorator';
 
+@ApiTags('Pagos')
+@ApiBearerAuth('jwt-auth')
 @Controller('pagos')
 @UseGuards(JwtAuthGuard)
 export class PagosController {
@@ -60,6 +63,7 @@ export class PagosController {
       solicitudId: result.pago?.solicitudId,
     }),
   })
+  @ApiOperation({ summary: 'Registrar pago (Cobrador/ADMIN)' })
   async registrar(
     @Body() dto: RegistrarPagoDto,
     @CurrentUser() user: Usuario,
@@ -91,6 +95,7 @@ export class PagosController {
     descripcionFn: (result) =>
       `Monto de pago corregido a: $${(result.monto / 100).toFixed(0)} COP`,
   })
+  @ApiOperation({ summary: 'Corregir monto de un pago registrado' })
   async corregir(
     @Param('id') pagoId: string,
     @Body() dto: { nuevoMonto: number; motivo: string },
@@ -114,6 +119,7 @@ export class PagosController {
     tipo: 'PAGO',
     descripcionFn: (result) => `Pago ${result.id} marcado como ${result.estado}`,
   })
+  @ApiOperation({ summary: 'Validar o rechazar un pago (solo ADMIN)' })
   async validar(
     @Param('id') pagoId: string,
     @Body() dto: { estado: string },
@@ -222,6 +228,7 @@ export class PagosController {
     tipo: 'PAGO',
     descripcionFn: (result) => `Pago reversado/eliminado correctamente`,
   })
+  @ApiOperation({ summary: 'Eliminar/revertir un pago (solo ADMIN)' })
   async eliminar(
     @Param('id') id: string,
     @CurrentTenant() tenantId: string,

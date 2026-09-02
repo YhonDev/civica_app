@@ -5,6 +5,7 @@ import 'package:equatable/equatable.dart';
 import '../../core/network/auth_api.dart';
 import '../../core/network/api_client.dart';
 import '../../core/network/api_exceptions.dart';
+import '../../core/network/base_url.dart';
 import '../../core/network/local_cache_repository.dart';
 import '../../core/network/realtime_socket_service.dart';
 
@@ -71,8 +72,11 @@ class AuthCubit extends Cubit<AuthState> {
       final userId = user['id'] as String? ?? '';
       final residenteId = user['residenteId'] as String?;
 
+      final wsUrl = detectWsUrl();
+      debugPrint('[AuthCubit] WebSocket URL: $wsUrl');
+
       RealtimeSocketService.instance.init(
-        serverUrl: 'http://127.0.0.1:3000',
+        serverUrl: wsUrl,
         tenantId: tenantId,
         userId: userId,
         residenteId: residenteId,
@@ -92,13 +96,34 @@ class AuthCubit extends Cubit<AuthState> {
         return;
       }
 
-      final user = await _authApi.refreshSession();
-      if (user != null) {
-        _initRealtimeSocket(user);
-        emit(AuthState.authenticated(user));
+      final cachedUser = await _authApi.getCachedUser();
+      final isAccessValid = await _authApi.isAccessTokenValid();
+
+      if (isAccessValid && cachedUser != null) {
+        _initRealtimeSocket(cachedUser);
+        emit(AuthState.authenticated(cachedUser));
         return;
       }
-      await logout();
+
+      try {
+        final user = await _authApi.refreshSession();
+        if (user != null) {
+          _initRealtimeSocket(user);
+          emit(AuthState.authenticated(user));
+          return;
+        }
+        await logout();
+      } on NetworkException catch (e) {
+        if (cachedUser != null) {
+          debugPrint('[AuthCubit] Modo offline activo: ${e.message}');
+          _initRealtimeSocket(cachedUser);
+          emit(AuthState.authenticated(cachedUser));
+          return;
+        }
+        await logout();
+      } on AuthException catch (_) {
+        await logout();
+      }
     } catch (_) {
       await logout();
     }
@@ -108,6 +133,8 @@ class AuthCubit extends Cubit<AuthState> {
   Future<void> login({
     required String username,
     required String password,
+    String? deviceId,
+    String? deviceName,
   }) async {
     emit(const AuthState.loading());
     try {
@@ -115,11 +142,16 @@ class AuthCubit extends Cubit<AuthState> {
       final result = await _authApi.login(
         username: username,
         password: password,
+        deviceId: deviceId,
+        deviceName: deviceName,
       );
       _initRealtimeSocket(result.usuario);
       emit(AuthState.authenticated(result.usuario));
     } on AuthException catch (e) {
-      emit(AuthState.error(e.message.isNotEmpty ? e.message : 'Credenciales inválidas'));
+      final msg = (e.message.isNotEmpty && !e.message.startsWith('Sesión expirada'))
+          ? e.message
+          : 'Credenciales inválidas';
+      emit(AuthState.error(msg));
     } on NetworkException {
       emit(const AuthState.error('Sin conexión a internet'));
     } on ApiException catch (e) {

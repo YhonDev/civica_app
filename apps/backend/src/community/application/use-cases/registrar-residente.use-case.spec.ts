@@ -54,6 +54,7 @@ describe('RegistrarResidenteUseCase', () => {
           provide: getRepositoryToken(Usuario),
           useValue: {
             save: jest.fn(),
+            findOne: jest.fn().mockResolvedValue(null),
           },
         },
         {

@@ -211,6 +211,25 @@ CREATE TABLE usuarios (
 CREATE INDEX idx_usuarios_tenant ON usuarios (tenant_id);
 CREATE INDEX idx_usuarios_email  ON usuarios (email);
 
+-- ── 13b. Sesiones de Autenticación ───────────────────────
+CREATE TABLE auth_sessions (
+  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  usuario_id          UUID NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+  refresh_token_hash  VARCHAR(255) NOT NULL,
+  device_id           VARCHAR(255),
+  device_name         VARCHAR(255),
+  ip_address          VARCHAR(64),
+  user_agent          VARCHAR(255),
+  is_revoked          BOOLEAN NOT NULL DEFAULT false,
+  expires_at          TIMESTAMPTZ NOT NULL,
+  last_used_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_auth_sessions_usuario ON auth_sessions (usuario_id);
+CREATE INDEX idx_auth_sessions_token_hash ON auth_sessions (refresh_token_hash);
+
+
 -- ── 14. Asignaciones de Etapa (Cobrador ↔ Etapa) ────────
 CREATE TABLE asignaciones_etapa (
   id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),

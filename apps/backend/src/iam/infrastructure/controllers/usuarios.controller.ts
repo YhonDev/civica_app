@@ -11,6 +11,7 @@ import {
   NotFoundException,
   Delete,
 } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { InjectRepository } from '@nestjs/typeorm';
 import { IsString, IsNotEmpty, IsOptional, MinLength, IsArray } from 'class-validator';
 import { Repository } from 'typeorm';
@@ -50,6 +51,8 @@ class ResetPasswordDto {
   password?: string;
 }
 
+@ApiTags('Usuarios')
+@ApiBearerAuth('jwt-auth')
 @Controller('usuarios')
 @UseGuards(JwtAuthGuard)
 export class UsuariosController {

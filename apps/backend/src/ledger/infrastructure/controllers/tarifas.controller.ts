@@ -9,6 +9,7 @@ import {
   Body,
   UseGuards,
 } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { ConfigurarTarifaUseCase } from '../../application/use-cases/configurar-tarifa.use-case';
 import { ActualizarTarifaUseCase } from '../../application/use-cases/actualizar-tarifa.use-case';
 import { TarifaRepository } from '../persistence/tarifa.repository';
@@ -24,6 +25,8 @@ import { Roles } from '../../../shared/auth/decorators/roles.decorator';
 import { CurrentTenant } from '../../../shared/tenant/current-tenant.decorator';
 import { RolUsuario } from '../../../iam/domain/usuario.entity';
 
+@ApiTags('Tarifas')
+@ApiBearerAuth('jwt-auth')
 @Controller('tarifas')
 @UseGuards(JwtAuthGuard)
 export class TarifasController {
@@ -36,6 +39,7 @@ export class TarifasController {
   @Post()
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN)
+  @ApiOperation({ summary: 'Crear nueva tarifa' })
   async crear(
     @Body() dto: CrearTarifaDto,
     @CurrentTenant() tenantId: string,
@@ -52,6 +56,7 @@ export class TarifasController {
   @Get()
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN, RolUsuario.RESIDENTE)
+  @ApiOperation({ summary: 'Listar todas las tarifas' })
   async listar(
     @Query() query: ListarTarifasQueryDto,
     @CurrentTenant() tenantId: string,
@@ -63,6 +68,7 @@ export class TarifasController {
   @Get('vigentes')
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN, RolUsuario.RESIDENTE)
+  @ApiOperation({ summary: 'Obtener tarifas vigentes por modalidad' })
   async vigentes(
     @Query() query: TarifasVigentesQueryDto,
     @CurrentTenant() tenantId: string,

@@ -266,6 +266,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
 
               // ── Section 0: Header ──────────────────────────────────
               _buildAnimatedSection(
+                key: const ValueKey('residente-sec-0-header'),
                 index: 0,
                 child: _buildHeader(displayName, user),
               ),
@@ -274,6 +275,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
 
               // ── Section 1: Estado Cuenta Card (protagonista) ───────
               _buildAnimatedSection(
+                key: const ValueKey('residente-sec-1-estado'),
                 index: 1,
                 child: EstadoCuentaCard(
                   status: _status,
@@ -287,6 +289,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
 
               // ── Section 1.5: Recaudo Timeline Widget ───────────────
               _buildAnimatedSection(
+                key: const ValueKey('residente-sec-1.5-recaudo'),
                 index: 1,
                 child: RecaudoTimelineWidget(
                   cuotasPagadas: _movimientos.where((m) => m.tipo == 'pago').length,
@@ -304,6 +307,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
               if (_proximoPago != null) ...[
                 const SizedBox(height: AppSpacing.md),
                 _buildAnimatedSection(
+                  key: const ValueKey('residente-sec-1-proximo'),
                   index: 1,
                   child: _buildProximoPago(_proximoPago!),
                 ),
@@ -315,6 +319,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
               if (_movimientos.isNotEmpty) ...[
                 const SizedBox(height: AppSpacing.lg),
                 _buildAnimatedSection(
+                  key: const ValueKey('residente-sec-2-movimientos'),
                   index: 2,
                   child: _buildMovimientos(),
                 ),
@@ -324,6 +329,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
               if (_solicitudesPendientes.isNotEmpty) ...[
                 const SizedBox(height: AppSpacing.lg),
                 _buildAnimatedSection(
+                  key: const ValueKey('residente-sec-3-solicitudes'),
                   index: 3,
                   child: _buildSolicitudes(),
                 ),
@@ -549,16 +555,16 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
         actions: [
           TextButton(
             onPressed: () {
-              FocusScope.of(dialogContext).unfocus();
-              Navigator.pop(dialogContext);
+              FocusManager.instance.primaryFocus?.unfocus();
+              Navigator.of(dialogContext).pop();
             },
             child: const Text('Cancelar'),
           ),
           FilledButton(
             onPressed: () {
-              FocusScope.of(dialogContext).unfocus();
+              FocusManager.instance.primaryFocus?.unfocus();
               final text = controller.text;
-              Navigator.pop(dialogContext, text);
+              Navigator.of(dialogContext).pop(text);
             },
             child: const Text('Enviar Solicitud'),
           ),
@@ -566,27 +572,51 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
       ),
     );
 
-    await Future.microtask(() {});
-    controller.dispose();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      controller.dispose();
+    });
 
     if (!mounted || result == null) return;
 
-    try {
-      final rawId = (item is Map) ? (item['cobroId'] ?? item['id']) : null;
-      final validCobroId = (rawId != null && rawId.toString().length > 20 && !rawId.toString().startsWith('future-'))
-          ? rawId.toString()
-          : (_movimientos.isNotEmpty ? _movimientos.first.id : null);
-
-      if (validCobroId == null) {
-        throw Exception('No se encontró un cobro válido asignado.');
+    String? validCobroId;
+    if (item is Map) {
+      final cobroIdStr = item['cobroId']?.toString();
+      if (cobroIdStr != null && cobroIdStr.length >= 32 && !cobroIdStr.startsWith('future-')) {
+        validCobroId = cobroIdStr;
+      } else {
+        final idStr = item['id']?.toString();
+        if (idStr != null && idStr.length == 36 && !idStr.startsWith('future-')) {
+          validCobroId = idStr;
+        }
       }
+    }
 
-      final userId = (user['id'] ?? user['sub'] ?? '').toString();
+    validCobroId ??= _proximoPago?['cobroId']?.toString();
 
+    if (validCobroId == null || validCobroId.isEmpty || validCobroId.startsWith('future-')) {
+      final cuotaMov = _movimientos.firstWhere(
+        (m) => m.tipo == 'cuota' && m.id.length >= 32,
+        orElse: () => TimelineItem(id: '', tipo: '', descripcion: '', usuario: '', timestamp: DateTime.now(), hace: '', monto: 0),
+      );
+      if (cuotaMov.id.isNotEmpty) {
+        validCobroId = cuotaMov.id;
+      }
+    }
+
+    if (validCobroId == null || validCobroId.isEmpty) {
+      if (mounted) {
+        TopToast.showError(context, 'No se encontró un cobro activo asignado.');
+      }
+      return;
+    }
+
+    final userId = (user['id'] ?? user['sub'] ?? '').toString();
+
+    try {
       await _solicitudesRepo.crearSolicitud(
         cobroId: validCobroId,
         tipo: 'SOLICITUD_COBRO',
-        descripcion: result.isEmpty ? 'Solicita cobro en casa.' : result,
+        descripcion: result.trim().isEmpty ? 'Solicita cobro en casa.' : result.trim(),
         residenteId: userId,
       );
 
@@ -595,12 +625,20 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
 
       if (mounted) {
         TopToast.showSuccess(context, 'Solicitud de cobro enviada al administrador/cobrador');
-        await _loadDashboardData(silent: true);
       }
     } catch (e) {
       if (mounted) {
         TopToast.showError(context, 'Error al enviar solicitud: $e');
       }
+      return;
+    }
+
+    try {
+      if (mounted) {
+        await _loadDashboardData(silent: true);
+      }
+    } catch (e) {
+      debugPrint('[ResidenteDashboard] Advertencia al refrescar dashboard: $e');
     }
   }
 
@@ -886,11 +924,13 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
 
   // ── Animated section wrapper ──────────────────────────────────────
   Widget _buildAnimatedSection({
+    Key? key,
     required int index,
     required Widget child,
   }) {
-    if (index >= _controllers.length) return child;
+    if (index >= _controllers.length) return KeyedSubtree(key: key, child: child);
     return FadeTransition(
+      key: key,
       opacity: _fadeAnimations[index],
       child: SlideTransition(
         position: _slideAnimations[index],

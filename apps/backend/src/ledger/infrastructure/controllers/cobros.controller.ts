@@ -9,6 +9,7 @@ import {
   UseGuards,
   UnauthorizedException,
 } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { DataSource } from 'typeorm';
 import { JwtAuthGuard } from '../../../shared/auth/jwt-auth.guard';
 import { RolesGuard } from '../../../shared/auth/guards/roles.guard';
@@ -20,6 +21,8 @@ import { CobroRepository } from '../../infrastructure/persistence/cobro.reposito
 import { EliminarCobroUseCase } from '../../application/use-cases/eliminar-cobro.use-case';
 import { CarteraViviendaResumenQuery } from '../../application/queries/cartera-vivienda-resumen.query';
 
+@ApiTags('Cobros')
+@ApiBearerAuth('jwt-auth')
 @Controller('cobros')
 @UseGuards(JwtAuthGuard)
 export class CobrosController {
@@ -33,6 +36,7 @@ export class CobrosController {
   @Get()
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN, RolUsuario.COBRADOR)
+  @ApiOperation({ summary: 'Listar cobros (cuotas) con filtros' })
   async listar(
     @CurrentTenant() tenantId: string,
     @CurrentUser() user: Usuario,
@@ -67,6 +71,7 @@ export class CobrosController {
   @Get('residente/:residenteId')
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN, RolUsuario.COBRADOR, RolUsuario.RESIDENTE)
+  @ApiOperation({ summary: 'Listar cobros de un residente específico' })
   async listarPorResidente(
     @Param('residenteId') residenteId: string,
     @CurrentTenant() tenantId: string,
@@ -155,6 +160,7 @@ export class CobrosController {
   @Delete(':id')
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN)
+  @ApiOperation({ summary: 'Eliminar un cobro (solo ADMIN)' })
   async eliminar(@Param('id') id: string) {
     await this.eliminarCobroUseCase.execute(id);
     return { success: true };

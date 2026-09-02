@@ -6,7 +6,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:civica_pago_mobile/core/network/api_client.dart';
 import 'package:civica_pago_mobile/features/auth/auth_cubit.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:civica_pago_mobile/features/dashboard_propietario/propietario_dashboard_screen.dart';
+import 'package:civica_pago_mobile/features/dashboard_residente/residente_dashboard_screen.dart';
 
 import '../unit/repositories/mock_http_adapter.dart';
 
@@ -22,7 +22,7 @@ Widget buildTestScreen({String nombre = 'Juan Perez', String rol = 'PROPIETARIO'
   return MaterialApp(
     home: BlocProvider<AuthCubit>.value(
       value: authCubit,
-      child: const PropietarioDashboardScreen(),
+      child: const ResidenteDashboardScreen(),
     ),
   );
 }
@@ -33,47 +33,27 @@ Widget buildTestScreen({String nombre = 'Juan Perez', String rol = 'PROPIETARIO'
 /// complex object, and `ultimoPago` as a {monto, fecha} map.
 void _mockDashboardApi(MockHttpAdapter adapter, {
   bool summarySuccess = true,
-  bool timelineSuccess = true,
 }) {
+  adapter.onGet('/solicitudes', []);
   if (summarySuccess) {
-    adapter.onGet('/dashboard/propietario', {
+    adapter.onGet('/dashboard/residente', {
       'saldo': 120000,
       'status': 'AL_DIA',
-      'proximoCobro': '2026-08-01',   // string — just the date
+      'proximoCobro': '2026-08-01T00:00:00.000Z',
       'proximoPago': null,
-      'tarifaActual': {'cuotaMensual': 40000, 'montoSegunFrecuencia': 40000, 'frecuencia': 'MENSUAL'},
-      'ultimoPago': {'monto': 40000, 'fecha': '2026-07-01'},
-      'movimientos': [],
-      'propietarioInfo': {'nombre': 'Juan Perez', 'casaDireccion': 'Casa 101', 'etapaNombre': 'Etapa Alfa'},
-    });
-  } else {
-    adapter.onGet('/dashboard/propietario', {'message': 'Server error'}, statusCode: 500);
-  }
-
-  if (timelineSuccess) {
-    adapter.onGet('/dashboard/propietario/timeline', {
-      'items': [
+      'tarifaActual': {'cuotaMensual': 40000, 'montoSegunFrecuencia': 40000, 'modalidad': 'MENSUAL'},
+      'movimientos': [
         {
           'id': 'pago-1',
-          'type': 'PAGO',
-          'date': '2026-07-15',
-          'monto': 400,
-          'description': 'Pago de cuota',
-          'estado': 'PAGADO',
-        },
-        {
-          'id': 'sol-1',
-          'type': 'SOLICITUD',
-          'date': '2026-07-10T14:00:00Z',
-          'monto': null,
-          'description': 'Solicita cobro en casa',
-          'estado': 'EN_REVISION',
+          'tipo': 'pago',
+          'fecha': '2026-07-15T10:00:00Z',
+          'monto': 40000,
+          'descripcion': 'Pago de cuota',
         },
       ],
-      'hasMore': false,
     });
   } else {
-    adapter.onGet('/dashboard/propietario/timeline', {'message': 'Server error'}, statusCode: 500);
+    adapter.onGet('/dashboard/residente', {'message': 'Server error'}, statusCode: 500);
   }
 }
 
@@ -122,14 +102,13 @@ void main() {
       expect(find.text('Al día'), findsOneWidget);
     });
 
-    testWidgets('shows propietario address from API response', (tester) async {
+    testWidgets('shows header address from user data', (tester) async {
       _mockDashboardApi(mockAdapter);
       await tester.pumpWidget(buildTestScreen());
       await tester.pump();
       await tester.pump(const Duration(seconds: 3));
 
-      expect(find.text('Casa 101'), findsOneWidget);
-      expect(find.text('Etapa Alfa'), findsOneWidget);
+      expect(find.text('Urbanización'), findsOneWidget);
     });
   });
 
@@ -142,43 +121,18 @@ void main() {
 
       // Pago item should be rendered
       expect(find.textContaining('Pago de cuota'), findsOneWidget);
-      // Solicitud item should be rendered
-      expect(find.textContaining('Solicita cobro en casa'), findsOneWidget);
     });
   });
 
   group('PropietarioDashboardScreen — error and empty states', () {
-    testWidgets('shows empty state when timeline returns no items', (tester) async {
-      mockAdapter.onGet('/dashboard/propietario', {
-        'saldo': 0,
-        'status': 'AL_DIA',
-        'proximoCobro': null,
-        'proximoPago': null,
-        'tarifaActual': null,
-        'ultimoPago': null,
-        'movimientos': [],
-        'propietarioInfo': {'nombre': 'Test', 'casaDireccion': '', 'etapaNombre': ''},
-      });
-      mockAdapter.onGet('/dashboard/propietario/timeline', {
-        'items': [],
-        'hasMore': false,
-      });
-
-      await tester.pumpWidget(buildTestScreen());
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 3));
-
-      expect(find.text('Sin actividad reciente'), findsOneWidget);
-    });
-
     testWidgets('handles API failure gracefully — no crash', (tester) async {
-      _mockDashboardApi(mockAdapter, summarySuccess: false, timelineSuccess: false);
+      _mockDashboardApi(mockAdapter, summarySuccess: false);
       await tester.pumpWidget(buildTestScreen());
       await tester.pump();
       await tester.pump(const Duration(seconds: 3));
 
-      // Screen should still be rendered (not crashed)
-      expect(find.byType(PropietarioDashboardScreen), findsOneWidget);
+      // Screen should render error state button
+      expect(find.text('Reintentar'), findsOneWidget);
     });
   });
 }

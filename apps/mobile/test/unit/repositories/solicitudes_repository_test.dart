@@ -153,7 +153,7 @@ void main() {
   });
 
   group('SolicitudesRepository — edge cases', () {
-    test('estado desconocido en JSON se mapea a enRevision (fallback)', () async {
+    test('estado desconocido en JSON se mapea a enEspera (fallback)', () async {
       mockAdapter.onGet('/solicitudes/admin', [
         {
           'id': 'SOL_UNKNOWN',
@@ -170,9 +170,8 @@ void main() {
         },
       ]);
 
-      final solicitudes = await repository.getSolicitudes();
-
-      expect(solicitudes[0].estado, SolicitudEstado.enRevision);
+      final result = await repository.getSolicitudes();
+      expect(result[0].estado, SolicitudEstado.enEspera);
     });
 
     test('sin fecha usa createdAt como fallback', () async {

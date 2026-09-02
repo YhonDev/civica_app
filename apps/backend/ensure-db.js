@@ -30,9 +30,13 @@ async function main() {
 
   console.log(`[DB Guard] ⚠️ Puerto ${port} cerrado. Levantando contenedor Docker...`);
   try {
-    execSync('docker start supabase_db_Civica_pago_app', { stdio: 'ignore' });
+    try {
+      execSync('docker start civica-postgres', { stdio: 'ignore' });
+    } catch (_) {
+      execSync('docker start supabase_db_Civica_pago_app', { stdio: 'ignore' });
+    }
     console.log(`[DB Guard] 🚀 Contenedor PostgreSQL iniciado. Esperando disponibilidad...`);
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < 15; i++) {
       await new Promise((r) => setTimeout(r, 1000));
       if (await checkPort(port, host)) {
         console.log(`[DB Guard] ✅ Conexión establecida a PostgreSQL en puerto ${port}.`);
@@ -46,3 +50,4 @@ async function main() {
 }
 
 main();
+

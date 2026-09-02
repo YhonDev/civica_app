@@ -12,7 +12,9 @@ import {
   BadRequestException,
   NotFoundException,
 } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { SolicitudRepository } from '../persistence/solicitud.repository';
+import { CobroRepository } from '../persistence/cobro.repository';
 import { Solicitud, SolicitudEstado } from '../../domain/solicitud.entity';
 import { JwtAuthGuard } from '../../../shared/auth/jwt-auth.guard';
 import { CurrentUser } from '../../../shared/tenant/current-user.decorator';
@@ -25,10 +27,15 @@ import {
   ActividadInterceptor,
 } from '../../../shared/common/decorators/registrar-actividad.decorator';
 
+@ApiTags('Solicitudes')
+@ApiBearerAuth('jwt-auth')
 @Controller('solicitudes')
 @UseGuards(JwtAuthGuard)
 export class SolicitudesController {
-  constructor(private readonly solicitudRepo: SolicitudRepository) {}
+  constructor(
+    private readonly solicitudRepo: SolicitudRepository,
+    private readonly cobroRepo: CobroRepository,
+  ) {}
 
   @Post()
   @UseGuards(RolesGuard)
@@ -45,6 +52,7 @@ export class SolicitudesController {
       descripcion: r.descripcion,
     }),
   })
+  @ApiOperation({ summary: 'Crear solicitud de cobro presencial' })
   async crear(
     @Body() dto: { cuotaId?: string; cobroId?: string; tipo: string; descripcion: string },
     @CurrentUser() user: Usuario,
@@ -54,6 +62,10 @@ export class SolicitudesController {
     if (!targetCobroId) {
       throw new BadRequestException('Se requiere cobroId o cuotaId');
     }
+    const cobro = await this.cobroRepo.findById(targetCobroId);
+    if (!cobro) {
+      throw new NotFoundException(`No existe un cobro válido asignado para el id ${targetCobroId}`);
+    }
     const solicitud = Solicitud.crear(
       tenantId,
       user.id,
@@ -61,12 +73,16 @@ export class SolicitudesController {
       dto.tipo,
       dto.descripcion,
     );
+    if (user.residenteId) {
+      solicitud.residenteId = user.residenteId;
+    }
     return this.solicitudRepo.save(solicitud);
   }
 
   @Get()
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.RESIDENTE, RolUsuario.ADMIN)
+  @ApiOperation({ summary: 'Listar mis solicitudes' })
   async listar(@CurrentUser() user: Usuario) {
     return this.solicitudRepo.findByUsuario(user.id);
   }
@@ -130,6 +146,7 @@ export class SolicitudesController {
       respuesta: r.respuesta,
     }),
   })
+  @ApiOperation({ summary: 'Resolver una solicitud (aprobar/rechazar)' })
   async resolver(
     @Param('id') id: string,
     @Body() dto: { estado: string; respuesta?: string },

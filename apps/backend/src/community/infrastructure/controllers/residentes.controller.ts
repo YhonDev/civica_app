@@ -11,6 +11,7 @@ import {
   UseInterceptors,
   UnauthorizedException,
 } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { DataSource, In, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { RegistrarResidenteUseCase } from '../../application/use-cases/registrar-residente.use-case';
@@ -30,6 +31,8 @@ import {
   ActividadInterceptor,
 } from '../../../shared/common/decorators/registrar-actividad.decorator';
 
+@ApiTags('Residentes')
+@ApiBearerAuth('jwt-auth')
 @Controller('residentes')
 @UseGuards(JwtAuthGuard)
 export class ResidentesController {
@@ -47,6 +50,7 @@ export class ResidentesController {
   @Get(':id/detalle')
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN, RolUsuario.COBRADOR, RolUsuario.RESIDENTE)
+  @ApiOperation({ summary: 'Obtener detalle completo de un residente' })
   async getDetalle(
     @Param('id') id: string,
     @CurrentTenant() tenantId: string,
@@ -70,6 +74,7 @@ export class ResidentesController {
     tipo: 'RESIDENTE',
     descripcionFn: (result: any) => `Nuevo residente registrado: ${result?.nombre ?? result?.residente?.nombre ?? 'Residente'}`,
   })
+  @ApiOperation({ summary: 'Registrar nuevo residente' })
   async registrar(
     @Body() dto: RegistrarResidenteDto,
     @CurrentTenant() tenantId: string,
@@ -93,6 +98,7 @@ export class ResidentesController {
     tipo: 'RESIDENTE',
     descripcionFn: (result) => `Residente actualizado`,
   })
+  @ApiOperation({ summary: 'Actualizar datos de un residente' })
   async actualizar(
     @Param('id') id: string,
     @Body() dto: Partial<RegistrarResidenteDto>,
@@ -119,6 +125,7 @@ export class ResidentesController {
     tipo: 'RESIDENTE',
     descripcionFn: (result) => `Residente eliminado`,
   })
+  @ApiOperation({ summary: 'Eliminar un residente' })
   async eliminar(
     @Param('id') id: string,
     @CurrentUser() user: Usuario,
@@ -131,6 +138,9 @@ export class ResidentesController {
   @Get()
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN, RolUsuario.COBRADOR, RolUsuario.RESIDENTE)
+  @ApiOperation({ summary: 'Listar residentes' })
+  @ApiQuery({ name: 'etapa', required: false, description: 'Filtrar por UUID de etapa' })
+  @ApiQuery({ name: 'casa', required: false, description: 'Filtrar por UUID de casa' })
   async listar(
     @CurrentTenant() tenantId: string,
     @Query('etapa') etapaId?: string,

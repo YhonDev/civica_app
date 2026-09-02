@@ -106,6 +106,24 @@ class TokenStorage {
     final access = await getAccessToken();
     return access != null;
   }
+
+  Future<bool> isAccessTokenValid({int bufferSeconds = 60}) async {
+    final token = await getAccessToken();
+    if (token == null) return false;
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) return false;
+      final normalized = base64Url.normalize(parts[1]);
+      final payloadString = utf8.decode(base64Url.decode(normalized));
+      final payload = jsonDecode(payloadString) as Map<String, dynamic>;
+      final exp = payload['exp'] as int?;
+      if (exp == null) return false;
+      final nowSeconds = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      return nowSeconds < (exp - bufferSeconds);
+    } catch (_) {
+      return false;
+    }
+  }
 }
 
 // ──────────────────────────────────────────────

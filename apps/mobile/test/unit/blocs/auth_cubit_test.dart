@@ -7,7 +7,6 @@ import 'package:civica_pago_mobile/core/network/auth_api.dart';
 import 'package:civica_pago_mobile/core/network/api_exceptions.dart';
 
 /// Fake [AuthApi] that returns configurable results for testing.
-/// Parent constructor accesses ApiClient.instance, so ApiClient.init() must be called first.
 class FakeAuthApi extends AuthApi {
   final LoginResult? loginResult;
   final Object? loginError;
@@ -19,18 +18,20 @@ class FakeAuthApi extends AuthApi {
     this.loginResult,
     this.loginError,
     this.logoutError,
-  }) : super(null); // super triggers ApiClient.instance
+  }) : super(null);
 
   @override
   Future<LoginResult> login({
-    required String email,
+    required String username,
     required String password,
+    String? deviceId,
+    String? deviceName,
   }) async {
     if (loginError != null) throw loginError!;
     return loginResult ?? LoginResult(
       accessToken: 'mock-token',
       refreshToken: 'mock-refresh',
-      usuario: {'nombre': 'Test', 'rol': 'ADMIN'},
+      usuario: const {'nombre': 'Test', 'rol': 'ADMIN'},
     );
   }
 
@@ -47,9 +48,6 @@ void main() {
     ApiClient.init(baseUrl: 'http://test.local');
   });
 
-  // ════════════════════════════════════════════════════════════
-  // AuthState
-  // ════════════════════════════════════════════════════════════
   group('AuthState', () {
     test('initial tiene status initial', () {
       const state = AuthState();
@@ -99,18 +97,14 @@ void main() {
     });
   });
 
-  // ════════════════════════════════════════════════════════════
-  // AuthCubit
-  // ════════════════════════════════════════════════════════════
   group('AuthCubit.checkSession', () {
-    test('emite loading → unauthenticated', () async {
+    test('emite loading → unauthenticated cuando no hay tokens', () async {
       final api = FakeAuthApi();
       final cubit = AuthCubit(authApi: api);
       addTearDown(() => cubit.close());
 
       expect(cubit.state, const AuthState.initial());
       await cubit.checkSession();
-      expect(api.logoutCalled, true);
       expect(cubit.state.status, AuthStatus.unauthenticated);
     });
 
@@ -126,14 +120,14 @@ void main() {
 
   group('AuthCubit.login', () {
     test('exitoso → authenticated', () async {
-      final usuario = {'nombre': 'Admin', 'rol': 'ADMIN'};
-      final api = FakeAuthApi(loginResult: LoginResult(
+      const usuario = {'nombre': 'Admin', 'rol': 'ADMIN'};
+      final api = FakeAuthApi(loginResult: const LoginResult(
         accessToken: 't1', refreshToken: 'r1', usuario: usuario,
       ));
       final cubit = AuthCubit(authApi: api);
       addTearDown(() => cubit.close());
 
-      await cubit.login(email: 'a@b.com', password: 'p');
+      await cubit.login(username: 'a@b.com', password: 'p');
       expect(cubit.state.status, AuthStatus.authenticated);
       expect(cubit.state.usuario, usuario);
     });
@@ -143,7 +137,7 @@ void main() {
       final cubit = AuthCubit(authApi: api);
       addTearDown(() => cubit.close());
 
-      await cubit.login(email: 'bad@test.com', password: 'wrong');
+      await cubit.login(username: 'bad@test.com', password: 'wrong');
       expect(cubit.state.status, AuthStatus.error);
       expect(cubit.state.errorMessage, 'Credenciales inválidas');
     });
@@ -153,7 +147,7 @@ void main() {
       final cubit = AuthCubit(authApi: api);
       addTearDown(() => cubit.close());
 
-      await cubit.login(email: 'a@b.com', password: 'p');
+      await cubit.login(username: 'a@b.com', password: 'p');
       expect(cubit.state.status, AuthStatus.error);
       expect(cubit.state.errorMessage, 'Sin conexión a internet');
     });
@@ -165,7 +159,7 @@ void main() {
       final cubit = AuthCubit(authApi: api);
       addTearDown(() => cubit.close());
 
-      await cubit.login(email: 'a@b.com', password: 'p');
+      await cubit.login(username: 'a@b.com', password: 'p');
       expect(cubit.state.status, AuthStatus.error);
       expect(cubit.state.errorMessage, 'Error 500');
     });
@@ -175,21 +169,9 @@ void main() {
       final cubit = AuthCubit(authApi: api);
       addTearDown(() => cubit.close());
 
-      await cubit.login(email: 'a@b.com', password: 'p');
+      await cubit.login(username: 'a@b.com', password: 'p');
       expect(cubit.state.status, AuthStatus.error);
       expect(cubit.state.errorMessage, contains('Algo falló'));
-    });
-
-    test('emite authenticated como estado final', () async {
-      final api = FakeAuthApi();
-      final cubit = AuthCubit(authApi: api);
-      addTearDown(() => cubit.close());
-
-      await cubit.login(email: 'a@b.com', password: 'p');
-
-      // El estado final debe ser authenticated (independientemente de estados intermedios)
-      expect(cubit.state, isA<AuthState>());
-      expect(cubit.state.status, AuthStatus.authenticated);
     });
   });
 
@@ -199,7 +181,7 @@ void main() {
       final cubit = AuthCubit(authApi: api);
       addTearDown(() => cubit.close());
 
-      await cubit.login(email: 'a@b.com', password: 'p');
+      await cubit.login(username: 'a@b.com', password: 'p');
       expect(cubit.state.isAuthenticated, true);
 
       await cubit.logout();

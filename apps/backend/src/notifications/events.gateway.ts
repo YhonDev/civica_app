@@ -8,10 +8,16 @@ import {
 import { Logger, Injectable } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 
+/**
+ * WebSocket Gateway for real-time events.
+ * CORS is restricted to origins from CORS_ORIGIN env var (same as HTTP).
+ */
 @Injectable()
 @WebSocketGateway({
   cors: {
-    origin: '*',
+    origin: process.env.CORS_ORIGIN?.split(',') ?? ['http://localhost:3000'],
+    methods: ['GET', 'POST'],
+    credentials: true,
   },
 })
 export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {

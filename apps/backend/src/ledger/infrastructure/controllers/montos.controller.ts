@@ -9,6 +9,7 @@ import {
   UseGuards,
   NotFoundException,
 } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { ConfigurarMontoUseCase } from '../../application/use-cases/configurar-monto.use-case';
 import { MontoPagoPredefinidoRepository } from '../persistence/monto-pago-predefinido.repository';
 import { CrearMontoDto, ListarMontosQueryDto } from './dtos/montos.dto';
@@ -18,6 +19,8 @@ import { Roles } from '../../../shared/auth/decorators/roles.decorator';
 import { CurrentTenant } from '../../../shared/tenant/current-tenant.decorator';
 import { RolUsuario } from '../../../iam/domain/usuario.entity';
 
+@ApiTags('Montos')
+@ApiBearerAuth('jwt-auth')
 @Controller('montos-predefinidos')
 @UseGuards(JwtAuthGuard)
 export class MontosController {
@@ -29,6 +32,7 @@ export class MontosController {
   @Post()
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN)
+  @ApiOperation({ summary: 'Crear monto predefinido' })
   async crear(@Body() dto: CrearMontoDto, @CurrentTenant() tenantId: string) {
     return this.configurarMontoUseCase.execute({
       tenantId,
@@ -39,6 +43,7 @@ export class MontosController {
   }
 
   @Get()
+  @ApiOperation({ summary: 'Listar montos predefinidos por proyecto' })
   async listar(@Query() query: ListarMontosQueryDto) {
     return this.montoRepository.findAllByConjunto(query.proyectoId);
   }

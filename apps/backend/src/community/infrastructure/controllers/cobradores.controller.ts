@@ -4,6 +4,7 @@ import {
   Body,
   UseGuards,
 } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { CrearCobradorUseCase } from '../../application/use-cases/crear-cobrador.use-case';
 import { CrearCobradorDto } from './dtos/cobradores.dto';
 import { JwtAuthGuard } from '../../../shared/auth/jwt-auth.guard';
@@ -12,6 +13,8 @@ import { Roles } from '../../../shared/auth/decorators/roles.decorator';
 import { CurrentTenant } from '../../../shared/tenant/current-tenant.decorator';
 import { RolUsuario } from '../../../iam/domain/usuario.entity';
 
+@ApiTags('Cobradores')
+@ApiBearerAuth('jwt-auth')
 @Controller('cobradores')
 @UseGuards(JwtAuthGuard)
 export class CobradoresController {
@@ -22,6 +25,7 @@ export class CobradoresController {
   @Post()
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN)
+  @ApiOperation({ summary: 'Crear nuevo cobrador' })
   async crear(
     @Body() dto: CrearCobradorDto,
     @CurrentTenant() tenantId: string,

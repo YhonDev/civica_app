@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, ClassSerializerInterceptor } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import helmet from 'helmet';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -9,6 +10,55 @@ async function bootstrap() {
 
   // ─── Global Prefix ───────────────────────────────────
   app.setGlobalPrefix('api');
+
+  // ─── Swagger / OpenAPI ───────────────────────────────
+  const config = new DocumentBuilder()
+    .setTitle('Cívica Pago API')
+    .setDescription(
+      'API REST para gestión de cobros de vigilancia.\n\n' +
+      '**Autenticación:** Bearer JWT (obtener en POST /api/auth/login).\n\n' +
+      '**Multi-tenant:** Todas las operaciones están scopeadas por `tenantId` del usuario autenticado.',
+    )
+    .setVersion('1.0')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        description: 'Pega el accessToken obtenido en POST /api/auth/login',
+      },
+      'jwt-auth',
+    )
+    .addTag('Auth', 'Autenticación, registro y gestión de sesiones')
+    .addTag('Usuarios', 'Gestión de usuarios, cobradores y residentes')
+    .addTag('Proyectos', 'CRUD de proyectos, etapas, manzanas y casas')
+    .addTag('Cobradores', 'Registro de cobradores')
+    .addTag('Residentes', 'Gestión de residentes')
+    .addTag('Tarifas', 'Configuración y consulta de tarifas')
+    .addTag('Montos', 'Montos predefinidos de pago')
+    .addTag('Cobros', 'Gestión de cobros (cuotas)')
+    .addTag('Pagos', 'Registro, corrección y validación de pagos')
+    .addTag('Solicitudes', 'Solicitudes de cobro presencial')
+    .addTag('Dashboard', 'Dashboards por rol (admin, cobrador, residente)')
+    .addTag('Reportes', 'Generación de reportes de recaudo')
+    .addTag('Tickets', 'Comprobantes de pago')
+    .addTag('Notificaciones', 'Gestión de notificaciones fallidas')
+    .addTag('Health', 'Health checks del sistema')
+    .build();
+
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('docs', app, document, {
+    swaggerOptions: {
+      persistAuthorization: true,
+      tagsSorter: 'alpha',
+      operationsSorter: 'method',
+    },
+    customSiteTitle: 'Cívica Pago — API Docs',
+  });
+
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`📄 Swagger docs disponibles en http://localhost:${process.env.PORT ?? 3000}/docs`);
+  }
 
   // ─── Security Middleware ─────────────────────────────
   // Helmet: protege contra vulnerabilidades HTTP comunes
@@ -37,7 +87,33 @@ async function bootstrap() {
   // ─── Graceful Shutdown ──────────────────────────────
   app.enableShutdownHooks();
 
-  await app.listen(process.env.PORT ?? 3000);
-  console.log(`Servidor iniciado en puerto ${process.env.PORT ?? 3000}`);
+  const shutdown = async (signal: string) => {
+    console.log(`\n[Nest] 🛑 Recibida señal ${signal}. Cerrando servidor limpiamente...`);
+    try {
+      await app.close();
+      console.log('[Nest] ✅ Servidor y conexiones cerrados con éxito.');
+    } catch (err) {
+      console.error('[Nest] Error durante el cierre:', err);
+    } finally {
+      process.exit(0);
+    }
+  };
+
+  process.on('SIGINT', () => shutdown('SIGINT'));
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGHUP', () => shutdown('SIGHUP'));
+  process.on('uncaughtException', (err) => {
+    console.error('[Nest] 💥 Excepción no controlada:', err);
+    shutdown('uncaughtException');
+  });
+  process.on('unhandledRejection', (reason) => {
+    console.error('[Nest] 💥 Promesa rechazada no controlada:', reason);
+    shutdown('unhandledRejection');
+  });
+
+  const port = process.env.PORT ?? 3000;
+  await app.listen(port);
+  console.log(`Servidor iniciado en puerto ${port}`);
 }
 bootstrap();
+

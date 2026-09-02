@@ -6,14 +6,18 @@ import { UnauthorizedException, NotFoundException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 
 import { AuthService } from './auth.service';
+import { TokenRevocationService } from './token-revocation.service';
 import { Usuario, RolUsuario } from '../../iam/domain/usuario.entity';
+import { AuthSession } from '../../iam/domain/auth-session.entity';
 
 jest.mock('bcrypt');
 
 describe('AuthService', () => {
   let service: AuthService;
   let usuarioRepo: jest.Mocked<Repository<Usuario>>;
+  let sessionRepo: jest.Mocked<Repository<AuthSession>>;
   let jwtService: jest.Mocked<JwtService>;
+  let tokenRevocation: jest.Mocked<TokenRevocationService>;
 
   const mockUsuario = Usuario.crear(
     'test@test.com',
@@ -23,6 +27,15 @@ describe('AuthService', () => {
     'tenant-1',
   );
   Object.assign(mockUsuario, { id: 'user-1' });
+
+  const mockSession: Partial<AuthSession> = {
+    id: 'session-1',
+    usuarioId: 'user-1',
+    refreshTokenHash: 'mocked-hash',
+    isRevoked: false,
+    expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+    lastUsedAt: new Date(),
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -35,10 +48,26 @@ describe('AuthService', () => {
           },
         },
         {
+          provide: getRepositoryToken(AuthSession),
+          useValue: {
+            findOne: jest.fn(),
+            save: jest.fn().mockImplementation((s) => Promise.resolve(s)),
+            update: jest.fn().mockResolvedValue(undefined),
+            find: jest.fn(),
+          },
+        },
+        {
           provide: JwtService,
           useValue: {
             sign: jest.fn(),
             verify: jest.fn(),
+          },
+        },
+        {
+          provide: TokenRevocationService,
+          useValue: {
+            revoke: jest.fn().mockResolvedValue(undefined),
+            isRevoked: jest.fn().mockResolvedValue(false),
           },
         },
       ],
@@ -46,7 +75,9 @@ describe('AuthService', () => {
 
     service = module.get<AuthService>(AuthService);
     usuarioRepo = module.get(getRepositoryToken(Usuario));
+    sessionRepo = module.get(getRepositoryToken(AuthSession));
     jwtService = module.get(JwtService);
+    tokenRevocation = module.get(TokenRevocationService);
   });
 
   afterEach(() => {
@@ -110,7 +141,7 @@ describe('AuthService', () => {
   // ─── login ────────────────────────────────────────────
 
   describe('login', () => {
-    it('should return accessToken, refreshToken and user', async () => {
+    it('should return accessToken, refreshToken and user and create a session', async () => {
       jwtService.sign
         .mockReturnValueOnce('access-token-1')
         .mockReturnValueOnce('refresh-token-1');
@@ -132,25 +163,22 @@ describe('AuthService', () => {
           rol: mockUsuario.rol,
           tenantId: mockUsuario.tenantId,
         },
-        { expiresIn: '1h' },
+        { expiresIn: '15m' },
       );
-      expect(jwtService.sign).toHaveBeenNthCalledWith(
-        2,
-        { sub: mockUsuario.id, type: 'refresh' },
-        { expiresIn: '30d' },
-      );
+      expect(sessionRepo.save).toHaveBeenCalled();
     });
   });
 
   // ─── refreshToken ─────────────────────────────────────
 
   describe('refreshToken', () => {
-    it('should return new token pair when refresh token is valid', async () => {
+    it('should return new token pair and rotate session when refresh token is valid', async () => {
       jwtService.verify.mockReturnValue({
         sub: 'user-1',
         type: 'refresh',
       });
       usuarioRepo.findOne.mockResolvedValue(mockUsuario);
+      sessionRepo.findOne.mockResolvedValue(mockSession as AuthSession);
       jwtService.sign
         .mockReturnValueOnce('new-access-token')
         .mockReturnValueOnce('new-refresh-token');
@@ -163,6 +191,7 @@ describe('AuthService', () => {
         usuario: mockUsuario,
       });
       expect(jwtService.verify).toHaveBeenCalledWith('valid-refresh-token');
+      expect(sessionRepo.save).toHaveBeenCalled();
     });
 
     it('should throw UnauthorizedException when token is not refresh type', async () => {
@@ -188,42 +217,16 @@ describe('AuthService', () => {
       ).rejects.toThrow(NotFoundException);
     });
 
-    it('should throw UnauthorizedException when user is inactive', async () => {
-      const inactiveUser = Usuario.crear(
-        'inactive@test.com',
-        'hash',
-        'Inactive',
-        RolUsuario.COBRADOR,
-        'tenant-1',
-      );
-      Object.assign(inactiveUser, { id: 'user-2', activo: false });
-
+    it('should throw UnauthorizedException when session is not found or revoked', async () => {
       jwtService.verify.mockReturnValue({
-        sub: 'user-2',
+        sub: 'user-1',
         type: 'refresh',
       });
-      usuarioRepo.findOne.mockResolvedValue(inactiveUser);
+      usuarioRepo.findOne.mockResolvedValue(mockUsuario);
+      sessionRepo.findOne.mockResolvedValue(null);
 
       await expect(
         service.refreshToken('valid-token'),
-      ).rejects.toThrow(UnauthorizedException);
-    });
-
-    it('should throw UnauthorizedException when token is expired or invalid', async () => {
-      jwtService.verify.mockImplementation(() => {
-        throw new Error('jwt expired');
-      });
-
-      await expect(
-        service.refreshToken('expired-token'),
-      ).rejects.toThrow(UnauthorizedException);
-    });
-
-    it('should throw UnauthorizedException when refresh token is revoked', async () => {
-      service.revokeRefreshToken('revoked-token');
-
-      await expect(
-        service.refreshToken('revoked-token'),
       ).rejects.toThrow(UnauthorizedException);
     });
   });

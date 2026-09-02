@@ -6,6 +6,7 @@ import {
   UseGuards,
   NotFoundException,
 } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { TicketRepository } from '../persistence/ticket.repository';
 import { mapTicketToResponse } from '../../application/mappers/ticket.mapper';
 import { JwtAuthGuard } from '../../../shared/auth/jwt-auth.guard';
@@ -15,6 +16,8 @@ import { CurrentUser } from '../../../shared/tenant/current-user.decorator';
 import { CurrentTenant } from '../../../shared/tenant/current-tenant.decorator';
 import { RolUsuario, Usuario } from '../../../iam/domain/usuario.entity';
 
+@ApiTags('Tickets')
+@ApiBearerAuth('jwt-auth')
 @Controller('tickets')
 @UseGuards(JwtAuthGuard)
 export class TicketsController {

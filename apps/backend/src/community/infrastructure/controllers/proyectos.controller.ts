@@ -12,6 +12,7 @@ import {
   BadRequestException,
   ParseUUIDPipe,
 } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { DataSource } from 'typeorm';
 import { CurrentTenant } from '../../../shared/tenant/current-tenant.decorator';
 import { JwtAuthGuard } from '../../../shared/auth/jwt-auth.guard';
@@ -31,6 +32,8 @@ import {
   ActualizarAjustesProyectoDto,
 } from './dtos/proyectos.dto';
 
+@ApiTags('Proyectos')
+@ApiBearerAuth('jwt-auth')
 @Controller('proyectos')
 @UseGuards(JwtAuthGuard)
 export class ProyectosController {

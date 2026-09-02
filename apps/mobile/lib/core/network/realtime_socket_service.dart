@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:math' show min;
+
 import 'package:flutter/foundation.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'local_cache_repository.dart';
@@ -7,6 +10,12 @@ import 'local_cache_repository.dart';
 /// Listens to real-time events emitted by NestJS backend (e.g. PAGO_REGISTRADO,
 /// MODALIDAD_CAMBIADA, SOLICITUD_CREADA) and invalidates local SWR caches
 /// to push instant live updates to UI screens without user interaction.
+///
+/// Features:
+/// - Automatic reconnection with exponential backoff (1s → 2s → 4s → 8s → 16s → 30s cap)
+/// - Configurable server URL (no hardcoded localhost)
+/// - Graceful disconnect and resource cleanup
+/// - Socket.IO v4 connection with websocket-only transport
 class RealtimeSocketService {
   static final RealtimeSocketService instance = RealtimeSocketService._internal();
 
@@ -14,7 +23,19 @@ class RealtimeSocketService {
 
   io.Socket? _socket;
   bool _isConnected = false;
-  
+  bool _intentionalDisconnect = false;
+  String? _serverUrl;
+  String? _tenantId;
+  String? _userId;
+  String? _residenteId;
+
+  // Reconnection state
+  int _reconnectAttempt = 0;
+  static const int _maxReconnectAttempt = 6;
+  static const Duration _baseReconnectDelay = Duration(seconds: 1);
+  static const Duration _maxReconnectDelay = Duration(seconds: 30);
+  Timer? _reconnectTimer;
+
   final List<VoidCallback> _onPagoListeners = [];
   final List<VoidCallback> _onModalidadListeners = [];
 
@@ -24,79 +45,165 @@ class RealtimeSocketService {
   void addModalidadListener(VoidCallback listener) => _onModalidadListeners.add(listener);
   void removeModalidadListener(VoidCallback listener) => _onModalidadListeners.remove(listener);
 
+  /// Whether the socket is currently connected.
+  bool get isConnected => _isConnected;
+
   /// Initializes socket connection with tenant and user rooms.
+  /// Uses exponential backoff for automatic reconnection on disconnects.
   void init({
     required String serverUrl,
     required String tenantId,
     required String userId,
     String? residenteId,
   }) {
+    // Store params for reconnection
+    _serverUrl = serverUrl;
+    _tenantId = tenantId;
+    _userId = userId;
+    _residenteId = residenteId;
+    _intentionalDisconnect = false;
+    _reconnectAttempt = 0;
+
+    _connect();
+  }
+
+  void _connect() {
     if (_isConnected && _socket != null) return;
+    if (_serverUrl == null) return;
 
     try {
-      debugPrint('[RealtimeSocket] Connecting to WebSockets gateway at $serverUrl...');
+      // Dispose previous socket if exists
+      _disposeSocket();
+
+      debugPrint('[RealtimeSocket] Connecting to WebSockets gateway at $_serverUrl...');
       _socket = io.io(
-        serverUrl,
+        _serverUrl,
         io.OptionBuilder()
             .setTransports(['websocket'])
             .disableAutoConnect()
+            .enableReconnection()
+            .setReconnectionDelay(1000)
+            .setReconnectionDelayMax(30000)
+            .setReconnectionAttempts(_maxReconnectAttempt)
             .build(),
       );
 
+      _setupEventListeners();
       _socket?.connect();
-
-      _socket?.onConnect((_) {
-        _isConnected = true;
-        debugPrint('[RealtimeSocket] Connected successfully!');
-
-        // Join Rooms
-        _socket?.emit('joinTenantRoom', tenantId);
-        _socket?.emit('joinUserRoom', {
-          'tenantId': tenantId,
-          'userId': userId,
-          'residenteId': residenteId,
-        });
-      });
-
-      _socket?.on('pago:registrado', (data) {
-        debugPrint('[RealtimeSocket] Event PAGO_REGISTRADO received: $data');
-        LocalCacheRepository.instance.invalidateAll();
-        for (final listener in _onPagoListeners) {
-          listener();
-        }
-      });
-
-      _socket?.on('modalidad:cambiada', (data) {
-        debugPrint('[RealtimeSocket] Event MODALIDAD_CAMBIADA received: $data');
-        LocalCacheRepository.instance.invalidateAll();
-        for (final listener in _onModalidadListeners) {
-          listener();
-        }
-      });
-
-      _socket?.on('solicitud:creada', (data) {
-        debugPrint('[RealtimeSocket] Event SOLICITUD_CREADA received: $data');
-        LocalCacheRepository.instance.invalidateAll();
-      });
-
-      _socket?.on('solicitud:cerrada', (data) {
-        debugPrint('[RealtimeSocket] Event SOLICITUD_CERRADA received: $data');
-        LocalCacheRepository.instance.invalidateAll();
-      });
-
-      _socket?.onDisconnect((_) {
-        _isConnected = false;
-        debugPrint('[RealtimeSocket] Disconnected from WebSockets gateway');
-      });
     } catch (e) {
       debugPrint('[RealtimeSocket] Failed to initialize WebSockets: $e');
+      _scheduleReconnect();
     }
   }
 
-  void disconnect() {
+  void _setupEventListeners() {
+    _socket?.onConnect((_) {
+      _isConnected = true;
+      _reconnectAttempt = 0; // Reset on successful connection
+      debugPrint('[RealtimeSocket] Connected successfully!');
+
+      // Join Rooms
+      _joinRooms();
+    });
+
+    _socket?.on('pago:registrado', (data) {
+      debugPrint('[RealtimeSocket] Event PAGO_REGISTRADO received');
+      LocalCacheRepository.instance.invalidateAll();
+      for (final listener in _onPagoListeners) {
+        listener();
+      }
+    });
+
+    _socket?.on('modalidad:cambiada', (data) {
+      debugPrint('[RealtimeSocket] Event MODALIDAD_CAMBIADA received');
+      LocalCacheRepository.instance.invalidateAll();
+      for (final listener in _onModalidadListeners) {
+        listener();
+      }
+    });
+
+    _socket?.on('solicitud:creada', (data) {
+      debugPrint('[RealtimeSocket] Event SOLICITUD_CREADA received');
+      LocalCacheRepository.instance.invalidateAll();
+    });
+
+    _socket?.on('solicitud:cerrada', (data) {
+      debugPrint('[RealtimeSocket] Event SOLICITUD_CERRADA received');
+      LocalCacheRepository.instance.invalidateAll();
+    });
+
+    _socket?.onDisconnect((_) {
+      _isConnected = false;
+      debugPrint('[RealtimeSocket] Disconnected from WebSockets gateway');
+      if (!_intentionalDisconnect) {
+        _scheduleReconnect();
+      }
+    });
+
+    _socket?.onConnectError((error) {
+      debugPrint('[RealtimeSocket] Connection error: $error');
+      _isConnected = false;
+      if (!_intentionalDisconnect) {
+        _scheduleReconnect();
+      }
+    });
+
+    _socket?.onError((error) {
+      debugPrint('[RealtimeSocket] Socket error: $error');
+    });
+  }
+
+  void _joinRooms() {
+    if (_tenantId != null) {
+      _socket?.emit('joinTenantRoom', _tenantId);
+    }
+    if (_userId != null) {
+      _socket?.emit('joinUserRoom', {
+        'tenantId': _tenantId,
+        'userId': _userId,
+        'residenteId': _residenteId,
+      });
+    }
+  }
+
+  /// Schedules a reconnection attempt with exponential backoff.
+  /// delay = min(baseDelay * 2^attempt, maxDelay)
+  void _scheduleReconnect() {
+    if (_intentionalDisconnect) return;
+    if (_reconnectAttempt >= _maxReconnectAttempt) {
+      debugPrint('[RealtimeSocket] Max reconnection attempts reached ($_maxReconnectAttempt). Giving up.');
+      return;
+    }
+
+    final delay = Duration(
+      milliseconds: min(
+        _baseReconnectDelay.inMilliseconds * (1 << _reconnectAttempt),
+        _maxReconnectDelay.inMilliseconds,
+      ),
+    );
+
+    debugPrint('[RealtimeSocket] Reconnecting in ${delay.inSeconds}s (attempt ${_reconnectAttempt + 1}/$_maxReconnectAttempt)...');
+
+    _reconnectTimer?.cancel();
+    _reconnectTimer = Timer(delay, () {
+      _reconnectAttempt++;
+      _connect();
+    });
+  }
+
+  void _disposeSocket() {
     _socket?.disconnect();
     _socket?.dispose();
     _socket = null;
+  }
+
+  /// Gracefully disconnects and cancels any pending reconnection.
+  void disconnect() {
+    _intentionalDisconnect = true;
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
+    _disposeSocket();
     _isConnected = false;
+    _reconnectAttempt = 0;
   }
 }

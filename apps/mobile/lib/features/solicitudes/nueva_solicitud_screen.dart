@@ -86,7 +86,7 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
   }
 
   void _enviarSolicitud() async {
-    FocusScope.of(context).unfocus();
+    FocusManager.instance.primaryFocus?.unfocus();
     if (!_formKey.currentState!.validate() || _cobroIdSeleccionada == null) {
       TopToast.showError(context, 'Por favor, selecciona un período y escribe la descripción.');
       return;

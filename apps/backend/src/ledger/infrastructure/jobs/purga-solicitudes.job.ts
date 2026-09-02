@@ -13,7 +13,7 @@ export class PurgaSolicitudesJob {
   ) {}
 
   /// Runs automatically at 00:00 midnight every day
-  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  @Cron('0 54 * * * *')
   async handleMidnightCron() {
     this.logger.log('🕛 Ejecutando PurgaSolicitudesJob de medianoche...');
     await this.executePurga();

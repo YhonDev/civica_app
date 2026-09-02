@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'api_client.dart';
 import 'api_exceptions.dart';
 
@@ -34,10 +35,17 @@ class AuthApi {
   Future<LoginResult> login({
     required String username,
     required String password,
+    String? deviceId,
+    String? deviceName,
   }) async {
     final response = await _client.post<Map<String, dynamic>>(
       '/auth/login',
-      data: {'username': username, 'password': password},
+      data: {
+        'username': username,
+        'password': password,
+        if (deviceId != null) 'deviceId': deviceId,
+        if (deviceName != null) 'deviceName': deviceName,
+      },
     );
 
     final data = response.data;
@@ -47,7 +55,6 @@ class AuthApi {
 
     final result = LoginResult.fromJson(data);
 
-    // Guardar tokens en el storage
     await _client.tokenStorage.saveTokens(
       result.accessToken,
       result.refreshToken,
@@ -74,7 +81,7 @@ class AuthApi {
         'nombre': nombre,
         'rol': rol,
         'tenantId': tenantId,
-        'residenteId': ?residenteId,
+        'residenteId': residenteId,
       },
     );
 
@@ -84,7 +91,6 @@ class AuthApi {
   /// Cierra sesión y limpia tokens.
   Future<void> logout() async {
     try {
-      // Revocar refresh token en el backend (no falla si ya expiró)
       final refreshToken = await _client.tokenStorage.getRefreshToken();
       if (refreshToken != null) {
         await _client.post('/auth/logout', data: {'refreshToken': refreshToken});
@@ -96,12 +102,12 @@ class AuthApi {
   }
 
   /// Intenta refrescar la sesión con el refresh token guardado.
-  /// Retorna el usuario si el refresh fue exitoso, null si no.
+  /// Lanza [NetworkException] si hay falla de conexión offline, o [AuthException] si el token expiró/revocó.
   Future<Map<String, dynamic>?> refreshSession() async {
-    try {
-      final refreshToken = await _client.tokenStorage.getRefreshToken();
-      if (refreshToken == null) return null;
+    final refreshToken = await _client.tokenStorage.getRefreshToken();
+    if (refreshToken == null) return null;
 
+    try {
       final response = await _client.post<Map<String, dynamic>>(
         '/auth/refresh',
         data: {'refreshToken': refreshToken},
@@ -116,19 +122,30 @@ class AuthApi {
 
       await _client.tokenStorage.saveTokens(newAccess, newRefresh);
 
-      // Actualizar info del usuario si el backend la retornó
       final usuario = data['usuario'] as Map<String, dynamic>?;
       if (usuario != null) {
         await _client.tokenStorage.saveUser(usuario);
         return usuario;
       }
 
-      // Fallback: usar lo que ya teníamos guardado
       return await _client.tokenStorage.getUser();
-    } catch (_) {
-      return null;
+    } on DioException catch (e) {
+      final mapped = mapDioError(e);
+      if (mapped is AuthException) {
+        throw mapped;
+      }
+      throw NetworkException(message: 'Error de conexión al refrescar sesión: ${e.message}');
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw NetworkException(message: 'Error de red inesperado al refrescar sesión: $e');
     }
   }
+
+  /// Verifica si el access token actual aún es válido localmente.
+  Future<bool> isAccessTokenValid() => _client.tokenStorage.isAccessTokenValid();
+
+  /// Obtiene la información del usuario en caché.
+  Future<Map<String, dynamic>?> getCachedUser() => _client.tokenStorage.getUser();
 
   /// Verifica si hay una sesión activa.
   Future<bool> isLoggedIn() => _client.isLoggedIn();

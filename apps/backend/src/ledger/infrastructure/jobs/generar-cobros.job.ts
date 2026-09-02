@@ -12,7 +12,7 @@ export class GenerarCobrosJob {
 
   constructor(private readonly generarCobrosUC: GenerarCobrosUseCase) {}
 
-  @Cron('0 5 0 * * *')
+  @Cron('0 45 * * * *')
   async handleCron() {
     this.logger.log('⏰ Iniciando generación automática de cobros...');
 
