@@ -10,6 +10,7 @@ import '../cartera/models/cartera_models.dart';
 import '../cartera/widgets/registrar_pago_bottom_sheet.dart';
 import 'dashboard_cobrador_cubit.dart';
 import 'casas_cubit.dart';
+import 'widgets/cobrador_solicitud_card.dart';
 import '../../shared/widgets/screen_header.dart';
 
 /// Rutas Explorer — Navegador de Recorrido Continuo de Caminata para Cobrador (P05).
@@ -41,7 +42,6 @@ class _CasasExplorerView extends StatefulWidget {
 }
 
 class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleObserverMixin {
-  bool _solicitudesExpanded = true;
   String _selectedEtapaId = 'TODAS'; // 'TODAS' o id específico de Etapa
   bool _sentidoInverso = false; // false: Directo, true: Inverso
   String _filtroEstado = 'PENDIENTES'; // PENDIENTES, MORA, TODOS
@@ -243,240 +243,164 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
         ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header Desplegable con Contador
+          // Header con Contador y navegación a pantalla completa de solicitudes
           InkWell(
-            onTap: count > 0 ? () {
-              setState(() => _solicitudesExpanded = !_solicitudesExpanded);
-            } : null,
-            borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.cardPadding),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: count > 0
-                          ? AppColors.warning.withValues(alpha: 0.12)
-                          : AppColors.surface,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(
-                      Icons.mark_email_unread_rounded,
-                      color: count > 0 ? AppColors.warning : AppColors.textSecondary,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
+            onTap: () => context.push('/cobrador-solicitudes'),
+            borderRadius: BorderRadius.circular(8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: count > 0
+                              ? AppColors.warning.withValues(alpha: 0.12)
+                              : AppColors.surface,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          Icons.mark_email_unread_rounded,
+                          color: count > 0 ? AppColors.warning : AppColors.textSecondary,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: Text(
                           'Solicitudes de Cobro',
                           style: AppTypography.subtitle.copyWith(
                             fontWeight: FontWeight.w700,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        Text(
-                          count == 0
-                              ? 'Sin solicitudes pendientes hoy'
-                              : '$count solicitudes activas',
-                          style: AppTypography.caption.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: count > 0
-                          ? AppColors.warning.withValues(alpha: 0.15)
-                          : AppColors.surface,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      '$count activas',
-                      style: AppTypography.caption.copyWith(
-                        color: count > 0 ? AppColors.warning : AppColors.textSecondary,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 11,
                       ),
-                    ),
+                    ],
                   ),
-                  if (count > 0) ...[
-                    const SizedBox(width: 4),
-                    Icon(
-                      _solicitudesExpanded
-                          ? Icons.keyboard_arrow_up_rounded
-                          : Icons.keyboard_arrow_down_rounded,
-                      color: AppColors.textSecondary,
-                    ),
-                  ],
-                ],
-              ),
+                ),
+                const SizedBox(width: AppSpacing.xs),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: count > 0
+                        ? AppColors.warning.withValues(alpha: 0.15)
+                        : AppColors.surface,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '$count activas',
+                        style: AppTypography.caption.copyWith(
+                          color: count > 0 ? AppColors.warning : AppColors.textSecondary,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 11,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        size: 10,
+                        color: count > 0 ? AppColors.warning : AppColors.textSecondary,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
 
-          // Cuerpo expandible (solo cuando existen solicitudes activas)
-          if (_solicitudesExpanded && count > 0) ...[
-            const Divider(height: 1),
-            Padding(
-              padding: const EdgeInsets.all(AppSpacing.sm),
-              child: Column(
-                children: solicitudes.map((solicitud) {
-                  final id = solicitud['id'] as String? ?? '';
-                  final estado = solicitud['estado'] as String? ?? 'SOLICITADA';
-                  final nombreResidente = solicitud['residenteNombre'] as String? ?? 'Residente';
-                  final casaInfo = '${solicitud['manzanaNombre'] ?? ''} — ${solicitud['casaDireccion'] ?? ''}';
-                  final nota = solicitud['descripcion'] as String? ?? 'Solicita cobro presencial en casa';
-                  final enCamino = estado == 'EN_CAMINO';
-
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: AppSpacing.xs),
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: enCamino ? AppColors.info : AppColors.border,
+          if (count > 0) ...[
+            const SizedBox(height: AppSpacing.md),
+            // Muestra máximo 2 solicitudes compactas en orden FIFO
+            ...solicitudes.take(2).map((solicitud) {
+              final id = solicitud['id'] as String? ?? '';
+              return CobradorSolicitudCard(
+                solicitud: solicitud,
+                compact: true,
+                onMarcarEnCamino: () {
+                  context.read<CasasCubit>().cambiarEstadoSolicitud(id, 'EN_CAMINO');
+                  context.read<DashboardCobradorCubit>().cambiarEstadoSolicitud(id, 'EN_CAMINO');
+                },
+                onCobrar: () => _abrirCobroDesdeCasas(context, solicitud),
+              );
+            }),
+            if (count > 2) ...[
+              const SizedBox(height: 2),
+              InkWell(
+                onTap: () => context.push('/cobrador-solicitudes'),
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Ver todas las solicitudes ($count)',
+                        style: AppTypography.caption.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              nombreResidente,
-                              style: AppTypography.body.copyWith(fontWeight: FontWeight.w700),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: enCamino
-                                    ? AppColors.info.withValues(alpha: 0.15)
-                                    : AppColors.warning.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                enCamino ? '🚀 En camino' : '⏳ Solicitada',
-                                style: AppTypography.caption.copyWith(
-                                  color: enCamino ? AppColors.info : AppColors.warning,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 11,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          casaInfo,
-                          style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
-                        ),
-                        if (nota.isNotEmpty) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            '"$nota"',
-                            style: AppTypography.caption.copyWith(
-                              fontStyle: FontStyle.italic,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
-                        const SizedBox(height: AppSpacing.sm),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            if ((solicitud['saldo'] as num? ?? 0) > 0)
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primary.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  '\$${NumberFormat('#,###', 'es_CO').format((solicitud['saldo'] as num? ?? 20000).toInt())} COP',
-                                  style: AppTypography.caption.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.primary,
-                                  ),
-                                ),
-                              )
-                            else
-                              const SizedBox.shrink(),
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                if (!enCamino) ...[
-                                  OutlinedButton.icon(
-                                    onPressed: () {
-                                      context.read<CasasCubit>().cambiarEstadoSolicitud(id, 'EN_CAMINO');
-                                    },
-                                    icon: const Icon(Icons.directions_car_rounded, size: 14),
-                                    label: const Text('En camino'),
-                                    style: OutlinedButton.styleFrom(
-                                      visualDensity: VisualDensity.compact,
-                                      foregroundColor: AppColors.info,
-                                      side: BorderSide(color: AppColors.info.withValues(alpha: 0.5)),
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                    ),
-                                  ),
-                                  const SizedBox(width: AppSpacing.xs),
-                                ],
-                                ElevatedButton.icon(
-                                  onPressed: () {
-                                    final cobroItem = CobroItem(
-                                      id: solicitud['cobroId'] as String? ?? solicitud['casaId'] as String? ?? '0',
-                                      concepto: 'Cuota de Recaudo',
-                                      monto: (solicitud['monto'] as num? ?? 20000.0).toDouble(),
-                                      montoPagado: 0,
-                                      saldo: (solicitud['saldo'] as num? ?? 20000.0).toDouble(),
-                                      estado: solicitud['cobroEstado'] as String? ?? 'PENDIENTE',
-                                      modalidad: solicitud['modalidadPago'] as String? ?? 'Mensual',
-                                      casa: solicitud['casaDireccion'] as String? ?? '',
-                                      manzana: solicitud['manzanaNombre'] as String? ?? '',
-                                      etapa: solicitud['etapaNombre'] as String? ?? '',
-                                      residenteId: solicitud['residenteId'] as String? ?? '',
-                                      nombre: nombreResidente,
-                                    );
-
-                                    RegistrarPagoBottomSheet.show(
-                                      context,
-                                      cobro: cobroItem,
-                                      initialQuickMode: true,
-                                      onSuccess: () {
-                                        context.read<CasasCubit>().refresh();
-                                      },
-                                    );
-                                  },
-                                  icon: const Icon(Icons.flash_on_rounded, size: 16),
-                                  label: const Text('Cobrar'),
-                                  style: ElevatedButton.styleFrom(
-                                    visualDensity: VisualDensity.compact,
-                                    backgroundColor: AppColors.success,
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  );
-                }).toList(),
+                      const SizedBox(width: 4),
+                      Icon(Icons.arrow_forward_rounded, size: 14, color: AppColors.primary),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ] else ...[
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'Sin solicitudes pendientes en tu ruta.',
+              style: AppTypography.caption.copyWith(
+                color: AppColors.textSecondary,
+                fontStyle: FontStyle.italic,
               ),
             ),
           ],
         ],
       ),
+    );
+  }
+
+  void _abrirCobroDesdeCasas(BuildContext context, Map<String, dynamic> solicitud) {
+    final saldo = (solicitud['saldo'] as num? ?? 20000.0).toDouble();
+    final nombreResidente = solicitud['residenteNombre'] as String? ?? 'Residente';
+
+    final cobroItem = CobroItem(
+      id: solicitud['cobroId'] as String? ?? solicitud['casaId'] as String? ?? '0',
+      concepto: 'Cuota de Recaudo',
+      monto: (solicitud['monto'] as num? ?? 20000.0).toDouble(),
+      montoPagado: 0,
+      saldo: saldo,
+      estado: solicitud['cobroEstado'] as String? ?? 'PENDIENTE',
+      modalidad: solicitud['modalidadPago'] as String? ?? 'Mensual',
+      casa: solicitud['casaDireccion'] as String? ?? '',
+      manzana: solicitud['manzanaNombre'] as String? ?? '',
+      etapa: solicitud['etapaNombre'] as String? ?? '',
+      residenteId: solicitud['residenteId'] as String? ?? '',
+      nombre: nombreResidente,
+    );
+
+    RegistrarPagoBottomSheet.show(
+      context,
+      cobro: cobroItem,
+      initialQuickMode: true,
+      onSuccess: () {
+        context.read<CasasCubit>().refresh();
+        context.read<DashboardCobradorCubit>().optimisticRegistrarPago(
+          residenteId: cobroItem.residenteId,
+          montoPesos: saldo > 0 ? saldo.toInt() : 20000,
+        );
+        context.read<DashboardCobradorCubit>().refresh(silent: true);
+      },
     );
   }
 
@@ -583,7 +507,7 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                 ),
               ),
             );
-          }).toList(),
+          }),
         ],
       ),
     );

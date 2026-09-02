@@ -191,4 +191,39 @@ class DashboardCobradorCubit extends Cubit<CobradorDashboardState> {
 
     emit(CobradorDashboardLoaded(newData));
   }
+
+  /// Cambia el estado de una solicitud (ej. a EN_CAMINO) optimista e invoca la API
+  void cambiarEstadoSolicitud(String solicitudId, String nuevoEstado) {
+    if (state is! CobradorDashboardLoaded) return;
+    final currentData = (state as CobradorDashboardLoaded).data;
+
+    final updatedSolicitudes = currentData.solicitudes.map((s) {
+      if (s['id'] == solicitudId) {
+        final map = Map<String, dynamic>.from(s);
+        map['estado'] = nuevoEstado;
+        return map;
+      }
+      return s;
+    }).toList();
+
+    final newData = CobradorDashboardData(
+      cobradorNombre: currentData.cobradorNombre,
+      totalViviendas: currentData.totalViviendas,
+      cobradosHoy: currentData.cobradosHoy,
+      montoCobradoHoy: currentData.montoCobradoHoy,
+      pendientes: currentData.pendientes,
+      vencidas: currentData.vencidas,
+      montoEsperado: currentData.montoEsperado,
+      casas: currentData.casas,
+      proximaVivienda: currentData.proximaVivienda,
+      ultimosCobros: currentData.ultimosCobros,
+      solicitudes: updatedSolicitudes,
+    );
+
+    emit(CobradorDashboardLoaded(newData));
+
+    if (nuevoEstado == 'EN_CAMINO') {
+      _api.patch('/solicitudes/$solicitudId/en-camino').ignore();
+    }
+  }
 }

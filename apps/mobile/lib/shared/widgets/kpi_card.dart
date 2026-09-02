@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 
 /// Atomic Design Molecule: KPI Metric Card (`KPICard`).
@@ -76,14 +75,17 @@ class KPICard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Expanded(
-                    child: Text(
-                      title,
-                      style: AppTypography.caption.copyWith(
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w600,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        title,
+                        style: AppTypography.caption.copyWith(
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   Container(

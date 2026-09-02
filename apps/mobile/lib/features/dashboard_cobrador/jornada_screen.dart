@@ -12,7 +12,9 @@ import '../../shared/widgets/kpi_card.dart';
 
 import '../cartera/models/cartera_models.dart';
 import '../cartera/widgets/registrar_pago_bottom_sheet.dart';
+import 'casas_cubit.dart';
 import 'dashboard_cobrador_cubit.dart';
+import 'widgets/cobrador_solicitud_card.dart';
 
 /// Cobrador Jornada — Pantalla principal del Cobrador.
 ///
@@ -387,56 +389,64 @@ class _JornadaViewState extends State<_JornadaView> with LifecycleObserverMixin 
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return InkWell(
-      onTap: () => context.push('/casas-explorer'),
-      borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: AppSpacing.lg),
-        padding: const EdgeInsets.all(AppSpacing.cardPadding),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E293B) : Colors.white,
-          borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-          border: Border.all(
-            color: AppColors.warning.withValues(alpha: 0.4),
-            width: 1.2,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSpacing.lg),
+      padding: const EdgeInsets.all(AppSpacing.cardPadding),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+        border: Border.all(
+          color: AppColors.warning.withValues(alpha: 0.4),
+          width: 1.2,
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header con navegación a la pantalla completa de solicitudes (sin overflow)
+          InkWell(
+            onTap: () => context.push('/cobrador-solicitudes'),
+            borderRadius: BorderRadius.circular(8),
+            child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AppColors.warning.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(10),
+                Expanded(
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.warning.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          Icons.mark_email_unread_rounded,
+                          color: AppColors.warning,
+                          size: 20,
+                        ),
                       ),
-                      child: Icon(
-                        Icons.mark_email_unread_rounded,
-                        color: AppColors.warning,
-                        size: 20,
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: Text(
+                          'Solicitudes en Domicilio',
+                          style: AppTypography.subtitle.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    Text(
-                      'Solicitudes en Domicilio',
-                      style: AppTypography.subtitle.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
+                const SizedBox(width: AppSpacing.xs),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
@@ -444,6 +454,7 @@ class _JornadaViewState extends State<_JornadaView> with LifecycleObserverMixin 
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         '${data.solicitudes.length} activas',
@@ -460,97 +471,82 @@ class _JornadaViewState extends State<_JornadaView> with LifecycleObserverMixin 
                 ),
               ],
             ),
-            const SizedBox(height: AppSpacing.md),
-            ...data.solicitudes.take(2).map((solicitud) {
-              final nombreResidente = solicitud['residenteNombre'] as String? ?? 'Residente';
-              final casaInfo = '${solicitud['manzanaNombre'] ?? ''} — ${solicitud['casaDireccion'] ?? ''}';
-              final nota = solicitud['descripcion'] as String? ?? 'Solicita atención/cobro presencial';
-              final saldo = (solicitud['saldo'] as num? ?? 20000.0).toDouble();
-
-              return Container(
-                margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-                padding: const EdgeInsets.all(AppSpacing.sm),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppColors.border),
-                ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          // Lista compacta de máximo 2 solicitudes en orden FIFO
+          ...data.solicitudes.take(2).map((solicitud) {
+            final id = solicitud['id'] as String? ?? '';
+            return CobradorSolicitudCard(
+              solicitud: solicitud,
+              compact: true,
+              onMarcarEnCamino: () {
+                context.read<DashboardCobradorCubit>().cambiarEstadoSolicitud(id, 'EN_CAMINO');
+                context.read<CasasCubit>().cambiarEstadoSolicitud(id, 'EN_CAMINO');
+              },
+              onCobrar: () => _abrirCobroDesdeJornada(solicitud),
+            );
+          }),
+          if (data.solicitudes.length > 2) ...[
+            const SizedBox(height: 2),
+            InkWell(
+              onTap: () => context.push('/cobrador-solicitudes'),
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
                 child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.home_outlined, size: 20, color: AppColors.primary),
-                    const SizedBox(width: AppSpacing.sm),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            nombreResidente,
-                            style: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
-                          ),
-                          Text(
-                            casaInfo,
-                            style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
-                          ),
-                          if (nota.isNotEmpty) ...[
-                            const SizedBox(height: 2),
-                            Text(
-                              '"$nota"',
-                              style: AppTypography.caption.copyWith(
-                                fontStyle: FontStyle.italic,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ],
+                    Text(
+                      'Ver todas las solicitudes (${data.solicitudes.length})',
+                      style: AppTypography.caption.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                    ElevatedButton(
-                      onPressed: () {
-                        final cobradorCubit = context.read<DashboardCobradorCubit>();
-                        final cobroItem = CobroItem(
-                          id: solicitud['cobroId'] as String? ?? solicitud['casaId'] as String? ?? '0',
-                          concepto: 'Cuota de Recaudo',
-                          monto: (solicitud['monto'] as num? ?? 20000.0).toDouble(),
-                          montoPagado: 0,
-                          saldo: saldo,
-                          estado: solicitud['cobroEstado'] as String? ?? 'PENDIENTE',
-                          modalidad: solicitud['modalidadPago'] as String? ?? 'Mensual',
-                          casa: solicitud['casaDireccion'] as String? ?? '',
-                          manzana: solicitud['manzanaNombre'] as String? ?? '',
-                          etapa: solicitud['etapaNombre'] as String? ?? '',
-                          residenteId: solicitud['residenteId'] as String? ?? '',
-                          nombre: nombreResidente,
-                        );
-
-                        RegistrarPagoBottomSheet.show(
-                          context,
-                          cobro: cobroItem,
-                          initialQuickMode: true,
-                          onSuccess: () {
-                            cobradorCubit.optimisticRegistrarPago(
-                              residenteId: cobroItem.residenteId,
-                              montoPesos: saldo > 0 ? saldo.toInt() : 20000,
-                            );
-                            cobradorCubit.refresh(silent: true);
-                          },
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        visualDensity: VisualDensity.compact,
-                        backgroundColor: AppColors.success,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
-                      child: const Text('Cobrar', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                    ),
+                    const SizedBox(width: 4),
+                    Icon(Icons.arrow_forward_rounded, size: 14, color: AppColors.primary),
                   ],
                 ),
-              );
-            }),
+              ),
+            ),
           ],
-        ),
+        ],
       ),
+    );
+  }
+
+  void _abrirCobroDesdeJornada(Map<String, dynamic> solicitud) {
+    final cobradorCubit = context.read<DashboardCobradorCubit>();
+    final saldo = (solicitud['saldo'] as num? ?? 20000.0).toDouble();
+    final nombreResidente = solicitud['residenteNombre'] as String? ?? 'Residente';
+
+    final cobroItem = CobroItem(
+      id: solicitud['cobroId'] as String? ?? solicitud['casaId'] as String? ?? '0',
+      concepto: 'Cuota de Recaudo',
+      monto: (solicitud['monto'] as num? ?? 20000.0).toDouble(),
+      montoPagado: 0,
+      saldo: saldo,
+      estado: solicitud['cobroEstado'] as String? ?? 'PENDIENTE',
+      modalidad: solicitud['modalidadPago'] as String? ?? 'Mensual',
+      casa: solicitud['casaDireccion'] as String? ?? '',
+      manzana: solicitud['manzanaNombre'] as String? ?? '',
+      etapa: solicitud['etapaNombre'] as String? ?? '',
+      residenteId: solicitud['residenteId'] as String? ?? '',
+      nombre: nombreResidente,
+    );
+
+    RegistrarPagoBottomSheet.show(
+      context,
+      cobro: cobroItem,
+      initialQuickMode: true,
+      onSuccess: () {
+        cobradorCubit.optimisticRegistrarPago(
+          residenteId: cobroItem.residenteId,
+          montoPesos: saldo > 0 ? saldo.toInt() : 20000,
+        );
+        cobradorCubit.refresh(silent: true);
+        context.read<CasasCubit>().refresh();
+      },
     );
   }
 
@@ -665,84 +661,7 @@ class _JornadaViewState extends State<_JornadaView> with LifecycleObserverMixin 
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// STAT CARDS
-// ═══════════════════════════════════════════════════════════════════
 
-class _StatCard extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  final Color color;
-
-  const _StatCard({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.cardPadding),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: color, size: 24),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              value,
-              style: AppTypography.subtitle.copyWith(
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _MiniStatCard extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  final Color color;
-
-  const _MiniStatCard({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 20),
-            const SizedBox(height: 6),
-            Text(
-              label,
-              style: AppTypography.small.copyWith(color: AppColors.textSecondary),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 // ═══════════════════════════════════════════════════════════════════
 // HELPERS

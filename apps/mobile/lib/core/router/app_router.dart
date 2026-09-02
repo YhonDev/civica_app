@@ -8,6 +8,7 @@ import '../../features/shell/scaffold_with_bottom_nav.dart';
 import '../../features/dashboard/dashboard_screen.dart';
 import '../../features/dashboard_cobrador/jornada_screen.dart';
 import '../../features/dashboard_cobrador/casas_explorer_screen.dart';
+import '../../features/dashboard_cobrador/cobrador_solicitudes_screen.dart';
 import '../../features/dashboard_cobrador/modo_inmersivo_ruta_screen.dart';
 import '../../features/dashboard_cobrador/casas_cubit.dart';
 import '../../features/dashboard_residente/residente_dashboard_screen.dart';
@@ -39,7 +40,6 @@ import '../../features/residentes/widgets/residente_historial_tab.dart';
 import '../../features/residentes/tarifas_screen.dart';
 import '../../features/dashboard_residente/mi_casa_screen.dart';
 import '../../features/reportes/reportes_screen.dart';
-import '../../features/cartera/cartera_consolidada_screen.dart';
 import '../../features/residentes/asignar_etapas_screen.dart';
 import '../../features/residentes/montos_screen.dart';
 import '../../features/residentes/residente_inmueble_screen.dart';
@@ -121,6 +121,11 @@ final GoRouter appRouter = GoRouter(
           path: '/casas-explorer',
           name: 'casas-explorer',
           builder: (_, _) => const CasasExplorerScreen(),
+        ),
+        GoRoute(
+          path: '/cobrador-solicitudes',
+          name: 'cobrador-solicitudes',
+          builder: (_, _) => const CobradorSolicitudesScreen(),
         ),
         GoRoute(
           path: '/modo-inmersivo-ruta',
