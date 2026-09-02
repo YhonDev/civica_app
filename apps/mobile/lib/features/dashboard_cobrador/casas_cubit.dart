@@ -171,9 +171,7 @@ class CasasCubit extends Cubit<CasasState> {
     emit(ViviendasLoaded(current.etapas, solicitudes: updatedSolicitudes));
 
     if (nuevoEstado == 'EN_CAMINO') {
-      _api.patch('/solicitudes/$solicitudId/en-camino', {}).catchError((_) {
-        // Ignorar o registrar error en background
-      });
+      _api.patch('/solicitudes/$solicitudId/en-camino').ignore();
     }
   }
 
