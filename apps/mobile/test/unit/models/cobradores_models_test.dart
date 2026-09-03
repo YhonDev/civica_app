@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:civica_pago_mobile/features/propietarios/models/cobradores_models.dart';
+import 'package:civica_pago_mobile/features/residentes/models/cobradores_models.dart';
 
 void main() {
   group('CobradorResumen', () {

@@ -34,8 +34,8 @@ class FakeDashboardRepository extends DashboardRepository {
         const CobroEstadoItem(estado: 'Revisión', porcentaje: 6.8, cantidad: 0),
       ],
       actividadReciente: [],
-      totalPropietarios: 200, nuevosPropietariosSemana: 3,
-      solicitudesPendientes: 5, propietariosMora: 6, pagosRevision: 2,
+      totalResidentes: 200, nuevosResidentesSemana: 3,
+      solicitudesPendientes: 5, residentesMora: 6, pagosRevision: 2,
       acumuladoAnual: 21000000, metaAnual: 126720000,
       historialMeses: [],
     );
@@ -54,8 +54,8 @@ DashboardData _dummyData(int mes, int anio) {
       const CobroEstadoItem(estado: 'Revisión', porcentaje: 0, cantidad: 0),
     ],
     actividadReciente: [],
-    totalPropietarios: 0, nuevosPropietariosSemana: 0,
-    solicitudesPendientes: 0, propietariosMora: 0, pagosRevision: 0,
+    totalResidentes: 0, nuevosResidentesSemana: 0,
+    solicitudesPendientes: 0, residentesMora: 0, pagosRevision: 0,
     acumuladoAnual: 0, metaAnual: 0, historialMeses: [],
   );
 }
