@@ -23,6 +23,7 @@ export interface ModalidadItem {
 export interface EstadoCobros {
   pagados: number;
   pendientes: number;
+  /** @deprecated Kept for mobile client backward compatibility (defaults to 0). */
   revision: number;
 }
 
@@ -113,6 +114,7 @@ export interface DashboardResponse {
   solicitudesPendientes: number;
   nuevosResidentesSemana: number;
   residentesMora: number;
+  /** @deprecated Consolidated into cobros domain. Retained for mobile API contract backward compatibility. */
   pagosRevision: number;
   totalResidentes: number;
   acumuladoAnual: number;

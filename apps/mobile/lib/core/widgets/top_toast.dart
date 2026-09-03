@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../theme/app_typography.dart';
 
@@ -76,6 +77,7 @@ class _TopToastWidgetState extends State<_TopToastWidget>
   late AnimationController _controller;
   late Animation<Offset> _offsetAnimation;
   late Animation<double> _fadeAnimation;
+  Timer? _dismissTimer;
 
   @override
   void initState() {
@@ -100,10 +102,12 @@ class _TopToastWidgetState extends State<_TopToastWidget>
 
     _controller.forward();
 
-    Future.delayed(widget.duration, () {
+    _dismissTimer = Timer(widget.duration, () {
       if (mounted) {
         _controller.reverse().then((_) {
-          widget.onDismiss();
+          if (mounted) {
+            widget.onDismiss();
+          }
         });
       }
     });
@@ -111,6 +115,7 @@ class _TopToastWidgetState extends State<_TopToastWidget>
 
   @override
   void dispose() {
+    _dismissTimer?.cancel();
     _controller.dispose();
     super.dispose();
   }
