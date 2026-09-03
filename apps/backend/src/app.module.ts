@@ -12,6 +12,8 @@ import { LedgerModule } from './ledger/ledger.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { HealthController } from './shared/health/health.controller';
 
+import { UserAwareThrottlerGuard } from './shared/auth/guards/user-aware-throttler.guard';
+
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -40,7 +42,7 @@ import { HealthController } from './shared/health/health.controller';
   providers: [
     {
       provide: APP_GUARD,
-      useClass: ThrottlerGuard,
+      useClass: UserAwareThrottlerGuard,
     },
   ],
 })

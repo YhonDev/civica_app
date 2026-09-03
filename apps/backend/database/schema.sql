@@ -170,6 +170,9 @@ CREATE INDEX idx_cobros_residente   ON cobros (residente_id);
 CREATE INDEX idx_cobros_tenant      ON cobros (tenant_id);
 CREATE INDEX idx_cobros_estado      ON cobros (estado);
 CREATE INDEX idx_cobros_vencimiento ON cobros (fecha_vencimiento);
+CREATE INDEX idx_cobros_tenant_periodo_estado     ON cobros (tenant_id, periodo_inicio, estado);
+CREATE INDEX idx_cobros_tenant_vencimiento_estado ON cobros (tenant_id, fecha_vencimiento, estado);
+CREATE INDEX idx_cobros_tenant_casa               ON cobros (tenant_id, casa_id);
 -- NOTA: Sin FK constraints para residente_id, periodo_id, casa_id, tarifa_id
 -- (las entidades usan @ManyToOne con createForeignKeyConstraints: false)
 
@@ -281,6 +284,7 @@ CREATE INDEX idx_solicitudes_usuario   ON solicitudes (usuario_id);
 CREATE INDEX idx_solicitudes_cobro     ON solicitudes (cobro_id);
 CREATE INDEX idx_solicitudes_casa      ON solicitudes (casa_id);
 CREATE INDEX idx_solicitudes_residente ON solicitudes (residente_id);
+CREATE INDEX idx_solicitudes_tenant_estado ON solicitudes (tenant_id, estado);
 
 -- ── 16. Actividad (auditoría) ───────────────────────────
 CREATE TABLE actividad (
@@ -349,15 +353,15 @@ SELECT
   pc.modalidad,
   COUNT(co.id) AS total_cobros,
   COUNT(co.id) FILTER (WHERE co.estado = 'PAGADA') AS cobros_pagados,
-  COUNT(co.id) FILTER (WHERE co.estado IN ('PENDIENTE', 'PARCIAL')) AS cobros_pendientes,
-  COUNT(co.id) FILTER (WHERE co.estado = 'VENCIDA') AS cobros_vencidos,
+  COUNT(co.id) FILTER (WHERE (co.estado IN ('PENDIENTE', 'PARCIAL')) AND co.fecha_vencimiento >= CURRENT_DATE) AS cobros_pendientes,
+  COUNT(co.id) FILTER (WHERE co.estado = 'VENCIDA' OR (co.estado IN ('PENDIENTE', 'PARCIAL') AND co.fecha_vencimiento < CURRENT_DATE)) AS cobros_vencidos,
   CASE
     WHEN COUNT(co.id) = 0 THEN 'SIN_COBROS'
-    WHEN COUNT(co.id) FILTER (WHERE co.estado = 'VENCIDA') > 0 THEN 'EN_MORA'
-    WHEN COUNT(co.id) FILTER (WHERE co.estado IN ('PENDIENTE', 'PARCIAL')) > 0 THEN 'PENDIENTE'
+    WHEN COUNT(co.id) FILTER (WHERE co.estado = 'VENCIDA' OR (co.estado IN ('PENDIENTE', 'PARCIAL') AND co.fecha_vencimiento < CURRENT_DATE)) > 0 THEN 'EN_MORA'
+    WHEN COUNT(co.id) FILTER (WHERE (co.estado IN ('PENDIENTE', 'PARCIAL')) AND co.fecha_vencimiento >= CURRENT_DATE) > 0 THEN 'PENDIENTE'
     ELSE 'AL_DIA'
   END AS estado_cartera,
-  COALESCE(SUM(co.monto - co.monto_pagado) FILTER (WHERE co.estado = 'VENCIDA'), 0) AS saldo_mora_centavos
+  COALESCE(SUM(co.monto - co.monto_pagado) FILTER (WHERE co.estado = 'VENCIDA' OR (co.estado IN ('PENDIENTE', 'PARCIAL') AND co.fecha_vencimiento < CURRENT_DATE)), 0) AS saldo_mora_centavos
 FROM casas c
 JOIN manzanas m ON m.id = c.manzana_id
 JOIN etapas e ON e.id = m.etapa_id
@@ -365,7 +369,7 @@ JOIN proyectos pj ON pj.id = e.proyecto_id
 LEFT JOIN tenencias t ON t.casa_id = c.id AND t.fecha_fin IS NULL
 LEFT JOIN residentes r ON r.id = t.residente_id
 LEFT JOIN planes_de_cobro pc ON pc.residente_id = r.id AND pc.activa = true
-LEFT JOIN cobros co ON co.residente_id = r.id
+LEFT JOIN cobros co ON (co.casa_id = c.id OR (co.casa_id IS NULL AND co.residente_id = r.id))
 GROUP BY c.id, c.direccion_interna, m.id, m.nombre, e.id, e.nombre,
          pj.id, pj.nombre, pj.tenant_id, r.id, r.nombre, r.telefono,
          r.email, r.tipo, pc.modalidad

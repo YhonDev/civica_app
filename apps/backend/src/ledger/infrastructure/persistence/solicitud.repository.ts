@@ -13,17 +13,29 @@ export class SolicitudRepository extends BaseTenantRepository<Solicitud> {
     super(repo);
   }
 
-  async findByUsuario(usuarioId: string): Promise<Solicitud[]> {
+  async findByUsuario(
+    usuarioId: string,
+    limit?: number,
+    offset?: number,
+  ): Promise<Solicitud[]> {
     return this.repo.find({
       where: { usuarioId },
       order: { fecha: 'DESC' },
+      take: limit ? Math.min(Number(limit), 100) : undefined,
+      skip: offset ? Number(offset) : undefined,
     });
   }
 
-  async findByTenant(tenantId: string): Promise<Solicitud[]> {
+  async findByTenant(
+    tenantId: string,
+    limit?: number,
+    offset?: number,
+  ): Promise<Solicitud[]> {
     return super.findByTenant(tenantId, {
       relations: { usuario: true },
       order: { fecha: 'DESC' },
+      take: limit ? Math.min(Number(limit), 100) : undefined,
+      skip: offset ? Number(offset) : undefined,
     });
   }
 

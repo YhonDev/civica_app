@@ -92,8 +92,12 @@ export class SolicitudesController {
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.RESIDENTE, RolUsuario.ADMIN)
   @ApiOperation({ summary: 'Listar mis solicitudes' })
-  async listar(@CurrentUser() user: Usuario) {
-    return this.solicitudRepo.findByUsuario(user.id);
+  async listar(
+    @CurrentUser() user: Usuario,
+    @Query('limit') limit?: number,
+    @Query('offset') offset?: number,
+  ) {
+    return this.solicitudRepo.findByUsuario(user.id, limit, offset);
   }
 
   @Get('pendientes')
@@ -106,8 +110,12 @@ export class SolicitudesController {
   @Get('admin')
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN, RolUsuario.COBRADOR)
-  async listarAdmin(@CurrentTenant() tenantId: string) {
-    return this.solicitudRepo.findByTenant(tenantId);
+  async listarAdmin(
+    @CurrentTenant() tenantId: string,
+    @Query('limit') limit?: number,
+    @Query('offset') offset?: number,
+  ) {
+    return this.solicitudRepo.findByTenant(tenantId, limit, offset);
   }
 
   @Get('admin/pendientes')
