@@ -17,7 +17,12 @@ export class Notificacion {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: 'tipo', type: 'varchar', length: 50, default: 'CUOTA_VENCIDA' })
+  @Column({
+    name: 'tipo',
+    type: 'varchar',
+    length: 50,
+    default: 'CUOTA_VENCIDA',
+  })
   tipo: string;
 
   @Column({ name: 'destinatario_email', type: 'varchar', length: 255 })
@@ -29,7 +34,12 @@ export class Notificacion {
   @Column({ name: 'cuerpo', type: 'text' })
   cuerpo: string;
 
-  @Column({ name: 'estado', type: 'varchar', length: 20, default: EstadoNotificacion.PENDIENTE })
+  @Column({
+    name: 'estado',
+    type: 'varchar',
+    length: 20,
+    default: EstadoNotificacion.PENDIENTE,
+  })
   estado: EstadoNotificacion;
 
   @Column({ name: 'intentos', type: 'int', default: 0 })

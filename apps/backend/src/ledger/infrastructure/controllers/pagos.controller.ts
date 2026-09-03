@@ -53,7 +53,7 @@ export class PagosController {
   @RegistrarActividad({
     tipo: 'PAGO',
     descripcionFn: (result) =>
-      `Pago registrado: $${((result.pago?.monto ?? 0) / 100).toFixed(0)} COP (${(result.cobrosAfectados?.length ?? result.cuotasAfectadas?.length ?? 0)} cuota(s))`,
+      `Pago registrado: $${((result.pago?.monto ?? 0) / 100).toFixed(0)} COP (${result.cobrosAfectados?.length ?? result.cuotasAfectadas?.length ?? 0} cuota(s))`,
     metadataFn: (result) => ({
       pagoId: result.pago?.id,
       monto: result.pago?.monto,
@@ -72,7 +72,9 @@ export class PagosController {
   ) {
     // Verificar mantenimiento — solo bloquea a COBRADOR, el ADMIN nunca se bloquea
     if (user.rol !== RolUsuario.ADMIN) {
-      await this.mantenimientoService.verificarResidenteNoBloqueado(dto.residenteId);
+      await this.mantenimientoService.verificarResidenteNoBloqueado(
+        dto.residenteId,
+      );
     }
 
     return this.registrarPagoUC.execute({
@@ -118,7 +120,8 @@ export class PagosController {
   @UseInterceptors(ActividadInterceptor)
   @RegistrarActividad({
     tipo: 'PAGO',
-    descripcionFn: (result) => `Pago ${result.id} marcado como ${result.estado}`,
+    descripcionFn: (result) =>
+      `Pago ${result.id} marcado como ${result.estado}`,
   })
   @ApiOperation({ summary: 'Validar o rechazar un pago (solo ADMIN)' })
   async validar(
@@ -126,7 +129,8 @@ export class PagosController {
     @Body() dto: { estado: string },
     @CurrentTenant() tenantId: string,
   ) {
-    const estadoEnum = dto.estado as EstadoValidacionPago.VALIDADO | EstadoValidacionPago.RECHAZADO;
+    const estadoEnum = dto.estado as
+      EstadoValidacionPago.VALIDADO | EstadoValidacionPago.RECHAZADO;
     return this.validarPagoUC.execute({
       pagoId,
       estado: estadoEnum,
@@ -163,7 +167,9 @@ export class PagosController {
         ...pago,
         residenteNombre: residente?.nombre ?? 'Residente',
         cobradorNombre: pago.cobrador?.nombre ?? user.nombre,
-        nroRecibo: pago.clientPaymentId || (`TK-${pago.id.replace(/-/g, '').substring(0, 6).toUpperCase()}`),
+        nroRecibo:
+          pago.clientPaymentId ||
+          `TK-${pago.id.replace(/-/g, '').substring(0, 6).toUpperCase()}`,
         casaDireccion: casa?.direccionInterna ?? 'Inmueble',
         manzanaNombre: manzana?.nombre ?? 'Manzana',
         etapaNombre: etapa?.nombre ?? 'Etapa',
@@ -180,9 +186,10 @@ export class PagosController {
     @CurrentUser() user: Usuario,
     @CurrentTenant() tenantId: string,
   ) {
-    const targetId = user.rol === RolUsuario.RESIDENTE
-      ? (user.residenteId ?? residenteId)
-      : (residenteId ?? user.residenteId);
+    const targetId =
+      user.rol === RolUsuario.RESIDENTE
+        ? (user.residenteId ?? residenteId)
+        : (residenteId ?? user.residenteId);
 
     if (!targetId) return [];
     const pagos = await this.pagoRepo.findByPropietario(targetId, tenantId);
@@ -196,27 +203,37 @@ export class PagosController {
         ...pago,
         residenteNombre: residente?.nombre ?? 'Residente',
         cobradorNombre: pago.cobrador?.nombre ?? 'Administración',
-        nroRecibo: pago.clientPaymentId || (`TK-${pago.id.replace(/-/g, '').substring(0, 6).toUpperCase()}`),
+        nroRecibo:
+          pago.clientPaymentId ||
+          `TK-${pago.id.replace(/-/g, '').substring(0, 6).toUpperCase()}`,
         casaDireccion: casa?.direccionInterna ?? 'Inmueble',
         manzanaNombre: manzana?.nombre ?? 'Manzana',
         etapaNombre: etapa?.nombre ?? 'Etapa',
         esViaSolicitud: Boolean((pago as any).solicitudId),
-        residente: residente ? {
-          id: residente.id,
-          nombre: residente.nombre,
-        } : null,
-        casa: casa ? {
-          id: casa.id,
-          direccionInterna: casa.direccionInterna,
-          manzana: manzana ? {
-            id: manzana.id,
-            nombre: manzana.nombre,
-            etapa: etapa ? {
-              id: etapa.id,
-              nombre: etapa.nombre,
-            } : null,
-          } : null,
-        } : null,
+        residente: residente
+          ? {
+              id: residente.id,
+              nombre: residente.nombre,
+            }
+          : null,
+        casa: casa
+          ? {
+              id: casa.id,
+              direccionInterna: casa.direccionInterna,
+              manzana: manzana
+                ? {
+                    id: manzana.id,
+                    nombre: manzana.nombre,
+                    etapa: etapa
+                      ? {
+                          id: etapa.id,
+                          nombre: etapa.nombre,
+                        }
+                      : null,
+                  }
+                : null,
+            }
+          : null,
       };
     });
   }
@@ -230,12 +247,8 @@ export class PagosController {
     descripcionFn: (result) => `Pago reversado/eliminado correctamente`,
   })
   @ApiOperation({ summary: 'Eliminar/revertir un pago (solo ADMIN)' })
-  async eliminar(
-    @Param('id') id: string,
-    @CurrentTenant() tenantId: string,
-  ) {
+  async eliminar(@Param('id') id: string, @CurrentTenant() tenantId: string) {
     await this.eliminarPagoUC.execute(id, tenantId);
     return { success: true };
   }
 }
-

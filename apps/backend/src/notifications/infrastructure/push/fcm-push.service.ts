@@ -28,7 +28,9 @@ export class FcmPushService {
         });
         this.logger.log('Firebase Admin SDK inicializado exitosamente');
       } else {
-        this.logger.warn('FIREBASE_CREDENTIALS no configurado. Ejecutando FcmPushService en modo Simulado/Dev.');
+        this.logger.warn(
+          'FIREBASE_CREDENTIALS no configurado. Ejecutando FcmPushService en modo Simulado/Dev.',
+        );
       }
     } catch (error) {
       this.logger.error('Error al inicializar Firebase Admin SDK:', error);
@@ -38,10 +40,14 @@ export class FcmPushService {
   async sendToToken(token: string, payload: PushPayload): Promise<boolean> {
     if (!token) return false;
 
-    this.logger.log(`[FCM Push] Enviando notificación a token (${token.slice(0, 10)}...): "${payload.title}"`);
+    this.logger.log(
+      `[FCM Push] Enviando notificación a token (${token.slice(0, 10)}...): "${payload.title}"`,
+    );
 
     if (!this.firebaseApp) {
-      this.logger.debug(`[FCM Mock] Notificación push entregada en simulación: ${payload.title} - ${payload.body}`);
+      this.logger.debug(
+        `[FCM Mock] Notificación push entregada en simulación: ${payload.title} - ${payload.body}`,
+      );
       return true;
     }
 
@@ -101,7 +107,7 @@ export class FcmPushService {
   /// Notificación de Solicitud de Cobro Creada
   async sendSolicitudCreadaPush(params: {
     cobradorTokens: string[];
-    casaNombre: String;
+    casaNombre: string;
     solicitudId: string;
     nota?: string;
   }) {

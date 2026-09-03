@@ -61,9 +61,7 @@ describe('MarcarVencidasJob', () => {
       await job.handleCron();
 
       expect(useCase.execute).toHaveBeenCalledTimes(1);
-      expect(errorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Timeout'),
-      );
+      expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('Timeout'));
     });
 
     it('should log generic error when thrown value is not an Error', async () => {

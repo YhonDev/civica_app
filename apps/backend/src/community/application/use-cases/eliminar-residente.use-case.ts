@@ -23,7 +23,9 @@ export class EliminarResidenteUseCase {
     await queryRunner.startTransaction();
 
     try {
-      this.logger.log(`Iniciando eliminación en cascada para residente ${id}...`);
+      this.logger.log(
+        `Iniciando eliminación en cascada para residente ${id}...`,
+      );
 
       // 1. Eliminar solicitudes asociadas
       await queryRunner.query(
@@ -36,10 +38,9 @@ export class EliminarResidenteUseCase {
         `DELETE FROM pago_cobros WHERE pago_id IN (SELECT id FROM pagos WHERE residente_id = $1)`,
         [id],
       );
-      await queryRunner.query(
-        `DELETE FROM pagos WHERE residente_id = $1`,
-        [id],
-      );
+      await queryRunner.query(`DELETE FROM pagos WHERE residente_id = $1`, [
+        id,
+      ]);
 
       // 3. Eliminar cobros y periodos_cobro
       await queryRunner.query(
@@ -58,16 +59,14 @@ export class EliminarResidenteUseCase {
       );
 
       // 5. Eliminar tenencias
-      await queryRunner.query(
-        `DELETE FROM tenencias WHERE residente_id = $1`,
-        [id],
-      );
+      await queryRunner.query(`DELETE FROM tenencias WHERE residente_id = $1`, [
+        id,
+      ]);
 
       // 6. Eliminar usuario y credenciales
-      await queryRunner.query(
-        `DELETE FROM usuarios WHERE residente_id = $1`,
-        [id],
-      );
+      await queryRunner.query(`DELETE FROM usuarios WHERE residente_id = $1`, [
+        id,
+      ]);
 
       // 7. Eliminar la entidad residente
       await queryRunner.query(
@@ -76,7 +75,9 @@ export class EliminarResidenteUseCase {
       );
 
       await queryRunner.commitTransaction();
-      this.logger.log(`Residente ${id} y todas sus relaciones eliminadas exitosamente.`);
+      this.logger.log(
+        `Residente ${id} y todas sus relaciones eliminadas exitosamente.`,
+      );
     } catch (e) {
       await queryRunner.rollbackTransaction();
       this.logger.error(`Error eliminando residente en cascada: ${e}`);

@@ -281,50 +281,7 @@ class _EditarResidenteScreenState extends State<EditarResidenteScreen> {
             SizedBox(
               width: double.infinity,
               child: FilledButton(
-                onPressed: _isSaving ? null : () async {
-                  if (_nombreCtrl.text.isEmpty || _telefonoCtrl.text.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Por favor, ingrese al menos el nombre y teléfono.')),
-                    );
-                    return;
-                  }
-                  
-                  setState(() => _isSaving = true);
-                  try {
-                    Map<String, dynamic> data = {
-                      'nombre': _nombreCtrl.text,
-                      'telefono': _telefonoCtrl.text,
-                      'modalidadPago': _selectedModalidad,
-                    };
-                    if (_emailCtrl.text.isNotEmpty) data['email'] = _emailCtrl.text;
-                    if (_selectedCasaId != null) data['casaId'] = _selectedCasaId;
-
-                    final success = await _residentesRepo.updateResidente(widget.residente.id, data);
-                    
-                    if (mounted) {
-                      if (success) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Residente actualizado con éxito.')),
-                        );
-                        context.pop(true);
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Error al actualizar residente')),
-                        );
-                      }
-                    }
-                  } catch (e) {
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Error al actualizar residente: $e')),
-                      );
-                    }
-                  } finally {
-                    if (mounted) {
-                      setState(() => _isSaving = false);
-                    }
-                  }
-                },
+                onPressed: _isSaving ? null : _guardarCambios,
                 child: _isSaving 
                   ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                   : const Text('Guardar Cambios'),
@@ -334,6 +291,51 @@ class _EditarResidenteScreenState extends State<EditarResidenteScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _guardarCambios() async {
+    if (_nombreCtrl.text.isEmpty || _telefonoCtrl.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Por favor, ingrese al menos el nombre y teléfono.')),
+      );
+      return;
+    }
+    
+    setState(() => _isSaving = true);
+    try {
+      Map<String, dynamic> data = {
+        'nombre': _nombreCtrl.text,
+        'telefono': _telefonoCtrl.text,
+        'modalidadPago': _selectedModalidad,
+      };
+      if (_emailCtrl.text.isNotEmpty) data['email'] = _emailCtrl.text;
+      if (_selectedCasaId != null) data['casaId'] = _selectedCasaId;
+
+      final success = await _residentesRepo.updateResidente(widget.residente.id, data);
+      
+      if (mounted) {
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Residente actualizado con éxito.')),
+          );
+          context.pop(true);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Error al actualizar residente')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al actualizar residente: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
   }
 
   Widget _buildTextField({

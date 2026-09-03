@@ -22,7 +22,9 @@ export class Etapa {
   @Column({ name: 'proyecto_id', type: 'uuid' })
   proyectoId: string;
 
-  @ManyToOne(() => Proyecto, (proyecto) => proyecto.etapas, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Proyecto, (proyecto) => proyecto.etapas, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'proyecto_id' })
   @Exclude()
   proyecto: Proyecto;

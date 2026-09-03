@@ -96,13 +96,17 @@ describe('RegistrarResidenteUseCase', () => {
   describe('execute without casa', () => {
     it('should create residente and user with fallback username', async () => {
       const savedResidente = Residente.crear(
-        'Maria Lopez', '3001234567', 'maria@test.com', 'tenant-1',
+        'Maria Lopez',
+        '3001234567',
+        'maria@test.com',
+        'tenant-1',
       );
       Object.assign(savedResidente, { id: 'res-1' });
       residenteRepo.save.mockResolvedValue(savedResidente);
 
       jest.spyOn(generarCredenciales, 'generarUsernameResidente');
-      jest.spyOn(generarCredenciales, 'generarPasswordAleatoria')
+      jest
+        .spyOn(generarCredenciales, 'generarPasswordAleatoria')
         .mockReturnValue('pass123ABC');
 
       (bcrypt.hash as jest.Mock).mockResolvedValue('hashed-pass');
@@ -132,7 +136,11 @@ describe('RegistrarResidenteUseCase', () => {
   describe('execute with casa', () => {
     it('should create residente, tenencia, plan and user', async () => {
       const savedResidente = Residente.crear(
-        'Juan Perez', '3007654321', null, 'tenant-1', 'MENSUAL',
+        'Juan Perez',
+        '3007654321',
+        null,
+        'tenant-1',
+        'MENSUAL',
       );
       Object.assign(savedResidente, { id: 'res-2' });
 
@@ -143,9 +151,11 @@ describe('RegistrarResidenteUseCase', () => {
 
       casaRepo.findOne.mockResolvedValue(mockCasa);
 
-      jest.spyOn(generarCredenciales, 'generarUsernameResidente')
+      jest
+        .spyOn(generarCredenciales, 'generarUsernameResidente')
         .mockReturnValue('manzana_a_lote_23_residente');
-      jest.spyOn(generarCredenciales, 'generarPasswordResidente')
+      jest
+        .spyOn(generarCredenciales, 'generarPasswordResidente')
         .mockReturnValue('XyZ789!pq');
 
       (bcrypt.hash as jest.Mock).mockResolvedValue('hashed-pass');
@@ -197,7 +207,10 @@ describe('RegistrarResidenteUseCase', () => {
   describe('execute with casa that is not found', () => {
     it('should still create residente and user but skip plan', async () => {
       const savedResidente = Residente.crear(
-        'Ana Ruiz', '3001112233', 'ana@test.com', 'tenant-1',
+        'Ana Ruiz',
+        '3001112233',
+        'ana@test.com',
+        'tenant-1',
       );
       Object.assign(savedResidente, { id: 'res-3' });
       residenteRepo.save.mockResolvedValue(savedResidente);
@@ -205,11 +218,14 @@ describe('RegistrarResidenteUseCase', () => {
       casaRepo.findOne.mockResolvedValue(null);
 
       jest.spyOn(generarCredenciales, 'generarUsernameResidente');
-      jest.spyOn(generarCredenciales, 'generarPasswordAleatoria')
+      jest
+        .spyOn(generarCredenciales, 'generarPasswordAleatoria')
         .mockReturnValue('fallback789');
 
       (bcrypt.hash as jest.Mock).mockResolvedValue('hashed-pass');
-      usuarioRepo.save.mockResolvedValue(Object.assign(new Usuario(), { id: 'usr-3' }));
+      usuarioRepo.save.mockResolvedValue(
+        Object.assign(new Usuario(), { id: 'usr-3' }),
+      );
 
       const result = await useCase.execute({
         nombre: 'Ana Ruiz',

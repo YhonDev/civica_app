@@ -32,7 +32,10 @@ export class AgregarTenenciaUseCase {
       );
     }
 
-    const tenencia = residente.agregarTenencia(params.casaId, params.fechaInicio);
+    const tenencia = residente.agregarTenencia(
+      params.casaId,
+      params.fechaInicio,
+    );
     await this.residenteRepository.save(residente);
 
     // Buscar casa con proyectoId
@@ -56,7 +59,12 @@ export class AgregarTenenciaUseCase {
       // Generar cobros inmediatamente para el mes actual de ingreso
       const mes = params.fechaInicio.getMonth() + 1;
       const anio = params.fechaInicio.getFullYear();
-      await this.generarCobrosUC.generarCobrosParaPlan(planSaved, mes, anio, params.fechaInicio);
+      await this.generarCobrosUC.generarCobrosParaPlan(
+        planSaved,
+        mes,
+        anio,
+        params.fechaInicio,
+      );
     }
 
     return tenencia;

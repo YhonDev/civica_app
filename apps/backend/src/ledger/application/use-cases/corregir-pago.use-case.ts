@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+  Logger,
+} from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { Pago, EstadoValidacionPago } from '../../domain/pago.entity';
 import { PagoEdicion } from '../../domain/pago-edicion.entity';
@@ -60,11 +65,12 @@ export class CorregirPagoUseCase {
 
       while (remainingToApply > 0) {
         // Encontrar el cobro más antiguo con saldo pendiente para el residente
-        const cobroPendiente = await this.cobroRepo.findMasAntiguoConSaldoLocked(
-          entityManager,
-          pago.residenteId,
-          pago.tenantId,
-        );
+        const cobroPendiente =
+          await this.cobroRepo.findMasAntiguoConSaldoLocked(
+            entityManager,
+            pago.residenteId,
+            pago.tenantId,
+          );
 
         if (!cobroPendiente) {
           this.logger.warn(
@@ -77,7 +83,9 @@ export class CorregirPagoUseCase {
           remainingToApply,
           cobroPendiente.monto - cobroPendiente.montoPagado,
         );
-        const excess = cobroPendiente.aplicarPago(Money.ofCOP(remainingToApply));
+        const excess = cobroPendiente.aplicarPago(
+          Money.ofCOP(remainingToApply),
+        );
         await entityManager.save(cobroPendiente);
         cobrosAfectados.push(cobroPendiente);
         vinculosNuevos.push(

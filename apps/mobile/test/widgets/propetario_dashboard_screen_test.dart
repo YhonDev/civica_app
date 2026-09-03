@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'package:civica_pago_mobile/core/network/api_client.dart';
+import 'package:civica_pago_mobile/core/network/local_cache_repository.dart';
 import 'package:civica_pago_mobile/features/auth/auth_cubit.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:civica_pago_mobile/features/dashboard_residente/residente_dashboard_screen.dart';
@@ -48,7 +48,7 @@ void _mockDashboardApi(MockHttpAdapter adapter, {
           'tipo': 'pago',
           'fecha': '2026-07-15T10:00:00Z',
           'monto': 40000,
-          'descripcion': 'Pago de cuota',
+          'concepto': 'Pago de cuota',
         },
       ],
     });
@@ -61,8 +61,14 @@ void main() {
   late MockHttpAdapter mockAdapter;
 
   setUp(() {
-    SharedPreferences.setMockInitialValues({});
-    ApiClient.init(baseUrl: 'http://test.local');
+    // Aislar el cache SWR (singleton global) entre tests
+    LocalCacheRepository.instance.invalidateAll();
+    ApiClient.init(
+      baseUrl: 'http://test.local',
+      connectTimeout: Duration.zero,
+      receiveTimeout: Duration.zero,
+      tokenStorage: TokenStorage(storage: InMemorySecureStorage()),
+    );
     initializeDateFormatting('es');
     initializeDateFormatting('es_CO');
 

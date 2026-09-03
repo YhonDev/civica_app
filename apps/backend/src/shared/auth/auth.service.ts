@@ -93,7 +93,9 @@ export class AuthService {
   ): Promise<{ accessToken: string; refreshToken: string; usuario: Usuario }> {
     const isRevokedInRedis = await this.tokenRevocation.isRevoked(token);
     if (isRevokedInRedis) {
-      throw new UnauthorizedException('Sesión cerrada. Inicia sesión nuevamente.');
+      throw new UnauthorizedException(
+        'Sesión cerrada. Inicia sesión nuevamente.',
+      );
     }
 
     try {
@@ -139,11 +141,15 @@ export class AuthService {
           );
         }
 
-        throw new UnauthorizedException('Sesión no encontrada o expirada. Inicia sesión nuevamente.');
+        throw new UnauthorizedException(
+          'Sesión no encontrada o expirada. Inicia sesión nuevamente.',
+        );
       }
 
       if (session.isRevoked || session.expiresAt < new Date()) {
-        throw new UnauthorizedException('Sesión expirada o revocada. Inicia sesión nuevamente.');
+        throw new UnauthorizedException(
+          'Sesión expirada o revocada. Inicia sesión nuevamente.',
+        );
       }
 
       const newPayload = {
@@ -153,7 +159,9 @@ export class AuthService {
         tenantId: user.tenantId,
       };
 
-      const newAccessToken = this.jwtService.sign(newPayload, { expiresIn: '15m' });
+      const newAccessToken = this.jwtService.sign(newPayload, {
+        expiresIn: '15m',
+      });
       const newRefreshToken = this.jwtService.sign(
         { sub: user.id, type: 'refresh' },
         { expiresIn: '30d' },
@@ -164,9 +172,16 @@ export class AuthService {
       session.expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
       await this.sessionRepository.save(session);
 
-      return { accessToken: newAccessToken, refreshToken: newRefreshToken, usuario: user };
+      return {
+        accessToken: newAccessToken,
+        refreshToken: newRefreshToken,
+        usuario: user,
+      };
     } catch (error) {
-      if (error instanceof UnauthorizedException || error instanceof NotFoundException) {
+      if (
+        error instanceof UnauthorizedException ||
+        error instanceof NotFoundException
+      ) {
         throw error;
       }
       throw new UnauthorizedException('Token de refresco inválido o expirado');
@@ -183,10 +198,7 @@ export class AuthService {
   }
 
   async revokeAllSessionsForUser(usuarioId: string): Promise<void> {
-    await this.sessionRepository.update(
-      { usuarioId },
-      { isRevoked: true },
-    );
+    await this.sessionRepository.update({ usuarioId }, { isRevoked: true });
   }
 
   async getUserSessions(usuarioId: string): Promise<AuthSession[]> {
@@ -258,7 +270,10 @@ export class AuthService {
     }
 
     if (params.currentPassword) {
-      const valid = await bcrypt.compare(params.currentPassword, usuario.passwordHash);
+      const valid = await bcrypt.compare(
+        params.currentPassword,
+        usuario.passwordHash,
+      );
       if (!valid) {
         throw new UnauthorizedException('La contraseña actual es incorrecta');
       }
@@ -284,7 +299,10 @@ export class AuthService {
     return { username: usuario.email };
   }
 
-  async getCredentials(usuarioId: string, tenantId: string): Promise<{ username: string }> {
+  async getCredentials(
+    usuarioId: string,
+    tenantId: string,
+  ): Promise<{ username: string }> {
     const usuario = await this.usuarioRepository.findOne({
       where: { id: usuarioId, tenantId },
     });

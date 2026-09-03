@@ -1,5 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe, ClassSerializerInterceptor } from '@nestjs/common';
+import {
+  INestApplication,
+  ValidationPipe,
+  ClassSerializerInterceptor,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import request from 'supertest';
 import { DataSource } from 'typeorm';
@@ -38,9 +42,15 @@ describe('Ledger API Integration (Sprint 3)', () => {
 
     app = moduleFixture.createNestApplication();
     app.useGlobalPipes(
-      new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+      }),
     );
-    app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
+    app.useGlobalInterceptors(
+      new ClassSerializerInterceptor(app.get(Reflector)),
+    );
     await app.init();
 
     dataSource = app.get(DataSource);
@@ -83,12 +93,28 @@ describe('Ledger API Integration (Sprint 3)', () => {
     await dataSource.query(
       `INSERT INTO usuarios (id, email, password_hash, nombre, rol, tenant_id, activo)
        VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-      [adminUserId, 'admin-ledger@test.com', adminHash, 'Admin Ledger', 'ADMIN', tenantId, true],
+      [
+        adminUserId,
+        'admin-ledger@test.com',
+        adminHash,
+        'Admin Ledger',
+        'ADMIN',
+        tenantId,
+        true,
+      ],
     );
     await dataSource.query(
       `INSERT INTO usuarios (id, email, password_hash, nombre, rol, tenant_id, activo)
        VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-      [cobradorUserId, 'cobrador-ledger@test.com', cobradorHash, 'Cobrador Ledger', 'COBRADOR', tenantId, true],
+      [
+        cobradorUserId,
+        'cobrador-ledger@test.com',
+        cobradorHash,
+        'Cobrador Ledger',
+        'COBRADOR',
+        tenantId,
+        true,
+      ],
     );
 
     // ── Login to get admin token ──────────────────────────
@@ -107,12 +133,26 @@ describe('Ledger API Integration (Sprint 3)', () => {
   });
 
   afterAll(async () => {
-    await dataSource.query(`DELETE FROM cobros WHERE tenant_id = $1`, [tenantId]);
-    await dataSource.query(`DELETE FROM planes_de_cobro WHERE tenant_id = $1`, [tenantId]);
-    await dataSource.query(`DELETE FROM tarifas WHERE tenant_id = $1`, [tenantId]);
-    await dataSource.query(`DELETE FROM montos_predefinidos WHERE tenant_id = $1`, [tenantId]);
-    await dataSource.query(`DELETE FROM asignaciones_etapa WHERE tenant_id = $1`, [tenantId]);
-    await dataSource.query(`DELETE FROM usuarios WHERE tenant_id = $1`, [tenantId]);
+    await dataSource.query(`DELETE FROM cobros WHERE tenant_id = $1`, [
+      tenantId,
+    ]);
+    await dataSource.query(`DELETE FROM planes_de_cobro WHERE tenant_id = $1`, [
+      tenantId,
+    ]);
+    await dataSource.query(`DELETE FROM tarifas WHERE tenant_id = $1`, [
+      tenantId,
+    ]);
+    await dataSource.query(
+      `DELETE FROM montos_predefinidos WHERE tenant_id = $1`,
+      [tenantId],
+    );
+    await dataSource.query(
+      `DELETE FROM asignaciones_etapa WHERE tenant_id = $1`,
+      [tenantId],
+    );
+    await dataSource.query(`DELETE FROM usuarios WHERE tenant_id = $1`, [
+      tenantId,
+    ]);
     await dataSource.query(`DELETE FROM casas WHERE id = $1`, [casaId]);
     await dataSource.query(`DELETE FROM etapas WHERE id = $1`, [etapaId]);
     await dataSource.query(`DELETE FROM proyectos WHERE id = $1`, [proyectoId]);

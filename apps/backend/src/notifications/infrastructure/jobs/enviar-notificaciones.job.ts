@@ -2,7 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThan, In } from 'typeorm';
-import { Notificacion, EstadoNotificacion } from '../../domain/notificacion.entity';
+import {
+  Notificacion,
+  EstadoNotificacion,
+} from '../../domain/notificacion.entity';
 import { EmailSender } from '../email/email-sender';
 
 @Injectable()
@@ -27,7 +30,9 @@ export class EnviarNotificacionesJob {
 
     if (pendientes.length === 0) return;
 
-    this.logger.log(`Procesando ${pendientes.length} notificaciones pendientes...`);
+    this.logger.log(
+      `Procesando ${pendientes.length} notificaciones pendientes...`,
+    );
 
     for (const notif of pendientes) {
       notif.intentos += 1;

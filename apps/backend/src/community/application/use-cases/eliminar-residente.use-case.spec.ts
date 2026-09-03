@@ -51,7 +51,10 @@ describe('EliminarResidenteUseCase', () => {
     await useCase.execute('res-123', 'tenant-001');
 
     expect(mockQueryRunner.startTransaction).toHaveBeenCalled();
-    expect(mockQueryRunner.query).toHaveBeenCalledWith(expect.stringContaining('DELETE FROM residentes'), ['res-123', 'tenant-001']);
+    expect(mockQueryRunner.query).toHaveBeenCalledWith(
+      expect.stringContaining('DELETE FROM residentes'),
+      ['res-123', 'tenant-001'],
+    );
     expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
     expect(mockQueryRunner.release).toHaveBeenCalled();
   });
@@ -63,7 +66,9 @@ describe('EliminarResidenteUseCase', () => {
     });
     mockQueryRunner.query.mockRejectedValue(new Error('FK constraint'));
 
-    await expect(useCase.execute('res-123', 'tenant-001')).rejects.toThrow('FK constraint');
+    await expect(useCase.execute('res-123', 'tenant-001')).rejects.toThrow(
+      'FK constraint',
+    );
     expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
     expect(mockQueryRunner.release).toHaveBeenCalled();
   });

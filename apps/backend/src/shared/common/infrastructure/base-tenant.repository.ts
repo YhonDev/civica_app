@@ -8,10 +8,13 @@ export abstract class BaseTenantRepository<T extends ObjectLiteral> {
   constructor(protected readonly repo: Repository<T>) {}
 
   /**
-   * Standardized find by tenant. 
+   * Standardized find by tenant.
    * Merges provided where options with the mandatory tenantId.
    */
-  protected async findByTenant(tenantId: string, options: any = {}): Promise<T[]> {
+  protected async findByTenant(
+    tenantId: string,
+    options: any = {},
+  ): Promise<T[]> {
     return this.repo.find({
       ...options,
       where: { ...options.where, tenantId },
@@ -21,7 +24,10 @@ export abstract class BaseTenantRepository<T extends ObjectLiteral> {
   /**
    * Standardized count by tenant.
    */
-  protected async countByTenant(tenantId: string, options: any = {}): Promise<number> {
+  protected async countByTenant(
+    tenantId: string,
+    options: any = {},
+  ): Promise<number> {
     return this.repo.count({
       where: { ...options, tenantId },
     });
@@ -31,7 +37,11 @@ export abstract class BaseTenantRepository<T extends ObjectLiteral> {
    * Applies the mandatory tenant filter to a QueryBuilder.
    * Should be called as the first filter in the chain to use .where().
    */
-  protected applyTenantFilter(qb: SelectQueryBuilder<T>, tenantId: string, alias: string): SelectQueryBuilder<T> {
+  protected applyTenantFilter(
+    qb: SelectQueryBuilder<T>,
+    tenantId: string,
+    alias: string,
+  ): SelectQueryBuilder<T> {
     return qb.where(`${alias}.tenantId = :tenantId`, { tenantId });
   }
 

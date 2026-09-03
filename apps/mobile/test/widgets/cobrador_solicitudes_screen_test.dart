@@ -6,7 +6,6 @@ import 'package:civica_pago_mobile/features/dashboard_cobrador/casas_cubit.dart'
 import 'package:civica_pago_mobile/features/dashboard_cobrador/dashboard_cobrador_cubit.dart';
 import 'package:civica_pago_mobile/features/dashboard_cobrador/widgets/cobrador_solicitud_card.dart';
 import 'package:civica_pago_mobile/core/network/api_client.dart';
-import 'package:civica_pago_mobile/core/network/realtime_socket_service.dart';
 import 'mock_http_adapter.dart';
 
 void main() {

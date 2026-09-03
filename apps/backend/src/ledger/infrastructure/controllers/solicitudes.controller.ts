@@ -43,7 +43,8 @@ export class SolicitudesController {
   @UseInterceptors(ActividadInterceptor)
   @RegistrarActividad({
     tipo: 'SOLICITUD',
-    descripcionFn: (r) => `Nueva solicitud creada: ${r.tipo ?? 'Solicitud de cobro'}`,
+    descripcionFn: (r) =>
+      `Nueva solicitud creada: ${r.tipo ?? 'Solicitud de cobro'}`,
     metadataFn: (r) => ({
       solicitudId: r.id,
       cobroId: r.cobroId,
@@ -54,7 +55,13 @@ export class SolicitudesController {
   })
   @ApiOperation({ summary: 'Crear solicitud de cobro presencial' })
   async crear(
-    @Body() dto: { cuotaId?: string; cobroId?: string; tipo: string; descripcion: string },
+    @Body()
+    dto: {
+      cuotaId?: string;
+      cobroId?: string;
+      tipo: string;
+      descripcion: string;
+    },
     @CurrentUser() user: Usuario,
     @CurrentTenant() tenantId: string,
   ) {
@@ -64,7 +71,9 @@ export class SolicitudesController {
     }
     const cobro = await this.cobroRepo.findById(targetCobroId);
     if (!cobro) {
-      throw new NotFoundException(`No existe un cobro válido asignado para el id ${targetCobroId}`);
+      throw new NotFoundException(
+        `No existe un cobro válido asignado para el id ${targetCobroId}`,
+      );
     }
     const solicitud = Solicitud.crear(
       tenantId,
@@ -114,7 +123,8 @@ export class SolicitudesController {
   @UseInterceptors(ActividadInterceptor)
   @RegistrarActividad({
     tipo: 'SOLICITUD',
-    descripcionFn: (r) => `Cobrador en camino a la casa para la solicitud ${r.nroRecibo}`,
+    descripcionFn: (r) =>
+      `Cobrador en camino a la casa para la solicitud ${r.nroRecibo}`,
     metadataFn: (r) => ({
       solicitudId: r.id,
       cobroId: r.cobroId,
@@ -194,8 +204,13 @@ export class SolicitudesController {
     if (!solicitud) {
       throw new NotFoundException(`Solicitud ${id} no encontrada`);
     }
-    if (solicitud.estado === SolicitudEstado.COBRADA || solicitud.estado === SolicitudEstado.APROBADA) {
-      throw new BadRequestException('No se puede cancelar una solicitud que ya ha sido procesada.');
+    if (
+      solicitud.estado === SolicitudEstado.COBRADA ||
+      solicitud.estado === SolicitudEstado.APROBADA
+    ) {
+      throw new BadRequestException(
+        'No se puede cancelar una solicitud que ya ha sido procesada.',
+      );
     }
     await this.solicitudRepo.delete(id);
     return { ok: true, message: 'Solicitud cancelada exitosamente', id };

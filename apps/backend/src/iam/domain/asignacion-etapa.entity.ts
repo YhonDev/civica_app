@@ -20,7 +20,9 @@ export class AsignacionEtapa {
   @Column({ name: 'usuario_id', type: 'uuid' })
   usuarioId: string;
 
-  @ManyToOne(() => Usuario, (usuario) => usuario.asignaciones, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Usuario, (usuario) => usuario.asignaciones, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'usuario_id' })
   @Exclude()
   usuario: Usuario;
@@ -38,7 +40,11 @@ export class AsignacionEtapa {
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
-  static crear(usuarioId: string, etapaId: string, tenantId: string): AsignacionEtapa {
+  static crear(
+    usuarioId: string,
+    etapaId: string,
+    tenantId: string,
+  ): AsignacionEtapa {
     const asignacion = new AsignacionEtapa();
     asignacion.usuarioId = usuarioId;
     asignacion.etapaId = etapaId;

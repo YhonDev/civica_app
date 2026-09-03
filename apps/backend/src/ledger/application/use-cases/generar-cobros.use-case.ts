@@ -3,7 +3,11 @@ import { CobroRepository } from '../../infrastructure/persistence/cobro.reposito
 import { PlanDeCobroRepository } from '../../infrastructure/persistence/plan-de-cobro.repository';
 import { PeriodoCobroRepository } from '../../infrastructure/persistence/periodo-cobro.repository';
 import { TarifaRepository } from '../../infrastructure/persistence/tarifa.repository';
-import { Periodo, Money, pagosPorMes } from '../../../shared/common/value-objects';
+import {
+  Periodo,
+  Money,
+  pagosPorMes,
+} from '../../../shared/common/value-objects';
 import type { ModalidadRecaudo } from '../../../shared/common/value-objects';
 import { Cobro } from '../../domain/cobro.entity';
 import { PeriodoCobro } from '../../domain/periodo-cobro.entity';
@@ -58,7 +62,12 @@ export class GenerarCobrosUseCase {
           iterAnio < currentAnio ||
           (iterAnio === currentAnio && iterMes <= currentMes)
         ) {
-          const generado = await this.generarCobrosParaPlan(plan, iterMes, iterAnio, hoy);
+          const generado = await this.generarCobrosParaPlan(
+            plan,
+            iterMes,
+            iterAnio,
+            hoy,
+          );
           generados += generado;
 
           iterMes++;
@@ -68,8 +77,11 @@ export class GenerarCobrosUseCase {
           }
         }
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Error desconocido';
-        this.logger.error(`Error generando cobros para plan ${plan.id}: ${message}`);
+        const message =
+          error instanceof Error ? error.message : 'Error desconocido';
+        this.logger.error(
+          `Error generando cobros para plan ${plan.id}: ${message}`,
+        );
       }
     }
 
@@ -84,13 +96,12 @@ export class GenerarCobrosUseCase {
     hoy: Date,
   ): Promise<number> {
     // 1. Idempotencia: si ya existe PeriodoCobro para este mes, saltar
-    const periodoExistente = await this.periodoCobroRepository.findByPlanAndMonth(
-      plan.id,
-      mes,
-      anio,
-    );
+    const periodoExistente =
+      await this.periodoCobroRepository.findByPlanAndMonth(plan.id, mes, anio);
     if (periodoExistente) {
-      this.logger.debug(`PeriodoCobro ya existe para plan ${plan.id} — ${anio}-${mes}`);
+      this.logger.debug(
+        `PeriodoCobro ya existe para plan ${plan.id} — ${anio}-${mes}`,
+      );
       return 0;
     }
 
@@ -159,11 +170,26 @@ export class GenerarCobrosUseCase {
     const hoyStr = hoy.toISOString().split('T')[0];
 
     const mesesEsp = [
-      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+      'Enero',
+      'Febrero',
+      'Marzo',
+      'Abril',
+      'Mayo',
+      'Junio',
+      'Julio',
+      'Agosto',
+      'Septiembre',
+      'Octubre',
+      'Noviembre',
+      'Diciembre',
     ];
     const nombreMes = mesesEsp[mes - 1] ?? '';
-    const modalidadLabel = modalidad === 'SEMANAL' ? 'Semanal' : modalidad === 'QUINCENAL' ? 'Quincenal' : 'Mensual';
+    const modalidadLabel =
+      modalidad === 'SEMANAL'
+        ? 'Semanal'
+        : modalidad === 'QUINCENAL'
+          ? 'Quincenal'
+          : 'Mensual';
 
     // 7. Crear los cobros individuales con periodoId asignado
     const cobrosAGuardar: Cobro[] = fechasFiltradas.map((fechaStr, index) => {

@@ -1,5 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe, ClassSerializerInterceptor } from '@nestjs/common';
+import {
+  INestApplication,
+  ValidationPipe,
+  ClassSerializerInterceptor,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import request from 'supertest';
 import { DataSource } from 'typeorm';
@@ -41,7 +45,9 @@ describe('Auth & IAM Integration', () => {
         transform: true,
       }),
     );
-    app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
+    app.useGlobalInterceptors(
+      new ClassSerializerInterceptor(app.get(Reflector)),
+    );
     await app.init();
 
     dataSource = app.get(DataSource);
@@ -87,12 +93,30 @@ describe('Auth & IAM Integration', () => {
     await dataSource.query(
       `INSERT INTO usuarios (id, email, password_hash, nombre, rol, residente_id, tenant_id, activo)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-      [adminUserId, 'admin@test.com', adminHash, 'Admin Test', 'ADMIN', null, tenantId, true],
+      [
+        adminUserId,
+        'admin@test.com',
+        adminHash,
+        'Admin Test',
+        'ADMIN',
+        null,
+        tenantId,
+        true,
+      ],
     );
     await dataSource.query(
       `INSERT INTO usuarios (id, email, password_hash, nombre, rol, residente_id, tenant_id, activo)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-      [cobradorUserId, 'cobrador@test.com', cobradorHash, 'Cobrador Test', 'COBRADOR', null, tenantId, true],
+      [
+        cobradorUserId,
+        'cobrador@test.com',
+        cobradorHash,
+        'Cobrador Test',
+        'COBRADOR',
+        null,
+        tenantId,
+        true,
+      ],
     );
     await dataSource.query(
       `INSERT INTO usuarios (id, email, password_hash, nombre, rol, residente_id, tenant_id, activo)
@@ -112,10 +136,19 @@ describe('Auth & IAM Integration', () => {
 
   afterAll(async () => {
     // Clean up in dependency order to respect FK constraints
-    await dataSource.query(`DELETE FROM asignaciones_etapa WHERE tenant_id = $1`, [tenantId]);
-    await dataSource.query(`DELETE FROM tenencias WHERE residente_id = $1`, [propietarioId]);
-    await dataSource.query(`DELETE FROM usuarios WHERE tenant_id = $1`, [tenantId]);
-    await dataSource.query(`DELETE FROM propietarios WHERE tenant_id = $1`, [tenantId]);
+    await dataSource.query(
+      `DELETE FROM asignaciones_etapa WHERE tenant_id = $1`,
+      [tenantId],
+    );
+    await dataSource.query(`DELETE FROM tenencias WHERE residente_id = $1`, [
+      propietarioId,
+    ]);
+    await dataSource.query(`DELETE FROM usuarios WHERE tenant_id = $1`, [
+      tenantId,
+    ]);
+    await dataSource.query(`DELETE FROM propietarios WHERE tenant_id = $1`, [
+      tenantId,
+    ]);
     await dataSource.query(`DELETE FROM casas WHERE id = $1`, [casaId]);
     await dataSource.query(`DELETE FROM etapas WHERE id = $1`, [etapaId]);
     await dataSource.query(`DELETE FROM conjuntos WHERE id = $1`, [proyectoId]);
@@ -344,7 +377,9 @@ describe('Auth & IAM Integration', () => {
       expect(Array.isArray(res.body)).toBe(true);
       expect(res.body.length).toBeGreaterThanOrEqual(1);
 
-      const asignacion = res.body.find((a: { id: string }) => a.id === asignacionId);
+      const asignacion = res.body.find(
+        (a: { id: string }) => a.id === asignacionId,
+      );
       expect(asignacion).toBeDefined();
       expect(asignacion.etapaId).toBe(etapaId);
       expect(asignacion).toHaveProperty('createdAt');
@@ -365,7 +400,9 @@ describe('Auth & IAM Integration', () => {
 
       expect(Array.isArray(res.body)).toBe(true);
       // Should include the seed propietario
-      const found = res.body.find((p: { id: string }) => p.id === propietarioId);
+      const found = res.body.find(
+        (p: { id: string }) => p.id === propietarioId,
+      );
       expect(found).toBeDefined();
       expect(found.nombre).toBe('Propietario Auth Test');
     });
@@ -380,7 +417,9 @@ describe('Auth & IAM Integration', () => {
       expect(Array.isArray(res.body)).toBe(true);
       // Cobrador was assigned etapaId which contains casaId,
       // and the propietario has a tenencia for that casa
-      const found = res.body.find((p: { id: string }) => p.id === propietarioId);
+      const found = res.body.find(
+        (p: { id: string }) => p.id === propietarioId,
+      );
       expect(found).toBeDefined();
       expect(found.nombre).toBe('Propietario Auth Test');
     });

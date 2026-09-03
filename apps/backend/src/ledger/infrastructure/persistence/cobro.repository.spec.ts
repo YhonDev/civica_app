@@ -65,7 +65,9 @@ describe('CobroRepository', () => {
     it('should call findOne with correct id', async () => {
       mockRepo.findOne.mockResolvedValue({ id: 'cobro-1' });
       const result = await repo.findById('cobro-1');
-      expect(mockRepo.findOne).toHaveBeenCalledWith({ where: { id: 'cobro-1' } });
+      expect(mockRepo.findOne).toHaveBeenCalledWith({
+        where: { id: 'cobro-1' },
+      });
       expect(result?.id).toBe('cobro-1');
     });
 
@@ -217,7 +219,10 @@ describe('CobroRepository', () => {
 
       expect(result?.id).toBe('oldest');
       expect(mockRepo.findOne).toHaveBeenCalledWith({
-        where: { residenteId: 'res-1', estado: In(['VENCIDA', 'PARCIAL', 'PENDIENTE']) },
+        where: {
+          residenteId: 'res-1',
+          estado: In(['VENCIDA', 'PARCIAL', 'PENDIENTE']),
+        },
         order: { fechaVencimiento: 'ASC' },
       });
     });
@@ -249,16 +254,22 @@ describe('CobroRepository', () => {
       );
 
       // Debe filtrar por tenant para no devolver cobros de otro tenant
-      expect(mockEmQb.andWhere).toHaveBeenCalledWith('cobro.tenantId = :tenantId', {
-        tenantId: TENANT_ID,
-      });
+      expect(mockEmQb.andWhere).toHaveBeenCalledWith(
+        'cobro.tenantId = :tenantId',
+        {
+          tenantId: TENANT_ID,
+        },
+      );
       expect(result?.id).toBe('cobro-1');
     });
   });
 
   describe('countByEstadoInMonth()', () => {
     it('should return pagadas and pendientes counts', async () => {
-      mockQueryBuilder.getRawOne.mockResolvedValue({ pagadas: 10, pendientes: 5 });
+      mockQueryBuilder.getRawOne.mockResolvedValue({
+        pagadas: 10,
+        pendientes: 5,
+      });
 
       const result = await repo.countByEstadoInMonth(TENANT_ID, 2026, 7);
 
@@ -267,7 +278,10 @@ describe('CobroRepository', () => {
     });
 
     it('should return zeros when no data', async () => {
-      mockQueryBuilder.getRawOne.mockResolvedValue({ pagadas: null, pendientes: null });
+      mockQueryBuilder.getRawOne.mockResolvedValue({
+        pagadas: null,
+        pendientes: null,
+      });
 
       const result = await repo.countByEstadoInMonth(TENANT_ID, 2026, 7);
 

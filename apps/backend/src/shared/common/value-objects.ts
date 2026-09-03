@@ -31,7 +31,9 @@ export class Telefono {
   constructor(public readonly value: string) {
     const digits = value.replace(/\D/g, '');
     if (digits.length < 7 || digits.length > 15) {
-      throw new Error(`Teléfono inválido: ${value}. Debe tener entre 7 y 15 dígitos.`);
+      throw new Error(
+        `Teléfono inválido: ${value}. Debe tener entre 7 y 15 dígitos.`,
+      );
     }
   }
 
@@ -86,7 +88,8 @@ export const CUOTA_MENSUAL_CIVICA_DEFAULT_CENTAVOS =
 export const CUOTA_MENSUAL_CIVICA_PESOS = CUOTA_MENSUAL_CIVICA_DEFAULT_PESOS;
 
 /** @deprecated Usar CUOTA_MENSUAL_CIVICA_DEFAULT_CENTAVOS (solo seeds). */
-export const CUOTA_MENSUAL_CIVICA_CENTAVOS = CUOTA_MENSUAL_CIVICA_DEFAULT_CENTAVOS;
+export const CUOTA_MENSUAL_CIVICA_CENTAVOS =
+  CUOTA_MENSUAL_CIVICA_DEFAULT_CENTAVOS;
 
 /** Pagos por mes según la modalidad de recaudo del residente. */
 export function pagosPorMes(modalidad: ModalidadRecaudo): number {
@@ -115,7 +118,9 @@ export function montoMensualDesde(
  * Calcula los montos de tarifa para las 3 modalidades a partir de la cuota mensual.
  * La cuota cívica mensual se divide: /4 semanal, /2 quincenal, /1 mensual.
  */
-export function tarifasDerivadas(montoMensualCentavos: number): Record<ModalidadRecaudo, number> {
+export function tarifasDerivadas(
+  montoMensualCentavos: number,
+): Record<ModalidadRecaudo, number> {
   return {
     MENSUAL: montoMensualCentavos,
     QUINCENAL: Math.round(montoMensualCentavos / 2),
@@ -145,7 +150,7 @@ export function calcularMontoCuota(
 
 export class Money {
   constructor(
-    public readonly amount: number,    // en centavos (integer)
+    public readonly amount: number, // en centavos (integer)
     public readonly currency: 'COP' = 'COP',
   ) {
     if (typeof amount !== 'number' || isNaN(amount)) {
@@ -166,12 +171,14 @@ export class Money {
   }
 
   add(other: Money): Money {
-    if (this.currency !== other.currency) throw new Error('No se pueden sumar monedas distintas');
+    if (this.currency !== other.currency)
+      throw new Error('No se pueden sumar monedas distintas');
     return new Money(this.amount + other.amount, this.currency);
   }
 
   subtract(other: Money): Money {
-    if (this.currency !== other.currency) throw new Error('No se pueden restar monedas distintas');
+    if (this.currency !== other.currency)
+      throw new Error('No se pueden restar monedas distintas');
     const result = this.amount - other.amount;
     if (result < 0) throw new Error('Saldo no puede ser negativo');
     return new Money(result, this.currency);
@@ -193,7 +200,8 @@ export class Money {
 /**
  * Estados posibles de un cobro (antes EstadoCuota).
  */
-export type EstadoCobro = 'PENDIENTE' | 'PARCIAL' | 'PAGADA' | 'VENCIDA' | 'EN_REVISION' | 'ANULADO';
+export type EstadoCobro =
+  'PENDIENTE' | 'PARCIAL' | 'PAGADA' | 'VENCIDA' | 'EN_REVISION' | 'ANULADO';
 
 /** @deprecated Usar EstadoCobro */
 export type EstadoCuota = EstadoCobro;
@@ -296,7 +304,7 @@ export class Periodo {
           const fecha = toLocalDate(year, month, d);
           if (fecha.getDay() === 6) fechas.push(formatDate(fecha));
         }
-        
+
         // Regla de negocio: Exactamente 4 pagos semanales por mes.
         if (fechas.length === 5) {
           const primerSabado = parseLocalDate(fechas[0]).getDate();
@@ -308,24 +316,21 @@ export class Periodo {
             fechas.pop();
           }
         }
-        
+
         return fechas;
       }
       case 'QUINCENAL': {
         const ancla1 = toLocalDate(year, month, 15);
         const ultimoDia = toLocalDate(year, month + 1, 0);
-        let d2 = new Date(ultimoDia);
+        const d2 = new Date(ultimoDia);
         while (d2.getDay() !== 6) {
           d2.setDate(d2.getDate() - 1);
         }
-        return [
-          formatDate(Periodo.sabadoCercano(ancla1)),
-          formatDate(d2),
-        ];
+        return [formatDate(Periodo.sabadoCercano(ancla1)), formatDate(d2)];
       }
       case 'MENSUAL': {
         const ultimoDia = toLocalDate(year, month + 1, 0);
-        let d = new Date(ultimoDia);
+        const d = new Date(ultimoDia);
         while (d.getDay() !== 6) {
           d.setDate(d.getDate() - 1);
         }
@@ -363,7 +368,11 @@ export class Periodo {
     const vencimiento = new Date(inicio);
     vencimiento.setDate(vencimiento.getDate() + 5);
 
-    return new Periodo(normalizeDate(inicio), normalizeDate(fin), normalizeDate(vencimiento));
+    return new Periodo(
+      normalizeDate(inicio),
+      normalizeDate(fin),
+      normalizeDate(vencimiento),
+    );
   }
 
   private static calcularQuincenal(desde: Date): Periodo {
@@ -395,7 +404,10 @@ export class Periodo {
   /**
    * Fecha límite: solo el mes actual y el próximo mes son visibles/generables.
    */
-  static limiteGeneracion(_modalidad?: ModalidadRecaudo, hoy = new Date()): Date {
+  static limiteGeneracion(
+    _modalidad?: ModalidadRecaudo,
+    hoy = new Date(),
+  ): Date {
     const ref = normalizeDate(hoy);
     return toLocalDate(ref.getFullYear(), ref.getMonth() + 1, 1);
   }
@@ -430,7 +442,10 @@ export class Periodo {
   }
 
   /** @deprecated Usar formatConceptoCuotaMensual para registros de cobro. */
-  static formatConcepto(_modalidad: ModalidadRecaudo, periodo: Periodo): string {
+  static formatConcepto(
+    _modalidad: ModalidadRecaudo,
+    periodo: Periodo,
+  ): string {
     return Periodo.formatConceptoCuotaMensual(periodo);
   }
 
@@ -445,10 +460,10 @@ export class Periodo {
     const year = fechaRegistro.getFullYear();
     const month = fechaRegistro.getMonth();
     const fechasMes = Periodo.fechasCobroParciales(modalidad, year, month);
-    
+
     // Contar cuántas fechas son mayores o iguales a la fecha de registro
     const registroStr = formatDate(fechaRegistro);
-    const fechasRestantes = fechasMes.filter(f => f >= registroStr).length;
+    const fechasRestantes = fechasMes.filter((f) => f >= registroStr).length;
 
     // totalPagos será 4, 2 o 1
     const totalPagos = pagosPorMes(modalidad);
@@ -462,22 +477,26 @@ export class Periodo {
   static obtenerProximoPago(
     fechaBase: Date,
     modalidad: ModalidadRecaudo,
-    tarifaMensualCentavos: number
+    tarifaMensualCentavos: number,
   ): { fecha: string; monto: number } | null {
     const year = fechaBase.getFullYear();
     const month = fechaBase.getMonth();
-    
+
     // Buscar en el mes actual
     let fechas = Periodo.fechasCobroParciales(modalidad, year, month);
-    let baseStr = formatDate(fechaBase);
-    let proximas = fechas.filter(f => f >= baseStr);
+    const baseStr = formatDate(fechaBase);
+    let proximas = fechas.filter((f) => f >= baseStr);
 
     // Si ya pasaron todas las de este mes, buscar en el siguiente
     if (proximas.length === 0) {
       const mesSiguiente = month === 11 ? 0 : month + 1;
       const anoSiguiente = month === 11 ? year + 1 : year;
-      fechas = Periodo.fechasCobroParciales(modalidad, anoSiguiente, mesSiguiente);
-      proximas = fechas; 
+      fechas = Periodo.fechasCobroParciales(
+        modalidad,
+        anoSiguiente,
+        mesSiguiente,
+      );
+      proximas = fechas;
     }
 
     if (proximas.length === 0) return null; // No debería pasar
@@ -487,7 +506,7 @@ export class Periodo {
 
     return {
       fecha: proximas[0],
-      monto: montoParcial
+      monto: montoParcial,
     };
   }
 }

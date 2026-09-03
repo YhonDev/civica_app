@@ -1,5 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe, ClassSerializerInterceptor } from '@nestjs/common';
+import {
+  INestApplication,
+  ValidationPipe,
+  ClassSerializerInterceptor,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import request from 'supertest';
 import { DataSource } from 'typeorm';
@@ -33,7 +37,9 @@ describe('Community API Integration', () => {
         transform: true,
       }),
     );
-    app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
+    app.useGlobalInterceptors(
+      new ClassSerializerInterceptor(app.get(Reflector)),
+    );
     await app.init();
 
     dataSource = app.get(DataSource);
@@ -45,7 +51,16 @@ describe('Community API Integration', () => {
     await dataSource.query(
       `INSERT INTO usuarios (id, email, password_hash, nombre, rol, residente_id, tenant_id, activo)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-      [adminId, 'admin-community@test.com', adminHash, 'Admin Community', 'ADMIN', null, tenantId, true],
+      [
+        adminId,
+        'admin-community@test.com',
+        adminHash,
+        'Admin Community',
+        'ADMIN',
+        null,
+        tenantId,
+        true,
+      ],
     );
 
     // ── Login to get admin token ────────────────────────
@@ -58,16 +73,27 @@ describe('Community API Integration', () => {
 
   afterAll(async () => {
     // Clean up in dependency order to respect FK constraints
-    await dataSource.query(`DELETE FROM asignaciones_etapa WHERE tenant_id = $1`, [tenantId]);
+    await dataSource.query(
+      `DELETE FROM asignaciones_etapa WHERE tenant_id = $1`,
+      [tenantId],
+    );
     await dataSource.query(
       `DELETE FROM tenencias WHERE residente_id IN (SELECT id FROM propietarios WHERE tenant_id = $1)`,
       [tenantId],
     );
-    await dataSource.query(`DELETE FROM propietarios WHERE tenant_id = $1`, [tenantId]);
-    await dataSource.query(`DELETE FROM usuarios WHERE tenant_id = $1`, [tenantId]);
+    await dataSource.query(`DELETE FROM propietarios WHERE tenant_id = $1`, [
+      tenantId,
+    ]);
+    await dataSource.query(`DELETE FROM usuarios WHERE tenant_id = $1`, [
+      tenantId,
+    ]);
     await dataSource.query(`DELETE FROM casas WHERE etapa_id = $1`, [etapaId]);
-    await dataSource.query(`DELETE FROM etapas WHERE proyecto_id = $1`, [proyectoId]);
-    await dataSource.query(`DELETE FROM conjuntos WHERE tenant_id = $1`, [tenantId]);
+    await dataSource.query(`DELETE FROM etapas WHERE proyecto_id = $1`, [
+      proyectoId,
+    ]);
+    await dataSource.query(`DELETE FROM conjuntos WHERE tenant_id = $1`, [
+      tenantId,
+    ]);
 
     await app.close();
   });
@@ -166,7 +192,9 @@ describe('Community API Integration', () => {
 
     expect(Array.isArray(res.body)).toBe(true);
     expect(res.body.length).toBeGreaterThanOrEqual(1);
-    expect(res.body.some((c: { id: string }) => c.id === proyectoId)).toBe(true);
+    expect(res.body.some((c: { id: string }) => c.id === proyectoId)).toBe(
+      true,
+    );
 
     // Verify the conjunto includes nested etapas and casas
     const created = res.body.find((c: { id: string }) => c.id === proyectoId);
@@ -197,7 +225,9 @@ describe('Community API Integration', () => {
 
     expect(Array.isArray(res.body)).toBe(true);
     // Only María García has a tenencia for this casa
-    expect(res.body.every((p: { nombre: string }) => p.nombre === 'María García')).toBe(true);
+    expect(
+      res.body.every((p: { nombre: string }) => p.nombre === 'María García'),
+    ).toBe(true);
   });
 
   // ── S1.7.8 Validation ───────────────────────────────────────────────

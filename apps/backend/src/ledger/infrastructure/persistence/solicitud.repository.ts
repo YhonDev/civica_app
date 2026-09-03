@@ -46,11 +46,12 @@ export class SolicitudRepository extends BaseTenantRepository<Solicitud> {
       order: { fecha: 'DESC' },
     });
 
-    return results.filter(s => 
-      s.estado === SolicitudEstado.PENDIENTE ||
-      s.estado === SolicitudEstado.EN_ESPERA ||
-      s.estado === SolicitudEstado.EN_CAMINO ||
-      s.estado === SolicitudEstado.EN_REVISION
+    return results.filter(
+      (s) =>
+        s.estado === SolicitudEstado.PENDIENTE ||
+        s.estado === SolicitudEstado.EN_ESPERA ||
+        s.estado === SolicitudEstado.EN_CAMINO ||
+        s.estado === SolicitudEstado.EN_REVISION,
     );
   }
 

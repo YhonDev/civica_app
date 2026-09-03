@@ -49,7 +49,9 @@ describe('ReconciliarModalidadUseCase', () => {
       ],
     }).compile();
 
-    useCase = module.get<ReconciliarModalidadUseCase>(ReconciliarModalidadUseCase);
+    useCase = module.get<ReconciliarModalidadUseCase>(
+      ReconciliarModalidadUseCase,
+    );
   });
 
   it('should be defined', () => {
@@ -93,7 +95,9 @@ describe('ReconciliarModalidadUseCase', () => {
 
     await useCase.execute('residente-123', 'QUINCENAL');
 
-    expect(mockPlanRepo.save).toHaveBeenCalledWith(expect.objectContaining({ modalidad: 'QUINCENAL' }));
+    expect(mockPlanRepo.save).toHaveBeenCalledWith(
+      expect.objectContaining({ modalidad: 'QUINCENAL' }),
+    );
     expect(mockCobroRepo.delete).toHaveBeenCalledWith('cobro-1');
     expect(mockCobroRepo.saveMany).toHaveBeenCalled();
     expect(mockEventsGateway.emitModalidadCambiada).toHaveBeenCalledWith({

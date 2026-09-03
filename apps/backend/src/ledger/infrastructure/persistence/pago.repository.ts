@@ -24,7 +24,10 @@ export class PagoRepository extends BaseTenantRepository<Pago> {
     return this.repo.findOne({ where: { tenantId, clientPaymentId } });
   }
 
-  async findByPropietario(residenteId: string, tenantId: string): Promise<Pago[]> {
+  async findByPropietario(
+    residenteId: string,
+    tenantId: string,
+  ): Promise<Pago[]> {
     return this.repo.find({
       where: { residenteId, tenantId },
       relations: {
@@ -70,18 +73,16 @@ export class PagoRepository extends BaseTenantRepository<Pago> {
   ): Promise<number> {
     const qb = this.repo.createQueryBuilder('pago');
     this.applyTenantFilter(qb, tenantId, 'pago');
-    
+
     const result = await qb
       .select('COALESCE(SUM(pago.monto), 0)', 'total')
-      .andWhere(
-        'pago.fecha_pago >= :start AND pago.fecha_pago < :end',
-        {
-          start: `${year}-${String(month).padStart(2, '0')}-01`,
-          end: month === 12
+      .andWhere('pago.fecha_pago >= :start AND pago.fecha_pago < :end', {
+        start: `${year}-${String(month).padStart(2, '0')}-01`,
+        end:
+          month === 12
             ? `${year + 1}-01-01`
             : `${year}-${String(month + 1).padStart(2, '0')}-01`,
-        },
-      )
+      })
       .getRawOne();
     return Number(result?.total ?? 0);
   }
@@ -93,18 +94,16 @@ export class PagoRepository extends BaseTenantRepository<Pago> {
   ): Promise<number> {
     const qb = this.repo.createQueryBuilder('pago');
     this.applyTenantFilter(qb, tenantId, 'pago');
-    
+
     const result = await qb
       .select('COUNT(DISTINCT pago.residenteId)', 'count')
-      .andWhere(
-        'pago.fecha_pago >= :start AND pago.fecha_pago < :end',
-        {
-          start: `${year}-${String(month).padStart(2, '0')}-01`,
-          end: month === 12
+      .andWhere('pago.fecha_pago >= :start AND pago.fecha_pago < :end', {
+        start: `${year}-${String(month).padStart(2, '0')}-01`,
+        end:
+          month === 12
             ? `${year + 1}-01-01`
             : `${year}-${String(month + 1).padStart(2, '0')}-01`,
-        },
-      )
+      })
       .getRawOne();
     return Number(result?.count ?? 0);
   }
@@ -116,23 +115,18 @@ export class PagoRepository extends BaseTenantRepository<Pago> {
   ): Promise<Array<{ dia: number; valor: number }>> {
     const qb = this.repo.createQueryBuilder('pago');
     this.applyTenantFilter(qb, tenantId, 'pago');
-    
+
     const rows = await qb
-      .select(
-        "EXTRACT(DAY FROM pago.fecha_pago::timestamp)",
-        'dia',
-      )
+      .select('EXTRACT(DAY FROM pago.fecha_pago::timestamp)', 'dia')
       .addSelect('SUM(pago.monto)', 'valor')
-      .andWhere(
-        'pago.fecha_pago >= :start AND pago.fecha_pago < :end',
-        {
-          start: `${year}-${String(month).padStart(2, '0')}-01`,
-          end: month === 12
+      .andWhere('pago.fecha_pago >= :start AND pago.fecha_pago < :end', {
+        start: `${year}-${String(month).padStart(2, '0')}-01`,
+        end:
+          month === 12
             ? `${year + 1}-01-01`
             : `${year}-${String(month + 1).padStart(2, '0')}-01`,
-        },
-      )
-      .groupBy("EXTRACT(DAY FROM pago.fecha_pago::timestamp)")
+      })
+      .groupBy('EXTRACT(DAY FROM pago.fecha_pago::timestamp)')
       .orderBy('dia', 'ASC')
       .getRawMany();
 
@@ -149,20 +143,21 @@ export class PagoRepository extends BaseTenantRepository<Pago> {
   ): Promise<Array<{ semana: number; pagados: number; monto: number }>> {
     const qb = this.repo.createQueryBuilder('pago');
     this.applyTenantFilter(qb, tenantId, 'pago');
-    
+
     const result = await qb
-      .select("CEIL(EXTRACT(DAY FROM pago.fecha_pago::timestamp) / 7.0)", 'semana')
+      .select(
+        'CEIL(EXTRACT(DAY FROM pago.fecha_pago::timestamp) / 7.0)',
+        'semana',
+      )
       .addSelect('COUNT(*)', 'pagados')
       .addSelect('COALESCE(SUM(pago.monto), 0)', 'monto')
-      .andWhere(
-        'pago.fecha_pago >= :start AND pago.fecha_pago < :end',
-        {
-          start: `${year}-${String(month).padStart(2, '0')}-01`,
-          end: month === 12
+      .andWhere('pago.fecha_pago >= :start AND pago.fecha_pago < :end', {
+        start: `${year}-${String(month).padStart(2, '0')}-01`,
+        end:
+          month === 12
             ? `${year + 1}-01-01`
             : `${year}-${String(month + 1).padStart(2, '0')}-01`,
-        },
-      )
+      })
       .groupBy('semana')
       .orderBy('semana', 'ASC')
       .getRawMany();
@@ -202,7 +197,7 @@ export class PagoRepository extends BaseTenantRepository<Pago> {
   async sumMontoByYear(tenantId: string, year: number): Promise<number> {
     const qb = this.repo.createQueryBuilder('pago');
     this.applyTenantFilter(qb, tenantId, 'pago');
-    
+
     const result = await qb
       .select('COALESCE(SUM(pago.monto), 0)', 'total')
       .andWhere('pago.fecha_pago >= :start AND pago.fecha_pago < :end', {

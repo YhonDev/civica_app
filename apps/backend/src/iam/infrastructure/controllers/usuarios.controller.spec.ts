@@ -17,15 +17,33 @@ describe('UsuariosController', () => {
   let asignarEtapaUC: jest.Mocked<AsignarEtapaUseCase>;
 
   const mockAdmin = Object.assign(
-    Usuario.crear('admin@test.com', 'hash', 'Admin', RolUsuario.ADMIN, 'tenant-1'),
+    Usuario.crear(
+      'admin@test.com',
+      'hash',
+      'Admin',
+      RolUsuario.ADMIN,
+      'tenant-1',
+    ),
     { id: 'admin-1' },
   );
   const mockCobrador = Object.assign(
-    Usuario.crear('cob@test.com', 'hash', 'Cobrador', RolUsuario.COBRADOR, 'tenant-1'),
+    Usuario.crear(
+      'cob@test.com',
+      'hash',
+      'Cobrador',
+      RolUsuario.COBRADOR,
+      'tenant-1',
+    ),
     { id: 'cob-1' },
   );
   const mockOtherCobrador = Object.assign(
-    Usuario.crear('other@test.com', 'hash', 'Otro', RolUsuario.COBRADOR, 'tenant-1'),
+    Usuario.crear(
+      'other@test.com',
+      'hash',
+      'Otro',
+      RolUsuario.COBRADOR,
+      'tenant-1',
+    ),
     { id: 'cob-2' },
   );
 
@@ -74,12 +92,34 @@ describe('UsuariosController', () => {
     it('should return mapped resident users', async () => {
       const users = [
         Object.assign(
-          Usuario.crear('res1@test.com', 'hash', 'Residente A', RolUsuario.RESIDENTE, 'tenant-1'),
-          { id: 'usr-1', residenteId: 'res-1', activo: true, createdAt: new Date() },
+          Usuario.crear(
+            'res1@test.com',
+            'hash',
+            'Residente A',
+            RolUsuario.RESIDENTE,
+            'tenant-1',
+          ),
+          {
+            id: 'usr-1',
+            residenteId: 'res-1',
+            activo: true,
+            createdAt: new Date(),
+          },
         ),
         Object.assign(
-          Usuario.crear('res2@test.com', 'hash', 'Residente B', RolUsuario.RESIDENTE, 'tenant-1'),
-          { id: 'usr-2', residenteId: 'res-2', activo: true, createdAt: new Date() },
+          Usuario.crear(
+            'res2@test.com',
+            'hash',
+            'Residente B',
+            RolUsuario.RESIDENTE,
+            'tenant-1',
+          ),
+          {
+            id: 'usr-2',
+            residenteId: 'res-2',
+            activo: true,
+            createdAt: new Date(),
+          },
         ),
       ];
       usuarioRepo.find.mockResolvedValue(users);
@@ -120,7 +160,11 @@ describe('UsuariosController', () => {
   describe('obtenerEtapas', () => {
     it('should return etapas for ADMIN viewing any user', async () => {
       const asignaciones = [
-        Object.assign(new AsignacionEtapa(), { id: 'asig-1', etapaId: 'etapa-1', createdAt: new Date() }),
+        Object.assign(new AsignacionEtapa(), {
+          id: 'asig-1',
+          etapaId: 'etapa-1',
+          createdAt: new Date(),
+        }),
       ];
       asignacionRepo.find.mockResolvedValue(asignaciones);
 
@@ -135,7 +179,11 @@ describe('UsuariosController', () => {
 
     it('should return etapas for COBRADOR viewing their own', async () => {
       const asignaciones = [
-        Object.assign(new AsignacionEtapa(), { id: 'asig-2', etapaId: 'etapa-2', createdAt: new Date() }),
+        Object.assign(new AsignacionEtapa(), {
+          id: 'asig-2',
+          etapaId: 'etapa-2',
+          createdAt: new Date(),
+        }),
       ];
       asignacionRepo.find.mockResolvedValue(asignaciones);
 
@@ -180,7 +228,13 @@ describe('UsuariosController', () => {
   describe('cambiarPassword', () => {
     it('should update password and return message + email', async () => {
       const usuario = Object.assign(
-        Usuario.crear('user@test.com', 'old-hash', 'User', RolUsuario.COBRADOR, 'tenant-1'),
+        Usuario.crear(
+          'user@test.com',
+          'old-hash',
+          'User',
+          RolUsuario.COBRADOR,
+          'tenant-1',
+        ),
         { id: 'usr-1' },
       );
       usuarioRepo.findOne.mockResolvedValue(usuario);
@@ -224,7 +278,13 @@ describe('UsuariosController', () => {
   describe('resetearPassword', () => {
     it('should reset with provided password', async () => {
       const usuario = Object.assign(
-        Usuario.crear('reset@test.com', 'old-hash', 'Reset User', RolUsuario.COBRADOR, 'tenant-1'),
+        Usuario.crear(
+          'reset@test.com',
+          'old-hash',
+          'Reset User',
+          RolUsuario.COBRADOR,
+          'tenant-1',
+        ),
         { id: 'usr-2' },
       );
       usuarioRepo.findOne.mockResolvedValue(usuario);
@@ -244,18 +304,20 @@ describe('UsuariosController', () => {
 
     it('should generate temporary password when not provided', async () => {
       const usuario = Object.assign(
-        Usuario.crear('auto@test.com', 'old-hash', 'Auto', RolUsuario.COBRADOR, 'tenant-1'),
+        Usuario.crear(
+          'auto@test.com',
+          'old-hash',
+          'Auto',
+          RolUsuario.COBRADOR,
+          'tenant-1',
+        ),
         { id: 'usr-3' },
       );
       usuarioRepo.findOne.mockResolvedValue(usuario);
       (bcrypt.hash as jest.Mock).mockResolvedValue('auto-hash');
       usuarioRepo.save.mockResolvedValue(usuario);
 
-      const result = await controller.resetearPassword(
-        'usr-3',
-        {},
-        mockAdmin,
-      );
+      const result = await controller.resetearPassword('usr-3', {}, mockAdmin);
 
       expect(result.tempPassword).toMatch(/^Civica\d{4}!\d{4}$/);
       expect(bcrypt.hash).toHaveBeenCalledWith(result.tempPassword, 10);
@@ -265,11 +327,7 @@ describe('UsuariosController', () => {
       usuarioRepo.findOne.mockResolvedValue(null);
 
       await expect(
-        controller.resetearPassword(
-          'nonexistent',
-          {},
-          mockAdmin,
-        ),
+        controller.resetearPassword('nonexistent', {}, mockAdmin),
       ).rejects.toThrow('Usuario no encontrado');
 
       expect(usuarioRepo.save).not.toHaveBeenCalled();

@@ -32,7 +32,12 @@ export class Usuario {
   @Column({ name: 'nombre', type: 'varchar', length: 255 })
   nombre: string;
 
-  @Column({ name: 'rol', type: 'varchar', length: 20, default: RolUsuario.COBRADOR })
+  @Column({
+    name: 'rol',
+    type: 'varchar',
+    length: 20,
+    default: RolUsuario.COBRADOR,
+  })
   rol: RolUsuario;
 
   @Column({ name: 'residente_id', type: 'uuid', nullable: true })
@@ -44,7 +49,9 @@ export class Usuario {
   @Column({ name: 'activo', type: 'boolean', default: true })
   activo: boolean;
 
-  @OneToMany(() => AsignacionEtapa, (asignacion) => asignacion.usuario, { cascade: true })
+  @OneToMany(() => AsignacionEtapa, (asignacion) => asignacion.usuario, {
+    cascade: true,
+  })
   asignaciones: AsignacionEtapa[];
 
   @CreateDateColumn({ name: 'created_at' })
@@ -90,6 +97,8 @@ export class Usuario {
   }
 
   esResidente(): boolean {
-    return this.rol === RolUsuario.RESIDENTE || this.rol === RolUsuario.PROPIETARIO;
+    return (
+      this.rol === RolUsuario.RESIDENTE || this.rol === RolUsuario.PROPIETARIO
+    );
   }
 }

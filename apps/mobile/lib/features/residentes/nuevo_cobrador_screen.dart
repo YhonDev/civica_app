@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/network/api_client.dart';
 import '../../core/theme/app_colors.dart';
@@ -66,7 +65,7 @@ class _NuevoCobradorScreenState extends State<NuevoCobradorScreen> {
 
   Future<void> _guardar() async {
     if (_nombreCtrl.text.trim().isEmpty) {
-      if (!context.mounted) return;
+      if (!mounted) return;
       TopToast.showError(context, 'El nombre del cobrador es obligatorio');
       return;
     }
@@ -92,7 +91,7 @@ class _NuevoCobradorScreenState extends State<NuevoCobradorScreen> {
       final credenciales = data['credenciales'] as Map<String, dynamic>?;
       final usuario = data['usuario'] as Map<String, dynamic>?;
 
-      if (!context.mounted) return;
+      if (!mounted) return;
 
       _mostrarCredenciales(_ResultadoCrearCobrador(
         username: credenciales?['username'] as String? ?? '',
@@ -100,10 +99,10 @@ class _NuevoCobradorScreenState extends State<NuevoCobradorScreen> {
         nombre: usuario?['nombre'] as String? ?? _nombreCtrl.text.trim(),
       ));
     } catch (e) {
-      if (!context.mounted) return;
+      if (!mounted) return;
       TopToast.showError(context, 'Error al crear cobrador: $e');
     } finally {
-      if (context.mounted) {
+      if (mounted) {
         setState(() => _isSaving = false);
       }
     }

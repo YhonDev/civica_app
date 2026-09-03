@@ -49,20 +49,36 @@ export class DashboardQuery {
       ] = await Promise.all([
         this.pagoRepo.sumMontoByMonth(tenantId, anio, mes).catch(() => 0),
         this.cobroRepo.sumMontoByMonth(tenantId, anio, mes).catch(() => 0),
-        this.pagoRepo.countDistinctResidentesByMonth(tenantId, anio, mes).catch(() => 0),
-        this.cobroRepo.countPendientesByMonth(tenantId, anio, mes).catch(() => 0),
+        this.pagoRepo
+          .countDistinctResidentesByMonth(tenantId, anio, mes)
+          .catch(() => 0),
+        this.cobroRepo
+          .countPendientesByMonth(tenantId, anio, mes)
+          .catch(() => 0),
         this.cobroRepo.sumSaldoVencidasByTenant(tenantId).catch(() => 0),
-        this.pagoRepo.groupByDayByMonth(tenantId, anio, mes).catch(() => [] as any[]),
-        this.cobroRepo.groupByTarifaModalidad(tenantId, anio, mes).catch(() => [] as any[]),
-        this.cobroRepo.countByEstadoInMonth(tenantId, anio, mes).catch(() => ({ pagadas: 0, pendientes: 0 })),
+        this.pagoRepo
+          .groupByDayByMonth(tenantId, anio, mes)
+          .catch(() => [] as any[]),
+        this.cobroRepo
+          .groupByTarifaModalidad(tenantId, anio, mes)
+          .catch(() => [] as any[]),
+        this.cobroRepo
+          .countByEstadoInMonth(tenantId, anio, mes)
+          .catch(() => ({ pagadas: 0, pendientes: 0, vencidas: 0 })),
         this.actividadRepo.findByTenant(tenantId, 20).catch(() => [] as any[]),
-        this.solicitudRepo.findPendingByTenant(tenantId).catch(() => [] as any[]),
+        this.solicitudRepo
+          .findPendingByTenant(tenantId)
+          .catch(() => [] as any[]),
         this.residenteRepo.countNuevosByWeek(tenantId).catch(() => 0),
         this.cobroRepo.countPropietariosInMora(tenantId).catch(() => 0),
         this.pagoRepo.sumMontoByYear(tenantId, anio).catch(() => 0),
         this.cobroRepo.sumMontoByYear(tenantId, anio).catch(() => 0),
-        this.pagoRepo.groupByWeekInMonth(tenantId, anio, mes).catch(() => [] as any[]),
-        this.cobroRepo.countPendientesByWeek(tenantId, anio, mes).catch(() => [] as any[]),
+        this.pagoRepo
+          .groupByWeekInMonth(tenantId, anio, mes)
+          .catch(() => [] as any[]),
+        this.cobroRepo
+          .countPendientesByWeek(tenantId, anio, mes)
+          .catch(() => [] as any[]),
         this.residenteRepo.countByTenant(tenantId).catch(() => 0),
       ]);
 
@@ -75,13 +91,16 @@ export class DashboardQuery {
           : 0;
 
       const totalCobros =
-        (estadoCobrosRaw?.pagadas ?? 0) + (estadoCobrosRaw?.pendientes ?? 0);
+        (estadoCobrosRaw?.pagadas ?? 0) +
+        (estadoCobrosRaw?.pendientes ?? 0) +
+        (estadoCobrosRaw?.vencidas ?? 0);
 
       const modalidades = (modalidadesRaw || []).map((m: any) => {
         const total = Number(m.totalCuotas) || 0;
         const pagadas = Number(m.pagadas) || 0;
-        const porcentaje = total > 0 ? Math.round((pagadas / total) * 10000) / 100 : 0;
-        
+        const porcentaje =
+          total > 0 ? Math.round((pagadas / total) * 10000) / 100 : 0;
+
         return {
           modalidad: m.modalidad || 'DESCONOCIDO',
           totalCuotas: total,
@@ -96,13 +115,21 @@ export class DashboardQuery {
         number,
         { pagados: number; pendientes: number; mora: number }
       >();
-      
+
       (cobrosSemanaPagos || []).forEach((p: any) => {
-        semanaMap.set(p.semana, { pagados: Number(p.pagados) || 0, pendientes: 0, mora: 0 });
+        semanaMap.set(p.semana, {
+          pagados: Number(p.pagados) || 0,
+          pendientes: 0,
+          mora: 0,
+        });
       });
-      
+
       (cobrosSemanaCuotas || []).forEach((c: any) => {
-        const existing = semanaMap.get(c.semana) || { pagados: 0, pendientes: 0, mora: 0 };
+        const existing = semanaMap.get(c.semana) || {
+          pagados: 0,
+          pendientes: 0,
+          mora: 0,
+        };
         semanaMap.set(c.semana, {
           ...existing,
           pendientes: Number(c.pendientes) || 0,
@@ -114,15 +141,17 @@ export class DashboardQuery {
         .sort((a, b) => a[0] - b[0])
         .map(([semana, data]) => ({ semana, ...data }));
 
-      const actividad: ActividadItem[] = (actividadRecords || []).map((a: any) => ({
-        id: String(a.id),
-        tipo: a.tipo,
-        descripcion: a.descripcion,
-        usuario: a.usuarioNombre,
-        timestamp: a.createdAt?.toISOString() || new Date().toISOString(),
-        hace: a.createdAt ? this.relativeTime(a.createdAt) : 'ahora',
-        metadata: a.metadata || {},
-      }));
+      const actividad: ActividadItem[] = (actividadRecords || []).map(
+        (a: any) => ({
+          id: String(a.id),
+          tipo: a.tipo,
+          descripcion: a.descripcion,
+          usuario: a.usuarioNombre,
+          timestamp: a.createdAt?.toISOString() || new Date().toISOString(),
+          hace: a.createdAt ? this.relativeTime(a.createdAt) : 'ahora',
+          metadata: a.metadata || {},
+        }),
+      );
       // Calcular historial de los últimos 12 meses
       const historialPromesas = [];
       let tempMes = mes;
@@ -132,9 +161,15 @@ export class DashboardQuery {
         const targetAnio = tempAnio;
         historialPromesas.push(
           Promise.all([
-            this.pagoRepo.sumMontoByMonth(tenantId, targetAnio, targetMes).catch(() => 0),
-            this.cobroRepo.countPendientesByMonth(tenantId, targetAnio, targetMes).catch(() => 0),
-            this.cobroRepo.sumSaldoVencidasByMonth(tenantId, targetAnio, targetMes).catch(() => 0),
+            this.pagoRepo
+              .sumMontoByMonth(tenantId, targetAnio, targetMes)
+              .catch(() => 0),
+            this.cobroRepo
+              .countPendientesByMonth(tenantId, targetAnio, targetMes)
+              .catch(() => 0),
+            this.cobroRepo
+              .sumSaldoVencidasByMonth(tenantId, targetAnio, targetMes)
+              .catch(() => 0),
           ]).then(([recaudo, mPendientes, mMora]) => ({
             mes: targetMes,
             anio: targetAnio,
@@ -162,11 +197,24 @@ export class DashboardQuery {
           pendientes: Number(pendientes) || 0,
           moraTotal: Number(moraTotal) || 0,
         },
-        evolucion: (evolucion || []).map((e: any) => ({ dia: String(e.dia), valor: Number(e.valor) })),
+        evolucion: (evolucion || []).map((e: any) => ({
+          dia: String(e.dia),
+          valor: Number(e.valor),
+        })),
         modalidades,
         estadoCobros: {
-          pagados: totalCobros > 0 ? Math.round(((estadoCobrosRaw?.pagadas ?? 0) / totalCobros) * 10000) / 100 : 0,
-          pendientes: totalCobros > 0 ? Math.round(((estadoCobrosRaw?.pendientes ?? 0) / totalCobros) * 10000) / 100 : 0,
+          pagados:
+            totalCobros > 0
+              ? Math.round(
+                  ((estadoCobrosRaw?.pagadas ?? 0) / totalCobros) * 10000,
+                ) / 100
+              : 0,
+          pendientes:
+            totalCobros > 0
+              ? Math.round(
+                  ((estadoCobrosRaw?.pendientes ?? 0) / totalCobros) * 10000,
+                ) / 100
+              : 0,
           revision: 0,
         },
         actividad,
@@ -179,13 +227,28 @@ export class DashboardQuery {
         metaAnual: Number(metaAnual) || 0,
         historialMeses,
         cobrosPorSemana,
+        cobrosResumen: {
+          pagados: Number(estadoCobrosRaw?.pagadas ?? 0),
+          pendientes: Number(estadoCobrosRaw?.pendientes ?? 0),
+          mora: Number(estadoCobrosRaw?.vencidas ?? 0),
+        },
       };
     } catch (error) {
-      this.logger.error(`Critical error in DashboardQuery: ${error.message}`, error.stack);
+      this.logger.error(
+        `Critical error in DashboardQuery: ${error.message}`,
+        error.stack,
+      );
       return {
         mes,
         anio,
-        resumen: { recaudoTotal: 0, metaMensual: 0, porcentajeMeta: 0, pagaron: 0, pendientes: 0, moraTotal: 0 },
+        resumen: {
+          recaudoTotal: 0,
+          metaMensual: 0,
+          porcentajeMeta: 0,
+          pagaron: 0,
+          pendientes: 0,
+          moraTotal: 0,
+        },
         evolucion: [],
         modalidades: [],
         estadoCobros: { pagados: 0, pendientes: 0, revision: 0 },
@@ -199,6 +262,7 @@ export class DashboardQuery {
         metaAnual: 0,
         historialMeses: [],
         cobrosPorSemana: [],
+        cobrosResumen: { pagados: 0, pendientes: 0, mora: 0 },
       };
     }
   }

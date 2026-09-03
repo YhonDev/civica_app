@@ -139,7 +139,7 @@ class _ResidenteDetailScreenState extends State<ResidenteDetailScreen> {
     return DateFormat("d 'de' MMMM", 'es').format(proxima);
   }
 
-  Future<void> _confirmarEliminar(BuildContext context) async {
+  Future<void> _confirmarEliminar() async {
     final seguro = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -445,7 +445,7 @@ class _ResidenteDetailScreenState extends State<ResidenteDetailScreen> {
                   title: 'Próximo Venc.',
                   value: _proximoVencimiento(),
                   subtitle: 'Modalidad ${_residente.modalidadPago}',
-                  icon: Icons.event_outlined,
+                  icon: _modalidadIcon(),
                   color: AppColors.info,
                 ),
               ),
@@ -632,7 +632,7 @@ class _ResidenteDetailScreenState extends State<ResidenteDetailScreen> {
           title: 'Eliminar',
           icon: Icons.delete_forever_rounded,
           color: AppColors.error,
-          onTap: () => _confirmarEliminar(context),
+          onTap: () => _confirmarEliminar(),
         ),
       ],
     );

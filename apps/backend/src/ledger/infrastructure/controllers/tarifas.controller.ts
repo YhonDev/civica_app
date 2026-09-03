@@ -40,10 +40,7 @@ export class TarifasController {
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN)
   @ApiOperation({ summary: 'Crear nueva tarifa' })
-  async crear(
-    @Body() dto: CrearTarifaDto,
-    @CurrentTenant() tenantId: string,
-  ) {
+  async crear(@Body() dto: CrearTarifaDto, @CurrentTenant() tenantId: string) {
     return this.configurarTarifaUseCase.execute({
       proyectoId: dto.proyectoId,
       tenantId,
@@ -116,10 +113,7 @@ export class TarifasController {
   @Patch(':id')
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN)
-  async actualizar(
-    @Param('id') id: string,
-    @Body() dto: ActualizarTarifaDto,
-  ) {
+  async actualizar(@Param('id') id: string, @Body() dto: ActualizarTarifaDto) {
     return this.actualizarTarifaUseCase.execute({
       tarifaId: id,
       montoPesos: dto.monto,

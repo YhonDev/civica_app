@@ -1,9 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:civica_pago_mobile/core/network/api_client.dart';
 import 'package:civica_pago_mobile/features/residentes/cobradores_repository.dart';
-import 'package:civica_pago_mobile/features/residentes/models/cobradores_models.dart';
 import 'mock_http_adapter.dart';
 
 void main() {
@@ -11,8 +9,10 @@ void main() {
   late CobradoresRepository repository;
 
   setUp(() {
-    SharedPreferences.setMockInitialValues({});
-    ApiClient.init(baseUrl: 'http://test.local');
+    ApiClient.init(
+      baseUrl: 'http://test.local',
+      tokenStorage: TokenStorage(storage: InMemorySecureStorage()),
+    );
     mockAdapter = MockHttpAdapter();
     ApiClient.setHttpClientAdapter(mockAdapter);
     repository = CobradoresRepository();

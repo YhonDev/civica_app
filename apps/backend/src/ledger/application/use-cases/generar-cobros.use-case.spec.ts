@@ -104,9 +104,7 @@ describe('GenerarCobrosUseCase', () => {
     it('should skip plan when PeriodoCobro already exists (idempotency)', async () => {
       const plan = crearPlan({ fechaActivacion: hoyStr });
       mockPlanRepo.findAllActivos.mockResolvedValue([plan]);
-      mockPeriodoRepo.findByPlanAndMonth.mockResolvedValue(
-        new PeriodoCobro(),
-      );
+      mockPeriodoRepo.findByPlanAndMonth.mockResolvedValue(new PeriodoCobro());
 
       const result = await useCase.execute();
 
@@ -129,16 +127,23 @@ describe('GenerarCobrosUseCase', () => {
     });
 
     it('should use plan.valorMensual when set (priority over tarifa)', async () => {
-      const plan = crearPlan({ valorMensual: 5000000, fechaActivacion: hoyStr });
+      const plan = crearPlan({
+        valorMensual: 5000000,
+        fechaActivacion: hoyStr,
+      });
       mockPlanRepo.findAllActivos.mockResolvedValue([plan]);
       mockPeriodoRepo.findByPlanAndMonth.mockResolvedValue(null);
       // tarifa exists but should NOT be used
-      mockTarifaRepo.findVigente.mockResolvedValue(crearTarifa({ monto: 9999999 }));
+      mockTarifaRepo.findVigente.mockResolvedValue(
+        crearTarifa({ monto: 9999999 }),
+      );
       mockPeriodoRepo.save.mockImplementation(async (p: PeriodoCobro) => {
         p.id = 'periodo-2';
         return p;
       });
-      mockCobroRepo.saveMany.mockImplementation(async (cobros: Cobro[]) => cobros);
+      mockCobroRepo.saveMany.mockImplementation(
+        async (cobros: Cobro[]) => cobros,
+      );
 
       const result = await useCase.execute();
 
@@ -184,14 +189,19 @@ describe('GenerarCobrosUseCase', () => {
     it('should generate 4 cobros for SEMANAL', async () => {
       const plan = crearPlan({ modalidad: 'SEMANAL' });
       mockPeriodoRepo.findByPlanAndMonth.mockResolvedValue(null);
-      mockTarifaRepo.findVigente.mockResolvedValue(crearTarifa({ modalidad: 'SEMANAL', monto: 1000000 }));
+      mockTarifaRepo.findVigente.mockResolvedValue(
+        crearTarifa({ modalidad: 'SEMANAL', monto: 1000000 }),
+      );
       mockPeriodoRepo.save.mockImplementation(async (p: PeriodoCobro) => {
         p.id = 'periodo-semanal';
         return p;
       });
 
       const result = await useCase['generarCobrosParaPlan'](
-        plan, 6, 2026, new Date(2026, 5, 1),
+        plan,
+        6,
+        2026,
+        new Date(2026, 5, 1),
       );
 
       expect(result).toBe(4); // 4 sábados en junio 2026
@@ -201,14 +211,19 @@ describe('GenerarCobrosUseCase', () => {
     it('should generate 2 cobros for QUINCENAL', async () => {
       const plan = crearPlan({ modalidad: 'QUINCENAL' });
       mockPeriodoRepo.findByPlanAndMonth.mockResolvedValue(null);
-      mockTarifaRepo.findVigente.mockResolvedValue(crearTarifa({ modalidad: 'QUINCENAL', monto: 2000000 }));
+      mockTarifaRepo.findVigente.mockResolvedValue(
+        crearTarifa({ modalidad: 'QUINCENAL', monto: 2000000 }),
+      );
       mockPeriodoRepo.save.mockImplementation(async (p: PeriodoCobro) => {
         p.id = 'periodo-quincenal';
         return p;
       });
 
       const result = await useCase['generarCobrosParaPlan'](
-        plan, 6, 2026, new Date(2026, 5, 1),
+        plan,
+        6,
+        2026,
+        new Date(2026, 5, 1),
       );
 
       expect(result).toBe(2);
@@ -224,7 +239,10 @@ describe('GenerarCobrosUseCase', () => {
       });
 
       const result = await useCase['generarCobrosParaPlan'](
-        plan, 6, 2026, new Date(2026, 5, 1),
+        plan,
+        6,
+        2026,
+        new Date(2026, 5, 1),
       );
 
       expect(result).toBe(1);

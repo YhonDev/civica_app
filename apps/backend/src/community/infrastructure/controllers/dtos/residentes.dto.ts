@@ -2,7 +2,10 @@ import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class RegistrarResidenteDto {
-  @ApiProperty({ example: 'María García', description: 'Nombre completo del residente' })
+  @ApiProperty({
+    example: 'María García',
+    description: 'Nombre completo del residente',
+  })
   @IsString()
   @IsNotEmpty()
   nombre: string;
@@ -12,7 +15,10 @@ export class RegistrarResidenteDto {
   @IsNotEmpty()
   telefono: string;
 
-  @ApiPropertyOptional({ example: 'maria@email.com', description: 'Email del residente' })
+  @ApiPropertyOptional({
+    example: 'maria@email.com',
+    description: 'Email del residente',
+  })
   @IsString()
   @IsOptional()
   email?: string;
@@ -22,12 +28,18 @@ export class RegistrarResidenteDto {
   @IsOptional()
   casaId?: string;
 
-  @ApiPropertyOptional({ example: '2026-09-01', description: 'Fecha de inicio de tenencia (ISO date)' })
+  @ApiPropertyOptional({
+    example: '2026-09-01',
+    description: 'Fecha de inicio de tenencia (ISO date)',
+  })
   @IsString()
   @IsOptional()
   fechaInicio?: string;
 
-  @ApiPropertyOptional({ enum: ['SEMANAL', 'QUINCENAL', 'MENSUAL'], description: 'Modalidad de pago del residente' })
+  @ApiPropertyOptional({
+    enum: ['SEMANAL', 'QUINCENAL', 'MENSUAL'],
+    description: 'Modalidad de pago del residente',
+  })
   @IsString()
   @IsOptional()
   modalidadPago?: string;

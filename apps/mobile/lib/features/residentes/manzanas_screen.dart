@@ -192,7 +192,7 @@ class _ManzanasScreenState extends State<ManzanasScreen> {
                   IconButton(
                     icon: Icon(Icons.delete_rounded, color: AppColors.error, size: 20),
                     onPressed: () {
-                      _mostrarConfirmacionEliminacionManzana(context, m['nombre'].toString(), m['id'].toString());
+                      _mostrarConfirmacionEliminacionManzana(m['nombre'].toString(), m['id'].toString());
                     },
                   ),
                 ],
@@ -229,7 +229,7 @@ class _ManzanasScreenState extends State<ManzanasScreen> {
   );
 }
 
-  void _mostrarConfirmacionEliminacionManzana(BuildContext context, String nombreManzana, String id) {
+  void _mostrarConfirmacionEliminacionManzana(String nombreManzana, String id) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(

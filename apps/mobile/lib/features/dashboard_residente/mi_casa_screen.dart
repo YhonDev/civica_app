@@ -99,12 +99,10 @@ class _MiCasaScreenState extends State<MiCasaScreen> with LifecycleObserverMixin
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final user = context.watch<AuthCubit>().state.usuario;
 
     final nombre = user?['nombre'] ?? 'Residente';
     final email = user?['email'] ?? '';
-    final usuarioId = user?['id'] ?? '';
     final username = user?['username'] ?? user?['email'] ?? '';
 
     return Scaffold(

@@ -11,7 +11,12 @@ import {
   UseInterceptors,
   UnauthorizedException,
 } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { DataSource, In, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { RegistrarResidenteUseCase } from '../../application/use-cases/registrar-residente.use-case';
@@ -57,10 +62,12 @@ export class ResidentesController {
     @CurrentUser() user: Usuario,
   ) {
     if (!user.tenantId) throw new UnauthorizedException();
-    
+
     // El RESIDENTE solo puede ver su propio detalle
     if (user.rol === RolUsuario.RESIDENTE && user.residenteId !== id) {
-      throw new UnauthorizedException('No tienes permiso para ver este residente');
+      throw new UnauthorizedException(
+        'No tienes permiso para ver este residente',
+      );
     }
 
     return this.residenteDetailQuery.execute(id, tenantId);
@@ -72,7 +79,8 @@ export class ResidentesController {
   @UseInterceptors(ActividadInterceptor)
   @RegistrarActividad({
     tipo: 'RESIDENTE',
-    descripcionFn: (result: any) => `Nuevo residente registrado: ${result?.nombre ?? result?.residente?.nombre ?? 'Residente'}`,
+    descripcionFn: (result: any) =>
+      `Nuevo residente registrado: ${result?.nombre ?? result?.residente?.nombre ?? 'Residente'}`,
   })
   @ApiOperation({ summary: 'Registrar nuevo residente' })
   async registrar(
@@ -126,10 +134,7 @@ export class ResidentesController {
     descripcionFn: (result) => `Residente eliminado`,
   })
   @ApiOperation({ summary: 'Eliminar un residente' })
-  async eliminar(
-    @Param('id') id: string,
-    @CurrentUser() user: Usuario,
-  ) {
+  async eliminar(@Param('id') id: string, @CurrentUser() user: Usuario) {
     if (!user.tenantId) throw new UnauthorizedException();
     await this.eliminarResidenteUseCase.execute(id, user.tenantId);
     return { success: true };
@@ -139,8 +144,16 @@ export class ResidentesController {
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN, RolUsuario.COBRADOR, RolUsuario.RESIDENTE)
   @ApiOperation({ summary: 'Listar residentes' })
-  @ApiQuery({ name: 'etapa', required: false, description: 'Filtrar por UUID de etapa' })
-  @ApiQuery({ name: 'casa', required: false, description: 'Filtrar por UUID de casa' })
+  @ApiQuery({
+    name: 'etapa',
+    required: false,
+    description: 'Filtrar por UUID de etapa',
+  })
+  @ApiQuery({
+    name: 'casa',
+    required: false,
+    description: 'Filtrar por UUID de casa',
+  })
   async listar(
     @CurrentTenant() tenantId: string,
     @Query('etapa') etapaId?: string,
@@ -163,7 +176,12 @@ export class ResidentesController {
 
     // COBRADOR: solo residentes cuyas casas están en etapas asignadas
     if (user.rol === RolUsuario.COBRADOR) {
-      const residentes = await this.listarParaCobrador(user.id, tenantId, etapaId, casaId);
+      const residentes = await this.listarParaCobrador(
+        user.id,
+        tenantId,
+        etapaId,
+        casaId,
+      );
       return this.adjuntarUsernames(residentes);
     }
 
@@ -185,15 +203,17 @@ export class ResidentesController {
   private async adjuntarUsernames(residentes: any[]) {
     if (residentes.length === 0) return residentes;
 
-    const ids = residentes.map(r => r.id);
+    const ids = residentes.map((r) => r.id);
     const usuarios = await this.usuarioRepository.find({
       where: { residenteId: In(ids) },
       select: { id: true, residenteId: true, email: true },
     });
 
-    const usuarioMap = new Map(usuarios.map(u => [u.residenteId, { id: u.id, email: u.email }]));
+    const usuarioMap = new Map(
+      usuarios.map((u) => [u.residenteId, { id: u.id, email: u.email }]),
+    );
 
-    return residentes.map(r => {
+    return residentes.map((r) => {
       const usuario = usuarioMap.get(r.id);
       return {
         ...r,
@@ -229,8 +249,10 @@ export class ResidentesController {
       return [];
     }
 
-    const resultados =
-      await this.residenteRepository.buscarPorEtapas(tenantId, etapaIds);
+    const resultados = await this.residenteRepository.buscarPorEtapas(
+      tenantId,
+      etapaIds,
+    );
 
     // Si hay filtro adicional de casa, aplicarlo en memoria
     if (casaId) {

@@ -12,7 +12,11 @@ import * as crypto from 'crypto';
  */
 @Injectable()
 export class GenerarCredencialesService {
-  generarUsernameResidente(manzana: string, casa: string, etapa?: string): string {
+  generarUsernameResidente(
+    manzana: string,
+    casa: string,
+    etapa?: string,
+  ): string {
     const mz = manzana
       .toLowerCase()
       .replace(/\s+/g, '_')

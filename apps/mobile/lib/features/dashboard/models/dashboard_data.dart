@@ -21,6 +21,9 @@ class DashboardData extends Equatable {
 
   // Nuevas métricas Cobros
   final List<CobroSemanaItem> cobrosPorSemana;
+  final int cobrosPagados;
+  final int cobrosPendientes;
+  final int cobrosMora;
 
   // Centro de atencion
   final int solicitudesPendientes;
@@ -32,7 +35,7 @@ class DashboardData extends Equatable {
   final double metaAnual;
   final List<MesHistorico> historialMeses;
 
-  const DashboardData({
+  DashboardData({
     required this.mes,
     required this.anio,
     required this.recaudoMes,
@@ -48,13 +51,18 @@ class DashboardData extends Equatable {
     this.totalResidentes = 0,
     this.nuevosResidentesSemana = 0,
     this.cobrosPorSemana = const [],
+    int? cobrosPagados,
+    int? cobrosPendientes,
+    int? cobrosMora,
     this.solicitudesPendientes = 0,
     this.residentesMora = 0,
     this.pagosRevision = 0,
     required this.acumuladoAnual,
     required this.metaAnual,
     required this.historialMeses,
-  });
+  })  : cobrosPagados = cobrosPagados ?? pagaron,
+        cobrosPendientes = cobrosPendientes ?? pendientes,
+        cobrosMora = cobrosMora ?? residentesMora;
 
   /// Crea [DashboardData] desde la respuesta JSON del backend.
   ///
@@ -67,11 +75,22 @@ class DashboardData extends Equatable {
   }) {
     final resumen = json['resumen'] as Map<String, dynamic>? ?? {};
     final estadoCobrosMap = json['estadoCobros'] as Map<String, dynamic>? ?? {};
+    final cobrosResumen = json['cobrosResumen'] as Map<String, dynamic>? ?? {};
 
     final pagaron = int.tryParse(resumen['pagaron']?.toString() ?? '') ?? 0;
     final pendientes = int.tryParse(resumen['pendientes']?.toString() ?? '') ?? 0;
     final residentesMora =
         int.tryParse(json['residentesMora']?.toString() ?? '') ?? 0;
+
+    final cobrosPagados = int.tryParse(cobrosResumen['pagados']?.toString() ?? '') ??
+        int.tryParse(estadoCobrosMap['pagadas']?.toString() ?? '') ??
+        pagaron;
+    final cobrosPendientes = int.tryParse(cobrosResumen['pendientes']?.toString() ?? '') ??
+        int.tryParse(estadoCobrosMap['pendientes']?.toString() ?? '') ??
+        pendientes;
+    final cobrosMora = int.tryParse(cobrosResumen['mora']?.toString() ?? '') ??
+        int.tryParse(estadoCobrosMap['vencidas']?.toString() ?? '') ??
+        residentesMora;
 
     final pagadosPct =
         double.tryParse(estadoCobrosMap['pagados']?.toString() ?? '') ?? 0;
@@ -106,17 +125,17 @@ class DashboardData extends Equatable {
         CobroEstadoItem(
           estado: 'Pagados',
           porcentaje: pagadosPct,
-          cantidad: pagaron,
+          cantidad: cobrosPagados,
         ),
         CobroEstadoItem(
           estado: 'Pendientes',
           porcentaje: pendientesPct,
-          cantidad: pendientes,
+          cantidad: cobrosPendientes,
         ),
         CobroEstadoItem(
           estado: 'En mora',
           porcentaje: moraPct < 0 ? 0 : moraPct,
-          cantidad: residentesMora,
+          cantidad: cobrosMora,
         ),
       ],
       actividadReciente: (json['actividad'] as List<dynamic>?)
@@ -135,6 +154,9 @@ class DashboardData extends Equatable {
               ?.map((s) => CobroSemanaItem.fromJson(s as Map<String, dynamic>))
               .toList() ??
           [],
+      cobrosPagados: cobrosPagados,
+      cobrosPendientes: cobrosPendientes,
+      cobrosMora: cobrosMora,
       acumuladoAnual:
           (double.tryParse(json['acumuladoAnual']?.toString() ?? '') ?? 0) /
               100,
@@ -164,6 +186,9 @@ class DashboardData extends Equatable {
         totalResidentes,
         nuevosResidentesSemana,
         cobrosPorSemana,
+        cobrosPagados,
+        cobrosPendientes,
+        cobrosMora,
         solicitudesPendientes,
         residentesMora,
         pagosRevision,

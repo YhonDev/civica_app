@@ -3,7 +3,11 @@ import { PlanDeCobroRepository } from '../../infrastructure/persistence/plan-de-
 import { PeriodoCobroRepository } from '../../infrastructure/persistence/periodo-cobro.repository';
 import { CobroRepository } from '../../infrastructure/persistence/cobro.repository';
 import { TarifaRepository } from '../../infrastructure/persistence/tarifa.repository';
-import { Periodo, Money, pagosPorMes } from '../../../shared/common/value-objects';
+import {
+  Periodo,
+  Money,
+  pagosPorMes,
+} from '../../../shared/common/value-objects';
 import type { ModalidadRecaudo } from '../../../shared/common/value-objects';
 import { Cobro } from '../../domain/cobro.entity';
 import { EventsGateway } from '../../../notifications/events.gateway';
@@ -20,12 +24,19 @@ export class ReconciliarModalidadUseCase {
     private readonly eventsGateway?: EventsGateway,
   ) {}
 
-  async execute(residenteId: string, nuevaModalidad: ModalidadRecaudo): Promise<void> {
-    this.logger.log(`Iniciando reconciliación de modalidad a ${nuevaModalidad} para residente ${residenteId}`);
+  async execute(
+    residenteId: string,
+    nuevaModalidad: ModalidadRecaudo,
+  ): Promise<void> {
+    this.logger.log(
+      `Iniciando reconciliación de modalidad a ${nuevaModalidad} para residente ${residenteId}`,
+    );
 
     const plan = await this.planDeCobroRepository.findByResidente(residenteId);
     if (!plan) {
-      this.logger.warn(`No se encontró plan de cobro activo para residente ${residenteId}`);
+      this.logger.warn(
+        `No se encontró plan de cobro activo para residente ${residenteId}`,
+      );
       return;
     }
 
@@ -39,15 +50,26 @@ export class ReconciliarModalidadUseCase {
     const currentAnio = hoy.getFullYear();
 
     // 3. Buscar periodo de cobro del mes actual
-    const periodo = await this.periodoCobroRepository.findByPlanAndMonth(plan.id, currentMes, currentAnio);
+    const periodo = await this.periodoCobroRepository.findByPlanAndMonth(
+      plan.id,
+      currentMes,
+      currentAnio,
+    );
     if (!periodo) {
-      this.logger.log(`No hay periodo de cobro generado en el mes actual (${currentAnio}-${currentMes}) para plan ${plan.id}`);
+      this.logger.log(
+        `No hay periodo de cobro generado en el mes actual (${currentAnio}-${currentMes}) para plan ${plan.id}`,
+      );
       return;
     }
 
     // 4. Obtener cobros existentes en este período
-    const cobrosExistentes = await this.cobroRepository.findByResidente(residenteId, plan.tenantId);
-    const cobrosDelMes = cobrosExistentes.filter((c) => c.periodoId === periodo.id && c.estado !== 'ANULADO');
+    const cobrosExistentes = await this.cobroRepository.findByResidente(
+      residenteId,
+      plan.tenantId,
+    );
+    const cobrosDelMes = cobrosExistentes.filter(
+      (c) => c.periodoId === periodo.id && c.estado !== 'ANULADO',
+    );
 
     if (cobrosDelMes.length === 0) {
       return;
@@ -56,7 +78,7 @@ export class ReconciliarModalidadUseCase {
     // 5. Calcular el dinero acumulado total pagado por el residente en este período
     let totalPagadoCentavos = 0;
     for (const c of cobrosDelMes) {
-      totalPagadoCentavos += (c.montoPagado ?? 0);
+      totalPagadoCentavos += c.montoPagado ?? 0;
     }
 
     // 6. Eliminar los cobros viejos del mes actual para reestructurarlos
@@ -65,8 +87,14 @@ export class ReconciliarModalidadUseCase {
     }
 
     // 7. Reestructurar nuevas fechas de cobro
-    const fechasCobro = Periodo.fechasCobroParciales(nuevaModalidad, currentAnio, currentMes - 1);
-    const fechasFiltradas = fechasCobro.filter((fechaStr) => fechaStr >= plan.fechaActivacion);
+    const fechasCobro = Periodo.fechasCobroParciales(
+      nuevaModalidad,
+      currentAnio,
+      currentMes - 1,
+    );
+    const fechasFiltradas = fechasCobro.filter(
+      (fechaStr) => fechaStr >= plan.fechaActivacion,
+    );
 
     if (fechasFiltradas.length === 0) {
       return;
@@ -74,7 +102,11 @@ export class ReconciliarModalidadUseCase {
 
     // 8. Tarifa vigente para la fecha del primer cobro
     const diaPrimerCobro = Number(fechasFiltradas[0].slice(8, 10));
-    const fechaRefTarifa = new Date(currentAnio, currentMes - 1, diaPrimerCobro);
+    const fechaRefTarifa = new Date(
+      currentAnio,
+      currentMes - 1,
+      diaPrimerCobro,
+    );
     const tarifa = await this.tarifaRepository.findVigente(
       plan.proyectoId,
       nuevaModalidad,
@@ -98,8 +130,18 @@ export class ReconciliarModalidadUseCase {
     const fechaFin = `${currentAnio}-${String(currentMes).padStart(2, '0')}-${String(ultimoDia).padStart(2, '0')}`;
 
     const mesesEsp = [
-      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+      'Enero',
+      'Febrero',
+      'Marzo',
+      'Abril',
+      'Mayo',
+      'Junio',
+      'Julio',
+      'Agosto',
+      'Septiembre',
+      'Octubre',
+      'Noviembre',
+      'Diciembre',
     ];
     const nombreMes = mesesEsp[currentMes - 1] ?? '';
 

@@ -16,18 +16,20 @@ async function bootstrap() {
   console.log('Iniciando CLEAN seed de Junio y Julio 2026...');
   const app = await NestFactory.createApplicationContext(AppModule);
   const dataSource = app.get(DataSource);
-  
+
   const planRepo = app.get(PlanDeCobroRepository);
   const generarCobros = app.get(GenerarCobrosUseCase);
   const registrarPago = app.get(RegistrarPagoUseCase);
-  
+
   const cobradorRepo = dataSource.getRepository(Usuario);
-  const cobrador = await cobradorRepo.findOne({ where: { rol: RolUsuario.COBRADOR } });
+  const cobrador = await cobradorRepo.findOne({
+    where: { rol: RolUsuario.COBRADOR },
+  });
   if (!cobrador) {
     console.error('No hay cobrador en la DB');
     process.exit(1);
   }
-  
+
   // 1. DELETE everything from June and July to start clean
   console.log('Limpiando datos anteriores de Junio y Julio 2026...');
   await dataSource.query('DELETE FROM solicitudes');
@@ -35,30 +37,34 @@ async function bootstrap() {
   await dataSource.query('DELETE FROM pagos');
   await dataSource.query('DELETE FROM cobros');
   await dataSource.query('DELETE FROM periodos_cobro');
-  
+
   // 2. Fetch all active planes and setup Tarifa
   const planes = await planRepo.findAllActivos();
   if (planes.length === 0) {
     console.error('No hay planes activos');
     process.exit(1);
   }
-  
+
   const primerPlan = planes[0];
   const proyectoId = primerPlan.proyectoId;
   const tenantId = primerPlan.tenantId;
-  
+
   const tarifaRepo = dataSource.getRepository(Tarifa);
-  
+
   // Crear tarifas vigentes desde el 1 de Junio
   const modalidades = [
     { mod: 'SEMANAL', monto: 1000000 },
     { mod: 'QUINCENAL', monto: 2000000 },
     { mod: 'MENSUAL', monto: 4000000 },
   ];
-  
+
   for (const m of modalidades) {
     const existe = await tarifaRepo.findOne({
-      where: { proyectoId, modalidad: m.mod as any, fechaVigencia: '2026-06-01' }
+      where: {
+        proyectoId,
+        modalidad: m.mod as any,
+        fechaVigencia: '2026-06-01',
+      },
     });
     if (!existe) {
       const tarifa = new Tarifa();
@@ -69,7 +75,9 @@ async function bootstrap() {
       tarifa.fechaVigencia = '2026-06-01';
       tarifa.activa = true;
       await tarifaRepo.save(tarifa);
-      console.log(`Tarifa ${m.mod} creada para Junio/Julio: ${m.monto} centavos`);
+      console.log(
+        `Tarifa ${m.mod} creada para Junio/Julio: ${m.monto} centavos`,
+      );
     }
   }
 
@@ -95,20 +103,25 @@ async function bootstrap() {
   // 5. Register ALL payments for previous period (fully paid)
   console.log('--- REGISTRANDO PAGOS CON MOTOR REAL ---');
   const ormCobroRepo = dataSource.getRepository(Cobro);
-  let cobrosAPagar = await ormCobroRepo.find({ where: { periodoInicio: '2026-05-01' } });
+  let cobrosAPagar = await ormCobroRepo.find({
+    where: { periodoInicio: '2026-05-01' },
+  });
   if (cobrosAPagar.length === 0) {
     cobrosAPagar = await ormCobroRepo.find();
   }
 
   for (const cobro of cobrosAPagar) {
-    const plan = planes.find((p: PlanDeCobro) => p.residenteId === cobro.residenteId);
+    const plan = planes.find(
+      (p: PlanDeCobro) => p.residenteId === cobro.residenteId,
+    );
     if (!plan) continue;
 
-    const numPagos = plan.modalidad === 'SEMANAL' ? 4 : plan.modalidad === 'QUINCENAL' ? 2 : 1;
+    const numPagos =
+      plan.modalidad === 'SEMANAL' ? 4 : plan.modalidad === 'QUINCENAL' ? 2 : 1;
     const montoCuota = Math.floor(cobro.monto / numPagos);
 
     for (let i = 1; i <= numPagos; i++) {
-      const fechaDia = String((i * 7) % 28 + 1).padStart(2, '0');
+      const fechaDia = String(((i * 7) % 28) + 1).padStart(2, '0');
       try {
         await registrarPago.execute({
           clientPaymentId: `seed-pago-${cobro.id}-${i}`,
@@ -130,7 +143,9 @@ async function bootstrap() {
   console.log('--- GENERANDO JULIO ---');
   await generarCobros.execute();
 
-  console.log('SEED COMPLETO EXITOSO! DB lista con datos reales de Junio (Pagado) y Julio (En Recaudo).');
+  console.log(
+    'SEED COMPLETO EXITOSO! DB lista con datos reales de Junio (Pagado) y Julio (En Recaudo).',
+  );
   await app.close();
   process.exit(0);
 }

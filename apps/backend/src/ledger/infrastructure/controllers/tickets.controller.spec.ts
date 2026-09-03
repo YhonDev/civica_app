@@ -52,9 +52,7 @@ describe('TicketsController', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [TicketsController],
-      providers: [
-        { provide: TicketRepository, useValue: mockTicketRepo },
-      ],
+      providers: [{ provide: TicketRepository, useValue: mockTicketRepo }],
     }).compile();
 
     controller = module.get<TicketsController>(TicketsController);
@@ -64,7 +62,10 @@ describe('TicketsController', () => {
     it('should throw NotFoundException if ticket does not exist', async () => {
       mockTicketRepo.findById.mockResolvedValue(null);
       await expect(
-        controller.getById('non-existent', createMockUser(RolUsuario.RESIDENTE)),
+        controller.getById(
+          'non-existent',
+          createMockUser(RolUsuario.RESIDENTE),
+        ),
       ).rejects.toThrow(NotFoundException);
     });
 
@@ -143,7 +144,10 @@ describe('TicketsController', () => {
         'tenant-1',
       )) as any[];
 
-      expect(mockTicketRepo.findByResidente).toHaveBeenCalledWith('residente-1', { limit: 10 });
+      expect(mockTicketRepo.findByResidente).toHaveBeenCalledWith(
+        'residente-1',
+        { limit: 10 },
+      );
       expect(result).toHaveLength(1);
       expect(result[0].numero).toBe('TKT-2026-000001');
     });
@@ -159,7 +163,10 @@ describe('TicketsController', () => {
         'tenant-1',
       )) as any;
 
-      expect(mockTicketRepo.findByNumero).toHaveBeenCalledWith('tenant-1', 'TKT-2026-000001');
+      expect(mockTicketRepo.findByNumero).toHaveBeenCalledWith(
+        'tenant-1',
+        'TKT-2026-000001',
+      );
       expect(result.numero).toBe('TKT-2026-000001');
       expect(result.tenantId).toBe('tenant-1');
     });

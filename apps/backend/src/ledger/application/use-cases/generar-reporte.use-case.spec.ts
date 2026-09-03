@@ -40,7 +40,7 @@ describe('GenerarReporteUseCase', () => {
       }),
     };
 
-    useCase = new GenerarReporteUseCase(mockDataSource as any);
+    useCase = new GenerarReporteUseCase(mockDataSource);
   });
 
   it('debe generar reporte de recaudo agrupado por etapa y estado', async () => {
@@ -69,11 +69,18 @@ describe('GenerarReporteUseCase', () => {
         monto: 2000000, // 20.000 COP
         montoPagado: 0,
         estado: 'VENCIDA',
-        residente: { casaActual: { manzana: { etapa: { id: 'etapa-2', nombre: 'Etapa 2' } } } },
+        residente: {
+          casaActual: {
+            manzana: { etapa: { id: 'etapa-2', nombre: 'Etapa 2' } },
+          },
+        },
       },
     ]);
 
-    mockProyectoRepo.findOne.mockResolvedValue({ id: 'proy-1', tenantId: 'tenant-A' });
+    mockProyectoRepo.findOne.mockResolvedValue({
+      id: 'proy-1',
+      tenantId: 'tenant-A',
+    });
 
     const result = await useCase.execute({
       proyectoId: 'proy-1',
@@ -135,7 +142,10 @@ describe('GenerarReporteUseCase', () => {
       },
     ]);
 
-    mockProyectoRepo.findOne.mockResolvedValue({ id: 'proy-1', tenantId: 'tenant-A' });
+    mockProyectoRepo.findOne.mockResolvedValue({
+      id: 'proy-1',
+      tenantId: 'tenant-A',
+    });
 
     const result = await useCase.execute({
       proyectoId: 'proy-1',
@@ -157,7 +167,10 @@ describe('GenerarReporteUseCase', () => {
     mockEtapaRepo.find.mockResolvedValue([]);
     mockQueryBuilder.getMany.mockResolvedValue([]);
     // El proyecto pertenece a tenant-B, no al llamador (tenant-A)
-    mockProyectoRepo.findOne.mockResolvedValue({ id: 'proy-1', tenantId: 'tenant-B' });
+    mockProyectoRepo.findOne.mockResolvedValue({
+      id: 'proy-1',
+      tenantId: 'tenant-B',
+    });
 
     await expect(
       useCase.execute({

@@ -201,9 +201,9 @@ class _TarifasScreenState extends State<TarifasScreen> {
                 Container(
                   padding: const EdgeInsets.all(AppSpacing.md),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.08),
+                    color: AppColors.primary.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
                   ),
                   child: Row(
                     children: [
@@ -299,7 +299,7 @@ class _TarifasScreenState extends State<TarifasScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.price_change_outlined, size: 48, color: AppColors.textSecondary.withOpacity(0.5)),
+                          Icon(Icons.price_change_outlined, size: 48, color: AppColors.textSecondary.withValues(alpha: 0.5)),
                           const SizedBox(height: AppSpacing.md),
                           Text(
                             'No hay tarifa configurada',

@@ -119,4 +119,5 @@ export interface DashboardResponse {
   metaAnual: number;
   historialMeses: MesHistorico[];
   cobrosPorSemana: CobroSemanaItem[];
+  cobrosResumen?: { pagados: number; pendientes: number; mora: number };
 }

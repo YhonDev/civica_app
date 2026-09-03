@@ -52,14 +52,22 @@ export class Pago {
   @Column({ name: 'residente_id', type: 'uuid' })
   residenteId: string;
 
-  @ManyToOne(() => Residente, { createForeignKeyConstraints: false, eager: true })
+  @ManyToOne(() => Residente, {
+    createForeignKeyConstraints: false,
+    eager: true,
+  })
   @JoinColumn({ name: 'residente_id' })
   residente: Residente;
 
   @Column({ name: 'fecha_sync', type: 'timestamptz', nullable: true })
   fechaSync: Date | null;
 
-  @Column({ name: 'sync_status', type: 'varchar', length: 20, default: 'SYNC_OK' })
+  @Column({
+    name: 'sync_status',
+    type: 'varchar',
+    length: 20,
+    default: 'SYNC_OK',
+  })
   syncStatus: SyncStatus;
 
   @Column({
@@ -108,4 +116,3 @@ export class Pago {
     this.syncStatus = 'SYNC_OK';
   }
 }
-

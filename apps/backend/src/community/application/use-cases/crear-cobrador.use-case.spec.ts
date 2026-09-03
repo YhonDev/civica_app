@@ -87,9 +87,11 @@ describe('CrearCobradorUseCase', () => {
 
   describe('execute', () => {
     it('should create cobrador and return usuario + credenciales', async () => {
-      jest.spyOn(generarCredenciales, 'generarUsernameCobrador')
+      jest
+        .spyOn(generarCredenciales, 'generarUsernameCobrador')
         .mockReturnValue('juanperezcobrador');
-      jest.spyOn(generarCredenciales, 'generarPasswordCobrador')
+      jest
+        .spyOn(generarCredenciales, 'generarPasswordCobrador')
         .mockReturnValue('juanperez2026');
       usuarioRepo.findOne.mockResolvedValue(null);
       (bcrypt.hash as jest.Mock).mockResolvedValue('hashed-password');
@@ -112,7 +114,10 @@ describe('CrearCobradorUseCase', () => {
 
       expect(result).toEqual({
         usuario: savedUser,
-        credenciales: { username: 'juanperezcobrador', password: 'juanperez2026' },
+        credenciales: {
+          username: 'juanperezcobrador',
+          password: 'juanperez2026',
+        },
       });
       expect(mockQueryRunner.connect).toHaveBeenCalled();
       expect(mockQueryRunner.startTransaction).toHaveBeenCalled();
@@ -121,9 +126,11 @@ describe('CrearCobradorUseCase', () => {
     });
 
     it('should assign etapas when etapaIds are provided', async () => {
-      jest.spyOn(generarCredenciales, 'generarUsernameCobrador')
+      jest
+        .spyOn(generarCredenciales, 'generarUsernameCobrador')
         .mockReturnValue('carloscobrador');
-      jest.spyOn(generarCredenciales, 'generarPasswordCobrador')
+      jest
+        .spyOn(generarCredenciales, 'generarPasswordCobrador')
         .mockReturnValue('carlos2026');
       usuarioRepo.findOne.mockResolvedValue(null);
       (bcrypt.hash as jest.Mock).mockResolvedValue('hashed-password');
@@ -160,9 +167,11 @@ describe('CrearCobradorUseCase', () => {
     });
 
     it('should throw BadRequestException when username already exists', async () => {
-      jest.spyOn(generarCredenciales, 'generarUsernameCobrador')
+      jest
+        .spyOn(generarCredenciales, 'generarUsernameCobrador')
         .mockReturnValue('existingcobrador');
-      jest.spyOn(generarCredenciales, 'generarPasswordCobrador')
+      jest
+        .spyOn(generarCredenciales, 'generarPasswordCobrador')
         .mockReturnValue('existing2026');
 
       const existingUser = Usuario.crear(
@@ -190,9 +199,11 @@ describe('CrearCobradorUseCase', () => {
 
   describe('error handling', () => {
     it('should rollback transaction on save failure', async () => {
-      jest.spyOn(generarCredenciales, 'generarUsernameCobrador')
+      jest
+        .spyOn(generarCredenciales, 'generarUsernameCobrador')
         .mockReturnValue('juanperezcobrador');
-      jest.spyOn(generarCredenciales, 'generarPasswordCobrador')
+      jest
+        .spyOn(generarCredenciales, 'generarPasswordCobrador')
         .mockReturnValue('juanperez2026');
       usuarioRepo.findOne.mockResolvedValue(null);
       (bcrypt.hash as jest.Mock).mockResolvedValue('hashed-password');

@@ -1,6 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { DataSource } from 'typeorm';
-import { RegistrarPagoUseCase, type RegistrarPagoInput } from './registrar-pago.use-case';
+import {
+  RegistrarPagoUseCase,
+  type RegistrarPagoInput,
+} from './registrar-pago.use-case';
 import { PagoRepository } from '../../infrastructure/persistence/pago.repository';
 import { CobroRepository } from '../../infrastructure/persistence/cobro.repository';
 import { PlanDeCobroRepository } from '../../infrastructure/persistence/plan-de-cobro.repository';
@@ -53,9 +56,12 @@ describe('RegistrarPagoUseCase', () => {
   };
 
   const mockDataSource = {
-    transaction: jest.fn().mockImplementation(
-      async (cb: (em: typeof mockEntityManager) => Promise<any>) => cb(mockEntityManager),
-    ),
+    transaction: jest
+      .fn()
+      .mockImplementation(
+        async (cb: (em: typeof mockEntityManager) => Promise<any>) =>
+          cb(mockEntityManager),
+      ),
   };
 
   const mockCobroRepo = {
@@ -85,7 +91,9 @@ describe('RegistrarPagoUseCase', () => {
   const COBRADOR_ID = 'cobrador-1';
 
   /** Creates a valid input */
-  function crearInput(overrides: Partial<RegistrarPagoInput> = {}): RegistrarPagoInput {
+  function crearInput(
+    overrides: Partial<RegistrarPagoInput> = {},
+  ): RegistrarPagoInput {
     return {
       clientPaymentId: 'pay-001',
       tenantId: TENANT_ID,
@@ -114,7 +122,14 @@ describe('RegistrarPagoUseCase', () => {
 
   /** Creates a mock PlanDeCobro */
   function crearPlan(overrides: Partial<PlanDeCobro> = {}): PlanDeCobro {
-    const plan = PlanDeCobro.crear('casa-1', RESIDENTE_ID, TENANT_ID, 'proy-1', 'MENSUAL', '2026-01-01');
+    const plan = PlanDeCobro.crear(
+      'casa-1',
+      RESIDENTE_ID,
+      TENANT_ID,
+      'proy-1',
+      'MENSUAL',
+      '2026-01-01',
+    );
     Object.assign(plan, { activa: true, ...overrides });
     return plan;
   }
@@ -134,7 +149,10 @@ describe('RegistrarPagoUseCase', () => {
         { provide: TicketRepository, useValue: mockTicketRepo },
         { provide: PagoCobroRepository, useValue: mockPagoCobroRepo },
         { provide: EventsGateway, useValue: { emitPagoRegistrado: jest.fn() } },
-        { provide: FcmPushService, useValue: { sendPagoRegistradoPush: jest.fn() } },
+        {
+          provide: FcmPushService,
+          useValue: { sendPagoRegistradoPush: jest.fn() },
+        },
       ],
     }).compile();
 
@@ -148,8 +166,12 @@ describe('RegistrarPagoUseCase', () => {
   describe('Idempotency', () => {
     it('should return existing pago when same clientPaymentId exists', async () => {
       const existingPago = Pago.crear(
-        'pay-001', TENANT_ID, Money.ofCOP(40000),
-        '2026-01-20', COBRADOR_ID, RESIDENTE_ID,
+        'pay-001',
+        TENANT_ID,
+        Money.ofCOP(40000),
+        '2026-01-20',
+        COBRADOR_ID,
+        RESIDENTE_ID,
       );
       mockPagoRepo.findByIdempotentKey.mockResolvedValue(existingPago);
       mockCobroRepo.findByResidente.mockResolvedValue([]);
@@ -206,7 +228,7 @@ describe('RegistrarPagoUseCase', () => {
     beforeEach(() => {
       mockPagoRepo.findByIdempotentKey.mockResolvedValue(null);
       mockPlanRepo.findByResidente.mockResolvedValue(crearPlan());
-        mockPagoRepo.save.mockImplementation(async (p: Pago) => p);
+      mockPagoRepo.save.mockImplementation(async (p: Pago) => p);
     });
 
     it('should apply partial payment to oldest cobro', async () => {
@@ -243,11 +265,11 @@ describe('RegistrarPagoUseCase', () => {
 
       expect(result.cobrosAfectados).toHaveLength(2);
       // First cobro should be PAGADA
-      const c1 = result.cobrosAfectados.find(c => c.id === cobro1.id)!;
+      const c1 = result.cobrosAfectados.find((c) => c.id === cobro1.id)!;
       expect(c1.estado).toBe('PAGADA');
       expect(c1.montoPagado).toBe(40000);
       // Second cobro should be PARCIAL
-      const c2 = result.cobrosAfectados.find(c => c.id === cobro2.id)!;
+      const c2 = result.cobrosAfectados.find((c) => c.id === cobro2.id)!;
       expect(c2.estado).toBe('PARCIAL');
       expect(c2.montoPagado).toBe(20000);
     });
@@ -309,7 +331,9 @@ describe('RegistrarPagoUseCase', () => {
       mockCobroRepo.findMasAntiguoConSaldoLocked.mockResolvedValue(cobro);
       mockSolicitudRepo.findById.mockResolvedValue(null);
 
-      const result = await useCase.execute(crearInput({ solicitudId: 'no-existe' }));
+      const result = await useCase.execute(
+        crearInput({ solicitudId: 'no-existe' }),
+      );
 
       expect(result).toBeDefined();
       expect(mockSolicitudRepo.save).not.toHaveBeenCalled();

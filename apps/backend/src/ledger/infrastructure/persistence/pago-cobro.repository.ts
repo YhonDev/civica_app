@@ -11,23 +11,38 @@ import { PagoCobro } from '../../domain/pago-cobro.entity';
  */
 @Injectable()
 export class PagoCobroRepository {
-  async findByPago(entityManager: EntityManager, pagoId: string): Promise<PagoCobro[]> {
+  async findByPago(
+    entityManager: EntityManager,
+    pagoId: string,
+  ): Promise<PagoCobro[]> {
     return entityManager.find(PagoCobro, { where: { pagoId } });
   }
 
-  async findByCobro(entityManager: EntityManager, cobroId: string): Promise<PagoCobro[]> {
+  async findByCobro(
+    entityManager: EntityManager,
+    cobroId: string,
+  ): Promise<PagoCobro[]> {
     return entityManager.find(PagoCobro, { where: { cobroId } });
   }
 
-  async save(entityManager: EntityManager, vinculo: PagoCobro): Promise<PagoCobro> {
+  async save(
+    entityManager: EntityManager,
+    vinculo: PagoCobro,
+  ): Promise<PagoCobro> {
     return entityManager.save(PagoCobro, vinculo);
   }
 
-  async removeByPago(entityManager: EntityManager, pagoId: string): Promise<void> {
+  async removeByPago(
+    entityManager: EntityManager,
+    pagoId: string,
+  ): Promise<void> {
     await entityManager.delete(PagoCobro, { pagoId });
   }
 
-  async removeByCobro(entityManager: EntityManager, cobroId: string): Promise<void> {
+  async removeByCobro(
+    entityManager: EntityManager,
+    cobroId: string,
+  ): Promise<void> {
     await entityManager.delete(PagoCobro, { cobroId });
   }
 }

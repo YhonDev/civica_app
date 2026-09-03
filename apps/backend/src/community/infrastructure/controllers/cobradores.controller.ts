@@ -1,10 +1,10 @@
+import { Controller, Post, Body, UseGuards } from '@nestjs/common';
 import {
-  Controller,
-  Post,
-  Body,
-  UseGuards,
-} from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { CrearCobradorUseCase } from '../../application/use-cases/crear-cobrador.use-case';
 import { CrearCobradorDto } from './dtos/cobradores.dto';
 import { JwtAuthGuard } from '../../../shared/auth/jwt-auth.guard';
@@ -18,9 +18,7 @@ import { RolUsuario } from '../../../iam/domain/usuario.entity';
 @Controller('cobradores')
 @UseGuards(JwtAuthGuard)
 export class CobradoresController {
-  constructor(
-    private readonly crearCobradorUseCase: CrearCobradorUseCase,
-  ) {}
+  constructor(private readonly crearCobradorUseCase: CrearCobradorUseCase) {}
 
   @Post()
   @UseGuards(RolesGuard)

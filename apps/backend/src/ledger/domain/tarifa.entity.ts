@@ -5,7 +5,10 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { type ModalidadRecaudo, Money } from '../../shared/common/value-objects';
+import {
+  type ModalidadRecaudo,
+  Money,
+} from '../../shared/common/value-objects';
 
 @Entity('tarifas')
 export class Tarifa {

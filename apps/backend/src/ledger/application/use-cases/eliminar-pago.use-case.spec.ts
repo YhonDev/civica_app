@@ -31,16 +31,20 @@ describe('EliminarPagoUseCase', () => {
       }
       return null;
     }),
-    save: jest.fn().mockImplementation(async (_entity: any, value: any) => value),
+    save: jest
+      .fn()
+      .mockImplementation(async (_entity: any, value: any) => value),
     delete: jest.fn().mockResolvedValue(undefined),
     remove: jest.fn().mockResolvedValue(undefined),
     getRepository: jest.fn(),
   };
 
   const mockDataSource = {
-    transaction: jest.fn().mockImplementation(
-      async (cb: (em: EntityManager) => Promise<any>) => cb(mockEntityManager as unknown as EntityManager),
-    ),
+    transaction: jest
+      .fn()
+      .mockImplementation(async (cb: (em: EntityManager) => Promise<any>) =>
+        cb(mockEntityManager as unknown as EntityManager),
+      ),
   };
 
   const TENANT_ID = 'tenant-1';
@@ -77,11 +81,19 @@ describe('EliminarPagoUseCase', () => {
     cobro.id = id;
     cobro.montoPagado = montoPagado;
     cobro.estado =
-      montoPagado === 0 ? 'PENDIENTE' : montoPagado === monto ? 'PAGADA' : 'PARCIAL';
+      montoPagado === 0
+        ? 'PENDIENTE'
+        : montoPagado === monto
+          ? 'PAGADA'
+          : 'PARCIAL';
     return cobro;
   }
 
-  function crearVinculo(pagoId: string, cobroId: string, montoAplicado: number): PagoCobro {
+  function crearVinculo(
+    pagoId: string,
+    cobroId: string,
+    montoAplicado: number,
+  ): PagoCobro {
     const vinc = new PagoCobro();
     vinc.id = `vinc-${pagoId}-${cobroId}`;
     vinc.pagoId = pagoId;
@@ -110,14 +122,18 @@ describe('EliminarPagoUseCase', () => {
   it('should throw NotFoundException if payment does not exist', async () => {
     mockPagoRepo.findById.mockResolvedValue(null);
 
-    await expect(useCase.execute('pago-1', TENANT_ID)).rejects.toThrow(/no encontrado/);
+    await expect(useCase.execute('pago-1', TENANT_ID)).rejects.toThrow(
+      /no encontrado/,
+    );
   });
 
   it('should throw NotFoundException if payment belongs to another tenant', async () => {
     const pago = crearPago(40000, 'pago-1');
     mockPagoRepo.findById.mockResolvedValue(pago);
 
-    await expect(useCase.execute('pago-1', 'tenant-OTHER')).rejects.toThrow(/no encontrado/);
+    await expect(useCase.execute('pago-1', 'tenant-OTHER')).rejects.toThrow(
+      /no encontrado/,
+    );
   });
 
   it('should revert exactly the cobros touched by the payment via pago_cobros (B1: multi-cobro FIFO)', async () => {
@@ -146,7 +162,10 @@ describe('EliminarPagoUseCase', () => {
     expect(cobroB.estado).toBe('PARCIAL');
 
     // Se deben eliminar los vínculos del pago
-    expect(mockPagoCobroRepo.removeByPago).toHaveBeenCalledWith(mockEntityManager, 'pago-1');
+    expect(mockPagoCobroRepo.removeByPago).toHaveBeenCalledWith(
+      mockEntityManager,
+      'pago-1',
+    );
   });
 
   it('should revert a single-cobro payment exactly (full PAGADA -> PENDIENTE)', async () => {

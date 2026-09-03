@@ -18,14 +18,15 @@ export class MantenimientoService {
   async verificarResidenteNoBloqueado(residenteId: string): Promise<void> {
     if (!residenteId) return;
 
-    const rows: Array<{ modo_mantenimiento: boolean }> = await this.dataSource.query(
-      `SELECT p.modo_mantenimiento
+    const rows: Array<{ modo_mantenimiento: boolean }> =
+      await this.dataSource.query(
+        `SELECT p.modo_mantenimiento
        FROM planes_de_cobro pc
        JOIN proyectos p ON p.id = pc.proyecto_id
        WHERE pc.residente_id = $1 AND pc.activa = true
        LIMIT 1`,
-      [residenteId],
-    );
+        [residenteId],
+      );
 
     if (rows.length > 0 && rows[0].modo_mantenimiento) {
       throw new ServiceUnavailableException(

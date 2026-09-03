@@ -51,15 +51,21 @@ describe('Tarifa derivación', () => {
 
   describe('calcularMontoParcial', () => {
     it('genera abono semanal = mensual / 4', () => {
-      expect(calcularMontoParcial(CUOTA_MENSUAL, 'SEMANAL').amount).toBe(1_000_000);
+      expect(calcularMontoParcial(CUOTA_MENSUAL, 'SEMANAL').amount).toBe(
+        1_000_000,
+      );
     });
 
     it('genera abono quincenal = mensual / 2', () => {
-      expect(calcularMontoParcial(CUOTA_MENSUAL, 'QUINCENAL').amount).toBe(2_000_000);
+      expect(calcularMontoParcial(CUOTA_MENSUAL, 'QUINCENAL').amount).toBe(
+        2_000_000,
+      );
     });
 
     it('genera abono mensual completo', () => {
-      expect(calcularMontoParcial(CUOTA_MENSUAL, 'MENSUAL').amount).toBe(4_000_000);
+      expect(calcularMontoParcial(CUOTA_MENSUAL, 'MENSUAL').amount).toBe(
+        4_000_000,
+      );
     });
   });
 });

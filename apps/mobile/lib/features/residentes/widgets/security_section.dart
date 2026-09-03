@@ -93,8 +93,10 @@ class _SecuritySectionState extends State<SecuritySection> {
         if (!widget.isAdmin) {
           await BiometricAuthService.instance.setBiometricsEnabled(false);
           LocalCacheRepository.instance.invalidateAll();
-          TopToast.showSuccess(context, 'Usuario actualizado. Inicia sesión nuevamente.');
-          context.read<AuthCubit>().logout();
+          if (mounted) {
+            TopToast.showSuccess(context, 'Usuario actualizado. Inicia sesión nuevamente.');
+            context.read<AuthCubit>().logout();
+          }
         } else {
           TopToast.showSuccess(context, 'Usuario actualizado correctamente');
           widget.onCredentialsUpdated?.call();
@@ -170,8 +172,10 @@ class _SecuritySectionState extends State<SecuritySection> {
         if (!widget.isAdmin) {
           await BiometricAuthService.instance.setBiometricsEnabled(false);
           LocalCacheRepository.instance.invalidateAll();
-          TopToast.showSuccess(context, 'Contraseña actualizada. Inicia sesión con tu nueva contraseña.');
-          context.read<AuthCubit>().logout();
+          if (mounted) {
+            TopToast.showSuccess(context, 'Contraseña actualizada. Inicia sesión con tu nueva contraseña.');
+            context.read<AuthCubit>().logout();
+          }
         } else {
           TopToast.showSuccess(context, 'Contraseña actualizada correctamente');
         }

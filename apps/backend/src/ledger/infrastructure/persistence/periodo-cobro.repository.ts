@@ -20,7 +20,11 @@ export class PeriodoCobroRepository extends BaseTenantRepository<PeriodoCobro> {
     });
   }
 
-  async findByPlanAndMonth(planId: string, mes: number, anio: number): Promise<PeriodoCobro | null> {
+  async findByPlanAndMonth(
+    planId: string,
+    mes: number,
+    anio: number,
+  ): Promise<PeriodoCobro | null> {
     return this.repo.findOne({
       where: { planId, mes, anio },
     });

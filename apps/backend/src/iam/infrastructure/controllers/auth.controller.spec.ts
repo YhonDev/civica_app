@@ -11,7 +11,13 @@ describe('AuthController', () => {
   let crearUsuarioUC: jest.Mocked<CrearUsuarioUseCase>;
 
   const mockUsuario = Object.assign(
-    Usuario.crear('test@test.com', 'hash', 'Test', RolUsuario.ADMIN, 'tenant-1'),
+    Usuario.crear(
+      'test@test.com',
+      'hash',
+      'Test',
+      RolUsuario.ADMIN,
+      'tenant-1',
+    ),
     { id: 'usr-1' },
   );
 
@@ -55,7 +61,10 @@ describe('AuthController', () => {
         nombre: 'Nuevo Usuario',
         rol: RolUsuario.COBRADOR,
       };
-      const expectedUser = Object.assign(new Usuario(), { id: 'usr-2', email: 'nuevo.user' });
+      const expectedUser = Object.assign(new Usuario(), {
+        id: 'usr-2',
+        email: 'nuevo.user',
+      });
       crearUsuarioUC.execute.mockResolvedValue(expectedUser);
 
       const result = await controller.register(dto, 'tenant-1');
@@ -138,7 +147,9 @@ describe('AuthController', () => {
       });
 
       expect(result).toEqual(refreshResult);
-      expect(authService.refreshToken).toHaveBeenCalledWith('valid-refresh-token');
+      expect(authService.refreshToken).toHaveBeenCalledWith(
+        'valid-refresh-token',
+      );
     });
   });
 });

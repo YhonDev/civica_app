@@ -39,14 +39,21 @@ export class Residente {
   @Column({ name: 'tenant_id', type: 'uuid' })
   tenantId: string;
 
-  @Column({ name: 'modalidad_pago', type: 'varchar', length: 20, default: 'MENSUAL' })
+  @Column({
+    name: 'modalidad_pago',
+    type: 'varchar',
+    length: 20,
+    default: 'MENSUAL',
+  })
   modalidadPago: ModalidadRecaudo;
 
   @ManyToOne(() => Casa)
   @JoinColumn({ name: 'casa_actual_id' })
   casaActual: Casa;
 
-  @OneToMany(() => Tenencia, (tenencia) => tenencia.residente, { cascade: true })
+  @OneToMany(() => Tenencia, (tenencia) => tenencia.residente, {
+    cascade: true,
+  })
   tenencias: Tenencia[];
 
   @OneToMany(() => Cobro, (cobro) => cobro.residente)

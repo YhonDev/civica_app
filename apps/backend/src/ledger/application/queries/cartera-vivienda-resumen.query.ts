@@ -36,8 +36,16 @@ export class CarteraViviendaResumenQuery {
       .from('casas', 'casa')
       .innerJoin('manzanas', 'manzana', 'manzana.id = casa.manzana_id')
       .innerJoin('etapas', 'etapa', 'etapa.id = manzana.etapa_id')
-      .leftJoin('tenencias', 'tenencia', 'tenencia.casa_id = casa.id AND tenencia.fecha_fin IS NULL')
-      .leftJoin('residentes', 'residente', 'residente.id = tenencia.residente_id')
+      .leftJoin(
+        'tenencias',
+        'tenencia',
+        'tenencia.casa_id = casa.id AND tenencia.fecha_fin IS NULL',
+      )
+      .leftJoin(
+        'residentes',
+        'residente',
+        'residente.id = tenencia.residente_id',
+      )
       .where('etapa.proyecto_id = :tenantId', { tenantId }); // proyecto_id es equivalente al tenantId en community
 
     if (etapaId) {
@@ -92,7 +100,10 @@ export class CarteraViviendaResumenQuery {
       for (const c of casaCobros) {
         if (c.estado === 'PAGADA') {
           totalCuotasPagadas++;
-        } else if (c.estado === 'VENCIDA' || (c.estado === 'PENDIENTE' && c.fechaVencimiento < hoyStr)) {
+        } else if (
+          c.estado === 'VENCIDA' ||
+          (c.estado === 'PENDIENTE' && c.fechaVencimiento < hoyStr)
+        ) {
           totalCuotasVencidas++;
           saldoMoraCentavos += c.monto - c.montoPagado;
         } else if (c.estado === 'PENDIENTE' || c.estado === 'PARCIAL') {
@@ -100,7 +111,8 @@ export class CarteraViviendaResumenQuery {
         }
       }
 
-      let estadoMora: 'AL_DIA' | 'PENDIENTE' | 'EN_MORA' | 'SIN_CUOTAS' = 'SIN_CUOTAS';
+      let estadoMora: 'AL_DIA' | 'PENDIENTE' | 'EN_MORA' | 'SIN_CUOTAS' =
+        'SIN_CUOTAS';
 
       if (casaCobros.length > 0) {
         if (totalCuotasVencidas > 0) {

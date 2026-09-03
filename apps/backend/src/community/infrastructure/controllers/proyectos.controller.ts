@@ -112,8 +112,13 @@ export class ProyectosController {
       'SELECT COUNT(*) as count FROM cobros co JOIN casas c ON co.casa_id = c.id JOIN manzanas m ON c.manzana_id = m.id WHERE m.etapa_id = $1',
       [id],
     );
-    if (Number(tenenciasCount[0]?.count ?? 0) > 0 || Number(cobrosCount[0]?.count ?? 0) > 0) {
-      throw new BadRequestException('No se puede eliminar una etapa con tenencias o cobros activos');
+    if (
+      Number(tenenciasCount[0]?.count ?? 0) > 0 ||
+      Number(cobrosCount[0]?.count ?? 0) > 0
+    ) {
+      throw new BadRequestException(
+        'No se puede eliminar una etapa con tenencias o cobros activos',
+      );
     }
 
     await this.dataSource.query('DELETE FROM etapas WHERE id = $1', [id]);
@@ -132,8 +137,13 @@ export class ProyectosController {
       'SELECT COUNT(*) as count FROM cobros co JOIN casas c ON co.casa_id = c.id WHERE c.manzana_id = $1',
       [id],
     );
-    if (Number(tenenciasCount[0]?.count ?? 0) > 0 || Number(cobrosCount[0]?.count ?? 0) > 0) {
-      throw new BadRequestException('No se puede eliminar una manzana con tenencias o cobros activos');
+    if (
+      Number(tenenciasCount[0]?.count ?? 0) > 0 ||
+      Number(cobrosCount[0]?.count ?? 0) > 0
+    ) {
+      throw new BadRequestException(
+        'No se puede eliminar una manzana con tenencias o cobros activos',
+      );
     }
 
     await this.dataSource.query('DELETE FROM manzanas WHERE id = $1', [id]);
@@ -152,8 +162,13 @@ export class ProyectosController {
       'SELECT COUNT(*) as count FROM cobros WHERE casa_id = $1',
       [id],
     );
-    if (Number(tenenciasCount[0]?.count ?? 0) > 0 || Number(cobrosCount[0]?.count ?? 0) > 0) {
-      throw new BadRequestException('No se puede eliminar una casa con tenencias o cobros activos');
+    if (
+      Number(tenenciasCount[0]?.count ?? 0) > 0 ||
+      Number(cobrosCount[0]?.count ?? 0) > 0
+    ) {
+      throw new BadRequestException(
+        'No se puede eliminar una casa con tenencias o cobros activos',
+      );
     }
 
     await this.dataSource.query('DELETE FROM casas WHERE id = $1', [id]);

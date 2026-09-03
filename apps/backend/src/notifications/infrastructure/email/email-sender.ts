@@ -13,7 +13,9 @@ export class EmailSender {
   async send(options: EmailOptions): Promise<boolean> {
     try {
       // En modo desarrollo / simulación, logueamos el correo
-      this.logger.log(`[SIMULATED EMAIL] Sent to: ${options.to} | Subject: ${options.subject}`);
+      this.logger.log(
+        `[SIMULATED EMAIL] Sent to: ${options.to} | Subject: ${options.subject}`,
+      );
       return true;
     } catch (error) {
       this.logger.error(`Failed to send email to ${options.to}:`, error);

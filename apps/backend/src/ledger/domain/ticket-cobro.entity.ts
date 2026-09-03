@@ -21,13 +21,24 @@ export class TicketCobro extends Ticket {
   @Column({ name: 'cobrador_id', type: 'uuid', nullable: true })
   cobradorId: string | null;
 
-  @Column({ name: 'cobrador_nombre', type: 'varchar', length: 255, nullable: true })
+  @Column({
+    name: 'cobrador_nombre',
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+  })
   cobradorNombre: string | null;
 
   @Column({ name: 'monto', type: 'integer', nullable: true })
   monto: number | null; // centavos COP
 
-  @Column({ name: 'metodo', type: 'varchar', length: 50, nullable: true, default: 'EFECTIVO' })
+  @Column({
+    name: 'metodo',
+    type: 'varchar',
+    length: 50,
+    nullable: true,
+    default: 'EFECTIVO',
+  })
   metodo: MetodoPago;
 
   @Column({ name: 'concepto', type: 'varchar', length: 255, nullable: true })

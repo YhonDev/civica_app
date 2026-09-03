@@ -18,22 +18,22 @@ class MockHttpAdapter implements HttpClientAdapter {
   int _statusCode = 200;
 
   /// Registers a handler for GET [path].
-  void onGet(String path, _DataBuilder builder) {
+  void onGet(String path, DataBuilder builder) {
     _handlers['GET $path'] = _RouteHandler(builder);
   }
 
   /// Registers a handler for POST [path].
-  void onPost(String path, _DataBuilder builder) {
+  void onPost(String path, DataBuilder builder) {
     _handlers['POST $path'] = _RouteHandler(builder);
   }
 
   /// Registers a handler for PATCH [path].
-  void onPatch(String path, _DataBuilder builder) {
+  void onPatch(String path, DataBuilder builder) {
     _handlers['PATCH $path'] = _RouteHandler(builder);
   }
 
   /// Registers a handler for DELETE [path].
-  void onDelete(String path, _DataBuilder builder) {
+  void onDelete(String path, DataBuilder builder) {
     _handlers['DELETE $path'] = _RouteHandler(builder);
   }
 
@@ -74,9 +74,9 @@ class MockHttpAdapter implements HttpClientAdapter {
   void close({bool force = false}) {}
 }
 
-typedef _DataBuilder = dynamic Function();
+typedef DataBuilder = dynamic Function();
 
 class _RouteHandler {
-  final _DataBuilder builder;
+  final DataBuilder builder;
   _RouteHandler(this.builder);
 }

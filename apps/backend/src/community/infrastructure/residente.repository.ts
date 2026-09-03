@@ -57,7 +57,9 @@ export class ResidenteRepository extends BaseTenantRepository<Residente> {
         .from('casas', 'c')
         .where('c.etapaId = :etapaId')
         .getQuery();
-      qb.andWhere(`tenencia.casaId IN ${subQuery}`, { etapaId: params.etapaId });
+      qb.andWhere(`tenencia.casaId IN ${subQuery}`, {
+        etapaId: params.etapaId,
+      });
     }
 
     return qb.getMany();
@@ -89,7 +91,10 @@ export class ResidenteRepository extends BaseTenantRepository<Residente> {
    * Busca residentes cuyas casas estén en una o más etapas específicas.
    * Usado por COBRADORES que solo ven residentes de sus etapas asignadas.
    */
-  async buscarPorEtapas(tenantId: string, etapaIds: string[]): Promise<Residente[]> {
+  async buscarPorEtapas(
+    tenantId: string,
+    etapaIds: string[],
+  ): Promise<Residente[]> {
     if (!etapaIds || etapaIds.length === 0) {
       return [];
     }
@@ -120,7 +125,7 @@ export class ResidenteRepository extends BaseTenantRepository<Residente> {
     unaSemanaAtras.setDate(unaSemanaAtras.getDate() - 7);
     const qb = this.repo.createQueryBuilder('residente');
     this.applyTenantFilter(qb, tenantId, 'residente');
-    
+
     const result = await qb
       .select('COUNT(*)', 'count')
       .andWhere('residente.createdAt >= :fecha', { fecha: unaSemanaAtras })

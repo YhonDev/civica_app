@@ -40,7 +40,11 @@ describe('ProyectosController', () => {
         },
         {
           provide: ProyectoRepository,
-          useValue: { findByTenant: jest.fn(), findByIdPlano: jest.fn(), save: jest.fn() },
+          useValue: {
+            findByTenant: jest.fn(),
+            findByIdPlano: jest.fn(),
+            save: jest.fn(),
+          },
         },
         {
           provide: DataSource,

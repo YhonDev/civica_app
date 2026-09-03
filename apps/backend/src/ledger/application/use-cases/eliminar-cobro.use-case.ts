@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { CobroRepository } from '../../infrastructure/persistence/cobro.repository';
 import { PagoRepository } from '../../infrastructure/persistence/pago.repository';
 
@@ -17,7 +21,9 @@ export class EliminarCobroUseCase {
 
     const pagosCount = await this.pagoRepository.countByCobro(id);
     if (pagosCount > 0) {
-      throw new BadRequestException('No se puede eliminar un cobro que tiene pagos registrados');
+      throw new BadRequestException(
+        'No se puede eliminar un cobro que tiene pagos registrados',
+      );
     }
 
     await this.cobroRepository.delete(id);

@@ -12,8 +12,8 @@ describe('PeriodoCobro Entity — Domain Logic', () => {
     it('should create a periodo with default ACTIVE state', () => {
       const periodo = PeriodoCobro.crear(
         PLAN_ID,
-        7,        // mes
-        2026,     // anio
+        7, // mes
+        2026, // anio
         '2026-07-01',
         '2026-07-31',
         TENANT_ID,
@@ -31,16 +31,24 @@ describe('PeriodoCobro Entity — Domain Logic', () => {
 
     it('should accept mes=1 (January)', () => {
       const periodo = PeriodoCobro.crear(
-        PLAN_ID, 1, 2026,
-        '2026-01-01', '2026-01-31', TENANT_ID,
+        PLAN_ID,
+        1,
+        2026,
+        '2026-01-01',
+        '2026-01-31',
+        TENANT_ID,
       );
       expect(periodo.mes).toBe(1);
     });
 
     it('should accept mes=12 (December)', () => {
       const periodo = PeriodoCobro.crear(
-        PLAN_ID, 12, 2026,
-        '2026-12-01', '2026-12-31', TENANT_ID,
+        PLAN_ID,
+        12,
+        2026,
+        '2026-12-01',
+        '2026-12-31',
+        TENANT_ID,
       );
       expect(periodo.mes).toBe(12);
     });
@@ -91,15 +99,23 @@ describe('PeriodoCobro Entity — Domain Logic', () => {
   describe('month/year edge cases', () => {
     it('should handle year boundary (Dec 2026 → Jan 2027)', () => {
       const dic2026 = PeriodoCobro.crear(
-        PLAN_ID, 12, 2026,
-        '2026-12-01', '2026-12-31', TENANT_ID,
+        PLAN_ID,
+        12,
+        2026,
+        '2026-12-01',
+        '2026-12-31',
+        TENANT_ID,
       );
       expect(dic2026.anio).toBe(2026);
       expect(dic2026.mes).toBe(12);
 
       const ene2027 = PeriodoCobro.crear(
-        PLAN_ID, 1, 2027,
-        '2027-01-01', '2027-01-31', TENANT_ID,
+        PLAN_ID,
+        1,
+        2027,
+        '2027-01-01',
+        '2027-01-31',
+        TENANT_ID,
       );
       expect(ene2027.anio).toBe(2027);
       expect(ene2027.mes).toBe(1);
@@ -107,8 +123,12 @@ describe('PeriodoCobro Entity — Domain Logic', () => {
 
     it('should handle February in non-leap year', () => {
       const feb = PeriodoCobro.crear(
-        PLAN_ID, 2, 2026,
-        '2026-02-01', '2026-02-28', TENANT_ID,
+        PLAN_ID,
+        2,
+        2026,
+        '2026-02-01',
+        '2026-02-28',
+        TENANT_ID,
       );
       expect(feb.mes).toBe(2);
       expect(feb.fechaFin).toBe('2026-02-28');
@@ -116,10 +136,16 @@ describe('PeriodoCobro Entity — Domain Logic', () => {
   });
 
   /** Helper to create a periodo with default values */
-  function crearPeriodoBase(overrides: Partial<PeriodoCobro> = {}): PeriodoCobro {
+  function crearPeriodoBase(
+    overrides: Partial<PeriodoCobro> = {},
+  ): PeriodoCobro {
     const periodo = PeriodoCobro.crear(
-      PLAN_ID, 7, 2026,
-      '2026-07-01', '2026-07-31', TENANT_ID,
+      PLAN_ID,
+      7,
+      2026,
+      '2026-07-01',
+      '2026-07-31',
+      TENANT_ID,
     );
     Object.assign(periodo, overrides);
     return periodo;

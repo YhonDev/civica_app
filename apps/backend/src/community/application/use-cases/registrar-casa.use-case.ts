@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  Logger,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Manzana } from '../../domain/manzana.entity';
@@ -17,7 +22,9 @@ export class RegistrarCasaUseCase {
 
   async execute(direccionInterna: string, manzanaId: string): Promise<Casa> {
     if (!direccionInterna || direccionInterna.trim().length === 0) {
-      throw new BadRequestException('La dirección interna no puede estar vacía');
+      throw new BadRequestException(
+        'La dirección interna no puede estar vacía',
+      );
     }
 
     const manzana = await this.manzanaRepository.findOne({
@@ -33,7 +40,10 @@ export class RegistrarCasaUseCase {
       this.logger.log(`Casa creada: ${casa.id} - ${direccionInterna}`);
       return casa;
     } catch (error) {
-      this.logger.error(`Error al crear casa: ${(error as Error).message}`, (error as Error).stack);
+      this.logger.error(
+        `Error al crear casa: ${(error as Error).message}`,
+        (error as Error).stack,
+      );
       throw error;
     }
   }

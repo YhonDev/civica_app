@@ -19,7 +19,10 @@ export class CrearMontoDto {
   @Min(1, { message: 'El monto debe ser mayor a cero' })
   monto: number;
 
-  @ApiProperty({ example: 'Cuota de administración mensual', description: 'Descripción del monto' })
+  @ApiProperty({
+    example: 'Cuota de administración mensual',
+    description: 'Descripción del monto',
+  })
   @IsString()
   @IsNotEmpty()
   @MinLength(2, { message: 'La descripción debe tener al menos 2 caracteres' })

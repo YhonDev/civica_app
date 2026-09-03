@@ -38,9 +38,16 @@ describe('Cobro Entity — Domain Logic', () => {
 
     it('should accept optional tarifaId, periodoId, casaId', () => {
       const cobro = Cobro.crear(
-        RESIDENTE_ID, TENANT_ID, 'Cuota Test',
-        Money.ofCOP(40000), '2026-01-01', '2026-02-01', '2026-01-15',
-        'tarifa-1', 'periodo-1', 'casa-1',
+        RESIDENTE_ID,
+        TENANT_ID,
+        'Cuota Test',
+        Money.ofCOP(40000),
+        '2026-01-01',
+        '2026-02-01',
+        '2026-01-15',
+        'tarifa-1',
+        'periodo-1',
+        'casa-1',
       );
 
       expect(cobro.tarifaId).toBe('tarifa-1');
@@ -173,19 +180,29 @@ describe('Cobro Entity — Domain Logic', () => {
   describe('estaPagada / estaVencida / estaPendiente', () => {
     it('estaPagada should return true only when PAGADA', () => {
       expect(crearCobro(40000, { estado: 'PAGADA' }).estaPagada()).toBe(true);
-      expect(crearCobro(40000, { estado: 'PENDIENTE' }).estaPagada()).toBe(false);
+      expect(crearCobro(40000, { estado: 'PENDIENTE' }).estaPagada()).toBe(
+        false,
+      );
       expect(crearCobro(40000, { estado: 'VENCIDA' }).estaPagada()).toBe(false);
     });
 
     it('estaVencida should return true only when VENCIDA', () => {
       expect(crearCobro(40000, { estado: 'VENCIDA' }).estaVencida()).toBe(true);
-      expect(crearCobro(40000, { estado: 'PENDIENTE' }).estaVencida()).toBe(false);
+      expect(crearCobro(40000, { estado: 'PENDIENTE' }).estaVencida()).toBe(
+        false,
+      );
     });
 
     it('estaPendiente should return true only when PENDIENTE', () => {
-      expect(crearCobro(40000, { estado: 'PENDIENTE' }).estaPendiente()).toBe(true);
-      expect(crearCobro(40000, { estado: 'VENCIDA' }).estaPendiente()).toBe(false);
-      expect(crearCobro(40000, { estado: 'PAGADA' }).estaPendiente()).toBe(false);
+      expect(crearCobro(40000, { estado: 'PENDIENTE' }).estaPendiente()).toBe(
+        true,
+      );
+      expect(crearCobro(40000, { estado: 'VENCIDA' }).estaPendiente()).toBe(
+        false,
+      );
+      expect(crearCobro(40000, { estado: 'PAGADA' }).estaPendiente()).toBe(
+        false,
+      );
     });
   });
 });

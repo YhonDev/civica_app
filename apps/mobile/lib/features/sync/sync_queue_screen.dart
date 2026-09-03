@@ -98,7 +98,6 @@ class _SyncQueueScreenState extends State<SyncQueueScreen> {
   @override
   Widget build(BuildContext context) {
     final hasSincronizados = _queueItems.any((i) => i['syncStatus'] == 'SYNC_OK');
-    final hasPendientes = _queueItems.any((i) => i['syncStatus'] != 'SYNC_OK');
 
     return Scaffold(
       appBar: AppBar(

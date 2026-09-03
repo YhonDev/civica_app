@@ -17,9 +17,17 @@ import { TarifaRepository } from '../persistence/tarifa.repository';
 import { GenerarCobrosUseCase } from '../../application/use-cases/generar-cobros.use-case';
 import { MarcarVencidasUseCase } from '../../application/use-cases/marcar-vencidas.use-case';
 import { Cobro } from '../../domain/cobro.entity';
-import type { TimelineItemDto, TimelineResponse } from '../../application/dtos/dashboard.dto';
+import type {
+  TimelineItemDto,
+  TimelineResponse,
+} from '../../application/dtos/dashboard.dto';
 import { ResidenteRepository } from '../../../community/infrastructure/residente.repository';
-import { Periodo, type ModalidadRecaudo, pagosPorMes, calcularMontoParcial } from '../../../shared/common/value-objects';
+import {
+  Periodo,
+  type ModalidadRecaudo,
+  pagosPorMes,
+  calcularMontoParcial,
+} from '../../../shared/common/value-objects';
 import { JwtAuthGuard } from '../../../shared/auth/jwt-auth.guard';
 import { RolesGuard } from '../../../shared/auth/guards/roles.guard';
 import { Roles } from '../../../shared/auth/decorators/roles.decorator';
@@ -91,7 +99,8 @@ export class DashboardController {
 
     // Bulk query for cobros to prevent N+1 query
     const residenteIds = residentes.map((r) => r.id);
-    const todosLosCobros = await this.cobroRepository.findByResidentes(residenteIds);
+    const todosLosCobros =
+      await this.cobroRepository.findByResidentes(residenteIds);
 
     // Group cobros by residenteId in memory
     const cobrosMap = new Map<string, Cobro[]>();
@@ -104,7 +113,8 @@ export class DashboardController {
     const resultado = [];
 
     for (const r of residentes) {
-      const tenenciaActiva = r.tenencias?.find((t) => !t.fechaFin) ?? r.tenencias?.[0];
+      const tenenciaActiva =
+        r.tenencias?.find((t) => !t.fechaFin) ?? r.tenencias?.[0];
       const casa = tenenciaActiva?.casa;
       const manzana = casa?.manzana;
       const etapa = manzana?.etapa;
@@ -117,7 +127,10 @@ export class DashboardController {
         continue;
       }
 
-      if (allowedEtapaIds && (!etapa?.id || !allowedEtapaIds.includes(etapa.id))) {
+      if (
+        allowedEtapaIds &&
+        (!etapa?.id || !allowedEtapaIds.includes(etapa.id))
+      ) {
         continue;
       }
 
@@ -178,23 +191,35 @@ export class DashboardController {
     const etapaIds: string[] = asignaciones.map((a: any) => a.etapa_id);
 
     // 2. Cobros pendientes en esas etapas
-    const cobros = etapaIds.length > 0
-      ? await this.cobroRepository.findPendientesByTenant(tenantId)
-      : [];
+    const cobros =
+      etapaIds.length > 0
+        ? await this.cobroRepository.findPendientesByTenant(tenantId)
+        : [];
 
     // 3. Pagos del cobrador hoy
-    const { pagos: pagosHoy, total: totalHoy, count: countHoy } =
-      await this.pagoRepository.findByCobradorToday(user.id);
+    const {
+      pagos: pagosHoy,
+      total: totalHoy,
+      count: countHoy,
+    } = await this.pagoRepository.findByCobradorToday(user.id);
 
     // 3.5. Buscar solicitudes activas del tenant para el cobrador (orden cronológico ascendente: FIFO)
-    const listaSolicitudes = await this.getSolicitudesActivasCobrador(tenantId, etapaIds);
+    const listaSolicitudes = await this.getSolicitudesActivasCobrador(
+      tenantId,
+      etapaIds,
+    );
 
-    const casaSolicitudMap = new Map<string, { id: string; descripcion: string }>();
+    const casaSolicitudMap = new Map<
+      string,
+      { id: string; descripcion: string }
+    >();
     const cobroSolicitudSet = new Set<string>();
     for (const sol of listaSolicitudes) {
       const targetCasaId = sol.casaId;
-      const desc = sol.descripcion || 'Solicitud de cobro enviada por el residente';
-      if (targetCasaId) casaSolicitudMap.set(targetCasaId, { id: sol.id, descripcion: desc });
+      const desc =
+        sol.descripcion || 'Solicitud de cobro enviada por el residente';
+      if (targetCasaId)
+        casaSolicitudMap.set(targetCasaId, { id: sol.id, descripcion: desc });
       if (sol.cobroId) cobroSolicitudSet.add(sol.cobroId);
     }
 
@@ -214,7 +239,13 @@ export class DashboardController {
       proximoVencimiento: string;
       saldo: number;
       peorEstado: string;
-      cuotas: Array<{ id: string; monto: number; estado: string; periodo: string; fechaVencimiento: string }>;
+      cuotas: Array<{
+        id: string;
+        monto: number;
+        estado: string;
+        periodo: string;
+        fechaVencimiento: string;
+      }>;
     };
 
     const viviendasMap = new Map<string, AgrupacionVivienda>();
@@ -227,7 +258,8 @@ export class DashboardController {
 
       const manzana = casa?.manzana;
       const etapa = manzana?.etapa;
-      if (etapaIds.length > 0 && etapa?.id && !etapaIds.includes(etapa.id)) continue;
+      if (etapaIds.length > 0 && etapa?.id && !etapaIds.includes(etapa.id))
+        continue;
 
       const casaId = casa.id;
       const existing = viviendasMap.get(casaId);
@@ -235,7 +267,9 @@ export class DashboardController {
       const montoSaldo = Math.round((c.monto - c.montoPagado) / 100);
       const solObj = casaSolicitudMap.get(casaId);
       const tieneSol = Boolean(solObj) || cobroSolicitudSet.has(c.id);
-      const fVencStr = c.fechaVencimiento ? new Date(c.fechaVencimiento).toISOString() : new Date().toISOString();
+      const fVencStr = c.fechaVencimiento
+        ? new Date(c.fechaVencimiento).toISOString()
+        : new Date().toISOString();
 
       if (existing) {
         existing.saldo += montoSaldo;
@@ -252,7 +286,8 @@ export class DashboardController {
         }
         // El peor estado (VENCIDA > PARCIAL > PENDIENTE)
         if (c.estado === 'VENCIDA') existing.peorEstado = 'VENCIDA';
-        else if (c.estado === 'PARCIAL' && existing.peorEstado !== 'VENCIDA') existing.peorEstado = 'PARCIAL';
+        else if (c.estado === 'PARCIAL' && existing.peorEstado !== 'VENCIDA')
+          existing.peorEstado = 'PARCIAL';
         existing.cuotas.push({
           id: c.id,
           monto: Math.round(c.monto / 100),
@@ -276,13 +311,15 @@ export class DashboardController {
           proximoVencimiento: fVencStr,
           saldo: montoSaldo,
           peorEstado: c.estado,
-          cuotas: [{
-            id: c.id,
-            monto: Math.round(c.monto / 100),
-            estado: c.estado,
-            periodo: c.periodoInicio.slice(0, 7),
-            fechaVencimiento: fVencStr,
-          }],
+          cuotas: [
+            {
+              id: c.id,
+              monto: Math.round(c.monto / 100),
+              estado: c.estado,
+              periodo: c.periodoInicio.slice(0, 7),
+              fechaVencimiento: fVencStr,
+            },
+          ],
         });
       }
     }
@@ -290,8 +327,12 @@ export class DashboardController {
     const viviendas = Array.from(viviendasMap.values());
 
     // Stats
-    const pendientes = viviendas.filter((v) => v.peorEstado !== 'VENCIDA').length;
-    const vencidasViviendas = viviendas.filter((v) => v.peorEstado === 'VENCIDA').length;
+    const pendientes = viviendas.filter(
+      (v) => v.peorEstado !== 'VENCIDA',
+    ).length;
+    const vencidasViviendas = viviendas.filter(
+      (v) => v.peorEstado === 'VENCIDA',
+    ).length;
     const montoEsperado = viviendas.reduce((sum, v) => sum + v.saldo, 0);
 
     // Próxima vivienda (prioriza casas con solicitud presencial > orden cronológico por fecha de vencimiento más cercana)
@@ -304,16 +345,19 @@ export class DashboardController {
       if (dateA !== dateB) return dateA - dateB;
 
       const order = { VENCIDA: 0, PARCIAL: 1, PENDIENTE: 2 };
-      return (order[a.peorEstado as keyof typeof order] ?? 3) -
-             (order[b.peorEstado as keyof typeof order] ?? 3);
+      return (
+        (order[a.peorEstado as keyof typeof order] ?? 3) -
+        (order[b.peorEstado as keyof typeof order] ?? 3)
+      );
     });
-    const proximaVivienda = viviendas.length > 0
-      ? {
-          etapaNombre: viviendas[0].etapaNombre,
-          manzanaNombre: viviendas[0].manzanaNombre,
-          casaDireccion: viviendas[0].casaDireccion,
-        }
-      : null;
+    const proximaVivienda =
+      viviendas.length > 0
+        ? {
+            etapaNombre: viviendas[0].etapaNombre,
+            manzanaNombre: viviendas[0].manzanaNombre,
+            casaDireccion: viviendas[0].casaDireccion,
+          }
+        : null;
 
     // Calculate distinct houses collected today by counting unique casa/residente IDs in pagosHoy
     const casasCobradasHoySet = new Set<string>();
@@ -322,7 +366,8 @@ export class DashboardController {
       else if (p.cobroId) casasCobradasHoySet.add(p.cobroId);
       else if (p.id) casasCobradasHoySet.add(p.id);
     }
-    const cobradosHoyCasasCount = casasCobradasHoySet.size > 0 ? casasCobradasHoySet.size : countHoy;
+    const cobradosHoyCasasCount =
+      casasCobradasHoySet.size > 0 ? casasCobradasHoySet.size : countHoy;
 
     const cobrosHoy = pagosHoy.slice(0, 10);
 
@@ -418,7 +463,8 @@ export class DashboardController {
         const saldo = Math.round((cu.monto - cu.monto_pagado) / 100);
         saldoTotal += saldo;
         if (cu.estado === 'VENCIDA') peorEstado = 'VENCIDA';
-        else if (cu.estado === 'PARCIAL' && peorEstado !== 'VENCIDA') peorEstado = 'PARCIAL';
+        else if (cu.estado === 'PARCIAL' && peorEstado !== 'VENCIDA')
+          peorEstado = 'PARCIAL';
       }
       // Asociar el status al residente (luego al residente de cada casa)
       statusPorCasa.set(resId, { estado: peorEstado, saldo: saldoTotal });
@@ -471,12 +517,18 @@ export class DashboardController {
     }));
 
     // 6. Obtener solicitudes activas de la ruta
-    const solicitudes = await this.getSolicitudesActivasCobrador(tenantId, etapaIds);
+    const solicitudes = await this.getSolicitudesActivasCobrador(
+      tenantId,
+      etapaIds,
+    );
 
     return { etapas, solicitudes };
   }
 
-  private async getSolicitudesActivasCobrador(tenantId: string, etapaIds: string[]) {
+  private async getSolicitudesActivasCobrador(
+    tenantId: string,
+    etapaIds: string[],
+  ) {
     const rawSolicitudes = await this.dataSource.query(
       `SELECT 
         s.id,
@@ -521,7 +573,9 @@ export class DashboardController {
       tipo: s.tipo,
       descripcion: s.descripcion,
       estado: s.estado,
-      fecha: s.fecha ? new Date(s.fecha).toISOString() : new Date().toISOString(),
+      fecha: s.fecha
+        ? new Date(s.fecha).toISOString()
+        : new Date().toISOString(),
       residenteId: s.residenteId || '',
       residenteNombre: s.residenteNombre || 'Residente',
       residenteTelefono: s.residenteTelefono || '',
@@ -531,7 +585,9 @@ export class DashboardController {
       manzanaNombre: s.manzanaNombre || '',
       etapaNombre: s.etapaNombre || '',
       monto: Math.round((Number(s.monto) || 0) / 100),
-      saldo: Math.round(((Number(s.monto) || 0) - (Number(s.montoPagado) || 0)) / 100),
+      saldo: Math.round(
+        ((Number(s.monto) || 0) - (Number(s.montoPagado) || 0)) / 100,
+      ),
       cobroEstado: s.cobroEstado,
     }));
   }
@@ -561,13 +617,14 @@ export class DashboardController {
       await this.marcarVencidasUC.execute().catch(() => {});
     }
 
-    const [cobrosRaw, pagos, cuenta, residente, solicitudesResidente] = await Promise.all([
-      this.cobroRepository.findByResidente(user.residenteId, tenantId),
-      this.pagoRepository.findByPropietario(user.residenteId, tenantId),
-      this.planDeCobroRepository.findByResidente(user.residenteId),
-      this.residenteRepository.findByIdWithRelations(user.residenteId),
-      this.solicitudRepository.findByUsuario(user.id),
-    ]);
+    const [cobrosRaw, pagos, cuenta, residente, solicitudesResidente] =
+      await Promise.all([
+        this.cobroRepository.findByResidente(user.residenteId, tenantId),
+        this.pagoRepository.findByPropietario(user.residenteId, tenantId),
+        this.planDeCobroRepository.findByResidente(user.residenteId),
+        this.residenteRepository.findByIdWithRelations(user.residenteId),
+        this.solicitudRepository.findByUsuario(user.id),
+      ]);
 
     // Build residenteInfo from relations
     const tenencia = residente?.tenencias?.[0];
@@ -576,7 +633,12 @@ export class DashboardController {
     const etapa = manzana?.etapa;
 
     const modStr = cuenta?.modalidad ?? residente?.modalidadPago ?? 'MENSUAL';
-    const modalidadPagoFormatted = modStr === 'SEMANAL' ? 'Semanal' : modStr === 'QUINCENAL' ? 'Quincenal' : 'Mensual';
+    const modalidadPagoFormatted =
+      modStr === 'SEMANAL'
+        ? 'Semanal'
+        : modStr === 'QUINCENAL'
+          ? 'Quincenal'
+          : 'Mensual';
 
     const residenteInfo = {
       nombre: residente?.nombre ?? '',
@@ -586,7 +648,8 @@ export class DashboardController {
       modalidadPago: modalidadPagoFormatted,
     };
 
-    const modalidad: ModalidadRecaudo = (cuenta?.modalidad as ModalidadRecaudo) ?? 'MENSUAL';
+    const modalidad: ModalidadRecaudo =
+      (cuenta?.modalidad as ModalidadRecaudo) ?? 'MENSUAL';
     const hoy = new Date();
 
     let tarifaMensual: any = null;
@@ -611,7 +674,7 @@ export class DashboardController {
     for (const cobro of cobrosRaw) {
       if (cobro.monto > cobro.montoPagado) {
         if (cobro.estado === 'VENCIDA' || cobro.fechaVencimiento < hoyStr) {
-          saldoMora += (cobro.monto - cobro.montoPagado);
+          saldoMora += cobro.monto - cobro.montoPagado;
           hasVencida = true;
         }
       }
@@ -649,14 +712,26 @@ export class DashboardController {
       );
       const next = pendingCobros[0];
       const pagosEsperados = pagosPorMes(modalidad);
-      const pagosRegistrados = pagos.filter((p) => p.cobroId === next.id).length;
+      const pagosRegistrados = pagos.filter(
+        (p) => p.cobroId === next.id,
+      ).length;
       const cuotaMontoCentavos = next.monto;
       const montoParcial = cuotaMontoCentavos;
 
       const desglose: any[] = [];
       const mesesEsp = [
-        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+        'Enero',
+        'Febrero',
+        'Marzo',
+        'Abril',
+        'Mayo',
+        'Junio',
+        'Julio',
+        'Agosto',
+        'Septiembre',
+        'Octubre',
+        'Noviembre',
+        'Diciembre',
       ];
 
       // 1. Encolar los cobros pendientes REALES de la base de datos (FIFO)
@@ -688,7 +763,10 @@ export class DashboardController {
       // 2. Si faltan para completar pagosEsperados (ej. cuotas ya pagadas este mes),
       // proyectar cuotas del próximo mes encoladas abajo
       if (desglose.length < pagosEsperados) {
-        const ultimaFechaStr = desglose.length > 0 ? desglose[desglose.length - 1].fecha : next.fechaVencimiento;
+        const ultimaFechaStr =
+          desglose.length > 0
+            ? desglose[desglose.length - 1].fecha
+            : next.fechaVencimiento;
         const ultD = new Date(ultimaFechaStr);
         let projYear = ultD.getFullYear();
         let projMonth = ultD.getMonth() + 1; // siguiente mes
@@ -703,7 +781,11 @@ export class DashboardController {
 
         while (desglose.length < pagosEsperados) {
           const periodStr = `${projYear}-${String(projMonth + 1).padStart(2, '0')}-01`;
-          const fechas = Periodo.fechasCobroParciales(modalidad, projYear, projMonth);
+          const fechas = Periodo.fechasCobroParciales(
+            modalidad,
+            projYear,
+            projMonth,
+          );
           const mesNombre = mesesEsp[projMonth];
 
           for (let i = 0; i < fechas.length; i++) {
@@ -744,8 +826,12 @@ export class DashboardController {
       // ── Projected fallback when there are 0 active pending cobros in DB ──
       // (e.g. resident has paid all current cuotas)
       const pagosEsperados = pagosPorMes(modalidad);
-      const montoTotalCentavos = tarifaMensual ? tarifaMensual.monto : (cuenta?.valorMensual ?? 4000000);
-      const montoParcialCentavos = Math.round(montoTotalCentavos / pagosEsperados);
+      const montoTotalCentavos = tarifaMensual
+        ? tarifaMensual.monto
+        : (cuenta?.valorMensual ?? 4000000);
+      const montoParcialCentavos = Math.round(
+        montoTotalCentavos / pagosEsperados,
+      );
 
       // Build a map of periods that already have cobros (paid or otherwise) in the DB
       // Key: "YYYY-MM", Value: count of cobros in that period
@@ -754,7 +840,10 @@ export class DashboardController {
         const periodoKey = cobro.periodoInicio
           ? cobro.periodoInicio.substring(0, 7) // "2026-09"
           : cobro.fechaVencimiento.substring(0, 7);
-        cobrosPorPeriodo.set(periodoKey, (cobrosPorPeriodo.get(periodoKey) ?? 0) + 1);
+        cobrosPorPeriodo.set(
+          periodoKey,
+          (cobrosPorPeriodo.get(periodoKey) ?? 0) + 1,
+        );
       }
 
       const desglose: any[] = [];
@@ -762,8 +851,18 @@ export class DashboardController {
       let currentMonth = hoy.getMonth(); // 0-indexed
 
       const mesesEsp = [
-        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+        'Enero',
+        'Febrero',
+        'Marzo',
+        'Abril',
+        'Mayo',
+        'Junio',
+        'Julio',
+        'Agosto',
+        'Septiembre',
+        'Octubre',
+        'Noviembre',
+        'Diciembre',
       ];
 
       // Safety limit to avoid infinite loops
@@ -784,7 +883,11 @@ export class DashboardController {
           continue;
         }
 
-        const fechas = Periodo.fechasCobroParciales(modalidad, currentYear, currentMonth);
+        const fechas = Periodo.fechasCobroParciales(
+          modalidad,
+          currentYear,
+          currentMonth,
+        );
         const mesNombre = mesesEsp[currentMonth];
 
         for (let i = 0; i < fechas.length; i++) {
@@ -875,7 +978,9 @@ export class DashboardController {
         tipo: 'cargo',
         monto: Math.round(cobro.monto / 100),
         fecha: cobro.createdAt
-          ? (cobro.createdAt instanceof Date ? cobro.createdAt.toISOString() : new Date(cobro.createdAt).toISOString())
+          ? cobro.createdAt instanceof Date
+            ? cobro.createdAt.toISOString()
+            : new Date(cobro.createdAt).toISOString()
           : `${cobro.periodoInicio}T12:00:00.000Z`,
         descripcion: `Generación de cobro ${cobro.concepto}`,
         concepto: cobro.concepto ?? null,
@@ -883,12 +988,20 @@ export class DashboardController {
     }
     for (const pago of pagos) {
       const ticket = ticketsByPago.get(pago.id);
-      const cobroRelacionado = pago.cobroId ? cobroById.get(pago.cobroId) : null;
+      const cobroRelacionado = pago.cobroId
+        ? cobroById.get(pago.cobroId)
+        : null;
       const fechaIso = ticket?.fecha
-        ? (ticket.fecha instanceof Date ? ticket.fecha.toISOString() : new Date(ticket.fecha).toISOString())
-        : (pago.createdAt
-            ? (pago.createdAt instanceof Date ? pago.createdAt.toISOString() : new Date(pago.createdAt).toISOString())
-            : (pago.fechaPago ? `${pago.fechaPago}T12:00:00.000Z` : new Date().toISOString()));
+        ? ticket.fecha instanceof Date
+          ? ticket.fecha.toISOString()
+          : new Date(ticket.fecha).toISOString()
+        : pago.createdAt
+          ? pago.createdAt instanceof Date
+            ? pago.createdAt.toISOString()
+            : new Date(pago.createdAt).toISOString()
+          : pago.fechaPago
+            ? `${pago.fechaPago}T12:00:00.000Z`
+            : new Date().toISOString();
 
       movimientos.push({
         id: pago.id,
@@ -897,25 +1010,32 @@ export class DashboardController {
         fecha: fechaIso,
         descripcion: 'Pago registrado',
         concepto: cobroRelacionado?.concepto ?? ticket?.concepto ?? null,
-        nroRecibo: ticket?.numero ?? `TK-${pago.id.replace(/-/g, '').substring(0, 6).toUpperCase()}`,
+        nroRecibo:
+          ticket?.numero ??
+          `TK-${pago.id.replace(/-/g, '').substring(0, 6).toUpperCase()}`,
         cobrador: ticket?.cobrador_nombre ?? 'Administración',
         metodo: ticket?.metodo ?? 'Efectivo',
       });
     }
-    
+
     // Sort merged by date descending
     movimientos.sort((a, b) => b.fecha.localeCompare(a.fecha));
 
     const montoTarifaBase = tarifaMensual
       ? Math.round(tarifaMensual.monto / 100)
-      : (cuenta?.valorMensual ? Math.round(cuenta.valorMensual / 100) : 40000);
+      : cuenta?.valorMensual
+        ? Math.round(cuenta.valorMensual / 100)
+        : 40000;
 
     const tarifaActual = {
       cobroMensual: montoTarifaBase,
       cuotaMensual: montoTarifaBase,
       montoSegunModalidad: tarifaPropia
         ? Math.round(tarifaPropia.monto / 100)
-        : Math.round(montoTarifaBase / (modalidad === 'SEMANAL' ? 4 : modalidad === 'QUINCENAL' ? 2 : 1)),
+        : Math.round(
+            montoTarifaBase /
+              (modalidad === 'SEMANAL' ? 4 : modalidad === 'QUINCENAL' ? 2 : 1),
+          ),
       modalidad: modalidad,
     };
 

@@ -358,17 +358,17 @@ class _DashboardContentState extends State<_DashboardContent>
                 items: [
                   ModuleSummaryItem(
                     label: 'Pagados',
-                    value: widget.data.pagaron.toString(),
+                    value: widget.data.cobrosPagados.toString(),
                     color: AppColors.success,
                   ),
                   ModuleSummaryItem(
                     label: 'Pendientes',
-                    value: widget.data.pendientes.toString(),
+                    value: widget.data.cobrosPendientes.toString(),
                     color: AppColors.textPrimary,
                   ),
                   ModuleSummaryItem(
                     label: 'En mora',
-                    value: widget.data.residentesMora.toString(),
+                    value: widget.data.cobrosMora.toString(),
                     color: AppColors.error,
                   ),
                 ],

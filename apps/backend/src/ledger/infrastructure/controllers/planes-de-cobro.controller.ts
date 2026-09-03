@@ -20,9 +20,7 @@ import { PlanDeCobroRepository } from '../../infrastructure/persistence/plan-de-
 @Controller('planes-de-cobro')
 @UseGuards(JwtAuthGuard)
 export class PlanesDeCobroController {
-  constructor(
-    private readonly planDeCobroRepository: PlanDeCobroRepository,
-  ) {}
+  constructor(private readonly planDeCobroRepository: PlanDeCobroRepository) {}
 
   @Get()
   @UseGuards(RolesGuard)

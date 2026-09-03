@@ -47,9 +47,7 @@ describe('EliminarCobroUseCase', () => {
   it('should throw NotFoundException if cobro does not exist', async () => {
     mockCobroRepo.findById.mockResolvedValue(null);
 
-    await expect(useCase.execute('cobro-1')).rejects.toThrow(
-      NotFoundException,
-    );
+    await expect(useCase.execute('cobro-1')).rejects.toThrow(NotFoundException);
     expect(mockCobroRepo.delete).not.toHaveBeenCalled();
   });
 

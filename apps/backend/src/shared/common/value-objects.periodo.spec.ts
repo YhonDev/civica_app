@@ -99,10 +99,7 @@ describe('Periodo', () => {
 
   describe('limiteGeneracion', () => {
     it('MENSUAL: permite hasta el próximo mes', () => {
-      const limite = Periodo.limiteGeneracion(
-        'MENSUAL',
-        new Date(2026, 6, 10),
-      );
+      const limite = Periodo.limiteGeneracion('MENSUAL', new Date(2026, 6, 10));
       expect(limite.getFullYear()).toBe(2026);
       expect(limite.getMonth()).toBe(7);
       expect(limite.getDate()).toBe(1);

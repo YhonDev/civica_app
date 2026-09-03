@@ -91,7 +91,10 @@ describe('AuthService', () => {
       usuarioRepo.findOne.mockResolvedValue(mockUsuario);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
-      const result = await service.validateUser('test@test.com', 'correct-password');
+      const result = await service.validateUser(
+        'test@test.com',
+        'correct-password',
+      );
 
       expect(result).toEqual(mockUsuario);
       expect(usuarioRepo.findOne).toHaveBeenCalledWith({
@@ -200,9 +203,9 @@ describe('AuthService', () => {
         type: 'access',
       });
 
-      await expect(
-        service.refreshToken('access-token'),
-      ).rejects.toThrow(UnauthorizedException);
+      await expect(service.refreshToken('access-token')).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('should throw NotFoundException when user not found', async () => {
@@ -212,9 +215,9 @@ describe('AuthService', () => {
       });
       usuarioRepo.findOne.mockResolvedValue(null);
 
-      await expect(
-        service.refreshToken('valid-token'),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.refreshToken('valid-token')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw UnauthorizedException when session is not found or revoked', async () => {
@@ -225,9 +228,9 @@ describe('AuthService', () => {
       usuarioRepo.findOne.mockResolvedValue(mockUsuario);
       sessionRepo.findOne.mockResolvedValue(null);
 
-      await expect(
-        service.refreshToken('valid-token'),
-      ).rejects.toThrow(UnauthorizedException);
+      await expect(service.refreshToken('valid-token')).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
   });
 });

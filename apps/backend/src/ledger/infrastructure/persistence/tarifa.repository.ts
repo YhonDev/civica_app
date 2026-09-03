@@ -62,7 +62,11 @@ export class TarifaRepository {
 
     await Promise.all(
       modalidades.map(async (modalidad) => {
-        result[modalidad] = await this.findVigente(proyectoId, modalidad, fecha);
+        result[modalidad] = await this.findVigente(
+          proyectoId,
+          modalidad,
+          fecha,
+        );
       }),
     );
 

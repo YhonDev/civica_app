@@ -1,5 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe, ClassSerializerInterceptor } from '@nestjs/common';
+import {
+  INestApplication,
+  ValidationPipe,
+  ClassSerializerInterceptor,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import request from 'supertest';
 import { DataSource } from 'typeorm';
@@ -49,9 +53,15 @@ describe('Beta1 Cuotas Role Gating', () => {
 
     app = moduleFixture.createNestApplication();
     app.useGlobalPipes(
-      new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+      }),
     );
-    app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
+    app.useGlobalInterceptors(
+      new ClassSerializerInterceptor(app.get(Reflector)),
+    );
     await app.init();
 
     dataSource = app.get(DataSource);
@@ -122,22 +132,58 @@ describe('Beta1 Cuotas Role Gating', () => {
     await dataSource.query(
       `INSERT INTO usuarios (id, email, password_hash, nombre, rol, residente_id, tenant_id, activo)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-      [adminUserId, 'admin-role@test.com', adminHash, 'Admin Role', 'ADMIN', null, tenantId, true],
+      [
+        adminUserId,
+        'admin-role@test.com',
+        adminHash,
+        'Admin Role',
+        'ADMIN',
+        null,
+        tenantId,
+        true,
+      ],
     );
     await dataSource.query(
       `INSERT INTO usuarios (id, email, password_hash, nombre, rol, residente_id, tenant_id, activo)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-      [cobradorUserId, 'cobrador-role@test.com', cobradorHash, 'Cobrador Role', 'COBRADOR', null, tenantId, true],
+      [
+        cobradorUserId,
+        'cobrador-role@test.com',
+        cobradorHash,
+        'Cobrador Role',
+        'COBRADOR',
+        null,
+        tenantId,
+        true,
+      ],
     );
     await dataSource.query(
       `INSERT INTO usuarios (id, email, password_hash, nombre, rol, residente_id, tenant_id, activo)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-      [propietarioAUserId, 'propA-role@test.com', propAHash, 'Prop A Role', 'PROPIETARIO', propietarioAId, tenantId, true],
+      [
+        propietarioAUserId,
+        'propA-role@test.com',
+        propAHash,
+        'Prop A Role',
+        'PROPIETARIO',
+        propietarioAId,
+        tenantId,
+        true,
+      ],
     );
     await dataSource.query(
       `INSERT INTO usuarios (id, email, password_hash, nombre, rol, residente_id, tenant_id, activo)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-      [propietarioBUserId, 'propB-role@test.com', propBHash, 'Prop B Role', 'PROPIETARIO', propietarioBId, tenantId, true],
+      [
+        propietarioBUserId,
+        'propB-role@test.com',
+        propBHash,
+        'Prop B Role',
+        'PROPIETARIO',
+        propietarioBId,
+        tenantId,
+        true,
+      ],
     );
 
     // Asignar etapa al cobrador
@@ -153,11 +199,25 @@ describe('Beta1 Cuotas Role Gating', () => {
     );
     await dataSource.query(
       `INSERT INTO cuentas_cartera (id, residente_id, tenant_id, proyecto_id, frecuencia, fecha_activacion) VALUES ($1, $2, $3, $4, $5, $6)`,
-      [randomUUID(), propietarioAId, tenantId, proyectoId, 'MENSUAL', '2026-01-01'],
+      [
+        randomUUID(),
+        propietarioAId,
+        tenantId,
+        proyectoId,
+        'MENSUAL',
+        '2026-01-01',
+      ],
     );
     await dataSource.query(
       `INSERT INTO cuentas_cartera (id, residente_id, tenant_id, proyecto_id, frecuencia, fecha_activacion) VALUES ($1, $2, $3, $4, $5, $6)`,
-      [randomUUID(), propietarioBId, tenantId, proyectoId, 'MENSUAL', '2026-01-01'],
+      [
+        randomUUID(),
+        propietarioBId,
+        tenantId,
+        proyectoId,
+        'MENSUAL',
+        '2026-01-01',
+      ],
     );
 
     // Cuotas for both propietarios
@@ -169,12 +229,36 @@ describe('Beta1 Cuotas Role Gating', () => {
     await dataSource.query(
       `INSERT INTO cuotas (id, residente_id, tenant_id, tarifa_id, concepto, monto, monto_pagado, periodo_inicio, periodo_fin, fecha_vencimiento, estado)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
-      [randomUUID(), propietarioAId, tenantId, tarifaId, 'Cuota Test A', 4000000, 0, thisMonthStart, nextMonthStr, nextMonthStr, 'PENDIENTE'],
+      [
+        randomUUID(),
+        propietarioAId,
+        tenantId,
+        tarifaId,
+        'Cuota Test A',
+        4000000,
+        0,
+        thisMonthStart,
+        nextMonthStr,
+        nextMonthStr,
+        'PENDIENTE',
+      ],
     );
     await dataSource.query(
       `INSERT INTO cuotas (id, residente_id, tenant_id, tarifa_id, concepto, monto, monto_pagado, periodo_inicio, periodo_fin, fecha_vencimiento, estado)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
-      [randomUUID(), propietarioBId, tenantId, tarifaId, 'Cuota Test B', 4000000, 0, thisMonthStart, nextMonthStr, nextMonthStr, 'PENDIENTE'],
+      [
+        randomUUID(),
+        propietarioBId,
+        tenantId,
+        tarifaId,
+        'Cuota Test B',
+        4000000,
+        0,
+        thisMonthStart,
+        nextMonthStr,
+        nextMonthStr,
+        'PENDIENTE',
+      ],
     );
 
     // Login all users
@@ -204,15 +288,36 @@ describe('Beta1 Cuotas Role Gating', () => {
   });
 
   afterAll(async () => {
-    await dataSource.query(`DELETE FROM pagos WHERE tenant_id = $1`, [tenantId]);
-    await dataSource.query(`DELETE FROM cuotas WHERE tenant_id = $1`, [tenantId]);
-    await dataSource.query(`DELETE FROM cuentas_cartera WHERE tenant_id = $1`, [tenantId]);
-    await dataSource.query(`DELETE FROM tarifas WHERE tenant_id = $1`, [tenantId]);
-    await dataSource.query(`DELETE FROM asignaciones_etapa WHERE tenant_id = $1`, [tenantId]);
-    await dataSource.query(`DELETE FROM usuarios WHERE tenant_id = $1`, [tenantId]);
-    await dataSource.query(`DELETE FROM tenencias WHERE residente_id IN ($1, $2)`, [propietarioAId, propietarioBId]);
-    await dataSource.query(`DELETE FROM propietarios WHERE tenant_id = $1`, [tenantId]);
-    await dataSource.query(`DELETE FROM casas WHERE id IN ($1, $2)`, [casaAId, casaBId]);
+    await dataSource.query(`DELETE FROM pagos WHERE tenant_id = $1`, [
+      tenantId,
+    ]);
+    await dataSource.query(`DELETE FROM cuotas WHERE tenant_id = $1`, [
+      tenantId,
+    ]);
+    await dataSource.query(`DELETE FROM cuentas_cartera WHERE tenant_id = $1`, [
+      tenantId,
+    ]);
+    await dataSource.query(`DELETE FROM tarifas WHERE tenant_id = $1`, [
+      tenantId,
+    ]);
+    await dataSource.query(
+      `DELETE FROM asignaciones_etapa WHERE tenant_id = $1`,
+      [tenantId],
+    );
+    await dataSource.query(`DELETE FROM usuarios WHERE tenant_id = $1`, [
+      tenantId,
+    ]);
+    await dataSource.query(
+      `DELETE FROM tenencias WHERE residente_id IN ($1, $2)`,
+      [propietarioAId, propietarioBId],
+    );
+    await dataSource.query(`DELETE FROM propietarios WHERE tenant_id = $1`, [
+      tenantId,
+    ]);
+    await dataSource.query(`DELETE FROM casas WHERE id IN ($1, $2)`, [
+      casaAId,
+      casaBId,
+    ]);
     await dataSource.query(`DELETE FROM manzanas WHERE id = $1`, [manzanaId]);
     await dataSource.query(`DELETE FROM etapas WHERE id = $1`, [etapaId]);
     await dataSource.query(`DELETE FROM conjuntos WHERE id = $1`, [proyectoId]);

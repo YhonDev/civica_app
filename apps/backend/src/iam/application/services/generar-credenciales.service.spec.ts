@@ -13,7 +13,9 @@ describe('GenerarCredencialesService', () => {
       providers: [GenerarCredencialesService],
     }).compile();
 
-    service = module.get<GenerarCredencialesService>(GenerarCredencialesService);
+    service = module.get<GenerarCredencialesService>(
+      GenerarCredencialesService,
+    );
   });
 
   afterEach(() => {
@@ -34,10 +36,7 @@ describe('GenerarCredencialesService', () => {
     });
 
     it('should strip special characters', () => {
-      const result = service.generarUsernameResidente(
-        'Manzana B/C',
-        'Casa#1!',
-      );
+      const result = service.generarUsernameResidente('Manzana B/C', 'Casa#1!');
       expect(result).toBe('manzana_bc_casa1_residente');
     });
 
@@ -124,8 +123,7 @@ describe('GenerarCredencialesService', () => {
 
       const result = service.generarPasswordAleatoria();
 
-      const allowed =
-        'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+      const allowed = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
       for (const char of result) {
         expect(allowed).toContain(char);
       }

@@ -10,12 +10,18 @@ import { AuthController } from './infrastructure/controllers/auth.controller';
 import { UsuariosController } from './infrastructure/controllers/usuarios.controller';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Usuario, AsignacionEtapa]),
-    AuthModule,
-  ],
+  imports: [TypeOrmModule.forFeature([Usuario, AsignacionEtapa]), AuthModule],
   controllers: [AuthController, UsuariosController],
-  providers: [CrearUsuarioUseCase, AsignarEtapaUseCase, GenerarCredencialesService],
-  exports: [TypeOrmModule, CrearUsuarioUseCase, AsignarEtapaUseCase, GenerarCredencialesService],
+  providers: [
+    CrearUsuarioUseCase,
+    AsignarEtapaUseCase,
+    GenerarCredencialesService,
+  ],
+  exports: [
+    TypeOrmModule,
+    CrearUsuarioUseCase,
+    AsignarEtapaUseCase,
+    GenerarCredencialesService,
+  ],
 })
 export class IamModule {}

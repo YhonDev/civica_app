@@ -57,7 +57,7 @@ class _CobradorDetailScreenState extends State<CobradorDetailScreen> {
     }
   }
 
-  Future<void> _confirmarEliminar(BuildContext context) async {
+  Future<void> _confirmarEliminar() async {
     final cobradorId = widget.cobrador.usuarioId ?? widget.cobrador.id;
 
     final seguro = await showDialog<bool>(
@@ -125,7 +125,7 @@ class _CobradorDetailScreenState extends State<CobradorDetailScreen> {
                   )
                 : const Icon(Icons.delete_forever_rounded, color: Colors.red, size: 26),
             tooltip: 'Eliminar cobrador',
-            onPressed: _isDeleting ? null : () => _confirmarEliminar(context),
+            onPressed: _isDeleting ? null : () => _confirmarEliminar(),
           ),
         ],
       ),
@@ -274,7 +274,7 @@ class _CobradorDetailScreenState extends State<CobradorDetailScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      onPressed: _isDeleting ? null : () => _confirmarEliminar(context),
+                      onPressed: _isDeleting ? null : () => _confirmarEliminar(),
                       icon: const Icon(Icons.delete_outline_rounded, color: Colors.white),
                       label: const Text(
                         'Eliminar Cobrador',

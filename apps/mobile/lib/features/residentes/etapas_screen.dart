@@ -130,7 +130,7 @@ class _EtapasScreenState extends State<EtapasScreen> {
                         IconButton(
                           icon: Icon(Icons.delete_rounded, color: AppColors.error, size: 20),
                           onPressed: () {
-                            _mostrarConfirmacionEliminacion(context, etapa['nombre'], etapa['id'].toString());
+                            _mostrarConfirmacionEliminacion(etapa['nombre'], etapa['id'].toString());
                           },
                         ),
                       ],
@@ -147,7 +147,7 @@ class _EtapasScreenState extends State<EtapasScreen> {
     );
   }
 
-  void _mostrarConfirmacionEliminacion(BuildContext context, String nombreEtapa, String id) {
+  void _mostrarConfirmacionEliminacion(String nombreEtapa, String id) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -172,7 +172,7 @@ class _EtapasScreenState extends State<EtapasScreen> {
             style: FilledButton.styleFrom(backgroundColor: AppColors.error),
             onPressed: () {
               Navigator.pop(ctx);
-              _mostrarDobleConfirmacion(context, nombreEtapa, id);
+              _mostrarDobleConfirmacion(nombreEtapa, id);
             },
             child: const Text('Eliminar'),
           ),
@@ -181,7 +181,7 @@ class _EtapasScreenState extends State<EtapasScreen> {
     );
   }
 
-  void _mostrarDobleConfirmacion(BuildContext context, String nombreEtapa, String id) {
+  void _mostrarDobleConfirmacion(String nombreEtapa, String id) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(

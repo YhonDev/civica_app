@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+  Logger,
+} from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { Pago, EstadoValidacionPago } from '../../domain/pago.entity';
 import { PagoRepository } from '../../infrastructure/persistence/pago.repository';
@@ -38,7 +43,9 @@ export class ValidarPagoUseCase {
       input.estado !== EstadoValidacionPago.VALIDADO &&
       input.estado !== EstadoValidacionPago.RECHAZADO
     ) {
-      throw new BadRequestException('El nuevo estado debe ser VALIDADO o RECHAZADO.');
+      throw new BadRequestException(
+        'El nuevo estado debe ser VALIDADO o RECHAZADO.',
+      );
     }
 
     await this.dataSource.transaction(async (entityManager) => {

@@ -17,8 +17,8 @@ describe('EnviarNotificacionesJob', () => {
     };
 
     job = new EnviarNotificacionesJob(
-      mockNotificacionRepository as any,
-      mockEmailSender as any,
+      mockNotificacionRepository,
+      mockEmailSender,
     );
   });
 

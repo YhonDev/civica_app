@@ -61,7 +61,11 @@ export class Solicitud {
   })
   estado: SolicitudEstado;
 
-  @Column({ name: 'fecha', type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
+  @Column({
+    name: 'fecha',
+    type: 'timestamptz',
+    default: () => 'CURRENT_TIMESTAMP',
+  })
   fecha: Date;
 
   @Column({ name: 'respuesta', type: 'text', nullable: true })
@@ -97,12 +101,15 @@ export class Solicitud {
     solicitud.tenantId = tenantId;
     solicitud.usuarioId = usuarioId;
     solicitud.cobroId = cobroId;
-    
+
     const tipoLower = (tipo || '').toLowerCase();
-    const prefix = (tipoLower.includes('revision') || tipoLower.includes('solicitud_revision')) ? 'SR' : 'SC';
+    const prefix =
+      tipoLower.includes('revision') || tipoLower.includes('solicitud_revision')
+        ? 'SR'
+        : 'SC';
     const randomNum = Math.floor(100000 + Math.random() * 900000);
     solicitud.nroRecibo = `${prefix}-${randomNum}`;
-    
+
     solicitud.tipo = tipo;
     solicitud.descripcion = descripcion;
 
@@ -110,7 +117,10 @@ export class Solicitud {
       solicitud.estado = estadoInicial;
     } else {
       const tipoLower = (tipo || '').toLowerCase();
-      if (tipoLower.includes('cobro') || tipoLower.includes('solicitud_cobro')) {
+      if (
+        tipoLower.includes('cobro') ||
+        tipoLower.includes('solicitud_cobro')
+      ) {
         solicitud.estado = SolicitudEstado.EN_ESPERA;
       } else {
         solicitud.estado = SolicitudEstado.EN_REVISION;

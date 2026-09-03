@@ -66,7 +66,9 @@ export class CobrosController {
       allowedEtapaIds,
     );
     const ticketsMap = await this.loadTicketsForCobros(cobros.map((c) => c.id));
-    return cobros.map((cobro) => this.mapCobroItem(cobro, ticketsMap.get(cobro.id)));
+    return cobros.map((cobro) =>
+      this.mapCobroItem(cobro, ticketsMap.get(cobro.id)),
+    );
   }
 
   @Get('residente/:residenteId')
@@ -81,7 +83,9 @@ export class CobrosController {
     if (!tenantId) return [];
 
     if (user.rol === RolUsuario.RESIDENTE && user.residenteId !== residenteId) {
-      throw new UnauthorizedException('No tienes permiso para ver estos cobros');
+      throw new UnauthorizedException(
+        'No tienes permiso para ver estos cobros',
+      );
     }
 
     // Mismo scope que `listar`: etapas asignadas al cobrador + tenant.
@@ -99,21 +103,31 @@ export class CobrosController {
       allowedEtapaIds = stageIds;
     }
 
-    const cobros = await this.cobroRepository.findByResidente(residenteId, tenantId);
+    const cobros = await this.cobroRepository.findByResidente(
+      residenteId,
+      tenantId,
+    );
 
     const escoped = allowedEtapaIds
       ? cobros.filter((cobro) => {
           const etapa =
-            cobro.casa?.manzana?.etapa || cobro.residente?.casaActual?.manzana?.etapa;
-          return etapa ? allowedEtapaIds!.includes(etapa.id) : false;
+            cobro.casa?.manzana?.etapa ||
+            cobro.residente?.casaActual?.manzana?.etapa;
+          return etapa ? allowedEtapaIds.includes(etapa.id) : false;
         })
       : cobros;
 
-    const ticketsMap = await this.loadTicketsForCobros(escoped.map((c) => c.id));
-    return escoped.map((cobro) => this.mapCobroItem(cobro, ticketsMap.get(cobro.id)));
+    const ticketsMap = await this.loadTicketsForCobros(
+      escoped.map((c) => c.id),
+    );
+    return escoped.map((cobro) =>
+      this.mapCobroItem(cobro, ticketsMap.get(cobro.id)),
+    );
   }
 
-  private async loadTicketsForCobros(cobroIds: string[]): Promise<Map<string, any>> {
+  private async loadTicketsForCobros(
+    cobroIds: string[],
+  ): Promise<Map<string, any>> {
     const ticketsMap = new Map<string, any>();
     if (!cobroIds || cobroIds.length === 0) return ticketsMap;
 
@@ -143,36 +157,52 @@ export class CobrosController {
     const etapa = manzana?.etapa;
 
     const fechaPagoIso = ticket?.fecha
-      ? (ticket.fecha instanceof Date ? ticket.fecha.toISOString() : new Date(ticket.fecha).toISOString())
-      : (cobro.fechaPago ? new Date(cobro.fechaPago).toISOString() : null);
+      ? ticket.fecha instanceof Date
+        ? ticket.fecha.toISOString()
+        : new Date(ticket.fecha).toISOString()
+      : cobro.fechaPago
+        ? new Date(cobro.fechaPago).toISOString()
+        : null;
 
     return {
       ...cobro,
       residenteNombre: residente?.nombre ?? 'Residente',
-      cobradorNombre: ticket?.cobrador_nombre ?? cobro.cobradorNombre ?? 'Administración',
-      nroRecibo: ticket?.numero ?? cobro.nroRecibo ?? `TK-${cobro.id.replace(/-/g, '').substring(0, 6).toUpperCase()}`,
+      cobradorNombre:
+        ticket?.cobrador_nombre ?? cobro.cobradorNombre ?? 'Administración',
+      nroRecibo:
+        ticket?.numero ??
+        cobro.nroRecibo ??
+        `TK-${cobro.id.replace(/-/g, '').substring(0, 6).toUpperCase()}`,
       fechaPago: fechaPagoIso,
       metodoPago: ticket?.metodo ?? 'Efectivo',
       casaDireccion: casa?.direccionInterna ?? 'Inmueble',
       manzanaNombre: manzana?.nombre ?? 'Manzana',
       etapaNombre: etapa?.nombre ?? 'Etapa',
-      residente: residente ? {
-        id: residente.id,
-        nombre: residente.nombre,
-        modalidadPago: residente.modalidadPago,
-      } : null,
-      casa: casa ? {
-        id: casa.id,
-        direccionInterna: casa.direccionInterna,
-        manzana: manzana ? {
-          id: manzana.id,
-          nombre: manzana.nombre,
-          etapa: etapa ? {
-            id: etapa.id,
-            nombre: etapa.nombre,
-          } : null,
-        } : null,
-      } : null,
+      residente: residente
+        ? {
+            id: residente.id,
+            nombre: residente.nombre,
+            modalidadPago: residente.modalidadPago,
+          }
+        : null,
+      casa: casa
+        ? {
+            id: casa.id,
+            direccionInterna: casa.direccionInterna,
+            manzana: manzana
+              ? {
+                  id: manzana.id,
+                  nombre: manzana.nombre,
+                  etapa: etapa
+                    ? {
+                        id: etapa.id,
+                        nombre: etapa.nombre,
+                      }
+                    : null,
+                }
+              : null,
+          }
+        : null,
     };
   }
 
@@ -185,7 +215,11 @@ export class CobrosController {
     @Query('manzanaId') manzanaId?: string,
   ) {
     if (!tenantId) return [];
-    return this.carteraViviendaResumenQuery.execute(tenantId, etapaId, manzanaId);
+    return this.carteraViviendaResumenQuery.execute(
+      tenantId,
+      etapaId,
+      manzanaId,
+    );
   }
 
   @Delete(':id')

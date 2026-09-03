@@ -5,16 +5,13 @@ import { TypeOrmModuleOptions } from '@nestjs/typeorm';
  * Throws a clear error message if any required variable is missing.
  */
 function validateEnv(): void {
-  const required = [
-    'DATABASE_PASSWORD',
-    'JWT_SECRET',
-  ];
+  const required = ['DATABASE_PASSWORD', 'JWT_SECRET'];
 
   const missing = required.filter((key) => !process.env[key]);
   if (missing.length > 0) {
     throw new Error(
       `❌ Variables de entorno requeridas faltantes: ${missing.join(', ')}\n` +
-      `   Configúralas en tu archivo .env o en las variables de entorno del sistema.`,
+        `   Configúralas en tu archivo .env o en las variables de entorno del sistema.`,
     );
   }
 }
@@ -34,7 +31,8 @@ export function databaseConfig(): TypeOrmModuleOptions {
     database: process.env.DATABASE_NAME || 'postgres',
     autoLoadEntities: true,
     synchronize: false,
-    logging: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
+    logging:
+      process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
     ...(sslMode && {
       ssl: {
         // In development allow self-signed certs; in production always verify

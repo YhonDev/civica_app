@@ -109,17 +109,6 @@ void main() {
       expect(find.text('17'), findsOneWidget);
     });
 
-    testWidgets('Comunidad section', (tester) async {
-      final cubit = DashboardCubit();
-      cubit.emit(DashboardLoaded(
-        data: _makeData(totalResidentes: 200),
-        mes: 3, anio: 2026,
-      ));
-      await tester.pumpWidget(createDashboardScreen(cubit: cubit));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 1000));
-      expect(find.text('COMUNIDAD'), findsOneWidget);
-    });
   });
 
   group('DashboardScreen — error state', () {

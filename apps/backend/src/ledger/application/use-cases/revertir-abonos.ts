@@ -50,7 +50,10 @@ export async function revertirAbonos(
       });
       if (!cobro) continue;
 
-      cobro.montoPagado = Math.max(0, cobro.montoPagado - vinculo.montoAplicado);
+      cobro.montoPagado = Math.max(
+        0,
+        cobro.montoPagado - vinculo.montoAplicado,
+      );
       recalcularEstado(cobro);
       await entityManager.save(Cobro, cobro);
       cobrosRevertidos.push(cobro);

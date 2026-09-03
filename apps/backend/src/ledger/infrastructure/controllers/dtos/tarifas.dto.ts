@@ -16,7 +16,10 @@ export class CrearTarifaDto {
   @IsNotEmpty()
   proyectoId: string;
 
-  @ApiProperty({ enum: ['SEMANAL', 'QUINCENAL', 'MENSUAL'], description: 'Modalidad de recaudo' })
+  @ApiProperty({
+    enum: ['SEMANAL', 'QUINCENAL', 'MENSUAL'],
+    description: 'Modalidad de recaudo',
+  })
   @IsEnum(['SEMANAL', 'QUINCENAL', 'MENSUAL'] as const, {
     message: 'La modalidad debe ser SEMANAL, QUINCENAL o MENSUAL',
   })
@@ -27,19 +30,28 @@ export class CrearTarifaDto {
   @Min(1, { message: 'El monto debe ser mayor a cero' })
   monto: number;
 
-  @ApiProperty({ example: '2026-09-01', description: 'Fecha de vigencia desde (ISO date)' })
+  @ApiProperty({
+    example: '2026-09-01',
+    description: 'Fecha de vigencia desde (ISO date)',
+  })
   @IsDateString({}, { message: 'fechaVigencia debe ser una fecha válida' })
   fechaVigencia: string;
 }
 
 export class ActualizarTarifaDto {
-  @ApiPropertyOptional({ example: 4500000, description: 'Nuevo monto en centavos COP' })
+  @ApiPropertyOptional({
+    example: 4500000,
+    description: 'Nuevo monto en centavos COP',
+  })
   @IsNumber()
   @Min(1)
   @IsOptional()
   monto?: number;
 
-  @ApiPropertyOptional({ example: '2026-10-01', description: 'Nueva fecha de vigencia' })
+  @ApiPropertyOptional({
+    example: '2026-10-01',
+    description: 'Nueva fecha de vigencia',
+  })
   @IsDateString()
   @IsOptional()
   fechaVigencia?: string;

@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, Inject, forwardRef } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { Residente } from '../../domain/residente.entity';
 import { ResidenteRepository } from '../../infrastructure/residente.repository';
 import { type ModalidadRecaudo } from '../../../shared/common/value-objects';
@@ -47,7 +52,10 @@ export class ActualizarResidenteUseCase {
 
     // Reconciliar cobros y pagos del mes activo si cambió la modalidad
     if (modalidadCambio && params.modalidadPago) {
-      await this.reconciliarModalidadUseCase.execute(residente.id, params.modalidadPago);
+      await this.reconciliarModalidadUseCase.execute(
+        residente.id,
+        params.modalidadPago,
+      );
     }
   }
 }

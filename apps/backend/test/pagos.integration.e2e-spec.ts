@@ -1,5 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe, ClassSerializerInterceptor } from '@nestjs/common';
+import {
+  INestApplication,
+  ValidationPipe,
+  ClassSerializerInterceptor,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import request from 'supertest';
 import { DataSource, Repository } from 'typeorm';
@@ -48,7 +52,9 @@ describe('Pagos API Integration — Sprint 4 (FIFO)', () => {
         transform: true,
       }),
     );
-    app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
+    app.useGlobalInterceptors(
+      new ClassSerializerInterceptor(app.get(Reflector)),
+    );
     await app.init();
 
     dataSource = app.get(DataSource);
@@ -105,17 +111,44 @@ describe('Pagos API Integration — Sprint 4 (FIFO)', () => {
     await dataSource.query(
       `INSERT INTO usuarios (id, email, password_hash, nombre, rol, residente_id, tenant_id, activo)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-      [adminUserId, 'admin-pagos@test.com', adminHash, 'Admin Pagos', 'ADMIN', null, tenantId, true],
+      [
+        adminUserId,
+        'admin-pagos@test.com',
+        adminHash,
+        'Admin Pagos',
+        'ADMIN',
+        null,
+        tenantId,
+        true,
+      ],
     );
     await dataSource.query(
       `INSERT INTO usuarios (id, email, password_hash, nombre, rol, residente_id, tenant_id, activo)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-      [cobradorUserId, 'cobrador-pagos@test.com', cobradorHash, 'Cobrador Pagos', 'COBRADOR', null, tenantId, true],
+      [
+        cobradorUserId,
+        'cobrador-pagos@test.com',
+        cobradorHash,
+        'Cobrador Pagos',
+        'COBRADOR',
+        null,
+        tenantId,
+        true,
+      ],
     );
     await dataSource.query(
       `INSERT INTO usuarios (id, email, password_hash, nombre, rol, residente_id, tenant_id, activo)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-      [propietarioUserId, 'prop-pagos@test.com', propHash, 'Prop Pagos', 'PROPIETARIO', residenteId, tenantId, true],
+      [
+        propietarioUserId,
+        'prop-pagos@test.com',
+        propHash,
+        'Prop Pagos',
+        'PROPIETARIO',
+        residenteId,
+        tenantId,
+        true,
+      ],
     );
 
     // ── Login to get admin token ──────────────────────────
@@ -154,15 +187,35 @@ describe('Pagos API Integration — Sprint 4 (FIFO)', () => {
 
   afterAll(async () => {
     // Clean up in FK-safe order
-    await dataSource.query(`DELETE FROM pagos WHERE tenant_id = $1`, [tenantId]);
-    await dataSource.query(`DELETE FROM cuotas WHERE tenant_id = $1`, [tenantId]);
-    await dataSource.query(`DELETE FROM cuentas_cartera WHERE tenant_id = $1`, [tenantId]);
-    await dataSource.query(`DELETE FROM tarifas WHERE tenant_id = $1`, [tenantId]);
-    await dataSource.query(`DELETE FROM montos_predefinidos WHERE tenant_id = $1`, [tenantId]);
-    await dataSource.query(`DELETE FROM asignaciones_etapa WHERE tenant_id = $1`, [tenantId]);
-    await dataSource.query(`DELETE FROM tenencias WHERE residente_id = $1`, [residenteId]);
-    await dataSource.query(`DELETE FROM usuarios WHERE tenant_id = $1`, [tenantId]);
-    await dataSource.query(`DELETE FROM propietarios WHERE tenant_id = $1`, [tenantId]);
+    await dataSource.query(`DELETE FROM pagos WHERE tenant_id = $1`, [
+      tenantId,
+    ]);
+    await dataSource.query(`DELETE FROM cuotas WHERE tenant_id = $1`, [
+      tenantId,
+    ]);
+    await dataSource.query(`DELETE FROM cuentas_cartera WHERE tenant_id = $1`, [
+      tenantId,
+    ]);
+    await dataSource.query(`DELETE FROM tarifas WHERE tenant_id = $1`, [
+      tenantId,
+    ]);
+    await dataSource.query(
+      `DELETE FROM montos_predefinidos WHERE tenant_id = $1`,
+      [tenantId],
+    );
+    await dataSource.query(
+      `DELETE FROM asignaciones_etapa WHERE tenant_id = $1`,
+      [tenantId],
+    );
+    await dataSource.query(`DELETE FROM tenencias WHERE residente_id = $1`, [
+      residenteId,
+    ]);
+    await dataSource.query(`DELETE FROM usuarios WHERE tenant_id = $1`, [
+      tenantId,
+    ]);
+    await dataSource.query(`DELETE FROM propietarios WHERE tenant_id = $1`, [
+      tenantId,
+    ]);
     await dataSource.query(`DELETE FROM casas WHERE id = $1`, [casaId]);
     await dataSource.query(`DELETE FROM etapas WHERE id = $1`, [etapaId]);
     await dataSource.query(`DELETE FROM conjuntos WHERE id = $1`, [proyectoId]);
@@ -177,8 +230,12 @@ describe('Pagos API Integration — Sprint 4 (FIFO)', () => {
   describe('FIFO Distribution — Registrar Pago', () => {
     // Each FIFO scenario starts with a clean slate for this propietario
     beforeEach(async () => {
-      await dataSource.query(`DELETE FROM pagos WHERE residente_id = $1`, [residenteId]);
-      await dataSource.query(`DELETE FROM cuotas WHERE residente_id = $1`, [residenteId]);
+      await dataSource.query(`DELETE FROM pagos WHERE residente_id = $1`, [
+        residenteId,
+      ]);
+      await dataSource.query(`DELETE FROM cuotas WHERE residente_id = $1`, [
+        residenteId,
+      ]);
     });
 
     it('1.1 Pago parcial contra cuota más antigua', async () => {
@@ -186,12 +243,22 @@ describe('Pagos API Integration — Sprint 4 (FIFO)', () => {
       // Cuota1: vence 2026-01-15 (más antigua)
       // Cuota2: vence 2026-02-15
       const cobro1 = Cobro.crear(
-        residenteId, tenantId, 'Cobro Ene 2026',
-        Money.ofCOP(40000), '2026-01-01', '2026-02-01', '2026-01-15',
+        residenteId,
+        tenantId,
+        'Cobro Ene 2026',
+        Money.ofCOP(40000),
+        '2026-01-01',
+        '2026-02-01',
+        '2026-01-15',
       );
       const cobro2 = Cobro.crear(
-        residenteId, tenantId, 'Cobro Feb 2026',
-        Money.ofCOP(40000), '2026-02-01', '2026-03-01', '2026-02-15',
+        residenteId,
+        tenantId,
+        'Cobro Feb 2026',
+        Money.ofCOP(40000),
+        '2026-02-01',
+        '2026-03-01',
+        '2026-02-15',
       );
       const saved1 = await cobroRepository.save(cobro1);
       await cobroRepository.save(cobro2);
@@ -226,8 +293,11 @@ describe('Pagos API Integration — Sprint 4 (FIFO)', () => {
       expect(reloaded!.estado).toBe('PARCIAL');
       expect(reloaded!.montoPagado).toBe(10000);
 
-      const allCuotas = await cobroRepository.findByResidente(residenteId, tenantId);
-      const c2 = allCuotas.find(c => c.estado === 'PENDIENTE');
+      const allCuotas = await cobroRepository.findByResidente(
+        residenteId,
+        tenantId,
+      );
+      const c2 = allCuotas.find((c) => c.estado === 'PENDIENTE');
       expect(c2).toBeDefined();
       expect(c2!.montoPagado).toBe(0);
     });
@@ -235,12 +305,22 @@ describe('Pagos API Integration — Sprint 4 (FIFO)', () => {
     it('1.2 Pago exacto contra cuota más antigua (FIFO)', async () => {
       // Simulate prior state: Cuota1 is PARCIAL (10k paid), Cuota2 is PENDIENTE
       const cuota1 = Cobro.crear(
-        residenteId, tenantId, 'Cobro Ene 2026',
-        Money.ofCOP(40000), '2026-01-01', '2026-02-01', '2026-01-15',
+        residenteId,
+        tenantId,
+        'Cobro Ene 2026',
+        Money.ofCOP(40000),
+        '2026-01-01',
+        '2026-02-01',
+        '2026-01-15',
       );
       const cuota2 = Cobro.crear(
-        residenteId, tenantId, 'Cobro Feb 2026',
-        Money.ofCOP(40000), '2026-02-01', '2026-03-01', '2026-02-15',
+        residenteId,
+        tenantId,
+        'Cobro Feb 2026',
+        Money.ofCOP(40000),
+        '2026-02-01',
+        '2026-03-01',
+        '2026-02-15',
       );
       const saved1 = await cobroRepository.save(cuota1);
       const saved2 = await cobroRepository.save(cuota2);
@@ -268,7 +348,9 @@ describe('Pagos API Integration — Sprint 4 (FIFO)', () => {
       expect(afectadas[0].montoPagado).toBe(40000); // 10k + 30k = 40k total
 
       // Cuota2 must still be PENDIENTE
-      const c2Reloaded = await cobroOrmRepo.findOne({ where: { id: saved2.id } });
+      const c2Reloaded = await cobroOrmRepo.findOne({
+        where: { id: saved2.id },
+      });
       expect(c2Reloaded!.estado).toBe('PENDIENTE');
       expect(c2Reloaded!.montoPagado).toBe(0);
     });
@@ -276,16 +358,31 @@ describe('Pagos API Integration — Sprint 4 (FIFO)', () => {
     it('1.3 Pago grande FIFO que cruza 2 cuotas', async () => {
       // 3 cuotas at 40k each, all PENDIENTE
       const cuota1 = Cobro.crear(
-        residenteId, tenantId, 'Cobro Ene 2026',
-        Money.ofCOP(40000), '2026-01-01', '2026-02-01', '2026-01-15',
+        residenteId,
+        tenantId,
+        'Cobro Ene 2026',
+        Money.ofCOP(40000),
+        '2026-01-01',
+        '2026-02-01',
+        '2026-01-15',
       );
       const cuota2 = Cobro.crear(
-        residenteId, tenantId, 'Cobro Feb 2026',
-        Money.ofCOP(40000), '2026-02-01', '2026-03-01', '2026-02-15',
+        residenteId,
+        tenantId,
+        'Cobro Feb 2026',
+        Money.ofCOP(40000),
+        '2026-02-01',
+        '2026-03-01',
+        '2026-02-15',
       );
       const cuota3 = Cobro.crear(
-        residenteId, tenantId, 'Cobro Mar 2026',
-        Money.ofCOP(40000), '2026-03-01', '2026-04-01', '2026-03-15',
+        residenteId,
+        tenantId,
+        'Cobro Mar 2026',
+        Money.ofCOP(40000),
+        '2026-03-01',
+        '2026-04-01',
+        '2026-03-15',
       );
       const saved1 = await cobroRepository.save(cuota1);
       const saved2 = await cobroRepository.save(cuota2);
@@ -319,8 +416,13 @@ describe('Pagos API Integration — Sprint 4 (FIFO)', () => {
       expect(c2Afectada.montoPagado).toBe(20000);
 
       // Cuota3 debe seguir PENDIENTE (no afectada)
-      const allCuotas = await cobroRepository.findByResidente(residenteId, tenantId);
-      const c3 = allCuotas.find(c => c.monto === 40000 && c.montoPagado === 0);
+      const allCuotas = await cobroRepository.findByResidente(
+        residenteId,
+        tenantId,
+      );
+      const c3 = allCuotas.find(
+        (c) => c.monto === 40000 && c.montoPagado === 0,
+      );
       expect(c3).toBeDefined();
       expect(c3!.estado).toBe('PENDIENTE');
     });
@@ -328,12 +430,22 @@ describe('Pagos API Integration — Sprint 4 (FIFO)', () => {
     it('1.4 Pago exacto que paga TODAS las cuotas', async () => {
       // 2 cuotas at 40k each, all PENDIENTE
       const cuota1 = Cobro.crear(
-        residenteId, tenantId, 'Cobro Ene 2026',
-        Money.ofCOP(40000), '2026-01-01', '2026-02-01', '2026-01-15',
+        residenteId,
+        tenantId,
+        'Cobro Ene 2026',
+        Money.ofCOP(40000),
+        '2026-01-01',
+        '2026-02-01',
+        '2026-01-15',
       );
       const cuota2 = Cobro.crear(
-        residenteId, tenantId, 'Cobro Feb 2026',
-        Money.ofCOP(40000), '2026-02-01', '2026-03-01', '2026-02-15',
+        residenteId,
+        tenantId,
+        'Cobro Feb 2026',
+        Money.ofCOP(40000),
+        '2026-02-01',
+        '2026-03-01',
+        '2026-02-15',
       );
       const saved1 = await cobroRepository.save(cuota1);
       const saved2 = await cobroRepository.save(cuota2);
@@ -362,11 +474,15 @@ describe('Pagos API Integration — Sprint 4 (FIFO)', () => {
       expect(c2Afectada.estado).toBe('PAGADA');
 
       // Verify both paid in DB
-      const reloaded1 = await cobroOrmRepo.findOne({ where: { id: saved1.id } });
+      const reloaded1 = await cobroOrmRepo.findOne({
+        where: { id: saved1.id },
+      });
       expect(reloaded1!.estado).toBe('PAGADA');
       expect(reloaded1!.montoPagado).toBe(40000);
 
-      const reloaded2 = await cobroOrmRepo.findOne({ where: { id: saved2.id } });
+      const reloaded2 = await cobroOrmRepo.findOne({
+        where: { id: saved2.id },
+      });
       expect(reloaded2!.estado).toBe('PAGADA');
       expect(reloaded2!.montoPagado).toBe(40000);
     });
@@ -378,14 +494,23 @@ describe('Pagos API Integration — Sprint 4 (FIFO)', () => {
 
   describe('Idempotencia', () => {
     beforeEach(async () => {
-      await dataSource.query(`DELETE FROM pagos WHERE residente_id = $1`, [residenteId]);
-      await dataSource.query(`DELETE FROM cuotas WHERE residente_id = $1`, [residenteId]);
+      await dataSource.query(`DELETE FROM pagos WHERE residente_id = $1`, [
+        residenteId,
+      ]);
+      await dataSource.query(`DELETE FROM cuotas WHERE residente_id = $1`, [
+        residenteId,
+      ]);
     });
 
     it('Mismo clientPaymentId debe retornar mismo resultado sin duplicar cargos', async () => {
       const cuota = Cobro.crear(
-        residenteId, tenantId, 'Cobro Idempotencia',
-        Money.ofCOP(40000), '2026-01-01', '2026-02-01', '2026-01-15',
+        residenteId,
+        tenantId,
+        'Cobro Idempotencia',
+        Money.ofCOP(40000),
+        '2026-01-01',
+        '2026-02-01',
+        '2026-01-15',
       );
       const saved = await cobroRepository.save(cuota);
       const clientPaymentId = `idempotent-${randomUUID()}`;
@@ -452,8 +577,13 @@ describe('Pagos API Integration — Sprint 4 (FIFO)', () => {
     it('Propietario sin cuotas pendientes → 400', async () => {
       // Create a single cuota and pay it in full first
       const cuota = Cobro.crear(
-        residenteId, tenantId, 'Cobro única',
-        Money.ofCOP(40000), '2026-01-01', '2026-02-01', '2026-01-15',
+        residenteId,
+        tenantId,
+        'Cobro única',
+        Money.ofCOP(40000),
+        '2026-01-01',
+        '2026-02-01',
+        '2026-01-15',
       );
       await cobroRepository.save(cuota);
 
@@ -521,8 +651,12 @@ describe('Pagos API Integration — Sprint 4 (FIFO)', () => {
 
   describe('MarcarVencidasUseCase', () => {
     beforeEach(async () => {
-      await dataSource.query(`DELETE FROM pagos WHERE residente_id = $1`, [residenteId]);
-      await dataSource.query(`DELETE FROM cuotas WHERE residente_id = $1`, [residenteId]);
+      await dataSource.query(`DELETE FROM pagos WHERE residente_id = $1`, [
+        residenteId,
+      ]);
+      await dataSource.query(`DELETE FROM cuotas WHERE residente_id = $1`, [
+        residenteId,
+      ]);
     });
 
     it('Debe marcar cuotas PENDIENTE vencidas como VENCIDA', async () => {
@@ -532,8 +666,13 @@ describe('Pagos API Integration — Sprint 4 (FIFO)', () => {
       const yesterdayStr = yesterday.toISOString().split('T')[0];
 
       const cuota = Cobro.crear(
-        residenteId, tenantId, 'Cobro vencida test',
-        Money.ofCOP(40000), '2026-01-01', '2026-02-01', yesterdayStr,
+        residenteId,
+        tenantId,
+        'Cobro vencida test',
+        Money.ofCOP(40000),
+        '2026-01-01',
+        '2026-02-01',
+        yesterdayStr,
       );
       const saved = await cobroRepository.save(cuota);
       expect(saved.estado).toBe('PENDIENTE');
@@ -549,8 +688,13 @@ describe('Pagos API Integration — Sprint 4 (FIFO)', () => {
 
     it('No debe marcar cuotas PAGADA como VENCIDA', async () => {
       const cuota = Cobro.crear(
-        residenteId, tenantId, 'Cobro pagada no vence',
-        Money.ofCOP(40000), '2026-01-01', '2026-02-01', '2020-01-01', // very old date
+        residenteId,
+        tenantId,
+        'Cobro pagada no vence',
+        Money.ofCOP(40000),
+        '2026-01-01',
+        '2026-02-01',
+        '2020-01-01', // very old date
       );
       const saved = await cobroRepository.save(cuota);
       saved.aplicarPago(Money.ofCOP(40000));
@@ -572,13 +716,22 @@ describe('Pagos API Integration — Sprint 4 (FIFO)', () => {
     let registeredPagoId: string;
 
     beforeEach(async () => {
-      await dataSource.query(`DELETE FROM pagos WHERE residente_id = $1`, [residenteId]);
-      await dataSource.query(`DELETE FROM cuotas WHERE residente_id = $1`, [residenteId]);
+      await dataSource.query(`DELETE FROM pagos WHERE residente_id = $1`, [
+        residenteId,
+      ]);
+      await dataSource.query(`DELETE FROM cuotas WHERE residente_id = $1`, [
+        residenteId,
+      ]);
 
       // Create a cuota and register a payment so we have data to query
       const cuota = Cobro.crear(
-        residenteId, tenantId, 'Cobro GET test',
-        Money.ofCOP(40000), '2026-01-01', '2026-02-01', '2026-01-15',
+        residenteId,
+        tenantId,
+        'Cobro GET test',
+        Money.ofCOP(40000),
+        '2026-01-01',
+        '2026-02-01',
+        '2026-01-15',
       );
       await cobroRepository.save(cuota);
 

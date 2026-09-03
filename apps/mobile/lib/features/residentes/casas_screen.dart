@@ -230,7 +230,7 @@ class _CasasScreenState extends State<CasasScreen> {
               IconButton(
                 icon: Icon(Icons.delete_rounded, color: AppColors.error, size: 20),
                 onPressed: () {
-                  _mostrarConfirmacionEliminacionCasa(context, casa['nombre'].toString(), casa['id'].toString());
+                  _mostrarConfirmacionEliminacionCasa(casa['nombre'].toString(), casa['id'].toString());
                 },
               ),
             ],
@@ -240,7 +240,7 @@ class _CasasScreenState extends State<CasasScreen> {
     );
   }
 
-  void _mostrarConfirmacionEliminacionCasa(BuildContext context, String nombreCasa, String id) {
+  void _mostrarConfirmacionEliminacionCasa(String nombreCasa, String id) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(

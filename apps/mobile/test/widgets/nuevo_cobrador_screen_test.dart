@@ -114,5 +114,9 @@ void main() {
     await tester.pump();
     await tester.pumpAndSettle();
     expect(find.textContaining('Error al crear cobrador'), findsOneWidget);
+    // Dejar expirar el timer de auto-cierre del TopToast (3s) para no dejar
+    // timers pendientes al terminar el test.
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
   });
 }

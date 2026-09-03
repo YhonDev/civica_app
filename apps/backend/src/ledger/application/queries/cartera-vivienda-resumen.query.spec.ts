@@ -32,7 +32,9 @@ describe('CarteraViviendaResumenQuery', () => {
       ],
     }).compile();
 
-    query = module.get<CarteraViviendaResumenQuery>(CarteraViviendaResumenQuery);
+    query = module.get<CarteraViviendaResumenQuery>(
+      CarteraViviendaResumenQuery,
+    );
   });
 
   it('should return empty list when no houses exist', async () => {
@@ -91,11 +93,11 @@ describe('CarteraViviendaResumenQuery', () => {
 
     expect(result).toHaveLength(2);
 
-    const c101 = result.find(c => c.casaId === 'casa-101')!;
+    const c101 = result.find((c) => c.casaId === 'casa-101')!;
     expect(c101.estadoMora).toBe('AL_DIA');
     expect(c101.totalCuotasPagadas).toBe(1);
 
-    const c102 = result.find(c => c.casaId === 'casa-102')!;
+    const c102 = result.find((c) => c.casaId === 'casa-102')!;
     expect(c102.estadoMora).toBe('EN_MORA');
     expect(c102.totalCuotasVencidas).toBe(1);
     expect(c102.saldoMoraCentavos).toBe(40000);

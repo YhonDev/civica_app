@@ -43,7 +43,10 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('joinUserRoom')
-  handleJoinUserRoom(client: Socket, payload: { tenantId: string; userId: string; residenteId?: string }) {
+  handleJoinUserRoom(
+    client: Socket,
+    payload: { tenantId: string; userId: string; residenteId?: string },
+  ) {
     if (!payload?.userId) return;
     const userRoom = `user:${payload.userId}`;
     client.join(userRoom);
@@ -57,28 +60,58 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   /// Emitido cuando un cobrador o admin registra un pago
-  emitPagoRegistrado(payload: { tenantId: string; residenteId: string; cobroId: string; monto: number }) {
-    this.logger.log(`Emitiendo evento real-time PAGO_REGISTRADO para residente ${payload.residenteId}`);
+  emitPagoRegistrado(payload: {
+    tenantId: string;
+    residenteId: string;
+    cobroId: string;
+    monto: number;
+  }) {
+    this.logger.log(
+      `Emitiendo evento real-time PAGO_REGISTRADO para residente ${payload.residenteId}`,
+    );
     if (this.server) {
-      this.server.to(`residente:${payload.residenteId}`).emit('pago:registrado', payload);
-      this.server.to(`tenant:${payload.tenantId}`).emit('pago:registrado', payload);
+      this.server
+        .to(`residente:${payload.residenteId}`)
+        .emit('pago:registrado', payload);
+      this.server
+        .to(`tenant:${payload.tenantId}`)
+        .emit('pago:registrado', payload);
     }
   }
 
   /// Emitido cuando se cambia la modalidad de recaudo
-  emitModalidadCambiada(payload: { tenantId: string; residenteId: string; nuevaModalidad: string }) {
-    this.logger.log(`Emitiendo evento real-time MODALIDAD_CAMBIADA para residente ${payload.residenteId}`);
+  emitModalidadCambiada(payload: {
+    tenantId: string;
+    residenteId: string;
+    nuevaModalidad: string;
+  }) {
+    this.logger.log(
+      `Emitiendo evento real-time MODALIDAD_CAMBIADA para residente ${payload.residenteId}`,
+    );
     if (this.server) {
-      this.server.to(`residente:${payload.residenteId}`).emit('modalidad:cambiada', payload);
-      this.server.to(`tenant:${payload.tenantId}`).emit('modalidad:cambiada', payload);
+      this.server
+        .to(`residente:${payload.residenteId}`)
+        .emit('modalidad:cambiada', payload);
+      this.server
+        .to(`tenant:${payload.tenantId}`)
+        .emit('modalidad:cambiada', payload);
     }
   }
 
   /// Emitido cuando un residente crea una solicitud de cobro
-  emitSolicitudCreada(payload: { tenantId: string; residenteId: string; casaId?: string; solicitudId: string }) {
-    this.logger.log(`Emitiendo evento real-time SOLICITUD_CREADA para tenant ${payload.tenantId}`);
+  emitSolicitudCreada(payload: {
+    tenantId: string;
+    residenteId: string;
+    casaId?: string;
+    solicitudId: string;
+  }) {
+    this.logger.log(
+      `Emitiendo evento real-time SOLICITUD_CREADA para tenant ${payload.tenantId}`,
+    );
     if (this.server) {
-      this.server.to(`tenant:${payload.tenantId}`).emit('solicitud:creada', payload);
+      this.server
+        .to(`tenant:${payload.tenantId}`)
+        .emit('solicitud:creada', payload);
     }
   }
 }

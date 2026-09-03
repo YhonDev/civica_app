@@ -159,9 +159,7 @@ export class GenerarReporteUseCase {
     const metaCents =
       totalRecaudadoCents + totalPendienteCents + totalVencidoCents;
     const porcentaje =
-      metaCents > 0
-        ? Math.round((totalRecaudadoCents / metaCents) * 100)
-        : 0;
+      metaCents > 0 ? Math.round((totalRecaudadoCents / metaCents) * 100) : 0;
 
     const desglosePorEtapa = Array.from(desgloseMap.values()).map((e) => ({
       etapaId: e.etapaId,

@@ -12,7 +12,10 @@ export class HealthController {
   ) {}
 
   @Get()
-  @ApiOperation({ summary: 'Health check', description: 'Verifica el estado del servidor, base de datos y Redis' })
+  @ApiOperation({
+    summary: 'Health check',
+    description: 'Verifica el estado del servidor, base de datos y Redis',
+  })
   async check() {
     const dbConnected = this.dataSource.isInitialized;
     const redisStatus = this.tokenRevocation.getRedisStatus();

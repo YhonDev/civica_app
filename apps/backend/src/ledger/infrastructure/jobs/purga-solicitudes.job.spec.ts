@@ -52,7 +52,9 @@ describe('PurgaSolicitudesJob', () => {
     const result = await job.executePurga();
 
     expect(mockQueryRunner.startTransaction).toHaveBeenCalled();
-    expect(mockQueryRunner.query).toHaveBeenCalledWith(expect.stringContaining("UPDATE solicitudes"));
+    expect(mockQueryRunner.query).toHaveBeenCalledWith(
+      expect.stringContaining('UPDATE solicitudes'),
+    );
     expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
     expect(mockQueryRunner.release).toHaveBeenCalled();
     expect(result.purgadas).toBe(2);

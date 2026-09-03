@@ -48,7 +48,12 @@ export class Ticket {
   @Column({ name: 'residente_nombre', type: 'varchar', length: 255 })
   residenteNombre: string;
 
-  @Column({ name: 'residente_documento', type: 'varchar', length: 50, nullable: true })
+  @Column({
+    name: 'residente_documento',
+    type: 'varchar',
+    length: 50,
+    nullable: true,
+  })
   residenteDocumento: string | null;
 
   // ── Snapshot: Ubicación ────────────────────────────────

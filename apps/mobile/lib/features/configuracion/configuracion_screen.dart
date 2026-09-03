@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/auth/auth_cubit.dart';
-import '../../core/network/api_client.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../shared/widgets/user_profile_header.dart';
@@ -14,37 +13,9 @@ import '../../shared/widgets/screen_header.dart';
 ///
 /// Refactored under Design System Atomic Design architecture:
 /// 1. [UserProfileHeader] -> Avatar + Name + Role Badge.
-/// 2. [BasicInformationSection] -> Role-adaptive basic info card.
-/// 3. [SystemSettingsSection] -> Dark theme + Biometric auth + Change password.
-class ConfiguracionScreen extends StatefulWidget {
+/// 2. [SystemSettingsSection] -> Dark theme + Biometric auth + Change password.
+class ConfiguracionScreen extends StatelessWidget {
   const ConfiguracionScreen({super.key});
-
-  @override
-  State<ConfiguracionScreen> createState() => _ConfiguracionScreenState();
-}
-
-class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
-  String? _proyectoNombreBackend;
-
-  @override
-  void initState() {
-    super.initState();
-    _cargarDatosBackend();
-  }
-
-  Future<void> _cargarDatosBackend() async {
-    try {
-      final resProj = await ApiClient.instance.get<Map<String, dynamic>>('/proyectos/actual');
-      if (mounted && resProj.data != null) {
-        final nombreBackend = resProj.data!['nombre'] as String?;
-        if (nombreBackend != null && nombreBackend.isNotEmpty) {
-          setState(() {
-            _proyectoNombreBackend = nombreBackend;
-          });
-        }
-      }
-    } catch (_) {}
-  }
 
   @override
   Widget build(BuildContext context) {

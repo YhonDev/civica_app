@@ -26,9 +26,8 @@ export interface RegistrarActividadOptions {
  * Usage:
  * @RegistrarActividad({ tipo: 'PAGO', descripcionFn: (r) => `${r.usuarioNombre} registró un pago` })
  */
-export const RegistrarActividad = (
-  options: RegistrarActividadOptions,
-) => SetMetadata(REGISTRAR_ACTIVIDAD_KEY, options);
+export const RegistrarActividad = (options: RegistrarActividadOptions) =>
+  SetMetadata(REGISTRAR_ACTIVIDAD_KEY, options);
 
 @Injectable()
 export class ActividadInterceptor implements NestInterceptor {
@@ -39,10 +38,7 @@ export class ActividadInterceptor implements NestInterceptor {
     private readonly actividadRepo: ActividadRepository,
   ) {}
 
-  intercept(
-    context: ExecutionContext,
-    next: CallHandler,
-  ): Observable<any> {
+  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     const options = this.reflector.get<RegistrarActividadOptions>(
       REGISTRAR_ACTIVIDAD_KEY,
       context.getHandler(),
@@ -72,9 +68,11 @@ export class ActividadInterceptor implements NestInterceptor {
           );
 
           // Fire-and-forget: persist without blocking the response
-          this.actividadRepo.save(actividad).catch((err) =>
-            this.logger.error(`Error registrando actividad: ${err.message}`),
-          );
+          this.actividadRepo
+            .save(actividad)
+            .catch((err) =>
+              this.logger.error(`Error registrando actividad: ${err.message}`),
+            );
         } catch (err) {
           this.logger.error(
             `Error registrando actividad: ${err instanceof Error ? err.message : err}`,

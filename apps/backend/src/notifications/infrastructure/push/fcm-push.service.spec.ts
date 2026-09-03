@@ -17,7 +17,10 @@ describe('FcmPushService', () => {
   });
 
   it('should gracefully handle empty tokens', async () => {
-    const result = await service.sendToToken('', { title: 'Test', body: 'Test' });
+    const result = await service.sendToToken('', {
+      title: 'Test',
+      body: 'Test',
+    });
     expect(result).toBe(false);
   });
 
@@ -61,11 +64,19 @@ describe('FcmPushService', () => {
     });
 
     expect(spy).toHaveBeenCalledTimes(2);
-    expect(spy).toHaveBeenNthCalledWith(1, 'token-cobrador-1', expect.objectContaining({
-      title: '📍 ¡Nueva Solicitud de Cobro!',
-    }));
-    expect(spy).toHaveBeenNthCalledWith(2, 'token-cobrador-2', expect.objectContaining({
-      title: '📍 ¡Nueva Solicitud de Cobro!',
-    }));
+    expect(spy).toHaveBeenNthCalledWith(
+      1,
+      'token-cobrador-1',
+      expect.objectContaining({
+        title: '📍 ¡Nueva Solicitud de Cobro!',
+      }),
+    );
+    expect(spy).toHaveBeenNthCalledWith(
+      2,
+      'token-cobrador-2',
+      expect.objectContaining({
+        title: '📍 ¡Nueva Solicitud de Cobro!',
+      }),
+    );
   });
 });

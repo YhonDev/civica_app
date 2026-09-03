@@ -23,9 +23,37 @@ describe('ResidentesController', () => {
   let dataSource: jest.Mocked<DataSource>;
   let usuarioRepo: jest.Mocked<any>;
 
-  const mockAdmin = Object.assign(Usuario.crear('admin@test.com', 'hash', 'Admin', RolUsuario.ADMIN, 'tenant-1'), { id: 'admin-1' });
-  const mockCobrador = Object.assign(Usuario.crear('cob@test.com', 'hash', 'Cobrador', RolUsuario.COBRADOR, 'tenant-1'), { id: 'cob-1' });
-  const mockResidente = Object.assign(Usuario.crear('res@test.com', 'hash', 'Residente', RolUsuario.RESIDENTE, 'tenant-1', 'res-1'), { id: 'res-usr-1', residenteId: 'res-1' });
+  const mockAdmin = Object.assign(
+    Usuario.crear(
+      'admin@test.com',
+      'hash',
+      'Admin',
+      RolUsuario.ADMIN,
+      'tenant-1',
+    ),
+    { id: 'admin-1' },
+  );
+  const mockCobrador = Object.assign(
+    Usuario.crear(
+      'cob@test.com',
+      'hash',
+      'Cobrador',
+      RolUsuario.COBRADOR,
+      'tenant-1',
+    ),
+    { id: 'cob-1' },
+  );
+  const mockResidente = Object.assign(
+    Usuario.crear(
+      'res@test.com',
+      'hash',
+      'Residente',
+      RolUsuario.RESIDENTE,
+      'tenant-1',
+      'res-1',
+    ),
+    { id: 'res-usr-1', residenteId: 'res-1' },
+  );
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -169,14 +197,24 @@ describe('ResidentesController', () => {
       const detalle: any = { id: 'res-1', nombre: 'Juan' };
       residenteDetailQuery.execute.mockResolvedValue(detalle);
 
-      const result = await controller.getDetalle('res-1', 'tenant-1', mockAdmin);
+      const result = await controller.getDetalle(
+        'res-1',
+        'tenant-1',
+        mockAdmin,
+      );
 
       expect(result).toEqual(detalle);
-      expect(residenteDetailQuery.execute).toHaveBeenCalledWith('res-1', 'tenant-1');
+      expect(residenteDetailQuery.execute).toHaveBeenCalledWith(
+        'res-1',
+        'tenant-1',
+      );
     });
 
     it('should throw UnauthorizedException when ADMIN has no tenantId', async () => {
-      const noTenantAdmin = Object.assign(new Usuario(), { id: 'admin', rol: RolUsuario.ADMIN });
+      const noTenantAdmin = Object.assign(new Usuario(), {
+        id: 'admin',
+        rol: RolUsuario.ADMIN,
+      });
 
       await expect(
         controller.getDetalle('res-1', 'tenant-1', noTenantAdmin),
@@ -193,7 +231,11 @@ describe('ResidentesController', () => {
       const detalle: any = { id: 'res-1', nombre: 'Residente' };
       residenteDetailQuery.execute.mockResolvedValue(detalle);
 
-      const result = await controller.getDetalle('res-1', 'tenant-1', mockResidente);
+      const result = await controller.getDetalle(
+        'res-1',
+        'tenant-1',
+        mockResidente,
+      );
 
       expect(result).toEqual(detalle);
     });
@@ -207,7 +249,12 @@ describe('ResidentesController', () => {
       residenteRepo.buscarPorFiltros.mockResolvedValue(residentes);
       usuarioRepo.find.mockResolvedValue([]);
 
-      const result = await controller.listar('tenant-1', undefined, undefined, mockAdmin);
+      const result = await controller.listar(
+        'tenant-1',
+        undefined,
+        undefined,
+        mockAdmin,
+      );
 
       expect(result).toHaveLength(2);
       expect(residenteRepo.buscarPorFiltros).toHaveBeenCalledWith({
@@ -222,7 +269,12 @@ describe('ResidentesController', () => {
       residenteRepo.buscarPorFiltros.mockResolvedValue(residentes);
       usuarioRepo.find.mockResolvedValue([]);
 
-      const result = await controller.listar('tenant-1', 'etapa-1', undefined, mockCobrador);
+      const result = await controller.listar(
+        'tenant-1',
+        'etapa-1',
+        undefined,
+        mockCobrador,
+      );
 
       expect(result).toHaveLength(1);
       expect(residenteRepo.buscarPorFiltros).toHaveBeenCalledWith({
@@ -233,25 +285,43 @@ describe('ResidentesController', () => {
     });
 
     it('should return residentes by assigned etapas for COBRADOR without etapaId', async () => {
-      const residentes = [{ id: 'res-1', tenencias: [{ casaId: 'casa-1' }] }] as any;
-      dataSource.query.mockResolvedValue([{ etapa_id: 'etapa-1' }, { etapa_id: 'etapa-2' }]);
+      const residentes = [
+        { id: 'res-1', tenencias: [{ casaId: 'casa-1' }] },
+      ] as any;
+      dataSource.query.mockResolvedValue([
+        { etapa_id: 'etapa-1' },
+        { etapa_id: 'etapa-2' },
+      ]);
       residenteRepo.buscarPorEtapas.mockResolvedValue(residentes);
       usuarioRepo.find.mockResolvedValue([]);
 
-      const result = await controller.listar('tenant-1', undefined, undefined, mockCobrador);
+      const result = await controller.listar(
+        'tenant-1',
+        undefined,
+        undefined,
+        mockCobrador,
+      );
 
       expect(result).toHaveLength(1);
       expect(dataSource.query).toHaveBeenCalledWith(
         'SELECT etapa_id FROM asignaciones_etapa WHERE usuario_id = $1',
         ['cob-1'],
       );
-      expect(residenteRepo.buscarPorEtapas).toHaveBeenCalledWith('tenant-1', ['etapa-1', 'etapa-2']);
+      expect(residenteRepo.buscarPorEtapas).toHaveBeenCalledWith('tenant-1', [
+        'etapa-1',
+        'etapa-2',
+      ]);
     });
 
     it('should return empty array for COBRADOR with no asignaciones', async () => {
       dataSource.query.mockResolvedValue([]);
 
-      const result = await controller.listar('tenant-1', undefined, undefined, mockCobrador);
+      const result = await controller.listar(
+        'tenant-1',
+        undefined,
+        undefined,
+        mockCobrador,
+      );
 
       expect(result).toEqual([]);
       expect(residenteRepo.buscarPorEtapas).not.toHaveBeenCalled();
@@ -266,7 +336,12 @@ describe('ResidentesController', () => {
       residenteRepo.buscarPorEtapas.mockResolvedValue(residentes);
       usuarioRepo.find.mockResolvedValue([]);
 
-      const result = await controller.listar('tenant-1', undefined, 'casa-1', mockCobrador);
+      const result = await controller.listar(
+        'tenant-1',
+        undefined,
+        'casa-1',
+        mockCobrador,
+      );
 
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe('res-1');
@@ -277,16 +352,35 @@ describe('ResidentesController', () => {
       residenteRepo.findById.mockResolvedValue(residente);
       usuarioRepo.find.mockResolvedValue([]);
 
-      const result = await controller.listar('tenant-1', undefined, undefined, mockResidente);
+      const result = await controller.listar(
+        'tenant-1',
+        undefined,
+        undefined,
+        mockResidente,
+      );
 
       expect(result).toHaveLength(1);
       expect(residenteRepo.findById).toHaveBeenCalledWith('res-1');
     });
 
     it('should return empty for RESIDENTE without residenteId', async () => {
-      const resSinId = Object.assign(Usuario.crear('x@test.com', 'hash', 'X', RolUsuario.RESIDENTE, 'tenant-1'), { id: 'usr-x', residenteId: null });
+      const resSinId = Object.assign(
+        Usuario.crear(
+          'x@test.com',
+          'hash',
+          'X',
+          RolUsuario.RESIDENTE,
+          'tenant-1',
+        ),
+        { id: 'usr-x', residenteId: null },
+      );
 
-      const result = await controller.listar('tenant-1', undefined, undefined, resSinId);
+      const result = await controller.listar(
+        'tenant-1',
+        undefined,
+        undefined,
+        resSinId,
+      );
 
       expect(result).toEqual([]);
     });

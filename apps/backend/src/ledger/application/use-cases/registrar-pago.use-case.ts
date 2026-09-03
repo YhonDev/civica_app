@@ -69,7 +69,10 @@ export class RegistrarPagoUseCase {
       );
 
       const cobrosAfectados = existingPago.cobroId
-        ? await this.cobroRepo.findByResidente(input.residenteId, input.tenantId)
+        ? await this.cobroRepo.findByResidente(
+            input.residenteId,
+            input.tenantId,
+          )
         : [];
 
       // Build event from existing pago
@@ -85,13 +88,16 @@ export class RegistrarPagoUseCase {
       // Look up the ticket that was generated on the original payment
       const existingTicket = await this.ticketRepo.findByPago(existingPago.id);
 
-      return { pago: existingPago, cobrosAfectados, event, ticket: existingTicket as TicketCobro };
+      return {
+        pago: existingPago,
+        cobrosAfectados,
+        event,
+        ticket: existingTicket as TicketCobro,
+      };
     }
 
     // 2. Validate: residente must have an active plan
-    const plan = await this.planDeCobroRepo.findByResidente(
-      input.residenteId,
-    );
+    const plan = await this.planDeCobroRepo.findByResidente(input.residenteId);
 
     if (!plan) {
       throw new BadRequestException(
@@ -130,10 +136,7 @@ export class RegistrarPagoUseCase {
             break;
           }
 
-          const aplicado = Math.min(
-            remaining,
-            cobro.monto - cobro.montoPagado,
-          );
+          const aplicado = Math.min(remaining, cobro.monto - cobro.montoPagado);
           const excess = cobro.aplicarPago(Money.ofCOP(remaining));
           await entityManager.save(cobro);
           cobrosAfectados.push(cobro);
@@ -172,7 +175,9 @@ export class RegistrarPagoUseCase {
         }
 
         if (input.solicitudId) {
-          const solicitud = await this.solicitudRepo.findById(input.solicitudId);
+          const solicitud = await this.solicitudRepo.findById(
+            input.solicitudId,
+          );
           if (solicitud) {
             solicitud.estado = SolicitudEstado.RESUELTA;
             solicitud.pagoId = pago.id;
@@ -184,14 +189,20 @@ export class RegistrarPagoUseCase {
 
         // Auto-resolver cualquier solicitud pendiente activa del residente para actualizar la interfaz
         try {
-          const queryRunner = (entityManager as any).query ? entityManager : (this.dataSource as any);
+          const queryRunner = (entityManager as any).query
+            ? entityManager
+            : (this.dataSource as any);
           if (queryRunner && typeof queryRunner.query === 'function') {
             const pendingSolicitudes = await queryRunner.query(
               `SELECT id FROM solicitudes 
                WHERE tenant_id = $1 
                  AND (residente_id = $2 OR cobro_id IN (${cobrosAfectados.map((_, i) => `$${i + 3}`).join(',') || 'NULL'}))
                  AND estado IN ('PENDIENTE', 'EN_ESPERA', 'EN_CAMINO', 'EN_REVISION')`,
-              [input.tenantId, input.residenteId, ...cobrosAfectados.map((c) => c.id)],
+              [
+                input.tenantId,
+                input.residenteId,
+                ...cobrosAfectados.map((c) => c.id),
+              ],
             );
             if (Array.isArray(pendingSolicitudes)) {
               for (const sol of pendingSolicitudes) {
@@ -236,7 +247,7 @@ export class RegistrarPagoUseCase {
     this.eventsGateway?.emitPagoRegistrado({
       tenantId: input.tenantId,
       residenteId: input.residenteId,
-      cobroId: pago.cobroId ?? (cobrosAfectados[0]?.id ?? ''),
+      cobroId: pago.cobroId ?? cobrosAfectados[0]?.id ?? '',
       monto: input.monto,
     });
 

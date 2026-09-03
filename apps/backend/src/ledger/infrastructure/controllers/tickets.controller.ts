@@ -29,10 +29,7 @@ export class TicketsController {
    * Response fields vary by role (RESIDENTE < COBRADOR < ADMIN).
    */
   @Get(':id')
-  async getById(
-    @Param('id') id: string,
-    @CurrentUser() user: Usuario,
-  ) {
+  async getById(@Param('id') id: string, @CurrentUser() user: Usuario) {
     const ticket = await this.ticketRepo.findById(id);
     if (!ticket) {
       throw new NotFoundException(`Ticket ${id} no encontrado`);
@@ -103,7 +100,9 @@ export class TicketsController {
     return mapTicketToResponse(ticket, 'ADMIN');
   }
 
-  private resolveProjection(rol: RolUsuario): 'RESIDENTE' | 'COBRADOR' | 'ADMIN' {
+  private resolveProjection(
+    rol: RolUsuario,
+  ): 'RESIDENTE' | 'COBRADOR' | 'ADMIN' {
     switch (rol) {
       case RolUsuario.ADMIN:
         return 'ADMIN';

@@ -13,7 +13,13 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { InjectRepository } from '@nestjs/typeorm';
-import { IsString, IsNotEmpty, IsOptional, MinLength, IsArray } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  MinLength,
+  IsArray,
+} from 'class-validator';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { JwtAuthGuard } from '../../../shared/auth/jwt-auth.guard';
@@ -113,11 +119,16 @@ export class UsuariosController {
     }
 
     if (usuario.id === currentUser.id) {
-      throw new BadRequestException('No puedes eliminar tu propio usuario administrador');
+      throw new BadRequestException(
+        'No puedes eliminar tu propio usuario administrador',
+      );
     }
 
     await this.usuarioRepository.remove(usuario);
-    return { success: true, message: `Usuario ${usuario.nombre} eliminado correctamente` };
+    return {
+      success: true,
+      message: `Usuario ${usuario.nombre} eliminado correctamente`,
+    };
   }
 
   @Get(':id/etapas')
@@ -127,10 +138,7 @@ export class UsuariosController {
     @Param('id') usuarioId: string,
     @CurrentUser() currentUser: Usuario,
   ) {
-    if (
-      currentUser.rol !== RolUsuario.ADMIN &&
-      currentUser.id !== usuarioId
-    ) {
+    if (currentUser.rol !== RolUsuario.ADMIN && currentUser.id !== usuarioId) {
       return [];
     }
 

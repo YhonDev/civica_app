@@ -127,12 +127,15 @@ export class TokenRevocationService implements OnModuleDestroy {
     return false;
   }
 
-
-
   /**
    * Returns the current Redis connection status for health checks.
    */
-  getRedisStatus(): { connected: boolean; usingFallback: boolean; host: string; port: number } {
+  getRedisStatus(): {
+    connected: boolean;
+    usingFallback: boolean;
+    host: string;
+    port: number;
+  } {
     return {
       connected: this.redis !== null && !this.usingFallback,
       usingFallback: this.usingFallback,

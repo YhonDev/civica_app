@@ -69,7 +69,12 @@ describe('DashboardController — Residente Timeline', () => {
         makeSolicitud({ id: 's1', fecha: new Date('2026-06-10T10:00:00Z') }),
       ]);
 
-      const result = await controller.getResidenteTimeline(mockUser(), 'tenant-1', 0, 20);
+      const result = await controller.getResidenteTimeline(
+        mockUser(),
+        'tenant-1',
+        0,
+        20,
+      );
 
       expect(result.items).toHaveLength(3);
       expect(result.items[0].id).toBe('p2');
@@ -84,15 +89,29 @@ describe('DashboardController — Residente Timeline', () => {
   describe('Pagination — offset/limit slice and hasMore flag', () => {
     it('should return first 2 items with hasMore=true when 5 total items exist', async () => {
       const pagos = Array.from({ length: 3 }, (_, i) =>
-        makePago({ id: `p${i}`, fechaPago: `2026-06-${String(i + 1).padStart(2, '0')}`, monto: (i + 1) * 100000 }),
+        makePago({
+          id: `p${i}`,
+          fechaPago: `2026-06-${String(i + 1).padStart(2, '0')}`,
+          monto: (i + 1) * 100000,
+        }),
       );
       const solicitudes = Array.from({ length: 2 }, (_, i) =>
-        makeSolicitud({ id: `s${i}`, fecha: new Date(`2026-06-${String(i + 10).padStart(2, '0')}T10:00:00Z`) }),
+        makeSolicitud({
+          id: `s${i}`,
+          fecha: new Date(
+            `2026-06-${String(i + 10).padStart(2, '0')}T10:00:00Z`,
+          ),
+        }),
       );
       mockPagoRepo.findByPropietario.mockResolvedValue(pagos);
       mockSolicitudRepo.findByUsuario.mockResolvedValue(solicitudes);
 
-      const result = await controller.getResidenteTimeline(mockUser(), 'tenant-1', 0, 2);
+      const result = await controller.getResidenteTimeline(
+        mockUser(),
+        'tenant-1',
+        0,
+        2,
+      );
 
       expect(result.items).toHaveLength(2);
       expect(result.hasMore).toBe(true);
@@ -102,12 +121,21 @@ describe('DashboardController — Residente Timeline', () => {
 
     it('should return last page with hasMore=false', async () => {
       const pagos = Array.from({ length: 3 }, (_, i) =>
-        makePago({ id: `p${i}`, fechaPago: `2026-06-${String(i + 1).padStart(2, '0')}`, monto: (i + 1) * 100000 }),
+        makePago({
+          id: `p${i}`,
+          fechaPago: `2026-06-${String(i + 1).padStart(2, '0')}`,
+          monto: (i + 1) * 100000,
+        }),
       );
       mockPagoRepo.findByPropietario.mockResolvedValue(pagos);
       mockSolicitudRepo.findByUsuario.mockResolvedValue([]);
 
-      const result = await controller.getResidenteTimeline(mockUser(), 'tenant-1', 2, 2);
+      const result = await controller.getResidenteTimeline(
+        mockUser(),
+        'tenant-1',
+        2,
+        2,
+      );
 
       expect(result.items).toHaveLength(1);
       expect(result.hasMore).toBe(false);
@@ -120,7 +148,12 @@ describe('DashboardController — Residente Timeline', () => {
       mockPagoRepo.findByPropietario.mockResolvedValue([]);
       mockSolicitudRepo.findByUsuario.mockResolvedValue([]);
 
-      const result = await controller.getResidenteTimeline(mockUser(), 'tenant-1', 0, 20);
+      const result = await controller.getResidenteTimeline(
+        mockUser(),
+        'tenant-1',
+        0,
+        20,
+      );
 
       expect(result.items).toEqual([]);
       expect(result.hasMore).toBe(false);
@@ -134,7 +167,12 @@ describe('DashboardController — Residente Timeline', () => {
       ]);
       mockSolicitudRepo.findByUsuario.mockResolvedValue([]);
 
-      const result = await controller.getResidenteTimeline(mockUser(), 'tenant-1', 0, 20);
+      const result = await controller.getResidenteTimeline(
+        mockUser(),
+        'tenant-1',
+        0,
+        20,
+      );
 
       expect(result.items[0]).toEqual({
         id: 'pago-abc',
@@ -151,10 +189,19 @@ describe('DashboardController — Residente Timeline', () => {
     it('should map solicitud to TimelineItemDto with monto null', async () => {
       mockPagoRepo.findByPropietario.mockResolvedValue([]);
       mockSolicitudRepo.findByUsuario.mockResolvedValue([
-        makeSolicitud({ id: 'sol-xyz', descripcion: 'Solicita cobro urgente', estado: 'PENDIENTE' }),
+        makeSolicitud({
+          id: 'sol-xyz',
+          descripcion: 'Solicita cobro urgente',
+          estado: 'PENDIENTE',
+        }),
       ]);
 
-      const result = await controller.getResidenteTimeline(mockUser(), 'tenant-1', 0, 20);
+      const result = await controller.getResidenteTimeline(
+        mockUser(),
+        'tenant-1',
+        0,
+        20,
+      );
 
       expect(result.items[0]).toEqual({
         id: 'sol-xyz',

@@ -43,7 +43,9 @@ export class RegistrarResidenteUseCase {
     private readonly generarCobrosUC: GenerarCobrosUseCase,
   ) {}
 
-  async execute(params: RegistrarResidenteParams): Promise<ResultadoRegistroResidente> {
+  async execute(
+    params: RegistrarResidenteParams,
+  ): Promise<ResultadoRegistroResidente> {
     const residente = Residente.crear(
       params.nombre,
       params.telefono,
@@ -87,7 +89,12 @@ export class RegistrarResidenteUseCase {
         // Generar cobros inmediatamente para el mes actual
         const mes = fechaInicio.getMonth() + 1;
         const anio = fechaInicio.getFullYear();
-        await this.generarCobrosUC.generarCobrosParaPlan(planSaved, mes, anio, fechaInicio);
+        await this.generarCobrosUC.generarCobrosParaPlan(
+          planSaved,
+          mes,
+          anio,
+          fechaInicio,
+        );
       }
     }
 
@@ -112,7 +119,9 @@ export class RegistrarResidenteUseCase {
     // Asegurar unicidad de username si ya existiese
     const baseUsername = username;
     let counter = 1;
-    while (await this.usuarioRepository.findOne({ where: { email: username } })) {
+    while (
+      await this.usuarioRepository.findOne({ where: { email: username } })
+    ) {
       counter++;
       username = `${baseUsername}_${counter}`;
     }

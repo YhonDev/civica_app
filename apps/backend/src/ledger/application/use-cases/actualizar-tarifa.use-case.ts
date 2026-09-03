@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { Tarifa } from '../../domain/tarifa.entity';
 import { TarifaRepository } from '../../infrastructure/persistence/tarifa.repository';
 import { TarifaDerivacionService } from '../services/tarifa-derivacion.service';
@@ -49,7 +53,9 @@ export class ActualizarTarifaUseCase {
         (t) => t.modalidad === tarifa.modalidad,
       );
       if (!actualizada) {
-        throw new BadRequestException('No se encontraron tarifas activas para actualizar');
+        throw new BadRequestException(
+          'No se encontraron tarifas activas para actualizar',
+        );
       }
 
       if (fechaVigencia !== undefined) {

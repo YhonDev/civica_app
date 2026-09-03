@@ -1,5 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe, ClassSerializerInterceptor } from '@nestjs/common';
+import {
+  INestApplication,
+  ValidationPipe,
+  ClassSerializerInterceptor,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import request from 'supertest';
 import { DataSource } from 'typeorm';
@@ -79,7 +83,20 @@ describe('Dashboard API Integration — Sprint 5 (Admin Dashboard)', () => {
 
   // Helper: short month name in Spanish
   const mesNombre = (date: Date): string => {
-    const nombres = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    const nombres = [
+      'Ene',
+      'Feb',
+      'Mar',
+      'Abr',
+      'May',
+      'Jun',
+      'Jul',
+      'Ago',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dic',
+    ];
     return nombres[date.getMonth()];
   };
 
@@ -87,8 +104,6 @@ describe('Dashboard API Integration — Sprint 5 (Admin Dashboard)', () => {
   const lastMonth = currentMonth === 1 ? 12 : currentMonth - 1;
   const lastMonthYear = currentMonth === 1 ? currentYear - 1 : currentYear;
   const lastMonthStart = `${lastMonthYear}-${String(lastMonth).padStart(2, '0')}-01`;
-
-
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -103,7 +118,9 @@ describe('Dashboard API Integration — Sprint 5 (Admin Dashboard)', () => {
         transform: true,
       }),
     );
-    app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
+    app.useGlobalInterceptors(
+      new ClassSerializerInterceptor(app.get(Reflector)),
+    );
     await app.init();
 
     dataSource = app.get(DataSource);
@@ -176,12 +193,24 @@ describe('Dashboard API Integration — Sprint 5 (Admin Dashboard)', () => {
     await dataSource.query(
       `INSERT INTO propietarios (id, nombre, telefono, tenant_id, created_at)
        VALUES ($1, $2, $3, $4, $5)`,
-      [propietarioAlDia, 'Juan Al Día', '555-0101', tenantA, subDaysDate(now, 2)],
+      [
+        propietarioAlDia,
+        'Juan Al Día',
+        '555-0101',
+        tenantA,
+        subDaysDate(now, 2),
+      ],
     );
     await dataSource.query(
       `INSERT INTO propietarios (id, nombre, telefono, tenant_id, created_at)
        VALUES ($1, $2, $3, $4, $5)`,
-      [propietarioMora, 'Pedro En Mora', '555-0102', tenantA, subDaysDate(now, 30)],
+      [
+        propietarioMora,
+        'Pedro En Mora',
+        '555-0102',
+        tenantA,
+        subDaysDate(now, 30),
+      ],
     );
     await dataSource.query(
       `INSERT INTO propietarios (id, nombre, telefono, tenant_id)
@@ -211,17 +240,44 @@ describe('Dashboard API Integration — Sprint 5 (Admin Dashboard)', () => {
     await dataSource.query(
       `INSERT INTO usuarios (id, email, password_hash, nombre, rol, residente_id, tenant_id, activo)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-      [adminUserId, 'admin-dash@test.com', adminHash, 'Admin Dashboard', 'ADMIN', null, tenantA, true],
+      [
+        adminUserId,
+        'admin-dash@test.com',
+        adminHash,
+        'Admin Dashboard',
+        'ADMIN',
+        null,
+        tenantA,
+        true,
+      ],
     );
     await dataSource.query(
       `INSERT INTO usuarios (id, email, password_hash, nombre, rol, residente_id, tenant_id, activo)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-      [cobradorUserId, 'cobrador-dash@test.com', cobradorHash, 'Cobrador Dashboard', 'COBRADOR', null, tenantA, true],
+      [
+        cobradorUserId,
+        'cobrador-dash@test.com',
+        cobradorHash,
+        'Cobrador Dashboard',
+        'COBRADOR',
+        null,
+        tenantA,
+        true,
+      ],
     );
     await dataSource.query(
       `INSERT INTO usuarios (id, email, password_hash, nombre, rol, residente_id, tenant_id, activo)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-      [propietarioUserId, 'prop-dash@test.com', propHash, 'Prop Dashboard', 'PROPIETARIO', propietarioAlDia, tenantA, true],
+      [
+        propietarioUserId,
+        'prop-dash@test.com',
+        propHash,
+        'Prop Dashboard',
+        'PROPIETARIO',
+        propietarioAlDia,
+        tenantA,
+        true,
+      ],
     );
 
     // ── Asignar etapa al cobrador ─────────────────────────
@@ -247,19 +303,40 @@ describe('Dashboard API Integration — Sprint 5 (Admin Dashboard)', () => {
     await dataSource.query(
       `INSERT INTO tarifas (id, tenant_id, proyecto_id, frecuencia, monto, fecha_vigencia)
        VALUES ($1, $2, $3, $4, $5, $6)`,
-      [tarifaQuincenalId, tenantA, conjuntoA, 'QUINCENAL', 2000000, '2026-01-01'],
+      [
+        tarifaQuincenalId,
+        tenantA,
+        conjuntoA,
+        'QUINCENAL',
+        2000000,
+        '2026-01-01',
+      ],
     );
 
     // ── Cuentas de Cartera ────────────────────────────────
     await dataSource.query(
       `INSERT INTO cuentas_cartera (id, residente_id, tenant_id, proyecto_id, frecuencia, fecha_activacion)
        VALUES ($1, $2, $3, $4, $5, $6)`,
-      [randomUUID(), propietarioAlDia, tenantA, conjuntoA, 'MENSUAL', '2026-01-01'],
+      [
+        randomUUID(),
+        propietarioAlDia,
+        tenantA,
+        conjuntoA,
+        'MENSUAL',
+        '2026-01-01',
+      ],
     );
     await dataSource.query(
       `INSERT INTO cuentas_cartera (id, residente_id, tenant_id, proyecto_id, frecuencia, fecha_activacion)
        VALUES ($1, $2, $3, $4, $5, $6)`,
-      [randomUUID(), propietarioMora, tenantA, conjuntoA, 'MENSUAL', '2026-01-01'],
+      [
+        randomUUID(),
+        propietarioMora,
+        tenantA,
+        conjuntoA,
+        'MENSUAL',
+        '2026-01-01',
+      ],
     );
 
     // ── Cuotas ────────────────────────────────────────────
@@ -271,12 +348,19 @@ describe('Dashboard API Integration — Sprint 5 (Admin Dashboard)', () => {
       `INSERT INTO cuotas (id, residente_id, tenant_id, tarifa_id, concepto,
         monto, monto_pagado, periodo_inicio, periodo_fin, fecha_vencimiento, estado)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
-      [cuotaPagadaId, propietarioAlDia, tenantA, tarifaMensualId,
-        `Cuota ${mesNombre(now)} ${currentYear}`, 4000000, 4000000,
+      [
+        cuotaPagadaId,
+        propietarioAlDia,
+        tenantA,
+        tarifaMensualId,
+        `Cuota ${mesNombre(now)} ${currentYear}`,
+        4000000,
+        4000000,
         thisMonthStart,
         addDaysStr(thisMonthStart, 30),
         addDaysStr(thisMonthStart, 15),
-        'PAGADA'],
+        'PAGADA',
+      ],
     );
 
     // Cuota PENDIENTE (propietarioMora, current month)
@@ -284,12 +368,19 @@ describe('Dashboard API Integration — Sprint 5 (Admin Dashboard)', () => {
       `INSERT INTO cuotas (id, residente_id, tenant_id, tarifa_id, concepto,
         monto, monto_pagado, periodo_inicio, periodo_fin, fecha_vencimiento, estado)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
-      [cuotaPendienteId, propietarioMora, tenantA, tarifaMensualId,
-        `Cuota ${mesNombre(now)} ${currentYear}`, 4000000, 0,
+      [
+        cuotaPendienteId,
+        propietarioMora,
+        tenantA,
+        tarifaMensualId,
+        `Cuota ${mesNombre(now)} ${currentYear}`,
+        4000000,
+        0,
         thisMonthStart,
         addDaysStr(thisMonthStart, 30),
         addDaysStr(thisMonthStart, 15),
-        'PENDIENTE'],
+        'PENDIENTE',
+      ],
     );
 
     // Cuota VENCIDA (propietarioMora, last month)
@@ -298,12 +389,19 @@ describe('Dashboard API Integration — Sprint 5 (Admin Dashboard)', () => {
       `INSERT INTO cuotas (id, residente_id, tenant_id, tarifa_id, concepto,
         monto, monto_pagado, periodo_inicio, periodo_fin, fecha_vencimiento, estado)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
-      [cuotaVencidaId, propietarioMora, tenantA, tarifaMensualId,
-        `Cuota ${mesNombre(new Date(lastMonthYear, lastMonth - 1))} ${lastMonthYear}`, 4000000, 0,
+      [
+        cuotaVencidaId,
+        propietarioMora,
+        tenantA,
+        tarifaMensualId,
+        `Cuota ${mesNombre(new Date(lastMonthYear, lastMonth - 1))} ${lastMonthYear}`,
+        4000000,
+        0,
         lastMonthStart,
-        addDaysStr(lastMonthStart, 15),  // periodo_fin dentro del mes anterior
+        addDaysStr(lastMonthStart, 15), // periodo_fin dentro del mes anterior
         `${lastMonthYear}-${String(lastMonth).padStart(2, '0')}-15`,
-        'VENCIDA'],
+        'VENCIDA',
+      ],
     );
 
     // ════════════════════════════════════════════════════════════
@@ -314,8 +412,16 @@ describe('Dashboard API Integration — Sprint 5 (Admin Dashboard)', () => {
     await dataSource.query(
       `INSERT INTO pagos (id, client_payment_id, tenant_id, cuota_id, monto, fecha_pago, cobrador_id, residente_id)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-      [randomUUID(), `dash-pago-${randomUUID()}`, tenantA, cuotaPagadaId,
-        4000000, pagoDate, cobradorUserId, propietarioAlDia],
+      [
+        randomUUID(),
+        `dash-pago-${randomUUID()}`,
+        tenantA,
+        cuotaPagadaId,
+        4000000,
+        pagoDate,
+        cobradorUserId,
+        propietarioAlDia,
+      ],
     );
 
     // ════════════════════════════════════════════════════════════
@@ -324,12 +430,26 @@ describe('Dashboard API Integration — Sprint 5 (Admin Dashboard)', () => {
     await dataSource.query(
       `INSERT INTO actividad (id, tenant_id, tipo, descripcion, usuario_nombre, usuario_id)
        VALUES ($1, $2, $3, $4, $5, $6)`,
-      [randomUUID(), conjuntoA, 'pago_registrado', 'Pagó la cuota mensual', 'Juan Al Día', propietarioUserId],
+      [
+        randomUUID(),
+        conjuntoA,
+        'pago_registrado',
+        'Pagó la cuota mensual',
+        'Juan Al Día',
+        propietarioUserId,
+      ],
     );
     await dataSource.query(
       `INSERT INTO actividad (id, tenant_id, tipo, descripcion, usuario_nombre, usuario_id)
        VALUES ($1, $2, $3, $4, $5, $6)`,
-      [randomUUID(), conjuntoA, 'nuevo_propietario', 'Se registró en la plataforma', 'Juan Al Día', propietarioUserId],
+      [
+        randomUUID(),
+        conjuntoA,
+        'nuevo_propietario',
+        'Se registró en la plataforma',
+        'Juan Al Día',
+        propietarioUserId,
+      ],
     );
 
     // ════════════════════════════════════════════════════════════
@@ -338,14 +458,30 @@ describe('Dashboard API Integration — Sprint 5 (Admin Dashboard)', () => {
     await dataSource.query(
       `INSERT INTO solicitudes (id, tenant_id, usuario_id, cuota_id, nro_recibo, tipo, descripcion, estado)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-      [randomUUID(), tenantA, propietarioUserId, cuotaPendienteId,
-       'REC-001', 'REVISION_PAGO', 'Solicito revisión de mi pago', 'PENDIENTE'],
+      [
+        randomUUID(),
+        tenantA,
+        propietarioUserId,
+        cuotaPendienteId,
+        'REC-001',
+        'REVISION_PAGO',
+        'Solicito revisión de mi pago',
+        'PENDIENTE',
+      ],
     );
     await dataSource.query(
       `INSERT INTO solicitudes (id, tenant_id, usuario_id, cuota_id, nro_recibo, tipo, descripcion, estado)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-      [randomUUID(), tenantA, propietarioUserId, cuotaVencidaId,
-       'REC-002', 'DESCUENTO', ' Solicito descuento por pronto pago', 'PENDIENTE'],
+      [
+        randomUUID(),
+        tenantA,
+        propietarioUserId,
+        cuotaVencidaId,
+        'REC-002',
+        'DESCUENTO',
+        ' Solicito descuento por pronto pago',
+        'PENDIENTE',
+      ],
     );
 
     // ════════════════════════════════════════════════════════════
@@ -360,7 +496,16 @@ describe('Dashboard API Integration — Sprint 5 (Admin Dashboard)', () => {
     await dataSource.query(
       `INSERT INTO usuarios (id, email, password_hash, nombre, rol, residente_id, tenant_id, activo)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-      [adminBId, 'admin-b@test.com', adminBHash, 'Admin Tenant B', 'ADMIN', null, tenantB, true],
+      [
+        adminBId,
+        'admin-b@test.com',
+        adminBHash,
+        'Admin Tenant B',
+        'ADMIN',
+        null,
+        tenantB,
+        true,
+      ],
     );
 
     // ════════════════════════════════════════════════════════════
@@ -387,21 +532,62 @@ describe('Dashboard API Integration — Sprint 5 (Admin Dashboard)', () => {
 
   afterAll(async () => {
     // Clean up in FK-safe order
-    await dataSource.query(`DELETE FROM pagos WHERE tenant_id IN ($1, $2)`, [tenantA, tenantB]);
-    await dataSource.query(`DELETE FROM solicitudes WHERE tenant_id IN ($1, $2)`, [tenantA, tenantB]);
-    await dataSource.query(`DELETE FROM actividad WHERE tenant_id IN ($1, $2)`, [tenantA, tenantB]);
-    await dataSource.query(`DELETE FROM cuotas WHERE tenant_id IN ($1, $2)`, [tenantA, tenantB]);
-    await dataSource.query(`DELETE FROM cuentas_cartera WHERE tenant_id IN ($1, $2)`, [tenantA, tenantB]);
-    await dataSource.query(`DELETE FROM tarifas WHERE tenant_id IN ($1, $2)`, [tenantA, tenantB]);
-    await dataSource.query(`DELETE FROM asignaciones_etapa WHERE tenant_id IN ($1, $2)`, [tenantA, tenantB]);
-    await dataSource.query(`DELETE FROM usuarios WHERE tenant_id IN ($1, $2)`, [tenantA, tenantB]);
-    await dataSource.query(`DELETE FROM tenencias WHERE residente_id IN ($1, $2, $3)`,
-      [propietarioAlDia, propietarioMora, propietarioSinCuenta]);
-    await dataSource.query(`DELETE FROM propietarios WHERE tenant_id IN ($1, $2)`, [tenantA, tenantB]);
-    await dataSource.query(`DELETE FROM casas WHERE manzana_id IN ($1, $2)`, [manzanaA, manzanaB]);
-    await dataSource.query(`DELETE FROM manzanas WHERE etapa_id IN ($1, $2)`, [etapaA, etapaB]);
-    await dataSource.query(`DELETE FROM etapas WHERE proyecto_id IN (SELECT id FROM conjuntos WHERE tenant_id IN ($1, $2))`, [tenantA, tenantB]);
-    await dataSource.query(`DELETE FROM conjuntos WHERE tenant_id IN ($1, $2)`, [tenantA, tenantB]);
+    await dataSource.query(`DELETE FROM pagos WHERE tenant_id IN ($1, $2)`, [
+      tenantA,
+      tenantB,
+    ]);
+    await dataSource.query(
+      `DELETE FROM solicitudes WHERE tenant_id IN ($1, $2)`,
+      [tenantA, tenantB],
+    );
+    await dataSource.query(
+      `DELETE FROM actividad WHERE tenant_id IN ($1, $2)`,
+      [tenantA, tenantB],
+    );
+    await dataSource.query(`DELETE FROM cuotas WHERE tenant_id IN ($1, $2)`, [
+      tenantA,
+      tenantB,
+    ]);
+    await dataSource.query(
+      `DELETE FROM cuentas_cartera WHERE tenant_id IN ($1, $2)`,
+      [tenantA, tenantB],
+    );
+    await dataSource.query(`DELETE FROM tarifas WHERE tenant_id IN ($1, $2)`, [
+      tenantA,
+      tenantB,
+    ]);
+    await dataSource.query(
+      `DELETE FROM asignaciones_etapa WHERE tenant_id IN ($1, $2)`,
+      [tenantA, tenantB],
+    );
+    await dataSource.query(`DELETE FROM usuarios WHERE tenant_id IN ($1, $2)`, [
+      tenantA,
+      tenantB,
+    ]);
+    await dataSource.query(
+      `DELETE FROM tenencias WHERE residente_id IN ($1, $2, $3)`,
+      [propietarioAlDia, propietarioMora, propietarioSinCuenta],
+    );
+    await dataSource.query(
+      `DELETE FROM propietarios WHERE tenant_id IN ($1, $2)`,
+      [tenantA, tenantB],
+    );
+    await dataSource.query(`DELETE FROM casas WHERE manzana_id IN ($1, $2)`, [
+      manzanaA,
+      manzanaB,
+    ]);
+    await dataSource.query(`DELETE FROM manzanas WHERE etapa_id IN ($1, $2)`, [
+      etapaA,
+      etapaB,
+    ]);
+    await dataSource.query(
+      `DELETE FROM etapas WHERE proyecto_id IN (SELECT id FROM conjuntos WHERE tenant_id IN ($1, $2))`,
+      [tenantA, tenantB],
+    );
+    await dataSource.query(
+      `DELETE FROM conjuntos WHERE tenant_id IN ($1, $2)`,
+      [tenantA, tenantB],
+    );
 
     await app.close();
   });
@@ -477,7 +663,9 @@ describe('Dashboard API Integration — Sprint 5 (Admin Dashboard)', () => {
 
       // El pago se registró hoy, por lo que debe aparecer en la evolución
       const today = now.getDate();
-      const todayEntry = evolucion.find((e: { dia: number }) => e.dia === today);
+      const todayEntry = evolucion.find(
+        (e: { dia: number }) => e.dia === today,
+      );
       expect(todayEntry).toBeDefined();
       expect(todayEntry.valor).toBe(4000000);
     });
@@ -492,7 +680,9 @@ describe('Dashboard API Integration — Sprint 5 (Admin Dashboard)', () => {
       expect(Array.isArray(modalidades)).toBe(true);
 
       // Debemos ver al menos una modalidad (MENSUAL)
-      const mensual = modalidades.find((m: { frecuencia: string }) => m.frecuencia === 'MENSUAL');
+      const mensual = modalidades.find(
+        (m: { frecuencia: string }) => m.frecuencia === 'MENSUAL',
+      );
       expect(mensual).toBeDefined();
       expect(mensual.totalCuotas).toBeGreaterThanOrEqual(2);
       expect(mensual.pagadas).toBeGreaterThanOrEqual(1);
@@ -807,7 +997,5 @@ describe('Dashboard API Integration — Sprint 5 (Admin Dashboard)', () => {
       expect(res.body.propietarioInfo.casaDireccion).toBeTruthy();
       expect(res.body.propietarioInfo.etapaNombre).toBe('Etapa Alfa');
     });
-
-
   });
 });

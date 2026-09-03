@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
-import '../../core/widgets/top_toast.dart';
 import '../../shared/widgets/credentials_dialog.dart';
 import 'comunidad_repository.dart';
 import 'residentes_repository.dart';
@@ -87,7 +85,7 @@ class _NuevoResidenteScreenState extends State<NuevoResidenteScreen> {
       final credenciales = data['credenciales'] as Map<String, dynamic>?;
       final usuario = data['usuario'] as Map<String, dynamic>?;
 
-      if (!context.mounted) return;
+      if (!mounted) return;
 
       _mostrarCredenciales(_ResultadoCrearResidente(
         username: credenciales?['username'] as String? ?? '',
@@ -95,12 +93,12 @@ class _NuevoResidenteScreenState extends State<NuevoResidenteScreen> {
         nombre: usuario?['nombre'] as String? ?? _nombreCtrl.text.trim(),
       ));
     } catch (e) {
-      if (!context.mounted) return;
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error al crear residente: $e')),
       );
     } finally {
-      if (context.mounted) {
+      if (mounted) {
         setState(() => _isSaving = false);
       }
     }

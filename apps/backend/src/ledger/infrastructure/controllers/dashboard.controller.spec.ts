@@ -52,12 +52,21 @@ describe('DashboardController — Cobrador Logic', () => {
     estado: string,
     monto: number,
     montoPagado: number,
-    casa: { id: string; direccionInterna: string; manzana: { nombre: string; etapa: { nombre: string } } },
+    casa: {
+      id: string;
+      direccionInterna: string;
+      manzana: { nombre: string; etapa: { nombre: string } };
+    },
     overrides: Partial<Cobro> = {},
   ): Cobro {
     const cobro = Cobro.crear(
-      residenteId, TENANT_ID, 'Cuota Test',
-      Money.ofCOP(monto), '2026-01-01', '2026-02-01', '2026-01-15',
+      residenteId,
+      TENANT_ID,
+      'Cuota Test',
+      Money.ofCOP(monto),
+      '2026-01-01',
+      '2026-02-01',
+      '2026-01-15',
     );
     Object.assign(cobro, {
       montoPagado,
@@ -110,9 +119,7 @@ describe('DashboardController — Cobrador Logic', () => {
   describe('getDashboardCobrador()', () => {
     it('should group cobros by vivienda (casa)', async () => {
       const user = crearUser();
-      mockDataSource.query.mockResolvedValue([
-        { etapa_id: 'etapa-1' },
-      ]);
+      mockDataSource.query.mockResolvedValue([{ etapa_id: 'etapa-1' }]);
       mockPagoRepo.findByCobradorToday.mockResolvedValue({
         pagos: [],
         total: 0,
@@ -139,9 +146,7 @@ describe('DashboardController — Cobrador Logic', () => {
 
     it('should aggregate multiple cobros from same casa into one vivienda', async () => {
       const user = crearUser();
-      mockDataSource.query.mockResolvedValue([
-        { etapa_id: 'etapa-1' },
-      ]);
+      mockDataSource.query.mockResolvedValue([{ etapa_id: 'etapa-1' }]);
       mockPagoRepo.findByCobradorToday.mockResolvedValue({
         pagos: [],
         total: 0,
@@ -172,27 +177,40 @@ describe('DashboardController — Cobrador Logic', () => {
 
     it('should sort viviendas with VENCIDA first, then PARCIAL, then PENDIENTE', async () => {
       const user = crearUser();
-      mockDataSource.query.mockResolvedValue([
-        { etapa_id: 'etapa-1' },
-      ]);
+      mockDataSource.query.mockResolvedValue([{ etapa_id: 'etapa-1' }]);
       mockPagoRepo.findByCobradorToday.mockResolvedValue({
         pagos: [],
         total: 0,
         count: 0,
       });
 
-      const cobroVencida = crearCobroConResidente('res-vencida', 'VENCIDA', 40000, 0, {
-        id: 'casa-vencida',
-        direccionInterna: 'Casa Vencida',
-        manzana: { nombre: 'Mz B', etapa: { nombre: 'Etapa Beta' } },
-      });
-      const cobroPendiente = crearCobroConResidente('res-pendiente', 'PENDIENTE', 30000, 0, {
-        id: 'casa-pendiente',
-        direccionInterna: 'Casa Pendiente',
-        manzana: { nombre: 'Mz A', etapa: { nombre: 'Etapa Alfa' } },
-      });
+      const cobroVencida = crearCobroConResidente(
+        'res-vencida',
+        'VENCIDA',
+        40000,
+        0,
+        {
+          id: 'casa-vencida',
+          direccionInterna: 'Casa Vencida',
+          manzana: { nombre: 'Mz B', etapa: { nombre: 'Etapa Beta' } },
+        },
+      );
+      const cobroPendiente = crearCobroConResidente(
+        'res-pendiente',
+        'PENDIENTE',
+        30000,
+        0,
+        {
+          id: 'casa-pendiente',
+          direccionInterna: 'Casa Pendiente',
+          manzana: { nombre: 'Mz A', etapa: { nombre: 'Etapa Alfa' } },
+        },
+      );
 
-      mockCobroRepo.findPendientesByTenant.mockResolvedValue([cobroPendiente, cobroVencida]);
+      mockCobroRepo.findPendientesByTenant.mockResolvedValue([
+        cobroPendiente,
+        cobroVencida,
+      ]);
 
       const result = await controller.getDashboardCobrador(user, TENANT_ID);
 
@@ -216,9 +234,7 @@ describe('DashboardController — Cobrador Logic', () => {
 
     it('should return empty arrays when no pendientes cobros exist', async () => {
       const user = crearUser();
-      mockDataSource.query.mockResolvedValue([
-        { etapa_id: 'etapa-1' },
-      ]);
+      mockDataSource.query.mockResolvedValue([{ etapa_id: 'etapa-1' }]);
       mockCobroRepo.findPendientesByTenant.mockResolvedValue([]);
       mockPagoRepo.findByCobradorToday.mockResolvedValue({
         pagos: [],
@@ -235,9 +251,7 @@ describe('DashboardController — Cobrador Logic', () => {
 
     it('should skip cobros where residente has no active tenencia', async () => {
       const user = crearUser();
-      mockDataSource.query.mockResolvedValue([
-        { etapa_id: 'etapa-1' },
-      ]);
+      mockDataSource.query.mockResolvedValue([{ etapa_id: 'etapa-1' }]);
       mockPagoRepo.findByCobradorToday.mockResolvedValue({
         pagos: [],
         total: 0,
@@ -245,8 +259,13 @@ describe('DashboardController — Cobrador Logic', () => {
       });
 
       const cobro = Cobro.crear(
-        'res-sin-tenencia', TENANT_ID, 'Cuota Test',
-        Money.ofCOP(40000), '2026-01-01', '2026-02-01', '2026-01-15',
+        'res-sin-tenencia',
+        TENANT_ID,
+        'Cuota Test',
+        Money.ofCOP(40000),
+        '2026-01-01',
+        '2026-02-01',
+        '2026-01-15',
       );
       Object.assign(cobro, {
         estado: 'PENDIENTE',
@@ -267,46 +286,55 @@ describe('DashboardController — Cobrador Logic', () => {
 
     it('should calculate stats correctly (pendientes, vencidas, montoEsperado)', async () => {
       const user = crearUser();
-      mockDataSource.query.mockResolvedValue([
-        { etapa_id: 'etapa-1' },
-      ]);
+      mockDataSource.query.mockResolvedValue([{ etapa_id: 'etapa-1' }]);
       mockPagoRepo.findByCobradorToday.mockResolvedValue({
         pagos: [],
         total: 0,
         count: 0,
       });
 
-      const cobroVencida = crearCobroConResidente('res-v', 'VENCIDA', 50000, 0, {
-        id: 'casa-v',
-        direccionInterna: 'Casa V',
-        manzana: { nombre: 'Mz V', etapa: { nombre: 'Eta V' } },
-      });
-      const cobroPendiente = crearCobroConResidente('res-p', 'PENDIENTE', 30000, 0, {
-        id: 'casa-p',
-        direccionInterna: 'Casa P',
-        manzana: { nombre: 'Mz P', etapa: { nombre: 'Eta P' } },
-      });
+      const cobroVencida = crearCobroConResidente(
+        'res-v',
+        'VENCIDA',
+        50000,
+        0,
+        {
+          id: 'casa-v',
+          direccionInterna: 'Casa V',
+          manzana: { nombre: 'Mz V', etapa: { nombre: 'Eta V' } },
+        },
+      );
+      const cobroPendiente = crearCobroConResidente(
+        'res-p',
+        'PENDIENTE',
+        30000,
+        0,
+        {
+          id: 'casa-p',
+          direccionInterna: 'Casa P',
+          manzana: { nombre: 'Mz P', etapa: { nombre: 'Eta P' } },
+        },
+      );
 
-      mockCobroRepo.findPendientesByTenant.mockResolvedValue([cobroVencida, cobroPendiente]);
+      mockCobroRepo.findPendientesByTenant.mockResolvedValue([
+        cobroVencida,
+        cobroPendiente,
+      ]);
 
       const result = await controller.getDashboardCobrador(user, TENANT_ID);
 
       expect(result.stats.totalViviendas).toBe(2);
       expect(result.stats.pendientes).toBe(1); // one PENDIENTE vivienda
-      expect(result.stats.vencidas).toBe(1);   // one VENCIDA vivienda
+      expect(result.stats.vencidas).toBe(1); // one VENCIDA vivienda
       expect(result.stats.montoEsperado).toBe(800); // (500+300)
     });
 
     it('should include cobradosHoy in stats when cobrador has payments today', async () => {
       const user = crearUser();
-      mockDataSource.query.mockResolvedValue([
-        { etapa_id: 'etapa-1' },
-      ]);
+      mockDataSource.query.mockResolvedValue([{ etapa_id: 'etapa-1' }]);
       mockCobroRepo.findPendientesByTenant.mockResolvedValue([]);
       mockPagoRepo.findByCobradorToday.mockResolvedValue({
-        pagos: [
-          { id: 'pago-1', monto: 40000, fechaPago: '2026-07-17' },
-        ],
+        pagos: [{ id: 'pago-1', monto: 40000, fechaPago: '2026-07-17' }],
         total: 40000,
         count: 1,
       });
@@ -320,9 +348,7 @@ describe('DashboardController — Cobrador Logic', () => {
 
     it('should not fail when cobro has no resident (should be skipped)', async () => {
       const user = crearUser();
-      mockDataSource.query.mockResolvedValue([
-        { etapa_id: 'etapa-1' },
-      ]);
+      mockDataSource.query.mockResolvedValue([{ etapa_id: 'etapa-1' }]);
       mockPagoRepo.findByCobradorToday.mockResolvedValue({
         pagos: [],
         total: 0,
@@ -330,8 +356,13 @@ describe('DashboardController — Cobrador Logic', () => {
       });
 
       const cobro = Cobro.crear(
-        'res-orphan', TENANT_ID, 'Cuota Test',
-        Money.ofCOP(40000), '2026-01-01', '2026-02-01', '2026-01-15',
+        'res-orphan',
+        TENANT_ID,
+        'Cuota Test',
+        Money.ofCOP(40000),
+        '2026-01-01',
+        '2026-02-01',
+        '2026-01-15',
       );
       // No residente assigned
       Object.assign(cobro, { estado: 'PENDIENTE', residente: null });

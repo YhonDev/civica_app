@@ -1,5 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe, ClassSerializerInterceptor } from '@nestjs/common';
+import {
+  INestApplication,
+  ValidationPipe,
+  ClassSerializerInterceptor,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import request from 'supertest';
 import { DataSource } from 'typeorm';
@@ -53,7 +57,9 @@ describe('Ciclo Completo del Motor de Recaudo (E2E Integration)', () => {
         transform: true,
       }),
     );
-    app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
+    app.useGlobalInterceptors(
+      new ClassSerializerInterceptor(app.get(Reflector)),
+    );
     await app.init();
 
     dataSource = app.get(DataSource);
@@ -113,20 +119,46 @@ describe('Ciclo Completo del Motor de Recaudo (E2E Integration)', () => {
     if (!dataSource || !dataSource.isInitialized) return;
 
     // Cleanup in reverse dependency order
-    await dataSource.query('DELETE FROM tickets WHERE tenant_id = $1', [tenantId]);
-    await dataSource.query('DELETE FROM pagos WHERE tenant_id = $1', [tenantId]);
-    await dataSource.query('DELETE FROM cobros WHERE tenant_id = $1', [tenantId]);
-    await dataSource.query('DELETE FROM periodos_cobro WHERE tenant_id = $1', [tenantId]);
-    await dataSource.query('DELETE FROM planes_de_cobro WHERE tenant_id = $1', [tenantId]);
-    await dataSource.query('DELETE FROM tenencias WHERE residente_id IN (SELECT id FROM residentes WHERE tenant_id = $1)', [tenantId]);
-    await dataSource.query('DELETE FROM usuarios WHERE tenant_id = $1', [tenantId]);
-    await dataSource.query('DELETE FROM residentes WHERE tenant_id = $1', [tenantId]);
-    if (casaId2) await dataSource.query('DELETE FROM casas WHERE id = $1', [casaId2]);
-    if (casaId) await dataSource.query('DELETE FROM casas WHERE id = $1', [casaId]);
-    if (manzanaId) await dataSource.query('DELETE FROM manzanas WHERE id = $1', [manzanaId]);
-    if (etapaId) await dataSource.query('DELETE FROM etapas WHERE id = $1', [etapaId]);
-    if (proyectoId) await dataSource.query('DELETE FROM proyectos WHERE id = $1', [proyectoId]);
-    await dataSource.query('DELETE FROM actividad WHERE tenant_id = $1', [tenantId]);
+    await dataSource.query('DELETE FROM tickets WHERE tenant_id = $1', [
+      tenantId,
+    ]);
+    await dataSource.query('DELETE FROM pagos WHERE tenant_id = $1', [
+      tenantId,
+    ]);
+    await dataSource.query('DELETE FROM cobros WHERE tenant_id = $1', [
+      tenantId,
+    ]);
+    await dataSource.query('DELETE FROM periodos_cobro WHERE tenant_id = $1', [
+      tenantId,
+    ]);
+    await dataSource.query('DELETE FROM planes_de_cobro WHERE tenant_id = $1', [
+      tenantId,
+    ]);
+    await dataSource.query(
+      'DELETE FROM tenencias WHERE residente_id IN (SELECT id FROM residentes WHERE tenant_id = $1)',
+      [tenantId],
+    );
+    await dataSource.query('DELETE FROM usuarios WHERE tenant_id = $1', [
+      tenantId,
+    ]);
+    await dataSource.query('DELETE FROM residentes WHERE tenant_id = $1', [
+      tenantId,
+    ]);
+    if (casaId2)
+      await dataSource.query('DELETE FROM casas WHERE id = $1', [casaId2]);
+    if (casaId)
+      await dataSource.query('DELETE FROM casas WHERE id = $1', [casaId]);
+    if (manzanaId)
+      await dataSource.query('DELETE FROM manzanas WHERE id = $1', [manzanaId]);
+    if (etapaId)
+      await dataSource.query('DELETE FROM etapas WHERE id = $1', [etapaId]);
+    if (proyectoId)
+      await dataSource.query('DELETE FROM proyectos WHERE id = $1', [
+        proyectoId,
+      ]);
+    await dataSource.query('DELETE FROM actividad WHERE tenant_id = $1', [
+      tenantId,
+    ]);
 
     await app.close();
   });
@@ -367,7 +399,9 @@ describe('Ciclo Completo del Motor de Recaudo (E2E Integration)', () => {
       const anio = hoy.getFullYear();
 
       const res = await request(app.getHttpServer())
-        .get(`/reportes/recaudo?proyectoId=${proyectoId}&mes=${mes}&anio=${anio}`)
+        .get(
+          `/reportes/recaudo?proyectoId=${proyectoId}&mes=${mes}&anio=${anio}`,
+        )
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
@@ -390,7 +424,7 @@ describe('Ciclo Completo del Motor de Recaudo (E2E Integration)', () => {
 
       // Validate desglosePorEstado
       expect(res.body.desglosePorEstado).toBeDefined();
-      expect(res.body.desglosePorEstado.pagadasCount).toBe(1);  // Residente 1 cobro
+      expect(res.body.desglosePorEstado.pagadasCount).toBe(1); // Residente 1 cobro
       expect(res.body.desglosePorEstado.pendientesCount).toBe(1); // Residente 2 cobro (PARCIAL)
 
       // Validate desglosePorEtapa

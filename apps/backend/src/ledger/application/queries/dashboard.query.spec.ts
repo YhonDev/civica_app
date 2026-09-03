@@ -358,7 +358,10 @@ describe('DashboardQuery', () => {
       mockCobroRepo.sumSaldoVencidasByTenant.mockResolvedValue(0);
       mockPagoRepo.groupByDayByMonth.mockResolvedValue([]);
       mockCobroRepo.groupByTarifaModalidad.mockResolvedValue([]);
-      mockCobroRepo.countByEstadoInMonth.mockResolvedValue({ pagadas: 0, pendientes: 0 });
+      mockCobroRepo.countByEstadoInMonth.mockResolvedValue({
+        pagadas: 0,
+        pendientes: 0,
+      });
       mockActividadRepo.findByTenant.mockResolvedValue([]);
       mockSolicitudRepo.findPendingByTenant.mockResolvedValue([]);
       mockResidenteRepo.countNuevosByWeek.mockResolvedValue(0);
@@ -377,8 +380,12 @@ describe('DashboardQuery', () => {
     it('should return zeroed resumen', async () => {
       const result = await query.execute(MES, ANIO, TENANT);
       expect(result.resumen).toEqual({
-        recaudoTotal: 0, metaMensual: 0, porcentajeMeta: 0,
-        pagaron: 0, pendientes: 0, moraTotal: 0,
+        recaudoTotal: 0,
+        metaMensual: 0,
+        porcentajeMeta: 0,
+        pagaron: 0,
+        pendientes: 0,
+        moraTotal: 0,
       });
     });
 
@@ -393,7 +400,11 @@ describe('DashboardQuery', () => {
 
     it('should return zero for estadoCobros (no division by zero)', async () => {
       const result = await query.execute(MES, ANIO, TENANT);
-      expect(result.estadoCobros).toEqual({ pagados: 0, pendientes: 0, revision: 0 });
+      expect(result.estadoCobros).toEqual({
+        pagados: 0,
+        pendientes: 0,
+        revision: 0,
+      });
     });
 
     it('should return 0 for solicitudesPendientes', async () => {
@@ -413,14 +424,18 @@ describe('DashboardQuery', () => {
       const result = await query.execute(MES, ANIO, TENANT);
 
       for (const item of result.evolucion) {
-        expect(Object.keys(item)).toEqual(expect.arrayContaining(['dia', 'valor']));
+        expect(Object.keys(item)).toEqual(
+          expect.arrayContaining(['dia', 'valor']),
+        );
         expect(Object.keys(item)).not.toContain('monto');
       }
     });
 
     it('should preserve numeric values through the mapping', async () => {
       setupHappyPathMocks();
-      mockPagoRepo.groupByDayByMonth.mockResolvedValue([{ dia: 1, valor: 9999.5 }]);
+      mockPagoRepo.groupByDayByMonth.mockResolvedValue([
+        { dia: 1, valor: 9999.5 },
+      ]);
       const result = await query.execute(MES, ANIO, TENANT);
       expect(result.evolucion[0]).toEqual({ dia: '1', valor: 9999.5 });
     });
@@ -429,9 +444,9 @@ describe('DashboardQuery', () => {
   describe('Modalidades edge cases', () => {
     it('should handle totalCuotas = 0 without division by zero', async () => {
       setupHappyPathMocks();
-    mockCobroRepo.groupByTarifaModalidad.mockResolvedValue([
-      { modalidad: 'ANUAL', totalCuotas: 0, pagadas: 0 },
-    ]);
+      mockCobroRepo.groupByTarifaModalidad.mockResolvedValue([
+        { modalidad: 'ANUAL', totalCuotas: 0, pagadas: 0 },
+      ]);
 
       const result = await query.execute(MES, ANIO, TENANT);
 

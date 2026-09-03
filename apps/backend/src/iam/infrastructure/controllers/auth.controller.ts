@@ -11,7 +11,12 @@ import {
 } from '@nestjs/common';
 import type { Request } from 'express';
 import { Throttle } from '@nestjs/throttler';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { AuthService } from '../../../shared/auth/auth.service';
 import { CrearUsuarioUseCase } from '../../application/use-cases/crear-usuario.use-case';
 import { RegisterDto, LoginDto, RefreshDto } from './dtos/auth.dto';
@@ -38,10 +43,7 @@ export class AuthController {
   @ApiResponse({ status: 201, description: 'Usuario creado exitosamente' })
   @ApiResponse({ status: 401, description: 'No autenticado' })
   @ApiResponse({ status: 403, description: 'Sin permisos de ADMIN' })
-  async register(
-    @Body() dto: RegisterDto,
-    @CurrentTenant() tenantId: string,
-  ) {
+  async register(@Body() dto: RegisterDto, @CurrentTenant() tenantId: string) {
     return this.crearUsuarioUseCase.execute({
       username: dto.username,
       password: dto.password,
@@ -55,18 +57,34 @@ export class AuthController {
   /** Login: 5 intentos por minuto para prevenir fuerza bruta. */
   @Post('login')
   @Throttle({ default: { limit: 5, ttl: 60000 } })
-  @ApiOperation({ summary: 'Iniciar sesión', description: 'Rate limit: 5 intentos por minuto' })
-  @ApiResponse({ status: 200, description: 'Login exitoso — retorna accessToken, refreshToken y datos del usuario' })
+  @ApiOperation({
+    summary: 'Iniciar sesión',
+    description: 'Rate limit: 5 intentos por minuto',
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Login exitoso — retorna accessToken, refreshToken y datos del usuario',
+  })
   @ApiResponse({ status: 401, description: 'Credenciales inválidas' })
-  @ApiResponse({ status: 429, description: 'Demasiados intentos — intenta en 1 minuto' })
+  @ApiResponse({
+    status: 429,
+    description: 'Demasiados intentos — intenta en 1 minuto',
+  })
   async login(@Body() dto: LoginDto, @Req() req: any) {
     const usuario = await this.authService.validateUser(
       dto.username,
       dto.password,
     );
 
-    const ipAddress = req?.headers ? ((req.headers['x-forwarded-for'] as string) || req.socket?.remoteAddress || undefined) : undefined;
-    const userAgent = req?.headers ? (req.headers['user-agent'] || undefined) : undefined;
+    const ipAddress = req?.headers
+      ? (req.headers['x-forwarded-for'] as string) ||
+        req.socket?.remoteAddress ||
+        undefined
+      : undefined;
+    const userAgent = req?.headers
+      ? req.headers['user-agent'] || undefined
+      : undefined;
 
     return this.authService.login(usuario, {
       deviceId: dto.deviceId,
@@ -77,15 +95,25 @@ export class AuthController {
   }
 
   @Post('refresh')
-  @ApiOperation({ summary: 'Refrescar tokens', description: 'Intercambia un refresh token válido por nuevos tokens con rotación' })
+  @ApiOperation({
+    summary: 'Refrescar tokens',
+    description:
+      'Intercambia un refresh token válido por nuevos tokens con rotación',
+  })
   @ApiResponse({ status: 200, description: 'Tokens renovados' })
-  @ApiResponse({ status: 401, description: 'Refresh token inválido, expirado o revocado' })
+  @ApiResponse({
+    status: 401,
+    description: 'Refresh token inválido, expirado o revocado',
+  })
   async refresh(@Body() dto: RefreshDto) {
     return this.authService.refreshToken(dto.refreshToken);
   }
 
   @Post('logout')
-  @ApiOperation({ summary: 'Cerrar sesión', description: 'Revoca la sesión actual en la base de datos' })
+  @ApiOperation({
+    summary: 'Cerrar sesión',
+    description: 'Revoca la sesión actual en la base de datos',
+  })
   @ApiResponse({ status: 200, description: 'Sesión cerrada' })
   async logout(@Body() dto: { refreshToken?: string }) {
     if (dto.refreshToken) {
@@ -98,7 +126,10 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('jwt-auth')
   @ApiOperation({ summary: 'Cerrar todas las sesiones activas del usuario' })
-  @ApiResponse({ status: 200, description: 'Todas las sesiones fueron revocadas' })
+  @ApiResponse({
+    status: 200,
+    description: 'Todas las sesiones fueron revocadas',
+  })
   async logoutAll(@CurrentUser() user: Usuario) {
     await this.authService.revokeAllSessionsForUser(user.id);
     return { success: true, message: 'Todas las sesiones fueron cerradas.' };
@@ -118,7 +149,10 @@ export class AuthController {
   @ApiBearerAuth('jwt-auth')
   @ApiOperation({ summary: 'Revocar una sesión específica' })
   @ApiResponse({ status: 200, description: 'Sesión revocada' })
-  async revokeSession(@Param('id') sessionId: string, @CurrentUser() user: Usuario) {
+  async revokeSession(
+    @Param('id') sessionId: string,
+    @CurrentUser() user: Usuario,
+  ) {
     await this.authService.revokeSessionById(sessionId, user.id);
     return { success: true, message: 'Sesión revocada exitosamente.' };
   }
@@ -162,7 +196,8 @@ export class AuthController {
   @ApiOperation({ summary: 'Actualizar credenciales (username y/o password)' })
   @ApiResponse({ status: 200, description: 'Credenciales actualizadas' })
   async updateCredentials(
-    @Body() dto: {
+    @Body()
+    dto: {
       usuarioId?: string;
       currentPassword?: string;
       newUsername?: string;
@@ -171,9 +206,8 @@ export class AuthController {
     @CurrentTenant() tenantId: string,
     @CurrentUser() user: Usuario,
   ) {
-    const targetId = user.rol === RolUsuario.ADMIN
-      ? (dto.usuarioId ?? user.id)
-      : user.id;
+    const targetId =
+      user.rol === RolUsuario.ADMIN ? (dto.usuarioId ?? user.id) : user.id;
 
     return this.authService.updateCredentials({
       usuarioId: targetId,

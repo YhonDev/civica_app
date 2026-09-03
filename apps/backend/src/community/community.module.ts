@@ -31,12 +31,24 @@ import { Reflector } from '@nestjs/core';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Proyecto, Etapa, Manzana, Casa, Residente, Tenencia, Usuario]),
+    TypeOrmModule.forFeature([
+      Proyecto,
+      Etapa,
+      Manzana,
+      Casa,
+      Residente,
+      Tenencia,
+      Usuario,
+    ]),
     IamModule,
     forwardRef(() => LedgerModule),
     NotificationsModule,
   ],
-  controllers: [ProyectosController, ResidentesController, CobradoresController],
+  controllers: [
+    ProyectosController,
+    ResidentesController,
+    CobradoresController,
+  ],
   providers: [
     // Repositories
     ProyectoRepository,
@@ -59,6 +71,11 @@ import { Reflector } from '@nestjs/core';
     Reflector,
     ActividadInterceptor,
   ],
-  exports: [TypeOrmModule, ProyectoRepository, ResidenteRepository, MantenimientoService],
+  exports: [
+    TypeOrmModule,
+    ProyectoRepository,
+    ResidenteRepository,
+    MantenimientoService,
+  ],
 })
 export class CommunityModule {}

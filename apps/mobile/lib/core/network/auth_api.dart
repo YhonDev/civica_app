@@ -43,8 +43,8 @@ class AuthApi {
       data: {
         'username': username,
         'password': password,
-        if (deviceId != null) 'deviceId': deviceId,
-        if (deviceName != null) 'deviceName': deviceName,
+        'deviceId': ?deviceId,
+        'deviceName': ?deviceName,
       },
     );
 

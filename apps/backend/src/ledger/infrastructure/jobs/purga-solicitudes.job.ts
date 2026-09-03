@@ -40,8 +40,12 @@ export class PurgaSolicitudesJob {
 
         await queryRunner.commitTransaction();
 
-        const count = Array.isArray(result) ? result[0]?.length ?? result.length : 0;
-        this.logger.log(`✅ Purga de solicitudes completada: ${count} solicitud(es) marcadas como EXPIRADA.`);
+        const count = Array.isArray(result)
+          ? (result[0]?.length ?? result.length)
+          : 0;
+        this.logger.log(
+          `✅ Purga de solicitudes completada: ${count} solicitud(es) marcadas como EXPIRADA.`,
+        );
 
         if (count > 0 && Array.isArray(result)) {
           for (const row of result[0] ?? result) {
@@ -55,7 +59,9 @@ export class PurgaSolicitudesJob {
                 );
               }
             } catch (e) {
-              this.logger.warn(`Could not log audit activity for expired solicitud ${row.id}: ${e}`);
+              this.logger.warn(
+                `Could not log audit activity for expired solicitud ${row.id}: ${e}`,
+              );
             }
           }
         }

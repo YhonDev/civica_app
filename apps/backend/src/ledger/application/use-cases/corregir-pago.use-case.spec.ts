@@ -39,26 +39,56 @@ describe('CorregirPagoUseCase', () => {
   };
 
   const mockDataSource = {
-    transaction: jest.fn().mockImplementation(
-      async (cb: (em: typeof mockEntityManager) => Promise<any>) => cb(mockEntityManager),
-    ),
+    transaction: jest
+      .fn()
+      .mockImplementation(
+        async (cb: (em: typeof mockEntityManager) => Promise<any>) =>
+          cb(mockEntityManager),
+      ),
   };
 
   const TENANT_ID = 'tenant-1';
   const RESIDENTE_ID = 'residente-1';
   const USUARIO_ID = 'user-1';
 
-  function crearPago(monto: number, estado = EstadoValidacionPago.PENDIENTE_REVISION): Pago {
-    const pago = Pago.crear('pay-001', TENANT_ID, Money.ofCOP(monto), '2026-01-20', 'cobrador-1', RESIDENTE_ID);
+  function crearPago(
+    monto: number,
+    estado = EstadoValidacionPago.PENDIENTE_REVISION,
+  ): Pago {
+    const pago = Pago.crear(
+      'pay-001',
+      TENANT_ID,
+      Money.ofCOP(monto),
+      '2026-01-20',
+      'cobrador-1',
+      RESIDENTE_ID,
+    );
     pago.id = 'pago-1';
     pago.estado = estado;
     return pago;
   }
 
-  function crearCobro(monto: number, montoPagado = 0, fecha = '2026-01-01'): Cobro {
-    const cobro = Cobro.crear(RESIDENTE_ID, TENANT_ID, 'Cuota Test', Money.ofCOP(monto), fecha, '2026-02-01', '2026-01-15');
+  function crearCobro(
+    monto: number,
+    montoPagado = 0,
+    fecha = '2026-01-01',
+  ): Cobro {
+    const cobro = Cobro.crear(
+      RESIDENTE_ID,
+      TENANT_ID,
+      'Cuota Test',
+      Money.ofCOP(monto),
+      fecha,
+      '2026-02-01',
+      '2026-01-15',
+    );
     cobro.montoPagado = montoPagado;
-    cobro.estado = montoPagado === 0 ? 'PENDIENTE' : montoPagado === monto ? 'PAGADA' : 'PARCIAL';
+    cobro.estado =
+      montoPagado === 0
+        ? 'PENDIENTE'
+        : montoPagado === monto
+          ? 'PAGADA'
+          : 'PARCIAL';
     return cobro;
   }
 
@@ -113,7 +143,7 @@ describe('CorregirPagoUseCase', () => {
     mockPagoRepo.findById.mockResolvedValue(pago);
     // Sin vínculos => reverso legacy (mismo comportamiento pre-fix)
     mockPagoCobroRepo.findByPago.mockResolvedValue([]);
-    
+
     // Al re-aplicar el nuevo monto (30000)
     mockCobroRepo.findMasAntiguoConSaldoLocked.mockResolvedValue(cobro);
 

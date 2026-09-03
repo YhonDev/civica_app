@@ -31,8 +31,17 @@ export class TarifaDerivacionService {
     const derivadas = tarifasDerivadas(montoMensual);
     const creadas: Tarifa[] = [];
 
-    for (const modalidad of ['SEMANAL', 'QUINCENAL', 'MENSUAL'] as ModalidadRecaudo[]) {
-      await this.desactivarFuturas(proyectoId, tenantId, modalidad, fechaVigencia);
+    for (const modalidad of [
+      'SEMANAL',
+      'QUINCENAL',
+      'MENSUAL',
+    ] as ModalidadRecaudo[]) {
+      await this.desactivarFuturas(
+        proyectoId,
+        tenantId,
+        modalidad,
+        fechaVigencia,
+      );
       const tarifa = Tarifa.crear(
         proyectoId,
         tenantId,
@@ -62,7 +71,11 @@ export class TarifaDerivacionService {
 
     const todas = await this.tarifaRepository.findAll(tenantId, proyectoId);
 
-    for (const modalidad of ['SEMANAL', 'QUINCENAL', 'MENSUAL'] as ModalidadRecaudo[]) {
+    for (const modalidad of [
+      'SEMANAL',
+      'QUINCENAL',
+      'MENSUAL',
+    ] as ModalidadRecaudo[]) {
       const activa = todas.find((t) => t.activa && t.modalidad === modalidad);
       if (activa) {
         activa.monto = derivadas[modalidad];
@@ -79,7 +92,10 @@ export class TarifaDerivacionService {
     modalidad: ModalidadRecaudo,
     fechaVigencia: string,
   ): Promise<void> {
-    const existentes = await this.tarifaRepository.findAll(tenantId, proyectoId);
+    const existentes = await this.tarifaRepository.findAll(
+      tenantId,
+      proyectoId,
+    );
     for (const t of existentes) {
       if (
         t.activa &&

@@ -190,7 +190,10 @@ describe('ResidenteRepository', () => {
 
       await repo.buscarPorEtapas(TENANT_ID, ['etapa-1']);
 
-      expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith('residente.nombre', 'ASC');
+      expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith(
+        'residente.nombre',
+        'ASC',
+      );
     });
   });
 

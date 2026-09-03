@@ -20,7 +20,10 @@ export class Cobro {
   @Column({ name: 'residente_id', type: 'uuid' })
   residenteId: string;
 
-  @ManyToOne(() => Residente, { createForeignKeyConstraints: false, eager: true })
+  @ManyToOne(() => Residente, {
+    createForeignKeyConstraints: false,
+    eager: true,
+  })
   @JoinColumn({ name: 'residente_id' })
   residente: Residente;
 

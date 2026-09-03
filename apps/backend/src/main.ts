@@ -16,8 +16,8 @@ async function bootstrap() {
     .setTitle('Cívica Pago API')
     .setDescription(
       'API REST para gestión de cobros de vigilancia.\n\n' +
-      '**Autenticación:** Bearer JWT (obtener en POST /api/auth/login).\n\n' +
-      '**Multi-tenant:** Todas las operaciones están scopeadas por `tenantId` del usuario autenticado.',
+        '**Autenticación:** Bearer JWT (obtener en POST /api/auth/login).\n\n' +
+        '**Multi-tenant:** Todas las operaciones están scopeadas por `tenantId` del usuario autenticado.',
     )
     .setVersion('1.0')
     .addBearerAuth(
@@ -57,7 +57,9 @@ async function bootstrap() {
   });
 
   if (process.env.NODE_ENV !== 'production') {
-    console.log(`📄 Swagger docs disponibles en http://localhost:${process.env.PORT ?? 3000}/docs`);
+    console.log(
+      `📄 Swagger docs disponibles en http://localhost:${process.env.PORT ?? 3000}/docs`,
+    );
   }
 
   // ─── Security Middleware ─────────────────────────────
@@ -65,7 +67,9 @@ async function bootstrap() {
   app.use(helmet());
 
   // CORS: solo orígenes permitidos (default: http://localhost:3000)
-  const corsOrigins = process.env.CORS_ORIGIN?.split(',') ?? ['http://localhost:3000'];
+  const corsOrigins = process.env.CORS_ORIGIN?.split(',') ?? [
+    'http://localhost:3000',
+  ];
   app.enableCors({
     origin: corsOrigins,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
@@ -88,7 +92,9 @@ async function bootstrap() {
   app.enableShutdownHooks();
 
   const shutdown = async (signal: string) => {
-    console.log(`\n[Nest] 🛑 Recibida señal ${signal}. Cerrando servidor limpiamente...`);
+    console.log(
+      `\n[Nest] 🛑 Recibida señal ${signal}. Cerrando servidor limpiamente...`,
+    );
     try {
       await app.close();
       console.log('[Nest] ✅ Servidor y conexiones cerrados con éxito.');
@@ -99,21 +105,26 @@ async function bootstrap() {
     }
   };
 
-  process.on('SIGINT', () => shutdown('SIGINT'));
-  process.on('SIGTERM', () => shutdown('SIGTERM'));
-  process.on('SIGHUP', () => shutdown('SIGHUP'));
+  process.on('SIGINT', () => {
+    void shutdown('SIGINT');
+  });
+  process.on('SIGTERM', () => {
+    void shutdown('SIGTERM');
+  });
+  process.on('SIGHUP', () => {
+    void shutdown('SIGHUP');
+  });
   process.on('uncaughtException', (err) => {
     console.error('[Nest] 💥 Excepción no controlada:', err);
-    shutdown('uncaughtException');
+    void shutdown('uncaughtException');
   });
   process.on('unhandledRejection', (reason) => {
     console.error('[Nest] 💥 Promesa rechazada no controlada:', reason);
-    shutdown('unhandledRejection');
+    void shutdown('unhandledRejection');
   });
 
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
   console.log(`Servidor iniciado en puerto ${port}`);
 }
-bootstrap();
-
+void bootstrap();
