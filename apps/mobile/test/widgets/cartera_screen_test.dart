@@ -59,17 +59,19 @@ void main() {
       await tester.pumpWidget(createCarteraScreen(repository: repo));
       await pumpFully(tester);
 
-      // "Pendiente" may appear in header labels AND filter chips
-      expect(find.text('Pendiente'), findsAtLeastNWidgets(1));
-      expect(find.text('Mora'), findsAtLeastNWidgets(1));
-      expect(find.text('Pagado'), findsOneWidget);
-      expect(find.text('Todos'), findsOneWidget);
+      expect(find.textContaining('Pendientes'), findsAtLeastNWidgets(1));
+      expect(find.textContaining('Mora'), findsAtLeastNWidgets(1));
+      expect(find.textContaining('Pagadas'), findsOneWidget);
+      expect(find.textContaining('Todas'), findsOneWidget);
     });
 
     testWidgets('Pendiente filter', (tester) async {
       final repo = FakeCarteraData.conTresCuotas();
       await tester.pumpWidget(createCarteraScreen(repository: repo));
       await pumpFully(tester);
+
+      await tester.tap(find.byKey(const Key('filter_chip_PENDIENTE')));
+      await tester.pump();
 
       expect(find.text('Carlos Pendiente'), findsOneWidget);
       expect(find.text('Juan Pagado'), findsNothing);
@@ -81,29 +83,36 @@ void main() {
       await tester.pumpWidget(createCarteraScreen(repository: repo));
       await pumpFully(tester);
 
-      await tester.tap(find.text('Mora').last);
+      await tester.tap(find.byKey(const Key('filter_chip_MORA')));
       await tester.pump();
       expect(find.text('Maria Mora'), findsOneWidget);
       expect(find.text('Carlos Pendiente'), findsNothing);
     });
 
     testWidgets('Todos filter exists and can be tapped', (tester) async {
+      tester.view.physicalSize = const Size(800, 1600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
       final repo = FakeCarteraData.conTresCuotas();
       await tester.pumpWidget(createCarteraScreen(repository: repo));
       await pumpFully(tester);
 
       // Filter chips are rendered
-      expect(find.text('Pendiente'), findsAtLeastNWidgets(1));
-      expect(find.text('Mora'), findsAtLeastNWidgets(1));
-      expect(find.text('Pagado'), findsOneWidget);
-      expect(find.text('Todos'), findsOneWidget);
+      expect(find.byKey(const Key('filter_chip_PENDIENTE')), findsOneWidget);
+      expect(find.byKey(const Key('filter_chip_MORA')), findsOneWidget);
+      expect(find.byKey(const Key('filter_chip_PAGADO')), findsOneWidget);
+      expect(find.byKey(const Key('filter_chip_TODOS')), findsOneWidget);
 
       // Can tap Todos filter chip
-      await tester.tap(find.text('Todos').last);
+      await tester.tap(find.byKey(const Key('filter_chip_TODOS')));
       await tester.pump();
 
-      // Todos filter stays visible after tap
-      expect(find.text('Todos'), findsOneWidget);
+      // Todas filter displays all 3
+      expect(find.text('Carlos Pendiente'), findsOneWidget);
+      expect(find.text('Maria Mora'), findsOneWidget);
+      expect(find.text('Juan Pagado'), findsOneWidget);
     });
   });
 

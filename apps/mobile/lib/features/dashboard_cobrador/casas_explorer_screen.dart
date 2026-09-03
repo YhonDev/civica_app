@@ -27,10 +27,21 @@ class CasasExplorerScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<CasasCubit>(
-      create: (_) => cubit ?? (CasasCubit()..loadViviendas()),
-      child: const _CasasExplorerView(),
-    );
+    if (cubit != null) {
+      return BlocProvider<CasasCubit>.value(
+        value: cubit!,
+        child: const _CasasExplorerView(),
+      );
+    }
+    try {
+      context.read<CasasCubit>();
+      return const _CasasExplorerView();
+    } catch (_) {
+      return BlocProvider<CasasCubit>(
+        create: (_) => CasasCubit()..loadViviendas(),
+        child: const _CasasExplorerView(),
+      );
+    }
   }
 }
 
@@ -326,7 +337,9 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                 compact: true,
                 onMarcarEnCamino: () {
                   context.read<CasasCubit>().cambiarEstadoSolicitud(id, 'EN_CAMINO');
-                  context.read<DashboardCobradorCubit>().cambiarEstadoSolicitud(id, 'EN_CAMINO');
+                  try {
+                    context.read<DashboardCobradorCubit>().cambiarEstadoSolicitud(id, 'EN_CAMINO');
+                  } catch (_) {}
                 },
                 onCobrar: () => _abrirCobroDesdeCasas(context, solicitud),
               );
@@ -395,11 +408,13 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
       initialQuickMode: true,
       onSuccess: () {
         context.read<CasasCubit>().refresh();
-        context.read<DashboardCobradorCubit>().optimisticRegistrarPago(
-          residenteId: cobroItem.residenteId,
-          montoPesos: saldo > 0 ? saldo.toInt() : 20000,
-        );
-        context.read<DashboardCobradorCubit>().refresh(silent: true);
+        try {
+          context.read<DashboardCobradorCubit>().optimisticRegistrarPago(
+            residenteId: cobroItem.residenteId,
+            montoPesos: saldo > 0 ? saldo.toInt() : 20000,
+          );
+          context.read<DashboardCobradorCubit>().refresh(silent: true);
+        } catch (_) {}
       },
     );
   }
@@ -747,11 +762,11 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
     for (final e in etapas) {
       for (final m in e.manzanas) {
         for (final c in m.casas) {
-          if (_filtroEstado == 'PENDIENTES' && (c.estado == 'PENDIENTE' || c.estado == 'PARCIAL' || c.estado == 'VENCIDA')) {
+          if (_filtroEstado == 'PENDIENTES' && (c.estado == 'PENDIENTE' || c.estado == 'PARCIAL' || c.estado == 'VENCIDA') && c.saldo > 0) {
             total++;
-          } else if (_filtroEstado == 'MORA' && c.estado == 'VENCIDA') {
+          } else if (_filtroEstado == 'MORA' && (c.estado == 'VENCIDA' || c.estado == 'MORA' || c.estado == 'EN_MORA')) {
             total++;
-          } else if (_filtroEstado == 'TODOS') {
+          } else if (_filtroEstado == 'TODOS' && (c.estado != 'AL_DIA' && c.estado != 'PAGADA' || c.saldo > 0)) {
             total++;
           }
         }
@@ -778,11 +793,12 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
       List<ManzanaExplorer> resultManzanas = manzanasOrdenadas.map((manzana) {
         List<CasaExplorer> resultCasas = manzana.casas.where((casa) {
           if (_filtroEstado == 'PENDIENTES') {
-            return casa.estado == 'PENDIENTE' || casa.estado == 'PARCIAL' || casa.estado == 'VENCIDA';
+            return (casa.estado == 'PENDIENTE' || casa.estado == 'PARCIAL' || casa.estado == 'VENCIDA') && casa.saldo > 0;
           } else if (_filtroEstado == 'MORA') {
-            return casa.estado == 'VENCIDA';
+            return casa.estado == 'VENCIDA' || casa.estado == 'MORA' || casa.estado == 'EN_MORA';
           }
-          return true; // TODOS
+          // 'TODOS': Exclude houses that are fully paid / AL_DIA with 0 debt from active collection route
+          return (casa.estado != 'AL_DIA' && casa.estado != 'PAGADA') || casa.saldo > 0;
         }).toList();
 
         resultCasas.sort((a, b) {

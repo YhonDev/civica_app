@@ -14,6 +14,8 @@ class TimelineItem {
   final String hace;
   final String? contexto;
   final int? monto;
+  final String? nroRecibo;
+  final String? cobrador;
 
   const TimelineItem({
     required this.id,
@@ -24,6 +26,8 @@ class TimelineItem {
     required this.hace,
     this.contexto,
     this.monto,
+    this.nroRecibo,
+    this.cobrador,
   });
 }
 

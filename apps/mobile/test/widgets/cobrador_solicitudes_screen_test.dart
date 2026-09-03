@@ -5,8 +5,16 @@ import 'package:civica_pago_mobile/features/dashboard_cobrador/cobrador_solicitu
 import 'package:civica_pago_mobile/features/dashboard_cobrador/casas_cubit.dart';
 import 'package:civica_pago_mobile/features/dashboard_cobrador/dashboard_cobrador_cubit.dart';
 import 'package:civica_pago_mobile/features/dashboard_cobrador/widgets/cobrador_solicitud_card.dart';
+import 'package:civica_pago_mobile/core/network/api_client.dart';
+import 'package:civica_pago_mobile/core/network/realtime_socket_service.dart';
+import 'mock_http_adapter.dart';
 
 void main() {
+  setUp(() {
+    ApiClient.init(baseUrl: 'http://test.local');
+    ApiClient.setHttpClientAdapter(MockHttpAdapter());
+  });
+
   group('CobradorSolicitudCard', () {
     testWidgets('muestra estado En espera y botón En camino cuando no está en camino', (tester) async {
       var enCaminoPressed = false;
@@ -81,5 +89,57 @@ void main() {
       expect(cobrarPressed, isTrue);
       expect(enCaminoPressed, isFalse);
     });
+
+    testWidgets('CobradorSolicitudesScreen renders and connects with cubits without errors', (tester) async {
+      final casasCubit = _MockCasasCubit();
+      final cobradorCubit = _MockDashboardCobradorCubit();
+
+      await tester.pumpWidget(
+        MultiBlocProvider(
+          providers: [
+            BlocProvider<CasasCubit>.value(value: casasCubit),
+            BlocProvider<DashboardCobradorCubit>.value(value: cobradorCubit),
+          ],
+          child: const MaterialApp(
+            home: CobradorSolicitudesScreen(),
+          ),
+        ),
+      );
+
+      expect(find.text('Solicitudes de Cobro'), findsOneWidget);
+
+      await tester.pump();
+      await casasCubit.close();
+      await cobradorCubit.close();
+    });
   });
+}
+
+class _MockCasasCubit extends Cubit<CasasState> implements CasasCubit {
+  _MockCasasCubit() : super(const ViviendasLoaded([], solicitudes: []));
+
+  @override
+  Future<void> loadViviendas({bool silent = false, bool forceFresh = true}) async {}
+
+  @override
+  Future<void> refresh() async {}
+
+  @override
+  void cambiarEstadoSolicitud(String id, String nuevoEstado) {}
+}
+
+class _MockDashboardCobradorCubit extends Cubit<CobradorDashboardState> implements DashboardCobradorCubit {
+  _MockDashboardCobradorCubit() : super(CobradorDashboardInitial());
+
+  @override
+  Future<void> loadDashboard({bool silent = false, bool forceFresh = true}) async {}
+
+  @override
+  Future<void> refresh({bool silent = false}) async {}
+
+  @override
+  void cambiarEstadoSolicitud(String id, String nuevoEstado) {}
+
+  @override
+  void optimisticRegistrarPago({required String residenteId, required int montoPesos}) {}
 }

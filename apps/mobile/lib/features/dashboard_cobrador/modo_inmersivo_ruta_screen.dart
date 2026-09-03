@@ -181,9 +181,12 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
 
           bool incluir = true;
           if (widget.selectedEstadoFiltro == 'PENDIENTES') {
-            incluir = estadoReal != 'AL_DIA' || saldoReal > 0;
+            incluir = estadoReal != 'AL_DIA' && estadoReal != 'PAGADA' && saldoReal > 0;
           } else if (widget.selectedEstadoFiltro == 'MORA') {
-            incluir = estadoReal == 'EN_MORA' || estadoReal == 'MORA';
+            incluir = estadoReal == 'EN_MORA' || estadoReal == 'MORA' || estadoReal == 'VENCIDA';
+          } else {
+            // 'TODAS' / 'TODOS': Exclude houses that are fully paid / AL_DIA with 0 debt from active route
+            incluir = (estadoReal != 'AL_DIA' && estadoReal != 'PAGADA') || saldoReal > 0;
           }
 
           if (incluir) {

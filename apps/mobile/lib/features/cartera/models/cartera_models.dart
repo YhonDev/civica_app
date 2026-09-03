@@ -50,6 +50,8 @@ class CobroItem extends Equatable {
   final String concepto;
   final String nroRecibo;
   final String cobradorNombre;
+  final String fechaPago;
+  final String metodoPago;
 
   const CobroItem({
     required this.id,
@@ -69,7 +71,21 @@ class CobroItem extends Equatable {
     this.concepto = 'Cuota de Vigilancia',
     this.nroRecibo = '',
     this.cobradorNombre = 'Administración',
+    this.fechaPago = '',
+    this.metodoPago = 'Efectivo',
   });
+
+  bool get isPaid {
+    final st = estado.toUpperCase();
+    return st == 'PAGADO' || st == 'PAGADA';
+  }
+
+  bool get isMora {
+    final st = estado.toUpperCase();
+    return st == 'MORA' || st == 'VENCIDA';
+  }
+
+  bool get isPendiente => !isPaid && !isMora;
 
   String get tituloCuota {
     if (concepto.isNotEmpty && concepto != 'Cuota de Vigilancia') {
@@ -96,10 +112,10 @@ class CobroItem extends Equatable {
   }
 
   factory CobroItem.fromJson(Map<String, dynamic> json) {
-    final estadoDb = json['estado'];
+    final estadoDb = (json['estado'] ?? '').toString().toUpperCase();
     String estadoUi = 'Pendiente';
-    if (estadoDb == 'PAGADA') estadoUi = 'Pagado';
-    if (estadoDb == 'VENCIDA') estadoUi = 'Mora';
+    if (estadoDb == 'PAGADA' || estadoDb == 'PAGADO') estadoUi = 'Pagado';
+    if (estadoDb == 'VENCIDA' || estadoDb == 'MORA') estadoUi = 'Mora';
 
     final double monto = (json['monto'] ?? 0) / 100.0;
     final double pagado = (json['montoPagado'] ?? 0) / 100.0;
@@ -164,6 +180,8 @@ class CobroItem extends Equatable {
       concepto: json['concepto'] as String? ?? 'Cuota de Vigilancia',
       nroRecibo: json['nroRecibo'] as String? ?? '',
       cobradorNombre: json['cobradorNombre'] as String? ?? 'Administración',
+      fechaPago: json['fechaPago'] as String? ?? '',
+      metodoPago: json['metodoPago'] as String? ?? 'Efectivo',
     );
   }
 
@@ -186,6 +204,8 @@ class CobroItem extends Equatable {
       'concepto': concepto,
       'nroRecibo': nroRecibo,
       'cobradorNombre': cobradorNombre,
+      'fechaPago': fechaPago,
+      'metodoPago': metodoPago,
     };
   }
 
@@ -205,5 +225,7 @@ class CobroItem extends Equatable {
         fechaVencimiento,
         periodoInicio,
         periodoFin,
+        nroRecibo,
+        fechaPago,
       ];
 }

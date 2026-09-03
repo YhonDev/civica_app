@@ -11,6 +11,7 @@ import '../../features/dashboard_cobrador/casas_explorer_screen.dart';
 import '../../features/dashboard_cobrador/cobrador_solicitudes_screen.dart';
 import '../../features/dashboard_cobrador/modo_inmersivo_ruta_screen.dart';
 import '../../features/dashboard_cobrador/casas_cubit.dart';
+import '../../features/dashboard_cobrador/dashboard_cobrador_cubit.dart';
 import '../../features/dashboard_residente/residente_dashboard_screen.dart';
 import '../../features/cartera/cartera_screen.dart';
 import '../../features/residentes/nuevo_residente_screen.dart';
@@ -24,7 +25,7 @@ import '../../features/residentes/casas_screen.dart';
 import '../../features/residentes/proyecto_ajustes_screen.dart';
 import '../../features/configuracion/configuracion_screen.dart';
 import '../../features/historial/historial_screen.dart';
-import '../../features/dashboard/estado_admin_screen.dart';
+
 import '../../features/dashboard/actividad_admin_screen.dart';
 import '../../features/solicitudes/solicitudes_screen.dart';
 import '../../features/solicitudes/nueva_solicitud_screen.dart';
@@ -78,7 +79,24 @@ final GoRouter appRouter = GoRouter(
 
     // ── Shell with Bottom Navigation ───────────────────────────────────
     ShellRoute(
-      builder: (_, _, child) => ScaffoldWithBottomNav(child: child),
+      builder: (context, state, child) {
+        final rol = context.watch<AuthCubit>().state.usuario?['rol'] as String?;
+        if (rol == 'COBRADOR') {
+          return MultiBlocProvider(
+            key: const ValueKey('shell_cobrador_providers'),
+            providers: [
+              BlocProvider<DashboardCobradorCubit>(
+                create: (_) => DashboardCobradorCubit()..loadDashboard(),
+              ),
+              BlocProvider<CasasCubit>(
+                create: (_) => CasasCubit()..loadViviendas(),
+              ),
+            ],
+            child: ScaffoldWithBottomNav(child: child),
+          );
+        }
+        return ScaffoldWithBottomNav(child: child);
+      },
       routes: [
         // Dashboard por rol (Admin, Cobrador, Residente)
         GoRoute(
@@ -90,15 +108,12 @@ final GoRouter appRouter = GoRouter(
           },
         ),
 
-        // Estado/Cartera según rol
+        // Estado/Cartera según rol (unified — all roles use CarteraScreen)
         GoRoute(
           path: '/estado',
           name: 'estado',
           builder: (context, _) {
             final rol = context.read<AuthCubit>().state.usuario?['rol'] as String?;
-            if (rol == 'ADMIN') {
-              return const EstadoAdminScreen();
-            }
             return _carteraForRol(rol);
           },
         ),

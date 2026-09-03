@@ -65,7 +65,8 @@ export class CobrosController {
       { etapaId, manzanaId, status },
       allowedEtapaIds,
     );
-    return cobros.map((cobro) => this.mapCobroItem(cobro));
+    const ticketsMap = await this.loadTicketsForCobros(cobros.map((c) => c.id));
+    return cobros.map((cobro) => this.mapCobroItem(cobro, ticketsMap.get(cobro.id)));
   }
 
   @Get('residente/:residenteId')
@@ -108,20 +109,50 @@ export class CobrosController {
         })
       : cobros;
 
-    return escoped.map((cobro) => this.mapCobroItem(cobro));
+    const ticketsMap = await this.loadTicketsForCobros(escoped.map((c) => c.id));
+    return escoped.map((cobro) => this.mapCobroItem(cobro, ticketsMap.get(cobro.id)));
   }
 
-  private mapCobroItem(cobro: any) {
+  private async loadTicketsForCobros(cobroIds: string[]): Promise<Map<string, any>> {
+    const ticketsMap = new Map<string, any>();
+    if (!cobroIds || cobroIds.length === 0) return ticketsMap;
+
+    try {
+      const tickets = await this.dataSource.query(
+        `SELECT id, numero, fecha, cobro_id, cobrador_nombre, metodo 
+         FROM tickets 
+         WHERE cobro_id = ANY($1) AND estado != 'ANULADO'
+         ORDER BY fecha DESC`,
+        [cobroIds],
+      );
+      for (const t of tickets) {
+        if (t.cobro_id && !ticketsMap.has(t.cobro_id)) {
+          ticketsMap.set(t.cobro_id, t);
+        }
+      }
+    } catch {
+      // Fallback gracioso si tabla tickets no responde
+    }
+    return ticketsMap;
+  }
+
+  private mapCobroItem(cobro: any, ticket?: any) {
     const residente = cobro.residente;
     const casa = cobro.casa ?? residente?.casaActual;
     const manzana = casa?.manzana;
     const etapa = manzana?.etapa;
 
+    const fechaPagoIso = ticket?.fecha
+      ? (ticket.fecha instanceof Date ? ticket.fecha.toISOString() : new Date(ticket.fecha).toISOString())
+      : (cobro.fechaPago ? new Date(cobro.fechaPago).toISOString() : null);
+
     return {
       ...cobro,
       residenteNombre: residente?.nombre ?? 'Residente',
-      cobradorNombre: cobro.cobradorNombre ?? 'Administración',
-      nroRecibo: cobro.nroRecibo ?? `TK-${cobro.id.replace(/-/g, '').substring(0, 6).toUpperCase()}`,
+      cobradorNombre: ticket?.cobrador_nombre ?? cobro.cobradorNombre ?? 'Administración',
+      nroRecibo: ticket?.numero ?? cobro.nroRecibo ?? `TK-${cobro.id.replace(/-/g, '').substring(0, 6).toUpperCase()}`,
+      fechaPago: fechaPagoIso,
+      metodoPago: ticket?.metodo ?? 'Efectivo',
       casaDireccion: casa?.direccionInterna ?? 'Inmueble',
       manzanaNombre: manzana?.nombre ?? 'Manzana',
       etapaNombre: etapa?.nombre ?? 'Etapa',

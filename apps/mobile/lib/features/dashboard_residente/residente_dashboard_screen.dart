@@ -120,17 +120,23 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
             final listMovs = data['movimientos'] as List<dynamic>;
             _movimientos = listMovs.map((m) {
               final isPago = m['tipo'] == 'pago';
-              final dateStr = m['fecha'] as String;
-              final date = DateTime.parse(dateStr);
+              final dateStr = m['fecha'] as String? ?? '';
+              final date = DateTime.tryParse(dateStr)?.toLocal() ?? DateTime.now();
               final formattedDate = DateFormat('dd MMM', 'es').format(date);
+              final concepto = m['concepto'] as String?;
               return TimelineItem(
                 id: m['id'] as String,
                 tipo: m['tipo'] as String,
-                descripcion: m['descripcion'] as String,
+                descripcion: isPago
+                    ? (concepto != null && concepto.isNotEmpty ? concepto : 'Pago realizado')
+                    : (m['descripcion'] as String),
                 usuario: isPago ? 'Pago realizado' : 'Cuota programada',
                 timestamp: date,
                 hace: '\$${m['monto']} · $formattedDate',
-                monto: m['monto'] as int,
+                monto: m['monto'] as int?,
+                nroRecibo: m['nroRecibo'] as String?,
+                cobrador: m['cobrador'] as String?,
+                contexto: m['metodo'] as String?,
               );
             }).toList()
               ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
@@ -300,12 +306,13 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
                 index: 1,
                 child: RecaudoTimelineWidget(
                   cuotasPagadas: _movimientos.where((m) => m.tipo == 'pago').length,
-                  totalCuotas: (_tarifaActual?['modalidad'] == 'SEMANAL' || _tarifaActual?['modalidad'] == null) ? 4 : (_tarifaActual?['modalidad'] == 'QUINCENAL' ? 2 : 1),
+                  totalCuotas: (_proximoPago?['pagosEsperados'] as int?) ??
+                      (_tarifaActual?['modalidad'] == 'QUINCENAL' ? 2 : (_tarifaActual?['modalidad'] == 'MENSUAL' ? 1 : 4)),
                   montoPagado: _movimientos
                       .where((m) => m.tipo == 'pago')
                       .fold(0.0, (sum, m) => sum + (m.monto ?? 0)),
                   saldoPendiente: _saldo.toDouble(),
-                  modalidad: _tarifaActual?['modalidad'] as String? ?? 'SEMANAL',
+                  modalidad: (_tarifaActual?['modalidad'] as String?) ?? 'MENSUAL',
                   onAccionTap: () => context.go('/cartera'),
                 ),
               ),
@@ -898,17 +905,21 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
     final nombre = user?['nombre'] as String? ?? 'Residente';
     final casa = user?['casa'] as String? ?? 'Casa';
 
+    final ticketNum = item.nroRecibo?.isNotEmpty == true
+        ? item.nroRecibo!
+        : 'TK-${item.id.hashCode.abs().toString().padLeft(6, '0')}';
+
     TicketBottomSheet.show(
       context,
       TicketData(
-        numero: 'TK-${item.id.hashCode.abs().toString().padLeft(6, '0')}',
-        fecha: item.timestamp,
+        numero: ticketNum,
+        fecha: item.timestamp.toLocal(),
         residente: nombre,
         casa: casa,
         monto: item.monto ?? 0,
         metodo: item.contexto ?? 'Efectivo',
-        estado: item.tipo == 'pago' ? 'Pagado' : 'Generada',
-        cobrador: null,
+        estado: item.tipo == 'pago' ? 'PAGADO' : 'Generada',
+        cobrador: item.cobrador ?? 'Administración',
       ),
     );
   }

@@ -115,7 +115,9 @@ class _ResidenteHistorialScreenState extends State<ResidenteHistorialScreen> {
       context,
       TicketData(
         numero: pago['clientPaymentId'] ?? 'N/A',
-        fecha: pago['fechaPago'] != null ? DateTime.parse(pago['fechaPago']) : DateTime.now(),
+        fecha: pago['createdAt'] != null
+            ? (DateTime.tryParse(pago['createdAt'])?.toLocal() ?? DateTime.now())
+            : (pago['fechaPago'] != null ? (DateTime.tryParse(pago['fechaPago'])?.toLocal() ?? DateTime.now()) : DateTime.now()),
         monto: monto,
         estado: 'PAGADO',
         residente: widget.residente.nombre,

@@ -99,8 +99,9 @@ class TicketBottomSheet extends StatelessWidget {
     final userRole = context.watch<AuthCubit>().state.usuario?['rol'] as String?;
     final isResidente = userRole == 'RESIDENTE';
 
-    final dateStr = DateFormat('dd/MM/yyyy').format(ticket.fecha);
-    final timeStr = DateFormat('HH:mm').format(ticket.fecha);
+    final localFecha = ticket.fecha.toLocal();
+    final dateStr = DateFormat('dd/MM/yyyy').format(localFecha);
+    final timeStr = DateFormat('hh:mm a', 'es').format(localFecha);
     final montoStr = r'$ ' + NumberFormat('#,##0', 'es_CO').format(ticket.monto);
 
     return Padding(

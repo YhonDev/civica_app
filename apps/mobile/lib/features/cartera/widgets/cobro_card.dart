@@ -20,37 +20,34 @@ class CobroCard extends StatelessWidget {
   });
 
   Color get _color {
-    switch (cobro.estado) {
-      case 'Pagado':
-        return AppColors.success;
-      case 'Mora':
-        return AppColors.error;
-      default:
-        return AppColors.warning;
-    }
+    if (cobro.isPaid) return AppColors.success;
+    if (cobro.isMora) return AppColors.error;
+    return AppColors.warning;
   }
 
   IconData get _icon {
-    switch (cobro.estado) {
-      case 'Pagado':
-        return Icons.check_circle_rounded;
-      case 'Mora':
-        return Icons.error_outline_rounded;
-      default:
-        return Icons.schedule_rounded;
-    }
+    if (cobro.isPaid) return Icons.check_circle_rounded;
+    if (cobro.isMora) return Icons.error_outline_rounded;
+    return Icons.schedule_rounded;
   }
 
   String get _fechaDetalle {
-    if (cobro.fechaVencimiento.isEmpty) return '';
-    final date = DateTime.tryParse(cobro.fechaVencimiento);
+    DateTime? date;
+    if (cobro.isPaid && cobro.fechaPago.isNotEmpty) {
+      date = DateTime.tryParse(cobro.fechaPago)?.toLocal();
+    } else if (cobro.fechaVencimiento.isNotEmpty) {
+      date = DateTime.tryParse(cobro.fechaVencimiento)?.toLocal();
+    }
     if (date == null) return '';
 
     final fechaFormat = DateFormat("d 'de' MMMM", 'es').format(date);
 
-    if (cobro.estado == 'Pagado') {
-      return 'Pagado el $fechaFormat';
-    } else if (cobro.estado == 'Mora') {
+    if (cobro.isPaid) {
+      final hora = (cobro.fechaPago.isNotEmpty)
+          ? ' · ${DateFormat("hh:mm a", 'es').format(date)}'
+          : '';
+      return 'Pagado el $fechaFormat$hora';
+    } else if (cobro.isMora) {
       final diffDays = DateTime.now().difference(date).inDays;
       final diasText = diffDays > 0 ? ' · Hace $diffDays días' : '';
       return 'Vencido el $fechaFormat$diasText';
@@ -62,7 +59,10 @@ class CobroCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final montoRaw = (cobro.estado == 'Pagado' ? cobro.monto : cobro.saldo).round();
+    final montoRaw = (cobro.isPaid
+            ? (cobro.montoPagado > 0 ? cobro.montoPagado : cobro.monto)
+            : cobro.saldo)
+        .round();
     final montoFormatted = r'$ ' + NumberFormat('#,##0', 'es_CO').format(montoRaw);
 
     // Formatear dirección / ubicación como Título Principal
@@ -73,7 +73,12 @@ class CobroCard extends StatelessWidget {
     final String mainTitle;
     final String? cuotaSubtitle;
 
-    if (cobro.tituloCuota.isNotEmpty) {
+    if (cobro.nombre.isNotEmpty && cobro.nombre != 'Residente') {
+      mainTitle = cobro.nombre;
+      cuotaSubtitle = cobro.tituloCuota.isNotEmpty
+          ? (houseParts.isNotEmpty ? '${cobro.tituloCuota} · ${houseParts.join(" — ")}' : cobro.tituloCuota)
+          : (houseParts.isNotEmpty ? houseParts.join(' — ') : null);
+    } else if (cobro.tituloCuota.isNotEmpty) {
       mainTitle = cobro.tituloCuota;
       cuotaSubtitle = houseParts.isNotEmpty
           ? (cobro.etapa.isNotEmpty ? '${cobro.etapa} — ${houseParts.join(' — ')}' : houseParts.join(' — '))
@@ -87,7 +92,7 @@ class CobroCard extends StatelessWidget {
       cuotaSubtitle = null;
     }
 
-    final isOverdue = cobro.estado == 'Mora' || cobro.estado == 'VENCIDA';
+    final isOverdue = cobro.isMora;
     final cardBorderColor = isOverdue
         ? AppColors.error.withValues(alpha: 0.4)
         : (isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0));
@@ -198,7 +203,7 @@ class CobroCard extends StatelessWidget {
                                   Icon(_icon, color: _color, size: 12),
                                   const SizedBox(width: 4),
                                   Text(
-                                    cobro.estado == 'Mora' ? 'En Mora' : cobro.estado,
+                                    cobro.isMora ? 'En Mora' : (cobro.isPaid ? 'Pagada' : 'Pendiente'),
                                     style: AppTypography.small.copyWith(
                                       color: _color,
                                       fontWeight: FontWeight.w700,
@@ -218,7 +223,7 @@ class CobroCard extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  cobro.estado == 'Pagado' ? 'Monto Pagado' : 'Saldo Pendiente',
+                                  cobro.isPaid ? 'Monto Pagado' : 'Saldo Pendiente',
                                   style: AppTypography.caption.copyWith(
                                     color: AppColors.textSecondary,
                                     fontWeight: FontWeight.w600,
@@ -230,14 +235,14 @@ class CobroCard extends StatelessWidget {
                                   style: AppTypography.title.copyWith(
                                     fontWeight: FontWeight.w800,
                                     fontSize: 19,
-                                    color: (cobro.estado == 'Mora' || cobro.estado == 'VENCIDA')
+                                    color: cobro.isMora
                                         ? AppColors.error
                                         : (isDark ? Colors.white : const Color(0xFF0F172A)),
                                   ),
                                 ),
                               ],
                             ),
-                            if (cobro.estado == 'Pagado')
+                            if (cobro.isPaid)
                               Row(
                                 children: [
                                   Text(

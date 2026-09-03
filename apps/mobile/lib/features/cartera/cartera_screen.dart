@@ -67,6 +67,7 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
   Widget _buildFilterChip(String key, String label, Color activeColor) {
     final isSelected = _selectedStatusFilter == key;
     return FilterChip(
+      key: Key('filter_chip_$key'),
       selected: isSelected,
       showCheckmark: false,
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
@@ -141,19 +142,19 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                     );
                   }
 
-                  // Aplicar filtro de búsqueda y de estado (1-Tap)
+                  // Aplicar filtro de búsqueda y de estado (1-Tap) sobre la totalidad de cobros
                   final searchLower = _searchQuery.trim().toLowerCase();
-                  final List<CobroItem> displayCobros = state.filteredCobros.where((c) {
+                  final List<CobroItem> displayCobros = state.cobros.where((c) {
                     final target = '${c.etapa} ${c.manzana} ${c.casa} ${c.nombre} ${c.concepto} ${c.tituloCuota}'.toLowerCase();
                     final matchSearch = searchLower.isEmpty || target.contains(searchLower);
                     if (!matchSearch) return false;
 
                     if (_selectedStatusFilter == 'PENDIENTE') {
-                      return c.estado == 'Pendiente' || c.estado == 'PENDIENTE';
+                      return c.isPendiente;
                     } else if (_selectedStatusFilter == 'MORA') {
-                      return c.estado == 'Mora' || c.estado == 'MORA' || c.estado == 'VENCIDA';
+                      return c.isMora;
                     } else if (_selectedStatusFilter == 'PAGADO') {
-                      return c.estado == 'Pagado' || c.estado == 'PAGADO';
+                      return c.isPaid;
                     }
                     return true;
                   }).toList();
@@ -356,8 +357,13 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                 child: CobroCard(
                   cobro: cobro,
                   onTap: () {
-                    if (cobro.estado == 'Pagado') {
-                      final fecha = DateTime.tryParse(cobro.fechaVencimiento) ?? DateTime.now();
+                    if (cobro.isPaid) {
+                      DateTime fecha = DateTime.now();
+                      if (cobro.fechaPago.isNotEmpty) {
+                        fecha = DateTime.tryParse(cobro.fechaPago)?.toLocal() ?? DateTime.now();
+                      } else if (cobro.fechaVencimiento.isNotEmpty) {
+                        fecha = DateTime.tryParse(cobro.fechaVencimiento)?.toLocal() ?? DateTime.now();
+                      }
                       final ticketNum = cobro.nroRecibo.isNotEmpty
                           ? cobro.nroRecibo
                           : 'TK-${cobro.id.replaceAll("-", "").substring(0, 6).toUpperCase()}';
@@ -371,7 +377,7 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                               : userName,
                           casa: '${cobro.casa} · ${cobro.manzana}',
                           monto: (cobro.monto > 0 ? cobro.monto : cobro.montoPagado).round(),
-                          metodo: 'Efectivo',
+                          metodo: cobro.metodoPago.isNotEmpty ? cobro.metodoPago : 'Efectivo',
                           estado: 'PAGADO',
                           concepto: cobro.concepto,
                           cobrador: cobro.cobradorNombre.isNotEmpty ? cobro.cobradorNombre : 'Administración',
@@ -387,7 +393,7 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                       );
                     }
                   },
-                  onSolicitarCobro: !canRegisterPago && cobro.estado != 'Pagado'
+                  onSolicitarCobro: !canRegisterPago && !cobro.isPaid
                       ? () async {
                           try {
                             final repo = SolicitudesRepository();
@@ -418,7 +424,7 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                           }
                         }
                       : null,
-                  onRegistrarPago: canRegisterPago && cobro.estado != 'Pagado'
+                  onRegistrarPago: canRegisterPago && !cobro.isPaid
                       ? () => RegistrarPagoBottomSheet.show(
                             context,
                             cobro: cobro,

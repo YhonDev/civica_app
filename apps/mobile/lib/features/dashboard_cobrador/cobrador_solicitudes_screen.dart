@@ -65,7 +65,9 @@ class _CobradorSolicitudesScreenState extends State<CobradorSolicitudesScreen> {
             tooltip: 'Actualizar',
             onPressed: () {
               context.read<CasasCubit>().refresh();
-              context.read<DashboardCobradorCubit>().refresh();
+              try {
+                context.read<DashboardCobradorCubit>().refresh();
+              } catch (_) {}
             },
           ),
         ],
@@ -226,7 +228,9 @@ class _CobradorSolicitudesScreenState extends State<CobradorSolicitudesScreen> {
                       ordenFifo: index + 1,
                       onMarcarEnCamino: () {
                         context.read<CasasCubit>().cambiarEstadoSolicitud(id, 'EN_CAMINO');
-                        context.read<DashboardCobradorCubit>().cambiarEstadoSolicitud(id, 'EN_CAMINO');
+                        try {
+                          context.read<DashboardCobradorCubit>().cambiarEstadoSolicitud(id, 'EN_CAMINO');
+                        } catch (_) {}
                       },
                       onCobrar: () => _abrirCobroBottomSheet(context, solicitud),
                     );
@@ -286,11 +290,13 @@ class _CobradorSolicitudesScreenState extends State<CobradorSolicitudesScreen> {
       initialQuickMode: true,
       onSuccess: () {
         context.read<CasasCubit>().refresh();
-        context.read<DashboardCobradorCubit>().optimisticRegistrarPago(
-              residenteId: cobroItem.residenteId,
-              montoPesos: saldo > 0 ? saldo.toInt() : 20000,
-            );
-        context.read<DashboardCobradorCubit>().refresh(silent: true);
+        try {
+          context.read<DashboardCobradorCubit>().optimisticRegistrarPago(
+                residenteId: cobroItem.residenteId,
+                montoPesos: saldo > 0 ? saldo.toInt() : 20000,
+              );
+          context.read<DashboardCobradorCubit>().refresh(silent: true);
+        } catch (_) {}
       },
     );
   }

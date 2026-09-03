@@ -315,14 +315,22 @@ export class DashboardController {
         }
       : null;
 
-    // Últimos cobros: mapear a estructura legible con nombre del cobrador
+    // Calculate distinct houses collected today by counting unique casa/residente IDs in pagosHoy
+    const casasCobradasHoySet = new Set<string>();
+    for (const p of pagosHoy) {
+      if (p.residenteId) casasCobradasHoySet.add(p.residenteId);
+      else if (p.cobroId) casasCobradasHoySet.add(p.cobroId);
+      else if (p.id) casasCobradasHoySet.add(p.id);
+    }
+    const cobradosHoyCasasCount = casasCobradasHoySet.size > 0 ? casasCobradasHoySet.size : countHoy;
+
     const cobrosHoy = pagosHoy.slice(0, 10);
 
     return {
       cobrador: { nombre: user.nombre },
       stats: {
         totalViviendas: viviendas.length,
-        cobradosHoy: countHoy,
+        cobradosHoy: cobradosHoyCasasCount,
         montoCobradoHoy: Math.round(totalHoy / 100),
         pendientes,
         vencidas: vencidasViviendas,
@@ -330,7 +338,7 @@ export class DashboardController {
       },
       viviendas,
       proximaVivienda,
-      ultimosCobros: cobrosHoy.map((p) => ({
+      ultimosCobros: cobrosHoy.map((p: any) => ({
         id: p.id,
         monto: Math.round(p.monto / 100),
         fecha: p.fechaPago,
@@ -734,10 +742,20 @@ export class DashboardController {
       };
     } else {
       // ── Projected fallback when there are 0 active pending cobros in DB ──
-      // (e.g. resident registered late in current month or has paid all current cuotas)
+      // (e.g. resident has paid all current cuotas)
       const pagosEsperados = pagosPorMes(modalidad);
       const montoTotalCentavos = tarifaMensual ? tarifaMensual.monto : (cuenta?.valorMensual ?? 4000000);
       const montoParcialCentavos = Math.round(montoTotalCentavos / pagosEsperados);
+
+      // Build a map of periods that already have cobros (paid or otherwise) in the DB
+      // Key: "YYYY-MM", Value: count of cobros in that period
+      const cobrosPorPeriodo = new Map<string, number>();
+      for (const cobro of cobrosRaw) {
+        const periodoKey = cobro.periodoInicio
+          ? cobro.periodoInicio.substring(0, 7) // "2026-09"
+          : cobro.fechaVencimiento.substring(0, 7);
+        cobrosPorPeriodo.set(periodoKey, (cobrosPorPeriodo.get(periodoKey) ?? 0) + 1);
+      }
 
       const desglose: any[] = [];
       let currentYear = hoy.getFullYear();
@@ -748,23 +766,40 @@ export class DashboardController {
         'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
       ];
 
-      while (desglose.length < pagosEsperados) {
-        const periodStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`;
+      // Safety limit to avoid infinite loops
+      let iterations = 0;
+      while (desglose.length < pagosEsperados && iterations < 24) {
+        iterations++;
+        const periodKey = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
+        const periodStr = `${periodKey}-01`;
+        const cobrosEnPeriodo = cobrosPorPeriodo.get(periodKey) ?? 0;
+
+        // Skip this month if it already has cobros generated (they are paid, that's why pendingCobros was 0)
+        if (cobrosEnPeriodo >= pagosEsperados) {
+          currentMonth++;
+          if (currentMonth > 11) {
+            currentMonth = 0;
+            currentYear++;
+          }
+          continue;
+        }
+
         const fechas = Periodo.fechasCobroParciales(modalidad, currentYear, currentMonth);
         const mesNombre = mesesEsp[currentMonth];
 
         for (let i = 0; i < fechas.length; i++) {
           if (desglose.length >= pagosEsperados) break;
-          if (fechas[i] >= hoyStr) {
-            desglose.push({
-              id: `future-${periodStr}-${i + 1}`,
-              cobroId: null,
-              fecha: fechas[i],
-              monto: Math.round(montoParcialCentavos / 100),
-              numeroPago: i + 1,
-              mes: mesNombre,
-            });
-          }
+          // For future months (no cobros yet), include all dates
+          // For current month with partial cobros, skip dates already covered
+          if (i < cobrosEnPeriodo) continue;
+          desglose.push({
+            id: `future-${periodStr}-${i + 1}`,
+            cobroId: null,
+            fecha: fechas[i],
+            monto: Math.round(montoParcialCentavos / 100),
+            numeroPago: i + 1,
+            mes: mesNombre,
+          });
         }
 
         currentMonth++;
@@ -777,7 +812,7 @@ export class DashboardController {
       if (desglose.length > 0) {
         proximoCobro = desglose[0].fecha;
         proximoPago = {
-          concepto: `${desglose[0].mes} — Cuota 1`,
+          concepto: `${desglose[0].mes} — Cuota ${desglose[0].numeroPago}`,
           fechaVencimiento: proximoCobro ?? hoyStr,
           monto: Math.round(montoParcialCentavos / 100),
           montoTotal: Math.round(montoTotalCentavos / 100),
@@ -801,23 +836,70 @@ export class DashboardController {
       };
     }
 
+    const pagoIds = pagos.map((p) => p.id);
+    const ticketsByPago = new Map<string, any>();
+    if (pagoIds.length > 0) {
+      try {
+        const tks = await this.dataSource.query(
+          `SELECT id, numero, fecha, pago_id, cobrador_nombre, metodo 
+           FROM tickets 
+           WHERE pago_id = ANY($1) AND estado != 'ANULADO'`,
+          [pagoIds],
+        );
+        for (const t of tks) {
+          if (t.pago_id && !ticketsByPago.has(t.pago_id)) {
+            ticketsByPago.set(t.pago_id, t);
+          }
+        }
+      } catch {
+        // Fallback
+      }
+    }
+
+    // Build a map cobro.id → cobro for quick lookup of concepto
+    const cobroById = new Map<string, any>();
+    for (const cobro of cobros) {
+      cobroById.set(cobro.id, cobro);
+    }
+    // Also index cobrosRaw (includes paid cobros filtered out of `cobros`)
+    for (const cobro of cobrosRaw) {
+      if (!cobroById.has(cobro.id)) {
+        cobroById.set(cobro.id, cobro);
+      }
+    }
+
     const movimientos: any[] = [];
     for (const cobro of cobros) {
       movimientos.push({
         id: cobro.id,
         tipo: 'cargo',
         monto: Math.round(cobro.monto / 100),
-        fecha: cobro.periodoInicio,
+        fecha: cobro.createdAt
+          ? (cobro.createdAt instanceof Date ? cobro.createdAt.toISOString() : new Date(cobro.createdAt).toISOString())
+          : `${cobro.periodoInicio}T12:00:00.000Z`,
         descripcion: `Generación de cobro ${cobro.concepto}`,
+        concepto: cobro.concepto ?? null,
       });
     }
     for (const pago of pagos) {
+      const ticket = ticketsByPago.get(pago.id);
+      const cobroRelacionado = pago.cobroId ? cobroById.get(pago.cobroId) : null;
+      const fechaIso = ticket?.fecha
+        ? (ticket.fecha instanceof Date ? ticket.fecha.toISOString() : new Date(ticket.fecha).toISOString())
+        : (pago.createdAt
+            ? (pago.createdAt instanceof Date ? pago.createdAt.toISOString() : new Date(pago.createdAt).toISOString())
+            : (pago.fechaPago ? `${pago.fechaPago}T12:00:00.000Z` : new Date().toISOString()));
+
       movimientos.push({
         id: pago.id,
         tipo: 'pago',
         monto: Math.round(pago.monto / 100),
-        fecha: pago.fechaPago,
+        fecha: fechaIso,
         descripcion: 'Pago registrado',
+        concepto: cobroRelacionado?.concepto ?? ticket?.concepto ?? null,
+        nroRecibo: ticket?.numero ?? `TK-${pago.id.replace(/-/g, '').substring(0, 6).toUpperCase()}`,
+        cobrador: ticket?.cobrador_nombre ?? 'Administración',
+        metodo: ticket?.metodo ?? 'Efectivo',
       });
     }
     

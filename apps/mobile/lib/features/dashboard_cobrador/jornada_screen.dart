@@ -28,10 +28,21 @@ class JornadaScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<DashboardCobradorCubit>(
-      create: (_) => cubit ?? (DashboardCobradorCubit()..loadDashboard()),
-      child: const _JornadaView(),
-    );
+    if (cubit != null) {
+      return BlocProvider<DashboardCobradorCubit>.value(
+        value: cubit!,
+        child: const _JornadaView(),
+      );
+    }
+    try {
+      context.read<DashboardCobradorCubit>();
+      return const _JornadaView();
+    } catch (_) {
+      return BlocProvider<DashboardCobradorCubit>(
+        create: (_) => DashboardCobradorCubit()..loadDashboard(),
+        child: const _JornadaView(),
+      );
+    }
   }
 }
 
@@ -481,7 +492,9 @@ class _JornadaViewState extends State<_JornadaView> with LifecycleObserverMixin 
               compact: true,
               onMarcarEnCamino: () {
                 context.read<DashboardCobradorCubit>().cambiarEstadoSolicitud(id, 'EN_CAMINO');
-                context.read<CasasCubit>().cambiarEstadoSolicitud(id, 'EN_CAMINO');
+                try {
+                  context.read<CasasCubit>().cambiarEstadoSolicitud(id, 'EN_CAMINO');
+                } catch (_) {}
               },
               onCobrar: () => _abrirCobroDesdeJornada(solicitud),
             );
@@ -545,7 +558,9 @@ class _JornadaViewState extends State<_JornadaView> with LifecycleObserverMixin 
           montoPesos: saldo > 0 ? saldo.toInt() : 20000,
         );
         cobradorCubit.refresh(silent: true);
-        context.read<CasasCubit>().refresh();
+        try {
+          context.read<CasasCubit>().refresh();
+        } catch (_) {}
       },
     );
   }

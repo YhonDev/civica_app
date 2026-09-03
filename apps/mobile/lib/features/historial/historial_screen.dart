@@ -357,7 +357,8 @@ class _HistorialScreenState extends State<HistorialScreen> {
     if (matchingSolicitud != null) {
       _mostrarDetalleSolicitud(matchingSolicitud);
     } else if (c['estado'] == 'PAGADA') {
-      final date = DateTime.parse(c['updatedAt'] as String);
+      final rawDate = c['fechaPago'] ?? c['updatedAt'] ?? c['createdAt'];
+      final date = (DateTime.tryParse(rawDate?.toString() ?? '') ?? DateTime.now()).toLocal();
       final monto = ((c['monto'] as int) / 100).round();
       TicketBottomSheet.show(
         context,

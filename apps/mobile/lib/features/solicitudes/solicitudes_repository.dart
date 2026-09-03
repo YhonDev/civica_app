@@ -78,7 +78,7 @@ class SolicitudesRepository {
       tipo: json['tipo'] as String,
       descripcion: json['descripcion'] as String,
       estado: estado,
-      fecha: DateTime.parse((json['fecha'] ?? json['createdAt']) as String),
+      fecha: (DateTime.tryParse((json['fecha'] ?? json['createdAt'])?.toString() ?? '') ?? DateTime.now()).toLocal(),
       respuesta: json['respuesta'] as String?,
       residenteId: json['usuarioId'] as String?,
       residenteNombre: (json['usuario']?['nombre']) as String?,
