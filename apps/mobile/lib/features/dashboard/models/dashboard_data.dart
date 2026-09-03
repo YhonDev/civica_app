@@ -35,7 +35,7 @@ class DashboardData extends Equatable {
   final double metaAnual;
   final List<MesHistorico> historialMeses;
 
-  DashboardData({
+  const DashboardData({
     required this.mes,
     required this.anio,
     required this.recaudoMes,

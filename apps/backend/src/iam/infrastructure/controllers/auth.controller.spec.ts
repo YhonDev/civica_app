@@ -152,4 +152,86 @@ describe('AuthController', () => {
       );
     });
   });
+
+  // ─── updateCredentials ─────────────────────────────────
+
+  describe('updateCredentials security', () => {
+    it('should throw BadRequestException if non-admin user tries to update credentials without currentPassword', async () => {
+      const regularUser = Object.assign(new Usuario(), {
+        id: 'user-cobrador',
+        rol: RolUsuario.COBRADOR,
+        tenantId: 'tenant-1',
+      });
+
+      await expect(
+        controller.updateCredentials(
+          { newPassword: 'NewPassword123!' },
+          'tenant-1',
+          regularUser,
+        ),
+      ).rejects.toThrow(
+        'Se requiere currentPassword para actualizar credenciales',
+      );
+    });
+
+    it('should allow non-admin user to update credentials when currentPassword is provided', async () => {
+      const regularUser = Object.assign(new Usuario(), {
+        id: 'user-cobrador',
+        rol: RolUsuario.COBRADOR,
+        tenantId: 'tenant-1',
+      });
+
+      (authService as any).updateCredentials = jest.fn().mockResolvedValue({
+        username: 'user.cobrador@test.com',
+      });
+
+      const result = await controller.updateCredentials(
+        {
+          currentPassword: 'CurrentPassword123!',
+          newPassword: 'NewPassword123!',
+        },
+        'tenant-1',
+        regularUser,
+      );
+
+      expect(result).toEqual({ username: 'user.cobrador@test.com' });
+      expect((authService as any).updateCredentials).toHaveBeenCalledWith({
+        usuarioId: 'user-cobrador',
+        tenantId: 'tenant-1',
+        currentPassword: 'CurrentPassword123!',
+        newPassword: 'NewPassword123!',
+        newUsername: undefined,
+      });
+    });
+
+    it('should allow admin to update credentials without currentPassword', async () => {
+      const adminUser = Object.assign(new Usuario(), {
+        id: 'user-admin',
+        rol: RolUsuario.ADMIN,
+        tenantId: 'tenant-1',
+      });
+
+      (authService as any).updateCredentials = jest.fn().mockResolvedValue({
+        username: 'target.user@test.com',
+      });
+
+      const result = await controller.updateCredentials(
+        {
+          usuarioId: 'target-user-id',
+          newPassword: 'NewPassword123!',
+        },
+        'tenant-1',
+        adminUser,
+      );
+
+      expect(result).toEqual({ username: 'target.user@test.com' });
+      expect((authService as any).updateCredentials).toHaveBeenCalledWith({
+        usuarioId: 'target-user-id',
+        tenantId: 'tenant-1',
+        currentPassword: undefined,
+        newPassword: 'NewPassword123!',
+        newUsername: undefined,
+      });
+    });
+  });
 });

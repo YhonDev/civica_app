@@ -8,6 +8,7 @@ import {
   Param,
   Req,
   UseGuards,
+  BadRequestException,
 } from '@nestjs/common';
 import type { Request } from 'express';
 import { Throttle } from '@nestjs/throttler';
@@ -95,12 +96,16 @@ export class AuthController {
   }
 
   @Post('refresh')
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
   @ApiOperation({
-    summary: 'Refrescar tokens',
+    summary: 'Renovar accessToken usando un refreshToken',
     description:
-      'Intercambia un refresh token válido por nuevos tokens con rotación',
+      'Rota el refreshToken: invalida el anterior y genera un nuevo par access/refresh token.',
   })
-  @ApiResponse({ status: 200, description: 'Tokens renovados' })
+  @ApiResponse({
+    status: 200,
+    description: 'Tokens renovados exitosamente',
+  })
   @ApiResponse({
     status: 401,
     description: 'Refresh token inválido, expirado o revocado',
@@ -208,6 +213,12 @@ export class AuthController {
   ) {
     const targetId =
       user.rol === RolUsuario.ADMIN ? (dto.usuarioId ?? user.id) : user.id;
+
+    if (user.rol !== RolUsuario.ADMIN && !dto.currentPassword) {
+      throw new BadRequestException(
+        'Se requiere currentPassword para actualizar credenciales',
+      );
+    }
 
     return this.authService.updateCredentials({
       usuarioId: targetId,

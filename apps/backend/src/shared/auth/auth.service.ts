@@ -64,6 +64,7 @@ export class AuthService {
       email: usuario.email,
       rol: usuario.rol,
       tenantId: usuario.tenantId,
+      residenteId: usuario.residenteId ?? undefined,
     };
 
     const accessToken = this.jwtService.sign(payload, { expiresIn: '15m' });
@@ -157,6 +158,7 @@ export class AuthService {
         email: user.email,
         rol: user.rol,
         tenantId: user.tenantId,
+        residenteId: user.residenteId ?? undefined,
       };
 
       const newAccessToken = this.jwtService.sign(newPayload, {

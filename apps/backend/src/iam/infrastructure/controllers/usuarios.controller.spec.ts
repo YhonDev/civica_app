@@ -334,13 +334,68 @@ describe('UsuariosController', () => {
     });
   });
 
-  // ─── desasignarEtapa ──────────────────────────────────
+  // ─── reemplazarEtapas ────────────────────────────────
+  describe('reemplazarEtapas (Anti-IDOR)', () => {
+    it('should throw NotFoundException if target user is from another tenant', async () => {
+      usuarioRepo.findOne.mockResolvedValue(null);
 
-  describe('desasignarEtapa', () => {
-    it('should delete assignment and return success', async () => {
+      await expect(
+        controller.reemplazarEtapas(
+          'victim-user',
+          { etapaIds: ['e1'] },
+          mockAdmin,
+        ),
+      ).rejects.toThrow('Usuario no encontrado');
+
+      expect(usuarioRepo.findOne).toHaveBeenCalledWith({
+        where: { id: 'victim-user', tenantId: 'tenant-1' },
+      });
+      expect(asignacionRepo.delete).not.toHaveBeenCalled();
+    });
+
+    it('should replace stages when user belongs to admin tenant', async () => {
+      usuarioRepo.findOne.mockResolvedValue(mockCobrador);
+      asignacionRepo.delete.mockResolvedValue({ affected: 1 } as any);
+      asignacionRepo.save.mockResolvedValue([] as any);
+
+      const result = await controller.reemplazarEtapas(
+        'cob-1',
+        { etapaIds: ['e1', 'e2'] },
+        mockAdmin,
+      );
+
+      expect(result).toEqual({ success: true, count: 2 });
+      expect(asignacionRepo.delete).toHaveBeenCalledWith({
+        usuarioId: 'cob-1',
+      });
+      expect(asignacionRepo.save).toHaveBeenCalled();
+    });
+  });
+
+  // ─── desasignarEtapa ──────────────────────────────────
+  describe('desasignarEtapa (Anti-IDOR)', () => {
+    it('should throw NotFoundException if target user is from another tenant', async () => {
+      usuarioRepo.findOne.mockResolvedValue(null);
+
+      await expect(
+        controller.desasignarEtapa('victim-user', 'etapa-1', mockAdmin),
+      ).rejects.toThrow('Usuario no encontrado');
+
+      expect(usuarioRepo.findOne).toHaveBeenCalledWith({
+        where: { id: 'victim-user', tenantId: 'tenant-1' },
+      });
+      expect(asignacionRepo.delete).not.toHaveBeenCalled();
+    });
+
+    it('should delete assignment and return success when user belongs to admin tenant', async () => {
+      usuarioRepo.findOne.mockResolvedValue(mockCobrador);
       asignacionRepo.delete.mockResolvedValue({ affected: 1 } as any);
 
-      const result = await controller.desasignarEtapa('cob-1', 'etapa-1');
+      const result = await controller.desasignarEtapa(
+        'cob-1',
+        'etapa-1',
+        mockAdmin,
+      );
 
       expect(result).toEqual({ success: true });
       expect(asignacionRepo.delete).toHaveBeenCalledWith({
@@ -350,11 +405,28 @@ describe('UsuariosController', () => {
     });
 
     it('should throw NotFoundException if no rows affected', async () => {
+      usuarioRepo.findOne.mockResolvedValue(mockCobrador);
       asignacionRepo.delete.mockResolvedValue({ affected: 0 } as any);
 
       await expect(
-        controller.desasignarEtapa('cob-1', 'etapa-1'),
+        controller.desasignarEtapa('cob-1', 'etapa-1', mockAdmin),
       ).rejects.toThrow('Asignación no encontrada');
+    });
+  });
+
+  // ─── generarPasswordTemporal ──────────────────────────
+  describe('generarPasswordTemporal', () => {
+    it('should generate password matching regex with 4-digit entropy', () => {
+      const pwd = controller.generarPasswordTemporal();
+      expect(pwd).toMatch(/^Civica\d{4}!\d{4}$/);
+    });
+
+    it('should use injected randomIntFn when provided', () => {
+      const stubRandom = jest.fn().mockReturnValue(7777);
+      const pwd = controller.generarPasswordTemporal(stubRandom);
+      const year = new Date().getFullYear();
+      expect(pwd).toBe(`Civica${year}!7777`);
+      expect(stubRandom).toHaveBeenCalledWith(1000, 10000);
     });
   });
 });

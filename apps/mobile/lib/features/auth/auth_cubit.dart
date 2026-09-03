@@ -66,11 +66,12 @@ class AuthCubit extends Cubit<AuthState> {
     };
   }
 
-  void _initRealtimeSocket(Map<String, dynamic> user) {
+  void _initRealtimeSocket(Map<String, dynamic> user) async {
     try {
       final tenantId = user['tenantId'] as String? ?? '00000000-0000-0000-0000-000000000001';
       final userId = user['id'] as String? ?? '';
       final residenteId = user['residenteId'] as String?;
+      final token = await ApiClient.instance.tokenStorage.getAccessToken();
 
       final wsUrl = detectWsUrl();
       debugPrint('[AuthCubit] WebSocket URL: $wsUrl');
@@ -79,6 +80,7 @@ class AuthCubit extends Cubit<AuthState> {
         serverUrl: wsUrl,
         tenantId: tenantId,
         userId: userId,
+        token: token,
         residenteId: residenteId,
       );
     } catch (e) {

@@ -1,3 +1,4 @@
+import { Exclude } from 'class-transformer';
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -22,6 +23,7 @@ export class AuthSession {
   usuario: Usuario;
 
   @Column({ name: 'refresh_token_hash', type: 'varchar', length: 255 })
+  @Exclude()
   refreshTokenHash: string;
 
   @Column({ name: 'device_id', type: 'varchar', length: 255, nullable: true })

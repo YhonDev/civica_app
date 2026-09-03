@@ -46,17 +46,19 @@ async function bootstrap() {
     .addTag('Health', 'Health checks del sistema')
     .build();
 
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('docs', app, document, {
-    swaggerOptions: {
-      persistAuthorization: true,
-      tagsSorter: 'alpha',
-      operationsSorter: 'method',
-    },
-    customSiteTitle: 'Cívica Pago — API Docs',
-  });
-
-  if (process.env.NODE_ENV !== 'production') {
+  if (
+    process.env.NODE_ENV !== 'production' ||
+    process.env.ENABLE_SWAGGER === 'true'
+  ) {
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('docs', app, document, {
+      swaggerOptions: {
+        persistAuthorization: true,
+        tagsSorter: 'alpha',
+        operationsSorter: 'method',
+      },
+      customSiteTitle: 'Cívica Pago — API Docs',
+    });
     console.log(
       `📄 Swagger docs disponibles en http://localhost:${process.env.PORT ?? 3000}/docs`,
     );

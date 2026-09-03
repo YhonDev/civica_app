@@ -27,6 +27,7 @@ class RealtimeSocketService {
   String? _serverUrl;
   String? _tenantId;
   String? _userId;
+  String? _token;
   String? _residenteId;
 
   // Reconnection state
@@ -54,12 +55,14 @@ class RealtimeSocketService {
     required String serverUrl,
     required String tenantId,
     required String userId,
+    String? token,
     String? residenteId,
   }) {
     // Store params for reconnection
     _serverUrl = serverUrl;
     _tenantId = tenantId;
     _userId = userId;
+    _token = token;
     _residenteId = residenteId;
     _intentionalDisconnect = false;
     _reconnectAttempt = 0;
@@ -76,17 +79,20 @@ class RealtimeSocketService {
       _disposeSocket();
 
       debugPrint('[RealtimeSocket] Connecting to WebSockets gateway at $_serverUrl...');
-      _socket = io.io(
-        _serverUrl,
-        io.OptionBuilder()
-            .setTransports(['websocket'])
-            .disableAutoConnect()
-            .enableReconnection()
-            .setReconnectionDelay(1000)
-            .setReconnectionDelayMax(30000)
-            .setReconnectionAttempts(_maxReconnectAttempt)
-            .build(),
-      );
+      final optionsBuilder = io.OptionBuilder()
+          .setTransports(['websocket'])
+          .disableAutoConnect()
+          .enableReconnection()
+          .setReconnectionDelay(1000)
+          .setReconnectionDelayMax(30000)
+          .setReconnectionAttempts(_maxReconnectAttempt);
+
+      if (_token != null && _token!.isNotEmpty) {
+        optionsBuilder.setAuth({'token': _token});
+        optionsBuilder.setExtraHeaders({'Authorization': 'Bearer $_token'});
+      }
+
+      _socket = io.io(_serverUrl, optionsBuilder.build());
 
       _setupEventListeners();
       _socket?.connect();
@@ -108,7 +114,11 @@ class RealtimeSocketService {
 
     _socket?.on('pago:registrado', (data) {
       debugPrint('[RealtimeSocket] Event PAGO_REGISTRADO received');
-      LocalCacheRepository.instance.invalidateAll();
+      LocalCacheRepository.instance.invalidatePattern('dashboard');
+      LocalCacheRepository.instance.invalidatePattern('cartera');
+      if (data is Map && data['residenteId'] != null) {
+        LocalCacheRepository.instance.invalidatePattern(data['residenteId'].toString());
+      }
       for (final listener in _onPagoListeners) {
         listener();
       }
@@ -116,7 +126,8 @@ class RealtimeSocketService {
 
     _socket?.on('modalidad:cambiada', (data) {
       debugPrint('[RealtimeSocket] Event MODALIDAD_CAMBIADA received');
-      LocalCacheRepository.instance.invalidateAll();
+      LocalCacheRepository.instance.invalidatePattern('dashboard');
+      LocalCacheRepository.instance.invalidatePattern('tarifas');
       for (final listener in _onModalidadListeners) {
         listener();
       }
@@ -124,12 +135,14 @@ class RealtimeSocketService {
 
     _socket?.on('solicitud:creada', (data) {
       debugPrint('[RealtimeSocket] Event SOLICITUD_CREADA received');
-      LocalCacheRepository.instance.invalidateAll();
+      LocalCacheRepository.instance.invalidatePattern('solicitudes');
+      LocalCacheRepository.instance.invalidatePattern('dashboard');
     });
 
     _socket?.on('solicitud:cerrada', (data) {
       debugPrint('[RealtimeSocket] Event SOLICITUD_CERRADA received');
-      LocalCacheRepository.instance.invalidateAll();
+      LocalCacheRepository.instance.invalidatePattern('solicitudes');
+      LocalCacheRepository.instance.invalidatePattern('dashboard');
     });
 
     _socket?.onDisconnect((_) {

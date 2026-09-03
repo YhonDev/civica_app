@@ -270,6 +270,30 @@ class _PendingRequest {
   _PendingRequest({required this.options, required this.handler});
 }
 
+/// Pure sanitization function for logging. Replaces sensitive keys
+/// (password, currentPassword, newPassword, accessToken, refreshToken) with [REDACTED].
+dynamic redactSensitiveData(dynamic data) {
+  if (data is Map) {
+    final copy = <String, dynamic>{};
+    for (final entry in data.entries) {
+      final key = entry.key.toString();
+      final lowerKey = key.toLowerCase();
+      if (lowerKey.contains('password') ||
+          lowerKey.contains('token') ||
+          lowerKey.contains('secret') ||
+          lowerKey.contains('authorization')) {
+        copy[key] = '[REDACTED]';
+      } else {
+        copy[key] = redactSensitiveData(entry.value);
+      }
+    }
+    return copy;
+  } else if (data is List) {
+    return data.map((item) => redactSensitiveData(item)).toList();
+  }
+  return data;
+}
+
 // ──────────────────────────────────────────────
 // ApiClient — singleton que expone métodos HTTP
 // ──────────────────────────────────────────────
@@ -289,27 +313,47 @@ class ApiClient {
     bool enableLogging = true,
     Duration connectTimeout = const Duration(seconds: 15),
     Duration receiveTimeout = const Duration(seconds: 15),
-    TokenStorage? storage,
-  }) {
-    tokenStorage = storage ?? TokenStorage();
-
+    TokenStorage? tokenStorage,
+    SecureStorage? storage,
+  }) : tokenStorage = tokenStorage ?? TokenStorage(storage: storage) {
     // Dio para refresh (sin interceptors para evitar loops)
     final dioForRefresh = Dio(_baseOptions(baseUrl, connectTimeout, receiveTimeout));
 
     _authInterceptor = AuthInterceptor(
       dioForRefresh: dioForRefresh,
-      tokenStorage: tokenStorage,
+      tokenStorage: this.tokenStorage,
     );
 
     _dio = Dio(_baseOptions(baseUrl, connectTimeout, receiveTimeout));
     _dio.interceptors.add(_authInterceptor);
 
-    // Solo agregar LogInterceptor en desarrollo para no exponer datos sensibles
+    // Solo agregar logging en desarrollo, redactando datos sensibles
     if (enableLogging) {
-      _dio.interceptors.add(LogInterceptor(
-        requestBody: true,
-        responseBody: true,
-        logPrint: (o) => debugPrint('[API] $o'),
+      _dio.interceptors.add(InterceptorsWrapper(
+        onRequest: (options, handler) {
+          final sanitized = redactSensitiveData(options.data);
+          debugPrint('[API] *** Request ***');
+          debugPrint('[API] uri: ${options.uri}');
+          debugPrint('[API] method: ${options.method}');
+          if (sanitized != null) {
+            debugPrint('[API] data: $sanitized');
+          }
+          handler.next(options);
+        },
+        onResponse: (response, handler) {
+          final sanitized = redactSensitiveData(response.data);
+          debugPrint('[API] *** Response ***');
+          debugPrint('[API] uri: ${response.requestOptions.uri}');
+          debugPrint('[API] statusCode: ${response.statusCode}');
+          if (sanitized != null) {
+            debugPrint('[API] Response Text: $sanitized');
+          }
+          handler.next(response);
+        },
+        onError: (err, handler) {
+          debugPrint('[API] *** DioException ***: ${err.message}');
+          handler.next(err);
+        },
       ));
     }
   }
@@ -331,17 +375,19 @@ class ApiClient {
   /// Debe llamarse una vez al iniciar la app (ej: en main).
   static void init({
     required String baseUrl,
-    bool enableLogging = true,
+    bool enableLogging = false,
     Duration connectTimeout = const Duration(seconds: 15),
     Duration receiveTimeout = const Duration(seconds: 15),
     TokenStorage? tokenStorage,
+    SecureStorage? storage,
   }) {
     _instance = ApiClient._(
       baseUrl: baseUrl,
       enableLogging: enableLogging,
       connectTimeout: connectTimeout,
       receiveTimeout: receiveTimeout,
-      storage: tokenStorage,
+      tokenStorage: tokenStorage,
+      storage: storage,
     );
   }
 

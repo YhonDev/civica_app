@@ -22,6 +22,7 @@ import {
 } from 'class-validator';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import { JwtAuthGuard } from '../../../shared/auth/jwt-auth.guard';
 import { RolesGuard } from '../../../shared/auth/guards/roles.guard';
 import { Roles } from '../../../shared/auth/decorators/roles.decorator';
@@ -175,6 +176,13 @@ export class UsuariosController {
     @Body() dto: AsignarEtapasBulkDto,
     @CurrentUser() currentUser: Usuario,
   ) {
+    const usuario = await this.usuarioRepository.findOne({
+      where: { id: usuarioId, tenantId: currentUser.tenantId },
+    });
+    if (!usuario) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
     await this.asignacionRepository.delete({ usuarioId });
     const asignaciones = dto.etapaIds.map((etapaId) =>
       AsignacionEtapa.crear(usuarioId, etapaId, currentUser.tenantId),
@@ -191,7 +199,15 @@ export class UsuariosController {
   async desasignarEtapa(
     @Param('id') usuarioId: string,
     @Param('etapaId') etapaId: string,
+    @CurrentUser() currentUser: Usuario,
   ) {
+    const usuario = await this.usuarioRepository.findOne({
+      where: { id: usuarioId, tenantId: currentUser.tenantId },
+    });
+    if (!usuario) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
     const result = await this.asignacionRepository.delete({
       usuarioId,
       etapaId,
@@ -256,9 +272,12 @@ export class UsuariosController {
     };
   }
 
-  private generarPasswordTemporal(): string {
+  generarPasswordTemporal(
+    randomIntFn?: (min: number, max: number) => number,
+  ): string {
     const year = new Date().getFullYear();
-    const digits = String(Math.floor(1000 + Math.random() * 9000));
+    const generator = randomIntFn || crypto.randomInt;
+    const digits = String(generator(1000, 10000));
     return `Civica${year}!${digits}`;
   }
 }

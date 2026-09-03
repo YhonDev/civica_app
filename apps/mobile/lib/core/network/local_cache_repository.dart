@@ -55,6 +55,15 @@ class LocalCacheRepository {
     _timestamps.clear();
   }
 
+  /// Invalida únicamente las claves que coincidan con un patrón o prefijo.
+  void invalidatePattern(String pattern) {
+    final keysToRemove = _memoryCache.keys.where((k) => k.contains(pattern)).toList();
+    for (final key in keysToRemove) {
+      _memoryCache.remove(key);
+      _timestamps.remove(key);
+    }
+  }
+
   /// Core Enterprise SWR Execution Workflow.
   ///
   /// 1. Immediately yields cached data to [onData] (0ms latency) if available within TTL.
