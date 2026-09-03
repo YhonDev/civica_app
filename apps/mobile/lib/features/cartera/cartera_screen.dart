@@ -104,11 +104,12 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
     final user = context.read<AuthCubit>().state.usuario;
     final rol = user?['rol'] as String?;
     final isResidente = rol == 'RESIDENTE' || rol == 'PROPIETARIO';
-    final canRegisterPago = !isResidente;
+    final isCobrador = rol == 'COBRADOR';
 
     String getTitle() {
       if (isResidente) return 'Gestión de Pago';
-      return 'Gestión de Cobro';
+      if (isCobrador) return 'Gestión de Cobro';
+      return 'Gestión de Cobro'; // Admin / Fallback
     }
 
     return Scaffold(
@@ -117,7 +118,6 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ScreenHeader(title: getTitle()),
-            
             Expanded(
               child: BlocBuilder<CarteraCubit, CarteraState>(
                 builder: (context, state) {
@@ -159,161 +159,39 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                     return true;
                   }).toList();
 
-                  return RefreshIndicator(
-                    onRefresh: () => context.read<CarteraCubit>().loadCobros(),
-                    child: CustomScrollView(
-                      slivers: [
-                        // Resumen
-                        SliverToBoxAdapter(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
-                            child: CarteraResumenHeader(resumen: state.resumen),
-                          ),
-                        ),
-                        
-                        const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
-                                              // Fila Unificada: Buscador + Selector de Vista (Lista / Calendario)
-                        SliverToBoxAdapter(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: TextField(
-                                    controller: _searchController,
-                                    onChanged: (value) {
-                                      setState(() {
-                                        _searchQuery = value;
-                                      });
-                                    },
-                                    decoration: InputDecoration(
-                                      hintText: isResidente ? 'Buscar por mes o concepto (ej. Agosto)...' : 'Buscar por mes, casa o residente...',
-                                      hintStyle: AppTypography.caption.copyWith(
-                                        color: AppColors.textSecondary,
-                                      ),
-                                      prefixIcon: const Icon(Icons.search_rounded, size: 20),
-                                      suffixIcon: _searchQuery.isNotEmpty
-                                          ? IconButton(
-                                              icon: const Icon(Icons.clear_rounded, size: 18),
-                                              onPressed: () {
-                                                _searchController.clear();
-                                                setState(() {
-                                                  _searchQuery = '';
-                                                });
-                                              },
-                                            )
-                                          : null,
-                                      filled: true,
-                                      fillColor: Theme.of(context).brightness == Brightness.dark
-                                          ? const Color(0xFF1E293B)
-                                          : const Color(0xFFF1F5F9),
-                                      contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                        borderSide: BorderSide.none,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: AppSpacing.xs),
-                                Container(
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context).brightness == Brightness.dark
-                                        ? const Color(0xFF1E293B)
-                                        : const Color(0xFFF1F5F9),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: IconButton(
-                                    tooltip: state.showCalendar ? 'Ver Lista' : 'Ver Calendario',
-                                    icon: Icon(
-                                      state.showCalendar ? Icons.list_rounded : Icons.calendar_month_rounded,
-                                      color: AppColors.primary,
-                                      size: 22,
-                                    ),
-                                    onPressed: () {
-                                      context.read<CarteraCubit>().toggleView();
-                                    },
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.sm)),
+                  if (isResidente) {
+                    return _ResidenteCarteraView(
+                      state: state,
+                      displayCobros: displayCobros,
+                      searchController: _searchController,
+                      searchQuery: _searchQuery,
+                      selectedStatusFilter: _selectedStatusFilter,
+                      onSearchChanged: (val) => setState(() => _searchQuery = val),
+                      onStatusFilterChanged: (key) => setState(() => _selectedStatusFilter = key),
+                      buildFilterChip: _buildFilterChip,
+                    );
+                  } else if (isCobrador) {
+                    return _CobradorCarteraView(
+                      state: state,
+                      displayCobros: displayCobros,
+                      searchController: _searchController,
+                      searchQuery: _searchQuery,
+                      selectedStatusFilter: _selectedStatusFilter,
+                      onSearchChanged: (val) => setState(() => _searchQuery = val),
+                      onStatusFilterChanged: (key) => setState(() => _selectedStatusFilter = key),
+                      buildFilterChip: _buildFilterChip,
+                    );
+                  }
 
-                        // Chips de Filtro Rápido en 1-Tap (4 en 1 sola fila sin desplazamiento)
-                        SliverToBoxAdapter(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
-                            child: Row(
-                              children: [
-                                Expanded(child: _buildFilterChip('TODOS', 'Todas (${state.cobros.length})', AppColors.primary)),
-                                const SizedBox(width: 4),
-                                Expanded(child: _buildFilterChip('PENDIENTE', 'Pendientes (${state.resumen.cantidadPendientes})', AppColors.warning)),
-                                const SizedBox(width: 4),
-                                Expanded(child: _buildFilterChip('MORA', 'Mora (${state.resumen.cantidadMora})', AppColors.error)),
-                                const SizedBox(width: 4),
-                                Expanded(child: _buildFilterChip('PAGADO', 'Pagadas (${state.resumen.cantidadPagados})', AppColors.success)),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.md)),
-
-                        if (state.showCalendar)
-                          SliverToBoxAdapter(
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
-                              child: CalendarView(
-                                cobros: state.cobros,
-                                onDaySelected: (date, dayCobros) {
-                                  if (dayCobros.isNotEmpty) {
-                                    final cobro = dayCobros.first;
-                                    TicketBottomSheet.show(
-                                      context,
-                                      TicketData(
-                                        numero: cobro.id,
-                                        fecha: DateTime.tryParse(cobro.fechaVencimiento) ?? DateTime.now(),
-                                        residente: cobro.nombre,
-                                        casa: '${cobro.etapa} - ${cobro.manzana} - Casa ${cobro.casa}',
-                                        monto: cobro.saldo.round(),
-                                        metodo: 'Efectivo',
-                                        estado: cobro.estado,
-                                        cobrador: 'Sistema Cívica',
-                                      ),
-                                    );
-                                  } else {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('No hay cobros registrados para esta fecha')),
-                                    );
-                                  }
-                                },
-                              ),
-                            ),
-                          )
-                        else ...[
-                          // Lista de Registros
-                          if (displayCobros.isEmpty)
-                            SliverToBoxAdapter(
-                              child: Padding(
-                                padding: const EdgeInsets.only(top: AppSpacing.xl),
-                                child: EmptyState(
-                                  icon: Icons.inbox_rounded,
-                                  title: 'Sin registros',
-                                  description: _searchQuery.isNotEmpty
-                                      ? 'No se encontraron resultados para "$_searchQuery".'
-                                      : 'No hay registros para la categoría seleccionada.',
-                                ),
-                              ),
-                            )
-                          else
-                            ..._buildGroupedList(context, displayCobros, canRegisterPago),
-                        ],
-                              
-                        // Espaciado final
-                        const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xl)),
-                      ],
-                    ),
+                  return _AdminCarteraView(
+                    state: state,
+                    displayCobros: displayCobros,
+                    searchController: _searchController,
+                    searchQuery: _searchQuery,
+                    selectedStatusFilter: _selectedStatusFilter,
+                    onSearchChanged: (val) => setState(() => _searchQuery = val),
+                    onStatusFilterChanged: (key) => setState(() => _selectedStatusFilter = key),
+                    buildFilterChip: _buildFilterChip,
                   );
                 },
               ),
@@ -439,6 +317,307 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
         ),
       ),
     ];
+  }
+}
+
+// ── VISTA MODULAR: Residente (Gestión de Pago) ────────────────────────
+class _ResidenteCarteraView extends StatelessWidget {
+  final CarteraState state;
+  final List<CobroItem> displayCobros;
+  final TextEditingController searchController;
+  final String searchQuery;
+  final String selectedStatusFilter;
+  final ValueChanged<String> onSearchChanged;
+  final ValueChanged<String> onStatusFilterChanged;
+  final Widget Function(String key, String label, Color activeColor) buildFilterChip;
+
+  const _ResidenteCarteraView({
+    required this.state,
+    required this.displayCobros,
+    required this.searchController,
+    required this.searchQuery,
+    required this.selectedStatusFilter,
+    required this.onSearchChanged,
+    required this.onStatusFilterChanged,
+    required this.buildFilterChip,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _CarteraSharedLayout(
+      state: state,
+      displayCobros: displayCobros,
+      searchController: searchController,
+      searchQuery: searchQuery,
+      selectedStatusFilter: selectedStatusFilter,
+      onSearchChanged: onSearchChanged,
+      onStatusFilterChanged: onStatusFilterChanged,
+      buildFilterChip: buildFilterChip,
+      searchHint: 'Buscar por mes o concepto (ej. Agosto)...',
+      canRegisterPago: false,
+    );
+  }
+}
+
+// ── VISTA MODULAR: Cobrador (Gestión de Cobro) ────────────────────────
+class _CobradorCarteraView extends StatelessWidget {
+  final CarteraState state;
+  final List<CobroItem> displayCobros;
+  final TextEditingController searchController;
+  final String searchQuery;
+  final String selectedStatusFilter;
+  final ValueChanged<String> onSearchChanged;
+  final ValueChanged<String> onStatusFilterChanged;
+  final Widget Function(String key, String label, Color activeColor) buildFilterChip;
+
+  const _CobradorCarteraView({
+    required this.state,
+    required this.displayCobros,
+    required this.searchController,
+    required this.searchQuery,
+    required this.selectedStatusFilter,
+    required this.onSearchChanged,
+    required this.onStatusFilterChanged,
+    required this.buildFilterChip,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _CarteraSharedLayout(
+      state: state,
+      displayCobros: displayCobros,
+      searchController: searchController,
+      searchQuery: searchQuery,
+      selectedStatusFilter: selectedStatusFilter,
+      onSearchChanged: onSearchChanged,
+      onStatusFilterChanged: onStatusFilterChanged,
+      buildFilterChip: buildFilterChip,
+      searchHint: 'Buscar por mes, casa o residente...',
+      canRegisterPago: true,
+    );
+  }
+}
+
+// ── VISTA MODULAR: Administrador (Supervisión de Cartera) ─────────────
+class _AdminCarteraView extends StatelessWidget {
+  final CarteraState state;
+  final List<CobroItem> displayCobros;
+  final TextEditingController searchController;
+  final String searchQuery;
+  final String selectedStatusFilter;
+  final ValueChanged<String> onSearchChanged;
+  final ValueChanged<String> onStatusFilterChanged;
+  final Widget Function(String key, String label, Color activeColor) buildFilterChip;
+
+  const _AdminCarteraView({
+    required this.state,
+    required this.displayCobros,
+    required this.searchController,
+    required this.searchQuery,
+    required this.selectedStatusFilter,
+    required this.onSearchChanged,
+    required this.onStatusFilterChanged,
+    required this.buildFilterChip,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _CarteraSharedLayout(
+      state: state,
+      displayCobros: displayCobros,
+      searchController: searchController,
+      searchQuery: searchQuery,
+      selectedStatusFilter: selectedStatusFilter,
+      onSearchChanged: onSearchChanged,
+      onStatusFilterChanged: onStatusFilterChanged,
+      buildFilterChip: buildFilterChip,
+      searchHint: 'Buscar por mes, casa o residente...',
+      canRegisterPago: true,
+    );
+  }
+}
+
+// ── LAYOUT COMPARTIDO DE CARTERA ─────────────────────────────────────
+class _CarteraSharedLayout extends StatelessWidget {
+  final CarteraState state;
+  final List<CobroItem> displayCobros;
+  final TextEditingController searchController;
+  final String searchQuery;
+  final String selectedStatusFilter;
+  final ValueChanged<String> onSearchChanged;
+  final ValueChanged<String> onStatusFilterChanged;
+  final Widget Function(String key, String label, Color activeColor) buildFilterChip;
+  final String searchHint;
+  final bool canRegisterPago;
+
+  const _CarteraSharedLayout({
+    required this.state,
+    required this.displayCobros,
+    required this.searchController,
+    required this.searchQuery,
+    required this.selectedStatusFilter,
+    required this.onSearchChanged,
+    required this.onStatusFilterChanged,
+    required this.buildFilterChip,
+    required this.searchHint,
+    required this.canRegisterPago,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final parentState = context.findAncestorStateOfType<_CarteraScreenContentState>();
+
+    return RefreshIndicator(
+      onRefresh: () => context.read<CarteraCubit>().loadCobros(),
+      child: CustomScrollView(
+        slivers: [
+          // Resumen
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
+              child: CarteraResumenHeader(resumen: state.resumen),
+            ),
+          ),
+          
+          const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
+          
+          // Fila Unificada: Buscador + Selector de Vista (Lista / Calendario)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: searchController,
+                      onChanged: onSearchChanged,
+                      decoration: InputDecoration(
+                        hintText: searchHint,
+                        hintStyle: AppTypography.caption.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                        prefixIcon: const Icon(Icons.search_rounded, size: 20),
+                        suffixIcon: searchQuery.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear_rounded, size: 18),
+                                onPressed: () {
+                                  searchController.clear();
+                                  onSearchChanged('');
+                                },
+                              )
+                            : null,
+                        filled: true,
+                        fillColor: Theme.of(context).brightness == Brightness.dark
+                            ? const Color(0xFF1E293B)
+                            : const Color(0xFFF1F5F9),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? const Color(0xFF1E293B)
+                          : const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: IconButton(
+                      tooltip: state.showCalendar ? 'Ver Lista' : 'Ver Calendario',
+                      icon: Icon(
+                        state.showCalendar ? Icons.list_rounded : Icons.calendar_month_rounded,
+                        color: AppColors.primary,
+                        size: 22,
+                      ),
+                      onPressed: () {
+                        context.read<CarteraCubit>().toggleView();
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.sm)),
+
+          // Chips de Filtro Rápido en 1-Tap
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
+              child: Row(
+                children: [
+                  Expanded(child: buildFilterChip('TODOS', 'Todas (${state.cobros.length})', AppColors.primary)),
+                  const SizedBox(width: 4),
+                  Expanded(child: buildFilterChip('PENDIENTE', 'Pendientes (${state.resumen.cantidadPendientes})', AppColors.warning)),
+                  const SizedBox(width: 4),
+                  Expanded(child: buildFilterChip('MORA', 'Mora (${state.resumen.cantidadMora})', AppColors.error)),
+                  const SizedBox(width: 4),
+                  Expanded(child: buildFilterChip('PAGADO', 'Pagadas (${state.resumen.cantidadPagados})', AppColors.success)),
+                ],
+              ),
+            ),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.md)),
+
+          if (state.showCalendar)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
+                child: CalendarView(
+                  cobros: state.cobros,
+                  onDaySelected: (date, dayCobros) {
+                    if (dayCobros.isNotEmpty) {
+                      final cobro = dayCobros.first;
+                      TicketBottomSheet.show(
+                        context,
+                        TicketData(
+                          numero: cobro.id,
+                          fecha: DateTime.tryParse(cobro.fechaVencimiento) ?? DateTime.now(),
+                          residente: cobro.nombre,
+                          casa: '${cobro.etapa} - ${cobro.manzana} - Casa ${cobro.casa}',
+                          monto: cobro.saldo.round(),
+                          metodo: 'Efectivo',
+                          estado: cobro.estado,
+                          cobrador: 'Sistema Cívica',
+                        ),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('No hay cobros registrados para esta fecha')),
+                      );
+                    }
+                  },
+                ),
+              ),
+            )
+          else ...[
+            // Lista de Registros
+            if (displayCobros.isEmpty)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: AppSpacing.xl),
+                  child: EmptyState(
+                    icon: Icons.inbox_rounded,
+                    title: 'Sin registros',
+                    description: searchQuery.isNotEmpty
+                        ? 'No se encontraron resultados para "$searchQuery".'
+                        : 'No hay registros para la categoría seleccionada.',
+                  ),
+                ),
+              )
+            else if (parentState != null)
+              ...parentState._buildGroupedList(context, displayCobros, canRegisterPago),
+          ],
+                
+          // Espaciado final
+          const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xl)),
+        ],
+      ),
+    );
   }
 }
 
