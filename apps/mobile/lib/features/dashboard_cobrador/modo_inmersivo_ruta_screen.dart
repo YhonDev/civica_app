@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/theme/app_feedback.dart';
 import '../../core/widgets/top_toast.dart';
 import '../cartera/models/cartera_models.dart';
 import '../cartera/widgets/registrar_pago_bottom_sheet.dart';
@@ -86,19 +87,11 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
   late AnimationController _pulseController;
   late List<ModoInmersivoItem> _items;
   int _currentIndex = 0;
-  double _pageOffset = 0.0;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController(viewportFraction: 0.88);
-    _pageController.addListener(() {
-      if (_pageController.hasClients) {
-        setState(() {
-          _pageOffset = _pageController.page ?? _currentIndex.toDouble();
-        });
-      }
-    });
     _stepperScrollController = ScrollController();
     _pulseController = AnimationController(
       vsync: this,
@@ -116,6 +109,7 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
   }
 
   void _onPageChanged(int index) {
+    AppFeedback.selection();
     setState(() => _currentIndex = index);
     _scrollToActiveNode(index);
   }
@@ -432,14 +426,17 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
             // ── Mapa de Fondo Estilizado Dinámico (Background Pattern Animado) ───
             Positioned.fill(
               child: AnimatedBuilder(
-                animation: _pulseController,
+                animation: Listenable.merge([_pulseController, _pageController]),
                 builder: (context, child) {
+                  final offset = _pageController.hasClients
+                      ? (_pageController.page ?? _currentIndex.toDouble())
+                      : _currentIndex.toDouble();
                   return CustomPaint(
                     painter: _MapGridBackgroundPainter(
                       isDark: isDark,
                       pulseValue: _pulseController.value,
                       currentIndex: _currentIndex,
-                      pageOffset: _pageOffset,
+                      pageOffset: offset,
                     ),
                   );
                 },

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../theme/app_typography.dart';
+import '../theme/app_feedback.dart';
 
 enum ToastType { success, error, info, warning }
 
@@ -14,6 +15,21 @@ class TopToast {
     ToastType type = ToastType.success,
     Duration duration = const Duration(seconds: 3),
   }) {
+    switch (type) {
+      case ToastType.success:
+        AppFeedback.success();
+        break;
+      case ToastType.error:
+        AppFeedback.error();
+        break;
+      case ToastType.warning:
+        AppFeedback.warning();
+        break;
+      case ToastType.info:
+        AppFeedback.light();
+        break;
+    }
+
     final overlayState = Overlay.of(context);
     late OverlayEntry overlayEntry;
 

@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/theme/app_feedback.dart';
 import '../../core/widgets/lifecycle_observer_mixin.dart';
 import '../cartera/models/cartera_models.dart';
 import '../cartera/widgets/registrar_pago_bottom_sheet.dart';
@@ -43,6 +44,26 @@ class CasasExplorerScreen extends StatelessWidget {
       );
     }
   }
+}
+
+sealed class _TerritorioItem {}
+
+class _EtapaItem extends _TerritorioItem {
+  final String nombre;
+  _EtapaItem(this.nombre);
+}
+
+class _ManzanaItem extends _TerritorioItem {
+  final String nombre;
+  final int count;
+  _ManzanaItem(this.nombre, this.count);
+}
+
+class _CasaItem extends _TerritorioItem {
+  final CasaExplorer casa;
+  final String etapaNombre;
+  final String manzanaNombre;
+  _CasaItem(this.casa, this.etapaNombre, this.manzanaNombre);
 }
 
 class _CasasExplorerView extends StatefulWidget {
@@ -114,55 +135,88 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
   Widget _buildContent(List<EtapaExplorer> etapas, List<Map<String, dynamic>> solicitudes) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final processedEtapas = _procesarRutaCaminata(etapas);
+    final territorioItems = _flattenTerritorioItems(processedEtapas);
 
     return RefreshIndicator(
       color: AppColors.primary,
       onRefresh: () => context.read<CasasCubit>().refresh(),
-      child: SingleChildScrollView(
+      child: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Contexto Temporal: Semana Actual ────────────────────
-            _buildWeekContextBanner(isDark),
+        slivers: [
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.screenPadding,
+              AppSpacing.screenPadding,
+              AppSpacing.screenPadding,
+              0,
+            ),
+            sliver: SliverToBoxAdapter(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ── Contexto Temporal: Semana Actual ────────────────────
+                  _buildWeekContextBanner(isDark),
 
-            const SizedBox(height: AppSpacing.lg),
+                  const SizedBox(height: AppSpacing.lg),
 
-            // ── SECCIÓN 1: Solicitudes de Cobro ──────────────────────
-            _buildSolicitudesSection(solicitudes, isDark),
+                  // ── SECCIÓN 1: Solicitudes de Cobro ──────────────────────
+                  _buildSolicitudesSection(solicitudes, isDark),
 
-            const SizedBox(height: AppSpacing.lg),
+                  const SizedBox(height: AppSpacing.lg),
 
-            // ── SECCIÓN 2: Recorrido Programado por Territorio ───────
-            _buildRecorridoHeader(etapas, solicitudes),
+                  // ── SECCIÓN 2: Recorrido Programado por Territorio ───────
+                  _buildRecorridoHeader(etapas, solicitudes),
 
-            const SizedBox(height: AppSpacing.sm),
+                  const SizedBox(height: AppSpacing.sm),
 
-            // Selector por Sector / Etapa
-            _buildEtapaFilterChips(etapas),
+                  // Selector por Sector / Etapa
+                  _buildEtapaFilterChips(etapas),
 
-            const SizedBox(height: AppSpacing.sm),
+                  const SizedBox(height: AppSpacing.sm),
 
-            // Toggle Dinámico de Sentido de Caminata (calculado según DB)
-            _buildSentidoToggle(etapas, isDark),
+                  // Toggle Dinámico de Sentido de Caminata (calculado según DB)
+                  _buildSentidoToggle(etapas, isDark),
 
-            const SizedBox(height: AppSpacing.sm),
+                  const SizedBox(height: AppSpacing.sm),
 
-            // Filtros Rápidos de Cobro (Pendientes, Mora, Todos)
-            _buildFiltroEstadoChips(),
+                  // Filtros Rápidos de Cobro (Pendientes, Mora, Todos)
+                  _buildFiltroEstadoChips(),
 
-            const SizedBox(height: AppSpacing.md),
+                  const SizedBox(height: AppSpacing.md),
+                ],
+              ),
+            ),
+          ),
 
-            // Lista Lineal Continua de Caminata
-            if (processedEtapas.isEmpty)
-              _buildEmptyTerritorioState()
-            else
-              ..._buildLinearTerritorioStream(processedEtapas),
+          // Lista Lineal Continua de Caminata Virtualizada
+          if (territorioItems.isEmpty)
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
+              sliver: SliverToBoxAdapter(
+                child: _buildEmptyTerritorioState(),
+              ),
+            )
+          else
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
+              sliver: SliverList.builder(
+                itemCount: territorioItems.length,
+                itemBuilder: (context, index) {
+                  final item = territorioItems[index];
+                  return switch (item) {
+                    _EtapaItem(:final nombre) => _buildEtapaHeader(nombre),
+                    _ManzanaItem(:final nombre, :final count) => _buildManzanaHeader(nombre, count),
+                    _CasaItem(:final casa, :final etapaNombre, :final manzanaNombre) =>
+                      _buildCasaItem(casa, etapaNombre, manzanaNombre),
+                  };
+                },
+              ),
+            ),
 
-            const SizedBox(height: AppSpacing.xl),
-          ],
-        ),
+          const SliverToBoxAdapter(
+            child: SizedBox(height: AppSpacing.xl),
+          ),
+        ],
       ),
     );
   }
@@ -336,6 +390,7 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                 solicitud: solicitud,
                 compact: true,
                 onMarcarEnCamino: () {
+                  AppFeedback.medium();
                   context.read<CasasCubit>().cambiarEstadoSolicitud(id, 'EN_CAMINO');
                   try {
                     context.read<DashboardCobradorCubit>().cambiarEstadoSolicitud(id, 'EN_CAMINO');
@@ -439,6 +494,7 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
           onPressed: () {
+            AppFeedback.medium();
             context.push(
               '/modo-inmersivo-ruta',
               extra: {
@@ -476,7 +532,10 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
               label: Text('🌐 Todas ($totalCount)'),
               selected: _selectedEtapaId == 'TODAS',
               onSelected: (selected) {
-                if (selected) setState(() => _selectedEtapaId = 'TODAS');
+                if (selected) {
+                  AppFeedback.selection();
+                  setState(() => _selectedEtapaId = 'TODAS');
+                }
               },
               selectedColor: AppColors.primary,
               labelStyle: AppTypography.caption.copyWith(
@@ -505,7 +564,10 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                 label: Text('${etapa.nombre} ($etapaCount)'),
                 selected: isSelected,
                 onSelected: (selected) {
-                  if (selected) setState(() => _selectedEtapaId = etapa.id);
+                  if (selected) {
+                    AppFeedback.selection();
+                    setState(() => _selectedEtapaId = etapa.id);
+                  }
                 },
                 selectedColor: AppColors.primary,
                 labelStyle: AppTypography.caption.copyWith(
@@ -612,7 +674,10 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
           Expanded(
             child: InkWell(
               onTap: () {
-                if (_sentidoInverso) setState(() => _sentidoInverso = false);
+                if (_sentidoInverso) {
+                  AppFeedback.selection();
+                  setState(() => _sentidoInverso = false);
+                }
               },
               borderRadius: BorderRadius.circular(8),
               child: Container(
@@ -650,7 +715,10 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
           Expanded(
             child: InkWell(
               onTap: () {
-                if (!_sentidoInverso) setState(() => _sentidoInverso = true);
+                if (!_sentidoInverso) {
+                  AppFeedback.selection();
+                  setState(() => _sentidoInverso = true);
+                }
               },
               borderRadius: BorderRadius.circular(8),
               child: Container(
@@ -708,6 +776,7 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
               selected: isSelected,
               onSelected: (selected) {
                 if (selected) {
+                  AppFeedback.selection();
                   setState(() => _filtroEstado = opt.$1);
                 }
               },
@@ -827,90 +896,87 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
     return resultEtapas;
   }
 
-  // ── Lista Lineal Continua de Caminata ──────────────────────────────
+  // ── Flattening y Headers de Ruta Virtualizada ─────────────────────
 
-  List<Widget> _buildLinearTerritorioStream(List<EtapaExplorer> etapas) {
-    final List<Widget> widgets = [];
-
+  List<_TerritorioItem> _flattenTerritorioItems(List<EtapaExplorer> etapas) {
+    final List<_TerritorioItem> items = [];
     for (final etapa in etapas) {
-      // Separador de Etapa
-      widgets.add(
-        Padding(
-          padding: const EdgeInsets.only(top: AppSpacing.md, bottom: AppSpacing.xs),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.terrain_rounded, size: 14, color: AppColors.primary),
-                    const SizedBox(width: 4),
-                    Text(
-                      etapa.nombre.toUpperCase(),
-                      style: AppTypography.caption.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Container(
-                  height: 1,
-                  color: AppColors.primary.withValues(alpha: 0.15),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-
+      items.add(_EtapaItem(etapa.nombre));
       for (final manzana in etapa.manzanas) {
-        // Separador de Manzana Destacado en Negrita
-        widgets.add(
-          Padding(
-            padding: const EdgeInsets.only(top: AppSpacing.md, bottom: AppSpacing.xs),
+        items.add(_ManzanaItem(manzana.nombre, manzana.casas.length));
+        for (final casa in manzana.casas) {
+          items.add(_CasaItem(casa, etapa.nombre, manzana.nombre));
+        }
+      }
+    }
+    return items;
+  }
+
+  Widget _buildEtapaHeader(String nombre) {
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.md, bottom: AppSpacing.xs),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(8),
+            ),
             child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.location_city_rounded, size: 15, color: AppColors.primary),
-                const SizedBox(width: 6),
+                Icon(Icons.terrain_rounded, size: 14, color: AppColors.primary),
+                const SizedBox(width: 4),
                 Text(
-                  manzana.nombre,
-                  style: AppTypography.body.copyWith(
-                    fontWeight: FontWeight.w900,
-                    color: AppColors.textPrimary,
-                    fontSize: 14,
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  '· ${manzana.casas.length} ${manzana.casas.length == 1 ? 'casa en tramo' : 'casas en tramo'}',
+                  nombre.toUpperCase(),
                   style: AppTypography.caption.copyWith(
-                    color: AppColors.textSecondary,
-                    fontWeight: FontWeight.w600,
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.5,
                   ),
                 ),
               ],
             ),
           ),
-        );
+          const SizedBox(width: 8),
+          Expanded(
+            child: Container(
+              height: 1,
+              color: AppColors.primary.withValues(alpha: 0.15),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-        // Tarjetas lineales de Casas
-        for (final casa in manzana.casas) {
-          widgets.add(_buildCasaItem(casa, etapa.nombre, manzana.nombre));
-        }
-      }
-    }
-
-    return widgets;
+  Widget _buildManzanaHeader(String nombre, int count) {
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.md, bottom: AppSpacing.xs),
+      child: Row(
+        children: [
+          Icon(Icons.location_city_rounded, size: 15, color: AppColors.primary),
+          const SizedBox(width: 6),
+          Text(
+            nombre,
+            style: AppTypography.body.copyWith(
+              fontWeight: FontWeight.w900,
+              color: AppColors.textPrimary,
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            '· $count ${count == 1 ? 'casa en tramo' : 'casas en tramo'}',
+            style: AppTypography.caption.copyWith(
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   // ── Casa Item — con semáforo 🟢🟠🔴🔵 ───────────────────────────
@@ -941,6 +1007,7 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
           onTap: () {
+            AppFeedback.light();
             final cobroItem = CobroItem(
               id: casa.id,
               concepto: 'Cuota de Recaudo — $direccionCompleta',
