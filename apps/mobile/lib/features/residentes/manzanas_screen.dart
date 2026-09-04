@@ -356,22 +356,12 @@ class _ManzanasScreenState extends State<ManzanasScreen> {
                                 color: AppColors.textPrimary,
                               ),
                             ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  icon: Icon(Icons.edit_rounded, color: AppColors.info, size: 20),
-                                  onPressed: () {
-                                    TopToast.show(context, message: 'Editar Manzana', icon: Icons.edit_rounded);
-                                  },
-                                ),
-                                IconButton(
-                                  icon: Icon(Icons.delete_rounded, color: AppColors.error, size: 20),
-                                  onPressed: () {
-                                    _mostrarConfirmacionEliminacionManzana(nombre, id);
-                                  },
-                                ),
-                              ],
+                            trailing: IconButton(
+                              icon: Icon(Icons.delete_rounded, color: AppColors.error, size: 20),
+                              tooltip: 'Eliminar Manzana',
+                              onPressed: () {
+                                _mostrarConfirmacionEliminacionManzana(nombre, id);
+                              },
                             ),
                           ),
                         );
