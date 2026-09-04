@@ -22,6 +22,7 @@ enum SolicitudEstado {
 class SolicitudData {
   final String id;
   final String cobroId;
+  final String? pagoId;
   final String nroRecibo;
   final String tipo;
   final String descripcion;
@@ -30,10 +31,12 @@ class SolicitudData {
   final String? respuesta;
   final String? residenteId;
   final String? residenteNombre;
+  final String? cuotaConcepto;
 
   const SolicitudData({
     required this.id,
     required this.cobroId,
+    this.pagoId,
     required this.nroRecibo,
     required this.tipo,
     required this.descripcion,
@@ -42,7 +45,39 @@ class SolicitudData {
     this.respuesta,
     this.residenteId,
     this.residenteNombre,
+    this.cuotaConcepto,
   });
+
+  /// Formats concept by removing redundant year (e.g., 'Septiembre 2026 - Cuota 1' -> 'Septiembre — Cuota 1')
+  static String cleanConcepto(String raw) {
+    var s = raw.replaceAll(RegExp(r'\s*\b20\d\d\b\s*'), ' ').trim();
+    s = s.replaceAll(RegExp(r'\s*-\s*'), ' — ');
+    return s.replaceAll(RegExp(r'\s+'), ' ');
+  }
+
+  String get displayTitle {
+    final t = tipo.toLowerCase();
+    if (t.contains('revision') || t.contains('revisión')) {
+      return 'Revisión de pago';
+    }
+    if (t.contains('cobro')) {
+      return 'Solicitud de cobro';
+    }
+    return tipo;
+  }
+
+  String? get displaySubtitulo {
+    if (cuotaConcepto != null && cuotaConcepto!.trim().isNotEmpty) {
+      return cleanConcepto(cuotaConcepto!);
+    }
+    if (tipo.contains(':')) {
+      final parts = tipo.split(':');
+      if (parts.length > 1 && parts[1].trim().isNotEmpty) {
+        return cleanConcepto(parts[1].trim());
+      }
+    }
+    return null;
+  }
 }
 
 /// A card displaying a review request or collection request.
@@ -142,13 +177,25 @@ class SolicitudCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        solicitud.tipo,
+                        solicitud.displayTitle,
                         style: AppTypography.body.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
+                      if (solicitud.displaySubtitulo != null) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          solicitud.displaySubtitulo!,
+                          style: AppTypography.small.copyWith(
+                            color: AppColors.textSecondary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
                       const SizedBox(height: 2),
                       Row(
                         children: [

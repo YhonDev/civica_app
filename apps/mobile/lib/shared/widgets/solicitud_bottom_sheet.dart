@@ -1,23 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/network/local_cache_repository.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_feedback.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/widgets/top_toast.dart';
+import '../../features/solicitudes/solicitudes_repository.dart';
 import 'solicitud_card.dart';
 
-/// Bottom sheet for viewing solicitud details and admin actions.
+/// Bottom sheet for viewing solicitud details and active admin resolution.
 ///
-/// Extends the original design with:
-/// - StatusBadge for consistent status display
-/// - Admin resolve/reject actions with response field
-/// - Consistent with the existing design system
+/// Implements domain-first Cívica Pago Recaudo Engine resolution:
+/// - Admin does NOT just reply with text; admin resolves.
+/// - Fetches associated payment, cuota, and digital ticket.
+/// - Active actions: Corregir Valor, Revertir / Eliminar Pago, Rechazar.
+/// - Tactile haptic feedback via AppFeedback.
 class SolicitudBottomSheet extends StatefulWidget {
   final SolicitudData solicitud;
   final String? montoStr;
   final bool isAdmin;
   final Future<void> Function(String estado, String respuesta)? onResolve;
   final Future<void> Function()? onDelete;
+  final VoidCallback? onActionCompleted;
 
   const SolicitudBottomSheet({
     super.key,
@@ -26,6 +33,7 @@ class SolicitudBottomSheet extends StatefulWidget {
     this.isAdmin = false,
     this.onResolve,
     this.onDelete,
+    this.onActionCompleted,
   });
 
   static Future<void> show(
@@ -35,6 +43,7 @@ class SolicitudBottomSheet extends StatefulWidget {
     bool isAdmin = false,
     Future<void> Function(String estado, String respuesta)? onResolve,
     Future<void> Function()? onDelete,
+    VoidCallback? onActionCompleted,
   }) {
     return showModalBottomSheet(
       context: context,
@@ -50,6 +59,7 @@ class SolicitudBottomSheet extends StatefulWidget {
         isAdmin: isAdmin,
         onResolve: onResolve,
         onDelete: onDelete,
+        onActionCompleted: onActionCompleted,
       ),
     );
   }
@@ -60,7 +70,38 @@ class SolicitudBottomSheet extends StatefulWidget {
 
 class _SolicitudBottomSheetState extends State<SolicitudBottomSheet> {
   final _respuestaController = TextEditingController();
+  final _solicitudesRepo = SolicitudesRepository();
+
   bool _enviando = false;
+  bool _loadingDetalle = false;
+  Map<String, dynamic>? _detalleResolucion;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.isAdmin) {
+      _loadDetalle();
+    }
+  }
+
+  Future<void> _loadDetalle() async {
+    setState(() => _loadingDetalle = true);
+    try {
+      final data =
+          await _solicitudesRepo.getDetalleResolucion(widget.solicitud.id);
+      if (mounted) {
+        setState(() {
+          _detalleResolucion = data;
+          _loadingDetalle = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error cargando detalle resolución: $e');
+      if (mounted) {
+        setState(() => _loadingDetalle = false);
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -70,9 +111,16 @@ class _SolicitudBottomSheetState extends State<SolicitudBottomSheet> {
 
   bool get _canResolve =>
       widget.isAdmin &&
-      widget.onResolve != null &&
       widget.solicitud.estado != SolicitudEstado.resuelta &&
-      widget.solicitud.estado != SolicitudEstado.rechazada;
+      widget.solicitud.estado != SolicitudEstado.rechazada &&
+      widget.solicitud.estado != SolicitudEstado.aprobada;
+
+  bool get _isReviewRequest {
+    final t = widget.solicitud.tipo.toLowerCase();
+    return t.contains('revision') ||
+        t.contains('revisión') ||
+        widget.solicitud.estado == SolicitudEstado.enRevision;
+  }
 
   Color get _statusColor => switch (widget.solicitud.estado) {
         SolicitudEstado.pendiente => AppColors.warning,
@@ -88,7 +136,8 @@ class _SolicitudBottomSheetState extends State<SolicitudBottomSheet> {
 
   String get _statusText {
     final tipoLower = widget.solicitud.tipo.toLowerCase();
-    final isCobro = tipoLower.contains('cobro') || tipoLower.contains('solicitud_cobro');
+    final isCobro =
+        tipoLower.contains('cobro') || tipoLower.contains('solicitud_cobro');
 
     return switch (widget.solicitud.estado) {
       SolicitudEstado.pendiente => isCobro ? 'Esperando cobrador' : 'Pendiente',
@@ -103,55 +152,352 @@ class _SolicitudBottomSheetState extends State<SolicitudBottomSheet> {
     };
   }
 
-  Future<void> _resolver(String estado) async {
+  void _invalidateCaches() {
+    LocalCacheRepository.instance.invalidate('dashboard:residente');
+    LocalCacheRepository.instance.invalidate('dashboard:administrador');
+    LocalCacheRepository.instance.invalidate('dashboard:cobrador');
+  }
+
+  // ── Action: Corregir Valor ──────────────────────────────────────────────
+  Future<void> _dialogCorregirValor() async {
+    AppFeedback.selection();
+    final pagoMap = _detalleResolucion?['pago'] as Map<String, dynamic>?;
+    final int pagoActualPesos =
+        pagoMap != null ? ((pagoMap['monto'] as num) / 100).round() : 0;
+
+    final montoCtrl =
+        TextEditingController(text: pagoActualPesos > 0 ? '$pagoActualPesos' : '');
+    final motivoCtrl =
+        TextEditingController(text: 'Corrección de valor por solicitud de revisión');
+
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.edit_note_rounded, color: AppColors.primary),
+            const SizedBox(width: 8),
+            const Text('Corregir Valor de Pago'),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Ajusta el monto del pago. El sistema regenerará el recibo digital con el nuevo valor y resolverá la solicitud.',
+                style: AppTypography.small.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                'Nuevo Valor (COP)',
+                style: AppTypography.caption.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 4),
+              TextField(
+                controller: montoCtrl,
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                decoration: const InputDecoration(
+                  prefixText: r'$ ',
+                  hintText: 'Ej. 20000',
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                'Motivo / Justificación',
+                style: AppTypography.caption.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 4),
+              TextField(
+                controller: motivoCtrl,
+                maxLines: 2,
+                decoration: const InputDecoration(
+                  hintText: 'Explica el motivo de la corrección...',
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final val = int.tryParse(montoCtrl.text.trim());
+              if (val == null || val <= 0) {
+                TopToast.showError(ctx, 'Ingresa un monto válido mayor a 0');
+                return;
+              }
+              Navigator.pop(ctx, true);
+            },
+            child: const Text('Guardar Corrección'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      final nuevoMontoPesos = int.tryParse(montoCtrl.text.trim()) ?? 0;
+      final nuevoMontoCentavos = nuevoMontoPesos * 100;
+      final motivo = motivoCtrl.text.trim().isNotEmpty
+          ? motivoCtrl.text.trim()
+          : 'Corrección de valor aprobada por administración.';
+
+      setState(() => _enviando = true);
+      AppFeedback.medium();
+
+      try {
+        await _solicitudesRepo.corregirPagoDesdeSolicitud(
+          id: widget.solicitud.id,
+          nuevoMonto: nuevoMontoCentavos,
+          motivo: motivo,
+        );
+        _invalidateCaches();
+        AppFeedback.success();
+
+        if (mounted) {
+          Navigator.pop(context);
+          TopToast.showSuccess(
+            context,
+            'Pago corregido a \$${NumberFormat('#,##0', 'es_CO').format(nuevoMontoPesos)} COP exitosamente.',
+          );
+          widget.onActionCompleted?.call();
+        }
+      } catch (e) {
+        AppFeedback.error();
+        if (mounted) {
+          setState(() => _enviando = false);
+          TopToast.showError(context, 'Error al corregir pago: $e');
+        }
+      }
+    }
+  }
+
+  // ── Action: Revertir / Eliminar Pago ─────────────────────────────────────
+  Future<void> _dialogRevertirPago() async {
+    AppFeedback.selection();
+    final motivoCtrl = TextEditingController(
+      text: 'Pago revertido por solicitud del residente.',
+    );
+
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: AppColors.error),
+            const SizedBox(width: 8),
+            const Text('Revertir Pago'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Esta acción anulará el pago registrado y su recibo digital.\n\n'
+              'La cuota volverá al estado Pendiente o Vencida para permitir su cobro correcto, '
+              'manteniendo intacta la obligación en el motor de recaudo.',
+              style: AppTypography.body.copyWith(fontSize: 14),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              'Motivo de reversión',
+              style: AppTypography.caption.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 4),
+            TextField(
+              controller: motivoCtrl,
+              maxLines: 2,
+              decoration: const InputDecoration(
+                hintText: 'Justificación de la reversión...',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Volver'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.error,
+            ),
+            child: const Text('Confirmar Reversión'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      final motivo = motivoCtrl.text.trim().isNotEmpty
+          ? motivoCtrl.text.trim()
+          : 'Pago revertido y cuota liberada por la administración.';
+
+      setState(() => _enviando = true);
+      AppFeedback.medium();
+
+      try {
+        await _solicitudesRepo.revertirPagoDesdeSolicitud(
+          id: widget.solicitud.id,
+          motivo: motivo,
+        );
+        _invalidateCaches();
+        AppFeedback.success();
+
+        if (mounted) {
+          Navigator.pop(context);
+          TopToast.showSuccess(
+            context,
+            'Pago revertido y cuota liberada exitosamente.',
+          );
+          widget.onActionCompleted?.call();
+        }
+      } catch (e) {
+        AppFeedback.error();
+        if (mounted) {
+          setState(() => _enviando = false);
+          TopToast.showError(context, 'Error al revertir pago: $e');
+        }
+      }
+    }
+  }
+
+  // ── Action: Rechazar Solicitud ──────────────────────────────────────────
+  Future<void> _dialogRechazar() async {
+    AppFeedback.selection();
     final respuesta = _respuestaController.text.trim();
     if (respuesta.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Escribe una respuesta antes de continuar.'),
-          backgroundColor: AppColors.error,
-        ),
+      TopToast.showError(
+        context,
+        'Escribe una justificación antes de rechazar.',
       );
       return;
     }
 
     setState(() => _enviando = true);
+    AppFeedback.medium();
 
     try {
-      await widget.onResolve!(estado, respuesta);
-      if (mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              estado == 'RESUELTA'
-                  ? 'Solicitud resuelta exitosamente.'
-                  : 'Solicitud rechazada.',
-            ),
-            backgroundColor:
-                estado == 'RESUELTA' ? AppColors.success : AppColors.error,
-          ),
+      if (widget.onResolve != null) {
+        await widget.onResolve!('RECHAZADA', respuesta);
+      } else {
+        await _solicitudesRepo.resolverSolicitud(
+          id: widget.solicitud.id,
+          estado: 'RECHAZADA',
+          respuesta: respuesta,
         );
       }
+      _invalidateCaches();
+      AppFeedback.warning();
+
+      if (mounted) {
+        Navigator.pop(context);
+        TopToast.show(
+          context,
+          message: 'Solicitud rechazada con respuesta.',
+          type: ToastType.warning,
+        );
+        widget.onActionCompleted?.call();
+      }
     } catch (e) {
+      AppFeedback.error();
       if (mounted) {
         setState(() => _enviando = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: AppColors.error,
-          ),
+        TopToast.showError(context, 'Error al rechazar solicitud: $e');
+      }
+    }
+  }
+
+  // ── Action: Resolver genérica (para solicitudes de cobro) ───────────────
+  Future<void> _resolverGenerica(String estado) async {
+    final respuesta = _respuestaController.text.trim();
+    if (respuesta.isEmpty) {
+      TopToast.showError(
+        context,
+        'Escribe una respuesta antes de continuar.',
+      );
+      return;
+    }
+
+    setState(() => _enviando = true);
+    AppFeedback.medium();
+
+    try {
+      if (widget.onResolve != null) {
+        await widget.onResolve!(estado, respuesta);
+      } else {
+        await _solicitudesRepo.resolverSolicitud(
+          id: widget.solicitud.id,
+          estado: estado,
+          respuesta: respuesta,
         );
+      }
+      _invalidateCaches();
+      AppFeedback.success();
+
+      if (mounted) {
+        Navigator.pop(context);
+        TopToast.showSuccess(
+          context,
+          estado == 'RESUELTA'
+              ? 'Solicitud resuelta exitosamente.'
+              : 'Solicitud rechazada.',
+        );
+        widget.onActionCompleted?.call();
+      }
+    } catch (e) {
+      AppFeedback.error();
+      if (mounted) {
+        setState(() => _enviando = false);
+        TopToast.showError(context, 'Error: $e');
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final dateStr = DateFormat("dd/MM/yyyy · hh:mm a", 'es').format(widget.solicitud.fecha);
+    final dateStr = DateFormat("dd/MM/yyyy · hh:mm a", 'es')
+        .format(widget.solicitud.fecha);
 
-    final isPago = widget.solicitud.tipo.toLowerCase().contains('pago') ||
+    final isPago = _isReviewRequest ||
+        widget.solicitud.tipo.toLowerCase().contains('pago') ||
         widget.solicitud.tipo.toLowerCase().contains('pagad');
+
+    final cobroData = _detalleResolucion?['cobro'] as Map<String, dynamic>?;
+    final pagoData = _detalleResolucion?['pago'] as Map<String, dynamic>?;
+    final ticketData = _detalleResolucion?['ticket'] as Map<String, dynamic>?;
+
+    final String? conceptoCuota = cobroData?['concepto'] != null
+        ? SolicitudData.cleanConcepto(cobroData!['concepto'] as String)
+        : widget.solicitud.displaySubtitulo;
+
+    final int? montoPagoPesos = pagoData?['monto'] != null
+        ? ((pagoData!['monto'] as num) / 100).round()
+        : null;
+
+    final String montoFormateado = montoPagoPesos != null
+        ? r'$ ' + NumberFormat('#,##0', 'es_CO').format(montoPagoPesos)
+        : (widget.montoStr ?? '—');
+
+    final String nroTicket = ticketData?['numero'] as String? ??
+        (widget.solicitud.nroRecibo.isNotEmpty
+            ? widget.solicitud.nroRecibo
+            : 'Sin recibo');
 
     return Padding(
       padding: EdgeInsets.only(
@@ -178,8 +524,9 @@ class _SolicitudBottomSheetState extends State<SolicitudBottomSheet> {
               ),
             ),
 
-            // Header: icon + title + date
+            // Header: Icon + Clean 2-line title + date
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
                   padding: const EdgeInsets.all(10),
@@ -199,20 +546,33 @@ class _SolicitudBottomSheetState extends State<SolicitudBottomSheet> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        widget.solicitud.tipo,
+                        widget.solicitud.displayTitle,
                         style: AppTypography.subtitle.copyWith(
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      if (widget.solicitud.residenteNombre != null &&
-                          widget.isAdmin)
+                      if (conceptoCuota != null) ...[
+                        const SizedBox(height: 2),
                         Text(
-                          widget.solicitud.residenteNombre!,
+                          conceptoCuota,
                           style: AppTypography.bodyMedium.copyWith(
                             color: AppColors.primary,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
+                      ],
+                      if (widget.solicitud.residenteNombre != null &&
+                          widget.isAdmin) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          'Residente: ${widget.solicitud.residenteNombre!}',
+                          style: AppTypography.caption.copyWith(
+                            color: AppColors.textSecondary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 2),
                       Text(
                         'Fecha reporte: $dateStr',
                         style: AppTypography.caption.copyWith(
@@ -226,7 +586,7 @@ class _SolicitudBottomSheetState extends State<SolicitudBottomSheet> {
             ),
             const SizedBox(height: AppSpacing.lg),
 
-            // Status
+            // Status indicator
             Text(
               'Estado de la solicitud',
               style: AppTypography.caption.copyWith(
@@ -250,9 +610,9 @@ class _SolicitudBottomSheetState extends State<SolicitudBottomSheet> {
             ),
             const SizedBox(height: AppSpacing.md),
 
-            // Description
+            // Resident description / reason
             Text(
-              'Observación',
+              'Observación del residente',
               style: AppTypography.caption.copyWith(
                 color: AppColors.textSecondary,
                 fontWeight: FontWeight.w600,
@@ -264,8 +624,7 @@ class _SolicitudBottomSheetState extends State<SolicitudBottomSheet> {
               padding: const EdgeInsets.all(AppSpacing.cardInnerPadding),
               decoration: BoxDecoration(
                 color: AppColors.surface,
-                borderRadius:
-                    BorderRadius.circular(AppSpacing.inputRadius),
+                borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
               ),
               child: Text(
                 widget.solicitud.descripcion,
@@ -274,10 +633,10 @@ class _SolicitudBottomSheetState extends State<SolicitudBottomSheet> {
             ),
             const SizedBox(height: AppSpacing.md),
 
-            // Receipt info for payment solicitudes
+            // Associated payment information card
             if (isPago) ...[
               Text(
-                'Recibo digital reportado',
+                'Información del pago asociado',
                 style: AppTypography.caption.copyWith(
                   color: AppColors.textSecondary,
                   fontWeight: FontWeight.w600,
@@ -289,38 +648,54 @@ class _SolicitudBottomSheetState extends State<SolicitudBottomSheet> {
                 decoration: BoxDecoration(
                   color: AppColors.card,
                   border: Border.all(color: AppColors.border),
-                  borderRadius:
-                      BorderRadius.circular(AppSpacing.cardRadius),
+                  borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
                 ),
                 child: Column(
                   children: [
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('N° Recibo', style: AppTypography.caption),
+                        Text('Recibo Digital', style: AppTypography.caption),
                         Text(
-                          widget.solicitud.nroRecibo,
+                          nroTicket,
                           style: AppTypography.bodyMedium.copyWith(
-                              fontWeight: FontWeight.w600),
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ],
                     ),
-                    if (widget.montoStr != null) ...[
-                      const Divider(height: 16),
+                    const Divider(height: 14),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Valor registrado', style: AppTypography.caption),
+                        Text(
+                          montoFormateado,
+                          style: AppTypography.bodyMedium.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (pagoData?['metodo'] != null) ...[
+                      const Divider(height: 14),
                       Row(
-                        mainAxisAlignment:
-                            MainAxisAlignment.spaceBetween,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('Valor', style: AppTypography.caption),
+                          Text('Método', style: AppTypography.caption),
                           Text(
-                            widget.montoStr!,
+                            pagoData!['metodo'] as String,
                             style: AppTypography.bodyMedium.copyWith(
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.primary,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ],
                       ),
+                    ],
+                    if (_loadingDetalle) ...[
+                      const SizedBox(height: 8),
+                      const LinearProgressIndicator(minHeight: 2),
                     ],
                   ],
                 ),
@@ -328,10 +703,11 @@ class _SolicitudBottomSheetState extends State<SolicitudBottomSheet> {
               const SizedBox(height: AppSpacing.md),
             ],
 
-            // Admin response (if already answered)
-            if (widget.solicitud.respuesta != null) ...[
+            // Admin response display if already resolved
+            if (widget.solicitud.respuesta != null &&
+                widget.solicitud.respuesta!.isNotEmpty) ...[
               Text(
-                'Respuesta del Administrador',
+                'Resolución de la Administración',
                 style: AppTypography.caption.copyWith(
                   color: AppColors.textSecondary,
                   fontWeight: FontWeight.w600,
@@ -346,8 +722,7 @@ class _SolicitudBottomSheetState extends State<SolicitudBottomSheet> {
                   border: Border.all(
                     color: AppColors.primary.withValues(alpha: 0.15),
                   ),
-                  borderRadius:
-                      BorderRadius.circular(AppSpacing.inputRadius),
+                  borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
                 ),
                 child: Text(
                   widget.solicitud.respuesta!,
@@ -357,85 +732,184 @@ class _SolicitudBottomSheetState extends State<SolicitudBottomSheet> {
               const SizedBox(height: AppSpacing.md),
             ],
 
-            // Admin actions — resolve/reject
+            // ── Active Admin Resolution Section ───────────────────────────
             if (_canResolve) ...[
               const Divider(height: 1),
               const SizedBox(height: AppSpacing.md),
-              Text(
-                'Responder solicitud',
-                style: AppTypography.caption.copyWith(
-                  color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w600,
+
+              if (_isReviewRequest) ...[
+                // For review requests: Active administrative actions
+                Text(
+                  'Gestión del Pago Asociado',
+                  style: AppTypography.caption.copyWith(
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              TextFormField(
-                controller: _respuestaController,
-                maxLines: 3,
-                style: AppTypography.body,
-                decoration: const InputDecoration(
-                  hintText: 'Escribe tu respuesta...',
-                  alignLabelWithHint: true,
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  'Selecciona una acción operativa para resolver la inconsistencia en el motor de recaudo:',
+                  style: AppTypography.small.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
                 ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: _enviando
-                          ? null
-                          : () => _resolver('RECHAZADA'),
-                      icon: _enviando
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                  strokeWidth: 2),
-                            )
-                          : Icon(Icons.cancel_outlined,
-                              color: AppColors.error),
-                      label: Text(
-                        'Rechazar',
-                        style: TextStyle(color: AppColors.error),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: AppColors.error),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
-                              AppSpacing.buttonRadius),
-                        ),
+                const SizedBox(height: AppSpacing.md),
+
+                // Button: Corregir Valor
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: _enviando ? null : _dialogCorregirValor,
+                    icon: const Icon(Icons.edit_note_rounded),
+                    label: const Text('Corregir Valor del Pago'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius:
+                            BorderRadius.circular(AppSpacing.buttonRadius),
                       ),
                     ),
                   ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: FilledButton.icon(
-                      onPressed: _enviando
-                          ? null
-                          : () => _resolver('RESUELTA'),
-                      icon: _enviando
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Icon(Icons.check_circle_outlined),
-                      label: const Text('Resolver'),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.success,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
-                              AppSpacing.buttonRadius),
-                        ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+
+                // Button: Revertir / Eliminar Pago
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: _enviando ? null : _dialogRevertirPago,
+                    icon: Icon(Icons.undo_rounded, color: AppColors.error),
+                    label: Text(
+                      'Revertir Pago (Liberar Cuota)',
+                      style: TextStyle(color: AppColors.error),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: AppColors.error),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius:
+                            BorderRadius.circular(AppSpacing.buttonRadius),
                       ),
                     ),
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+
+                // Or reject with explanation
+                Text(
+                  'O rechazar solicitud sin modificaciones',
+                  style: AppTypography.caption.copyWith(
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                TextFormField(
+                  controller: _respuestaController,
+                  maxLines: 2,
+                  style: AppTypography.body,
+                  decoration: const InputDecoration(
+                    hintText: 'Motivo del rechazo para el residente...',
+                    alignLabelWithHint: true,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: _enviando ? null : _dialogRechazar,
+                    icon: const Icon(Icons.cancel_outlined),
+                    label: const Text('Rechazar Solicitud'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.textSecondary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius:
+                            BorderRadius.circular(AppSpacing.buttonRadius),
+                      ),
+                    ),
+                  ),
+                ),
+              ] else ...[
+                // For non-payment solicitudes (e.g. collection requests): Standard response
+                Text(
+                  'Responder solicitud',
+                  style: AppTypography.caption.copyWith(
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                TextFormField(
+                  controller: _respuestaController,
+                  maxLines: 3,
+                  style: AppTypography.body,
+                  decoration: const InputDecoration(
+                    hintText: 'Escribe tu respuesta...',
+                    alignLabelWithHint: true,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _enviando
+                            ? null
+                            : () => _resolverGenerica('RECHAZADA'),
+                        icon: _enviando
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : Icon(Icons.cancel_outlined,
+                                color: AppColors.error),
+                        label: Text(
+                          'Rechazar',
+                          style: TextStyle(color: AppColors.error),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(color: AppColors.error),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              AppSpacing.buttonRadius,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: FilledButton.icon(
+                        onPressed: _enviando
+                            ? null
+                            : () => _resolverGenerica('RESUELTA'),
+                        icon: _enviando
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Icon(Icons.check_circle_outlined),
+                        label: const Text('Resolver'),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.success,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              AppSpacing.buttonRadius,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ],
 
             // Close & Cancel buttons (non-admin or already resolved)
@@ -456,19 +930,22 @@ class _SolicitudBottomSheetState extends State<SolicitudBottomSheet> {
                                   builder: (dlgContext) => AlertDialog(
                                     title: const Text('Cancelar Solicitud'),
                                     content: const Text(
-                                      '¿Estás seguro de que deseas cancelar esta solicitud de cobro?',
+                                      '¿Estás seguro de que deseas cancelar esta solicitud?',
                                     ),
                                     actions: [
                                       TextButton(
-                                        onPressed: () => Navigator.pop(dlgContext, false),
+                                        onPressed: () =>
+                                            Navigator.pop(dlgContext, false),
                                         child: const Text('Volver'),
                                       ),
                                       FilledButton(
-                                        onPressed: () => Navigator.pop(dlgContext, true),
+                                        onPressed: () =>
+                                            Navigator.pop(dlgContext, true),
                                         style: FilledButton.styleFrom(
                                           backgroundColor: AppColors.error,
                                         ),
-                                        child: const Text('Cancelar Solicitud'),
+                                        child:
+                                            const Text('Cancelar Solicitud'),
                                       ),
                                     ],
                                   ),
@@ -483,7 +960,9 @@ class _SolicitudBottomSheetState extends State<SolicitudBottomSheet> {
                                       nav.pop();
                                     }
                                   } finally {
-                                    if (mounted) setState(() => _enviando = false);
+                                    if (mounted) {
+                                      setState(() => _enviando = false);
+                                    }
                                   }
                                 }
                               },
@@ -491,9 +970,13 @@ class _SolicitudBottomSheetState extends State<SolicitudBottomSheet> {
                             ? const SizedBox(
                                 width: 16,
                                 height: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
                               )
-                            : Icon(Icons.delete_outline_rounded, color: AppColors.error),
+                            : Icon(
+                                Icons.delete_outline_rounded,
+                                color: AppColors.error,
+                              ),
                         label: Text(
                           'Cancelar',
                           style: TextStyle(color: AppColors.error),
@@ -501,7 +984,9 @@ class _SolicitudBottomSheetState extends State<SolicitudBottomSheet> {
                         style: OutlinedButton.styleFrom(
                           side: BorderSide(color: AppColors.error),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
+                            borderRadius: BorderRadius.circular(
+                              AppSpacing.buttonRadius,
+                            ),
                           ),
                         ),
                       ),

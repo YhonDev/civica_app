@@ -378,6 +378,7 @@ class _SolicitudesScreenState extends State<SolicitudesScreen>
         await _repo.eliminarSolicitud(solicitud.id);
         await _loadSolicitudes();
       },
+      onActionCompleted: () => _loadSolicitudes(),
     );
   }
 }

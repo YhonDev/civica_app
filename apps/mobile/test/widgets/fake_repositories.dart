@@ -98,7 +98,13 @@ class FakeSolicitudesRepository extends SolicitudesRepository {
   }
 
   @override
-  Future<void> crearSolicitud({required String cobroId, required String tipo, required String descripcion, required String residenteId}) async {}
+  Future<void> crearSolicitud({
+    required String cobroId,
+    String? pagoId,
+    required String tipo,
+    required String descripcion,
+    String? residenteId,
+  }) async {}
 }
 
 /// Convenience builders for common test scenarios.

@@ -1005,6 +1005,8 @@ export class DashboardController {
 
       movimientos.push({
         id: pago.id,
+        pagoId: pago.id,
+        cobroId: pago.cobroId ?? null,
         tipo: 'pago',
         monto: Math.round(pago.monto / 100),
         fecha: fechaIso,

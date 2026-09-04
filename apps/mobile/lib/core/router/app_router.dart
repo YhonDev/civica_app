@@ -335,7 +335,14 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/solicitud-nueva',
       name: 'solicitud-nueva',
-      builder: (_, _) => const NuevaSolicitudScreen(),
+      builder: (_, state) {
+        final extra = state.extra as Map<String, dynamic>?;
+        return NuevaSolicitudScreen(
+          initialCobroId: extra?['cobroId'] as String?,
+          initialPagoId: extra?['pagoId'] as String?,
+          initialConcepto: extra?['concepto'] as String?,
+        );
+      },
     ),
     GoRoute(
       path: '/nuevo-residente',

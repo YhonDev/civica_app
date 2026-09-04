@@ -21,6 +21,8 @@ class TicketData {
   final String? concepto;
   final String? etapa;
   final String? manzana;
+  final String? cobroId;
+  final String? pagoId;
 
   const TicketData({
     required this.numero,
@@ -34,7 +36,16 @@ class TicketData {
     this.concepto,
     this.etapa,
     this.manzana,
+    this.cobroId,
+    this.pagoId,
   });
+
+  /// Cleans redundant year from concept (e.g. 'Septiembre 2026 - Cuota 1' -> 'Septiembre — Cuota 1')
+  static String cleanConcepto(String raw) {
+    var s = raw.replaceAll(RegExp(r'\s*\b20\d\d\b\s*'), ' ').trim();
+    s = s.replaceAll(RegExp(r'\s*-\s*'), ' — ');
+    return s.replaceAll(RegExp(r'\s+'), ' ');
+  }
 
   factory TicketData.fromJson(Map<String, dynamic> json) {
     final rawMonto = json['monto'];
@@ -64,6 +75,8 @@ class TicketData {
       concepto: json['concepto'] as String?,
       etapa: json['etapa'] as String?,
       manzana: json['manzana'] as String?,
+      cobroId: json['cobroId'] as String?,
+      pagoId: json['pagoId'] as String?,
     );
   }
 }
@@ -180,7 +193,10 @@ class TicketBottomSheet extends StatelessWidget {
                 _DetailRow(label: 'Fecha', value: dateStr),
                 _DetailRow(label: 'Hora', value: timeStr),
                 if (ticket.concepto != null && ticket.concepto!.isNotEmpty)
-                  _DetailRow(label: 'Concepto', value: ticket.concepto!),
+                  _DetailRow(
+                    label: 'Concepto',
+                    value: TicketData.cleanConcepto(ticket.concepto!),
+                  ),
                 _DetailRow(label: 'Residente', value: ticket.residente),
                 _DetailRow(label: 'Inmueble', value: ticket.casa),
                 _DetailRow(label: 'Método', value: ticket.metodo),
@@ -204,7 +220,16 @@ class TicketBottomSheet extends StatelessWidget {
                   child: OutlinedButton.icon(
                     onPressed: () {
                       Navigator.of(context).pop(); // Close bottom sheet
-                      context.push('/solicitud-nueva'); // Navigate to request review
+                      context.push(
+                        '/solicitud-nueva',
+                        extra: {
+                          'cobroId': ticket.cobroId,
+                          'pagoId': ticket.pagoId,
+                          'concepto': ticket.concepto,
+                          'nroRecibo': ticket.numero,
+                          'monto': ticket.monto,
+                        },
+                      );
                     },
                     icon: const Icon(Icons.report_problem_outlined, size: 16),
                     label: const Text('Revisar pago'),

@@ -3,15 +3,18 @@ import {
   BadRequestException,
   NotFoundException,
   Logger,
+  Optional,
 } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { Pago, EstadoValidacionPago } from '../../domain/pago.entity';
 import { PagoEdicion } from '../../domain/pago-edicion.entity';
 import { Cobro } from '../../domain/cobro.entity';
 import { PagoCobro } from '../../domain/pago-cobro.entity';
+import { Ticket } from '../../domain/ticket.entity';
 import { PagoRepository } from '../../infrastructure/persistence/pago.repository';
 import { CobroRepository } from '../../infrastructure/persistence/cobro.repository';
 import { PagoCobroRepository } from '../../infrastructure/persistence/pago-cobro.repository';
+import { GenerarTicketUseCase } from './generar-ticket.use-case';
 import { Money } from '../../../shared/common/value-objects';
 import { revertirAbonos } from './revertir-abonos';
 
@@ -32,6 +35,7 @@ export class CorregirPagoUseCase {
     private readonly pagoRepo: PagoRepository,
     private readonly cobroRepo: CobroRepository,
     private readonly pagoCobroRepo: PagoCobroRepository,
+    @Optional() private readonly generarTicketUC?: GenerarTicketUseCase,
   ) {}
 
   async execute(input: CorregirPagoInput): Promise<Pago> {
@@ -120,6 +124,36 @@ export class CorregirPagoUseCase {
       pago.monto = input.nuevoMonto;
       pago.cobroId = cobrosAfectados[0]?.id ?? null;
       await entityManager.save(pago);
+
+      // 6. Anular ticket anterior si existe
+      if (typeof (entityManager as any).update === 'function') {
+        try {
+          await entityManager.update(
+            Ticket,
+            { pagoId: pago.id, tenantId: input.tenantId },
+            { estado: 'ANULADO' },
+          );
+        } catch (err) {
+          this.logger.warn(
+            `No se pudo anular ticket previo para pago ${pago.id}: ${err}`,
+          );
+        }
+      }
+
+      // 7. Generar nuevo ticket para el pago corregido si use case está disponible
+      if (this.generarTicketUC) {
+        try {
+          await this.generarTicketUC.execute({
+            pago,
+            cobrosAfectados,
+            cobradorNombre: pago.cobrador?.nombre ?? 'Administrador',
+          });
+        } catch (err) {
+          this.logger.warn(
+            `No se pudo generar nuevo ticket tras corrección de pago ${pago.id}: ${err}`,
+          );
+        }
+      }
     });
 
     this.logger.log(
@@ -129,3 +163,4 @@ export class CorregirPagoUseCase {
     return pago;
   }
 }
+

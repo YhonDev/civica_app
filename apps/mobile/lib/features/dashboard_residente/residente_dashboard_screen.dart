@@ -137,6 +137,8 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
                 nroRecibo: m['nroRecibo'] as String?,
                 cobrador: m['cobrador'] as String?,
                 contexto: m['metodo'] as String?,
+                cobroId: m['cobroId'] as String?,
+                pagoId: m['pagoId'] as String?,
               );
             }).toList()
               ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
@@ -900,7 +902,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
   }
 
   // ── Open ticket bottom sheet ──────────────────────────────────────
-  void _openTicket(TimelineItem item) {
+  Future<void> _openTicket(TimelineItem item) async {
     final user = context.read<AuthCubit>().state.usuario;
     final nombre = user?['nombre'] as String? ?? 'Residente';
     final casa = user?['casa'] as String? ?? 'Casa';
@@ -909,7 +911,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
         ? item.nroRecibo!
         : 'TK-${item.id.hashCode.abs().toString().padLeft(6, '0')}';
 
-    TicketBottomSheet.show(
+    await TicketBottomSheet.show(
       context,
       TicketData(
         numero: ticketNum,
@@ -920,8 +922,15 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
         metodo: item.contexto ?? 'Efectivo',
         estado: item.tipo == 'pago' ? 'PAGADO' : 'Generada',
         cobrador: item.cobrador ?? 'Administración',
+        concepto: item.descripcion,
+        cobroId: item.cobroId,
+        pagoId: item.pagoId,
       ),
     );
+
+    if (mounted) {
+      _loadDashboardData(silent: true);
+    }
   }
 
   // ── Open detailed view for pending requests ────────────────────────

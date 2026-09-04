@@ -20,6 +20,7 @@ export class SolicitudRepository extends BaseTenantRepository<Solicitud> {
   ): Promise<Solicitud[]> {
     return this.repo.find({
       where: { usuarioId },
+      relations: { usuario: true, cobro: true },
       order: { fecha: 'DESC' },
       take: limit ? Math.min(Number(limit), 100) : undefined,
       skip: offset ? Number(offset) : undefined,
@@ -32,7 +33,7 @@ export class SolicitudRepository extends BaseTenantRepository<Solicitud> {
     offset?: number,
   ): Promise<Solicitud[]> {
     return super.findByTenant(tenantId, {
-      relations: { usuario: true },
+      relations: { usuario: true, cobro: true },
       order: { fecha: 'DESC' },
       take: limit ? Math.min(Number(limit), 100) : undefined,
       skip: offset ? Number(offset) : undefined,
@@ -47,14 +48,14 @@ export class SolicitudRepository extends BaseTenantRepository<Solicitud> {
         { usuarioId, estado: SolicitudEstado.EN_CAMINO },
         { usuarioId, estado: SolicitudEstado.EN_REVISION },
       ],
-      relations: { usuario: true },
+      relations: { usuario: true, cobro: true },
       order: { fecha: 'DESC' },
     });
   }
 
   async findPendingByTenant(tenantId: string): Promise<Solicitud[]> {
     const results = await super.findByTenant(tenantId, {
-      relations: { usuario: true },
+      relations: { usuario: true, cobro: true },
       order: { fecha: 'DESC' },
     });
 

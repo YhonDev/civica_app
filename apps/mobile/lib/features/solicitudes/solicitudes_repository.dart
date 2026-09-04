@@ -37,17 +37,16 @@ class SolicitudesRepository {
 
   Future<void> crearSolicitud({
     required String cobroId,
+    String? pagoId,
     required String tipo,
     required String descripcion,
-    required String residenteId,
+    String? residenteId,
   }) async {
     try {
-      // residenteId is implied via CurrentUser in the backend for residents,
-      // but if an admin creates it for a resident, they might need an admin route.
-      // Assuming this is used properly by the backend
       await _api.post('/solicitudes', data: {
         'cobroId': cobroId,
         'cuotaId': cobroId,
+        'pagoId': ?pagoId,
         'tipo': tipo,
         'descripcion': descripcion,
       });
@@ -71,9 +70,13 @@ class SolicitudesRepository {
       _ => SolicitudEstado.enEspera,
     };
 
+    final cobroMap = json['cobro'] as Map<String, dynamic>?;
+    final cuotaConcepto = cobroMap?['concepto'] as String?;
+
     return SolicitudData(
       id: json['id'] as String,
       cobroId: json['cobroId'] as String? ?? '',
+      pagoId: json['pagoId'] as String?,
       nroRecibo: json['nroRecibo'] as String? ?? 'TK-000000',
       tipo: json['tipo'] as String,
       descripcion: json['descripcion'] as String,
@@ -82,6 +85,7 @@ class SolicitudesRepository {
       respuesta: json['respuesta'] as String?,
       residenteId: json['usuarioId'] as String?,
       residenteNombre: (json['usuario']?['nombre']) as String?,
+      cuotaConcepto: cuotaConcepto,
     );
   }
 
@@ -107,6 +111,46 @@ class SolicitudesRepository {
       });
     } catch (e) {
       throw e is ApiException ? e : Exception('Error al resolver solicitud: $e');
+    }
+  }
+
+  /// Fetch full resolution details (associated cobro, pago, ticket) for admin review.
+  Future<Map<String, dynamic>> getDetalleResolucion(String id) async {
+    try {
+      final response = await _api.get('/solicitudes/$id/detalle-resolucion');
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      throw e is ApiException ? e : Exception('Error al obtener detalle de resolución: $e');
+    }
+  }
+
+  /// Correct associated payment amount and resolve solicitud (admin only).
+  Future<void> corregirPagoDesdeSolicitud({
+    required String id,
+    required int nuevoMonto,
+    required String motivo,
+  }) async {
+    try {
+      await _api.patch('/solicitudes/$id/corregir-pago', data: {
+        'nuevoMonto': nuevoMonto,
+        'motivo': motivo,
+      });
+    } catch (e) {
+      throw e is ApiException ? e : Exception('Error al corregir pago: $e');
+    }
+  }
+
+  /// Revert associated payment, reset cuota to PENDIENTE/VENCIDA, annul ticket, and resolve solicitud (admin only).
+  Future<void> revertirPagoDesdeSolicitud({
+    required String id,
+    required String motivo,
+  }) async {
+    try {
+      await _api.patch('/solicitudes/$id/revertir-pago', data: {
+        'motivo': motivo,
+      });
+    } catch (e) {
+      throw e is ApiException ? e : Exception('Error al revertir pago: $e');
     }
   }
 
