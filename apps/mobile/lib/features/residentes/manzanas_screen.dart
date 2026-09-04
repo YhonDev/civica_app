@@ -214,20 +214,21 @@ class _ManzanasScreenState extends State<ManzanasScreen> {
               ),
             ),
             const SizedBox(height: AppSpacing.md),
-            // Acción fija superior
+            // Acción fija superior compacta
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
-              child: SizedBox(
-                width: double.infinity,
+              child: Align(
+                alignment: Alignment.centerLeft,
                 child: FilledButton.tonalIcon(
                   onPressed: () => _crearManzanaAutomatica(_selectedEtapaId, activeManzanas),
                   icon: const Icon(Icons.add_rounded, size: 18),
                   label: const Text(
-                    '+ Nueva Manzana',
-                    style: TextStyle(fontWeight: FontWeight.w600),
+                    'Nueva Manzana',
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                   ),
                   style: FilledButton.styleFrom(
-                    minimumSize: const Size.fromHeight(44),
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                     ),

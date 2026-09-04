@@ -82,6 +82,10 @@ class ComunidadRepository {
       return (proyecto['etapas'] as List<dynamic>).map((e) => {
         'id': e['id'],
         'nombre': e['nombre'],
+        'manzanas': (e['manzanas'] as List<dynamic>? ?? []).map((m) => {
+          'id': m['id'],
+          'nombre': m['nombre'],
+        }).toList(),
       }).toList();
     } catch (e) {
       throw e is ApiException ? e : Exception('Error al cargar etapas: $e');

@@ -271,11 +271,15 @@ class _GeneradorEstructuraSheetState extends State<_GeneradorEstructuraSheet> {
   final ComunidadRepository _repo = ComunidadRepository();
   final _formKey = GlobalKey<FormState>();
 
-  final _letraInicioController = TextEditingController(text: 'A');
-  final _letraFinController = TextEditingController(text: 'C');
+  static const List<String> _alfabeto = [
+    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+    'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
+  ];
+
+  String _letraInicio = 'A';
+  String _letraFin = 'C';
   final _casaInicioController = TextEditingController(text: '1');
   final _casaFinController = TextEditingController(text: '20');
-  final _nuevaEtapaController = TextEditingController();
 
   bool _isLoadingEtapas = true;
   bool _isSubmitting = false;
@@ -287,21 +291,31 @@ class _GeneradorEstructuraSheetState extends State<_GeneradorEstructuraSheet> {
   void initState() {
     super.initState();
     _cargarEtapas();
-    _letraInicioController.addListener(() => setState(() {}));
-    _letraFinController.addListener(() => setState(() {}));
     _casaInicioController.addListener(() => setState(() {}));
     _casaFinController.addListener(() => setState(() {}));
   }
 
   @override
   void dispose() {
-    _letraInicioController.dispose();
-    _letraFinController.dispose();
     _casaInicioController.dispose();
     _casaFinController.dispose();
-    _nuevaEtapaController.dispose();
     super.dispose();
   }
+
+  int _getMaxEtapaNumber() {
+    int max = 0;
+    for (var e in _etapas) {
+      final name = e['nombre'].toString();
+      final match = RegExp(r'Etapa\s+(\d+)').firstMatch(name);
+      if (match != null) {
+        final num = int.tryParse(match.group(1)!) ?? 0;
+        if (num > max) max = num;
+      }
+    }
+    return max == 0 && _etapas.isNotEmpty ? _etapas.length : max;
+  }
+
+  String get _siguienteNombreEtapa => 'Etapa ${_getMaxEtapaNumber() + 1}';
 
   Future<void> _cargarEtapas() async {
     try {
@@ -313,9 +327,9 @@ class _GeneradorEstructuraSheetState extends State<_GeneradorEstructuraSheet> {
             _selectedEtapaId = _etapas.first['id'] as String;
           } else {
             _selectedEtapaId = '__NEW__';
-            _nuevaEtapaController.text = 'Etapa 1';
           }
           _isLoadingEtapas = false;
+          _actualizarRangosManzanasParaEtapa();
         });
       }
     } catch (e) {
@@ -323,21 +337,78 @@ class _GeneradorEstructuraSheetState extends State<_GeneradorEstructuraSheet> {
         setState(() {
           _isLoadingEtapas = false;
           _selectedEtapaId = '__NEW__';
-          _nuevaEtapaController.text = 'Etapa 1';
+          _actualizarRangosManzanasParaEtapa();
         });
       }
     }
   }
 
-  int get _numManzanas {
-    final start = _letraInicioController.text.trim().toUpperCase();
-    final end = _letraFinController.text.trim().toUpperCase();
-    if (start.length == 1 && end.length == 1) {
-      final startCode = start.codeUnitAt(0);
-      final endCode = end.codeUnitAt(0);
-      if (startCode >= 65 && endCode <= 90 && endCode >= startCode) {
-        return endCode - startCode + 1;
+  Set<String> _getLetrasManzanasExistentes() {
+    if (_selectedEtapaId == '__NEW__' || _selectedEtapaId.isEmpty) {
+      return {};
+    }
+    final etapa = _etapas.firstWhere(
+      (e) => e['id'] == _selectedEtapaId,
+      orElse: () => {'manzanas': []},
+    );
+    final mzs = etapa['manzanas'] as List? ?? [];
+    final Set<String> letras = {};
+    for (var m in mzs) {
+      final nombre = m['nombre'].toString().trim().toUpperCase();
+      final match = RegExp(r'MANZANA\s+([A-Z])').firstMatch(nombre);
+      if (match != null) {
+        letras.add(match.group(1)!);
+      } else if (nombre.length == 1 && RegExp(r'^[A-Z]$').hasMatch(nombre)) {
+        letras.add(nombre);
       }
+    }
+    return letras;
+  }
+
+  List<String> _getLetrasInicioDisponibles() {
+    final existentes = _getLetrasManzanasExistentes();
+    final disponibles = _alfabeto.where((letra) => !existentes.contains(letra)).toList();
+    return disponibles.isNotEmpty ? disponibles : ['A'];
+  }
+
+  List<String> _getLetrasFinDisponibles() {
+    final startIndex = _alfabeto.indexOf(_letraInicio);
+    if (startIndex == -1) return _alfabeto;
+    final existentes = _getLetrasManzanasExistentes();
+
+    final List<String> disponibles = [];
+    for (int i = startIndex; i < _alfabeto.length; i++) {
+      final letra = _alfabeto[i];
+      if (existentes.contains(letra)) {
+        break; // Detenerse para evitar saltar sobre manzanas ya existentes
+      }
+      disponibles.add(letra);
+    }
+    return disponibles.isNotEmpty ? disponibles : [_letraInicio];
+  }
+
+  void _actualizarRangosManzanasParaEtapa() {
+    final inicioDisponibles = _getLetrasInicioDisponibles();
+    if (!inicioDisponibles.contains(_letraInicio)) {
+      _letraInicio = inicioDisponibles.first;
+    }
+
+    final finDisponibles = _getLetrasFinDisponibles();
+    if (!finDisponibles.contains(_letraFin)) {
+      final startIndex = finDisponibles.indexOf(_letraInicio);
+      if (startIndex != -1 && startIndex + 2 < finDisponibles.length) {
+        _letraFin = finDisponibles[startIndex + 2];
+      } else {
+        _letraFin = finDisponibles.first;
+      }
+    }
+  }
+
+  int get _numManzanas {
+    final startCode = _letraInicio.codeUnitAt(0);
+    final endCode = _letraFin.codeUnitAt(0);
+    if (endCode >= startCode) {
+      return endCode - startCode + 1;
     }
     return 0;
   }
@@ -389,9 +460,7 @@ class _GeneradorEstructuraSheetState extends State<_GeneradorEstructuraSheet> {
     try {
       String targetEtapaId;
       if (_selectedEtapaId == '__NEW__') {
-        final nombreEtapa = _nuevaEtapaController.text.trim().isNotEmpty
-            ? _nuevaEtapaController.text.trim()
-            : 'Etapa ${_etapas.length + 1}';
+        final nombreEtapa = _siguienteNombreEtapa;
         setState(() => _progresoTexto = 'Creando $nombreEtapa...');
         final nueva = await _repo.createEtapa(nombreEtapa, widget.proyectoId);
         targetEtapaId = nueva['id'].toString();
@@ -399,8 +468,8 @@ class _GeneradorEstructuraSheetState extends State<_GeneradorEstructuraSheet> {
         targetEtapaId = _selectedEtapaId;
       }
 
-      final startCode = _letraInicioController.text.trim().toUpperCase().codeUnitAt(0);
-      final endCode = _letraFinController.text.trim().toUpperCase().codeUnitAt(0);
+      final startCode = _letraInicio.codeUnitAt(0);
+      final endCode = _letraFin.codeUnitAt(0);
       final casaInicio = int.parse(_casaInicioController.text.trim());
       final casaFin = int.parse(_casaFinController.text.trim());
 
@@ -434,6 +503,32 @@ class _GeneradorEstructuraSheetState extends State<_GeneradorEstructuraSheet> {
         TopToast.showError(context, 'Error al generar estructura: $e');
       }
     }
+  }
+
+  Widget _buildResumenItem({
+    required String label,
+    required String value,
+    bool isHighlight = false,
+  }) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: AppTypography.caption.copyWith(
+            color: AppColors.textSecondary,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        Text(
+          value,
+          style: AppTypography.caption.copyWith(
+            fontWeight: isHighlight ? FontWeight.w700 : FontWeight.w600,
+            color: isHighlight ? AppColors.primary : AppColors.textPrimary,
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -481,7 +576,7 @@ class _GeneradorEstructuraSheetState extends State<_GeneradorEstructuraSheet> {
                   ],
                 ),
                 Text(
-                  'Crea en bloque etapas, manzanas y lotes para inicializar el proyecto.',
+                  'Inicializa en bloque etapas, manzanas y casas con numeración consecutiva.',
                   style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
                 ),
                 const SizedBox(height: AppSpacing.lg),
@@ -501,6 +596,7 @@ class _GeneradorEstructuraSheetState extends State<_GeneradorEstructuraSheet> {
                   ),
                   const SizedBox(height: AppSpacing.xs),
                   DropdownButtonFormField<String>(
+                    key: ValueKey('etapa_$_selectedEtapaId'),
                     initialValue: _selectedEtapaId,
                     decoration: InputDecoration(
                       border: OutlineInputBorder(
@@ -513,45 +609,60 @@ class _GeneradorEstructuraSheetState extends State<_GeneradorEstructuraSheet> {
                         value: e['id'].toString(),
                         child: Text(e['nombre'].toString()),
                       )),
-                      const DropdownMenuItem(
+                      DropdownMenuItem(
                         value: '__NEW__',
                         child: Row(
                           children: [
-                            Icon(Icons.add_circle_outline_rounded, size: 18, color: Colors.blue),
-                            SizedBox(width: 8),
-                            Text('+ Crear Nueva Etapa', style: TextStyle(color: Colors.blue)),
+                            Icon(Icons.add_circle_outline_rounded, size: 18, color: AppColors.primary),
+                            const SizedBox(width: 8),
+                            Text(
+                              '+ Nueva Etapa ($_siguienteNombreEtapa)',
+                              style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600),
+                            ),
                           ],
                         ),
                       ),
                     ],
                     onChanged: _isSubmitting ? null : (val) {
-                      if (val != null) setState(() => _selectedEtapaId = val);
+                      if (val != null) {
+                        setState(() {
+                          _selectedEtapaId = val;
+                          _actualizarRangosManzanasParaEtapa();
+                        });
+                      }
                     },
                   ),
                   if (_selectedEtapaId == '__NEW__') ...[
-                    const SizedBox(height: AppSpacing.sm),
-                    TextFormField(
-                      controller: _nuevaEtapaController,
-                      decoration: InputDecoration(
-                        labelText: 'Nombre de la Nueva Etapa',
-                        hintText: 'Ej. Etapa ${_etapas.length + 1}',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
-                        ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
+                        border: Border.all(color: AppColors.primary.withValues(alpha: 0.25)),
                       ),
-                      validator: (val) {
-                        if (_selectedEtapaId == '__NEW__' && (val == null || val.trim().isEmpty)) {
-                          return 'Ingresa el nombre de la etapa';
-                        }
-                        return null;
-                      },
+                      child: Row(
+                        children: [
+                          Icon(Icons.info_outline_rounded, size: 16, color: AppColors.primary),
+                          const SizedBox(width: AppSpacing.xs),
+                          Expanded(
+                            child: Text(
+                              'Se creará automáticamente como "$_siguienteNombreEtapa" sin errores de tipeo.',
+                              style: AppTypography.caption.copyWith(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ],
 
                 const SizedBox(height: AppSpacing.md),
 
-                // Rango de Manzanas
+                // Rango de Manzanas (Desplegables)
                 Text(
                   'Rango de Manzanas (Letras A-Z)',
                   style: AppTypography.smallBold.copyWith(color: AppColors.textSecondary),
@@ -560,46 +671,53 @@ class _GeneradorEstructuraSheetState extends State<_GeneradorEstructuraSheet> {
                 Row(
                   children: [
                     Expanded(
-                      child: TextFormField(
-                        controller: _letraInicioController,
-                        textCapitalization: TextCapitalization.characters,
-                        maxLength: 1,
+                      child: DropdownButtonFormField<String>(
+                        key: ValueKey('desde_$_letraInicio'),
+                        initialValue: _letraInicio,
                         decoration: InputDecoration(
                           labelText: 'Desde',
-                          counterText: '',
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
                           ),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                         ),
-                        validator: (val) {
-                          if (val == null || val.trim().isEmpty) return 'Requerido';
-                          if (!RegExp(r'^[A-Z]$').hasMatch(val.trim().toUpperCase())) return 'A-Z';
-                          return null;
+                        items: _getLetrasInicioDisponibles().map((l) => DropdownMenuItem(
+                          value: l,
+                          child: Text('Manzana $l', style: const TextStyle(fontWeight: FontWeight.w600)),
+                        )).toList(),
+                        onChanged: _isSubmitting ? null : (val) {
+                          if (val != null) {
+                            setState(() {
+                              _letraInicio = val;
+                              final finDisp = _getLetrasFinDisponibles();
+                              if (!finDisp.contains(_letraFin)) {
+                                _letraFin = finDisp.first;
+                              }
+                            });
+                          }
                         },
                       ),
                     ),
                     const SizedBox(width: AppSpacing.md),
                     Expanded(
-                      child: TextFormField(
-                        controller: _letraFinController,
-                        textCapitalization: TextCapitalization.characters,
-                        maxLength: 1,
+                      child: DropdownButtonFormField<String>(
+                        key: ValueKey('hasta_$_letraFin'),
+                        initialValue: _letraFin,
                         decoration: InputDecoration(
                           labelText: 'Hasta',
-                          counterText: '',
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
                           ),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                         ),
-                        validator: (val) {
-                          if (val == null || val.trim().isEmpty) return 'Requerido';
-                          final upper = val.trim().toUpperCase();
-                          if (!RegExp(r'^[A-Z]$').hasMatch(upper)) return 'A-Z';
-                          final start = _letraInicioController.text.trim().toUpperCase();
-                          if (start.isNotEmpty && upper.codeUnitAt(0) < start.codeUnitAt(0)) {
-                            return 'Posterior a inicio';
+                        items: _getLetrasFinDisponibles().map((l) => DropdownMenuItem(
+                          value: l,
+                          child: Text('Manzana $l', style: const TextStyle(fontWeight: FontWeight.w600)),
+                        )).toList(),
+                        onChanged: _isSubmitting ? null : (val) {
+                          if (val != null) {
+                            setState(() => _letraFin = val);
                           }
-                          return null;
                         },
                       ),
                     ),
@@ -652,6 +770,7 @@ class _GeneradorEstructuraSheetState extends State<_GeneradorEstructuraSheet> {
                           final n = int.tryParse(val.trim());
                           final start = int.tryParse(_casaInicioController.text.trim()) ?? 0;
                           if (n == null || n < start) return 'Mayor o igual a inicial';
+                          if ((n - start + 1) > 50) return 'Máx 50 por manzana';
                           return null;
                         },
                       ),
@@ -661,40 +780,77 @@ class _GeneradorEstructuraSheetState extends State<_GeneradorEstructuraSheet> {
 
                 const SizedBox(height: AppSpacing.md),
 
-                // Resumen previo visual
+                // Resumen previo visual estructurado
                 Container(
                   padding: const EdgeInsets.all(AppSpacing.cardPadding),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.08),
+                    color: AppColors.primary.withValues(alpha: 0.06),
                     borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
                     border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
                   ),
-                  child: Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.info_outline_rounded, color: AppColors.primary, size: 24),
-                      const SizedBox(width: AppSpacing.md),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Resumen de Generación',
-                              style: AppTypography.caption.copyWith(
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.primary,
-                              ),
+                      Row(
+                        children: [
+                          Icon(Icons.analytics_outlined, color: AppColors.primary, size: 20),
+                          const SizedBox(width: AppSpacing.xs),
+                          Text(
+                            'Resumen de Generación',
+                            style: AppTypography.bodyMedium.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primary,
                             ),
-                            const SizedBox(height: 2),
-                            Text(
-                              _totalCasas > 0
-                                  ? 'Se crearán $_numManzanas manzanas (${_letraInicioController.text.trim().toUpperCase()} ➔ ${_letraFinController.text.trim().toUpperCase()}) y $_totalCasas casas ($_numCasasPorManzana por manzana).'
-                                  : 'Completa los rangos para calcular el total a generar.',
-                              style: AppTypography.caption.copyWith(
-                                color: AppColors.textSecondary,
-                              ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      const Divider(height: 1),
+                      const SizedBox(height: AppSpacing.sm),
+                      _buildResumenItem(
+                        label: 'Etapa destino',
+                        value: _selectedEtapaId == '__NEW__'
+                            ? '$_siguienteNombreEtapa (Nueva)'
+                            : (_etapas.firstWhere(
+                                (e) => e['id'] == _selectedEtapaId,
+                                orElse: () => {'nombre': 'Etapa'},
+                              )['nombre'] as String),
+                      ),
+                      const SizedBox(height: 6),
+                      _buildResumenItem(
+                        label: 'Manzanas a crear',
+                        value: _numManzanas > 0
+                            ? '$_numManzanas ($_letraInicio ➔ $_letraFin)'
+                            : 'Pendiente',
+                      ),
+                      const SizedBox(height: 6),
+                      _buildResumenItem(
+                        label: 'Casas por manzana',
+                        value: _numCasasPorManzana > 0
+                            ? '$_numCasasPorManzana (${_casaInicioController.text.trim()} a ${_casaFinController.text.trim()})'
+                            : 'Pendiente',
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      const Divider(height: 1),
+                      const SizedBox(height: AppSpacing.xs),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Total a generar:',
+                            style: AppTypography.bodyMedium.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textPrimary,
                             ),
-                          ],
-                        ),
+                          ),
+                          Text(
+                            '$_totalCasas ${_totalCasas == 1 ? "casa" : "casas"}',
+                            style: AppTypography.subtitle.copyWith(
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -730,11 +886,9 @@ class _GeneradorEstructuraSheetState extends State<_GeneradorEstructuraSheet> {
                     child: FilledButton.icon(
                       onPressed: _totalCasas == 0 ? null : _ejecutarGeneracion,
                       icon: const Icon(Icons.bolt_rounded, size: 20),
-                      label: Text(
-                        _totalCasas > 0
-                            ? 'Generar $_totalCasas Casas en $_numManzanas Manzanas'
-                            : 'Generar Estructura',
-                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      label: const Text(
+                        'Generar Estructura',
+                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
                       ),
                       style: FilledButton.styleFrom(
                         shape: RoundedRectangleBorder(
