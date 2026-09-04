@@ -220,13 +220,15 @@ class _ManzanasScreenState extends State<ManzanasScreen> {
               child: Row(
                 children: [
                   Expanded(
-                    child: OutlinedButton.icon(
+                    child: FilledButton.tonalIcon(
                       onPressed: () => _crearManzanaAutomatica(_selectedEtapaId, activeManzanas),
                       icon: const Icon(Icons.add_rounded, size: 18),
-                      label: const Text('Agregar 1'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.primary,
-                        side: BorderSide(color: AppColors.primary),
+                      label: const Text(
+                        '+ 1 Manzana',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size.fromHeight(44),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                         ),
@@ -238,8 +240,12 @@ class _ManzanasScreenState extends State<ManzanasScreen> {
                     child: FilledButton.tonalIcon(
                       onPressed: () => _mostrarDialogoCrearManzanaConCasas(_selectedEtapaId, activeManzanas),
                       icon: const Icon(Icons.library_add_rounded, size: 18),
-                      label: const Text('Crear con Casas'),
+                      label: const Text(
+                        '+ Con Casas',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
                       style: FilledButton.styleFrom(
+                        minimumSize: const Size.fromHeight(44),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                         ),
