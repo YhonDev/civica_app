@@ -17,7 +17,9 @@ class ManzanasScreen extends StatefulWidget {
 class _ManzanasScreenState extends State<ManzanasScreen> {
   final ComunidadRepository _repo = ComunidadRepository();
   bool _isLoading = true;
-  late List<Map<String, dynamic>> _etapas = [];
+  bool _isRefreshing = false;
+  String _selectedEtapaId = '';
+  List<Map<String, dynamic>> _etapas = [];
 
   @override
   void initState() {
@@ -25,43 +27,49 @@ class _ManzanasScreenState extends State<ManzanasScreen> {
     _loadData();
   }
 
-  Future<void> _loadData() async {
-    setState(() => _isLoading = true);
+  Future<void> _loadData({bool silent = false}) async {
+    if (!silent) {
+      setState(() => _isLoading = true);
+    } else {
+      setState(() => _isRefreshing = true);
+    }
     try {
       final etapas = await _repo.getEtapasConManzanas();
-      setState(() {
-        _etapas = etapas.map((e) {
-          return {
-            'id': e['id'],
-            'nombre': e['nombre'],
-            'isExpanded': false,
-            'manzanas': e['manzanas'] as List,
-          };
-        }).toList();
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() => _isLoading = false);
       if (mounted) {
+        setState(() {
+          _etapas = etapas;
+          if (_etapas.isNotEmpty) {
+            final exists = _etapas.any((e) => e['id'] == _selectedEtapaId);
+            if (!exists || _selectedEtapaId.isEmpty) {
+              _selectedEtapaId = _etapas.first['id'] as String;
+            }
+          }
+          _isLoading = false;
+          _isRefreshing = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _isRefreshing = false;
+        });
         TopToast.showError(context, 'Error al cargar manzanas: $e');
       }
     }
   }
 
   Future<void> _crearManzanaAutomatica(String etapaId, List manzanas) async {
-    setState(() => _isLoading = true);
-    
     final maxNumber = _getMaxManzanaNumber(manzanas);
     final nombre = _getManzanaNameByNumber(maxNumber + 1);
-    
+
     try {
       await _repo.createManzana(nombre, etapaId);
-      await _loadData();
+      await _loadData(silent: true);
       if (mounted) {
         TopToast.showSuccess(context, '$nombre creada exitosamente');
       }
     } catch (e) {
-      setState(() => _isLoading = false);
       if (mounted) {
         TopToast.showError(context, 'Error al crear manzana: $e');
       }
@@ -98,6 +106,43 @@ class _ManzanasScreenState extends State<ManzanasScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Gestión de Manzanas'),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_rounded),
+            onPressed: () => context.pop(),
+          ),
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_etapas.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Gestión de Manzanas'),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_rounded),
+            onPressed: () => context.pop(),
+          ),
+        ),
+        body: const EmptyState(
+          icon: Icons.grid_view_rounded,
+          title: 'No hay manzanas',
+          description: 'Aún no has creado ninguna etapa para organizar las manzanas.',
+        ),
+      );
+    }
+
+    final activeEtapa = _etapas.firstWhere(
+      (e) => e['id'] == _selectedEtapaId,
+      orElse: () => _etapas.first,
+    );
+    final activeManzanas = List<Map<String, dynamic>>.from(activeEtapa['manzanas'] as List? ?? [])
+      ..sort((a, b) => a['nombre'].toString().compareTo(b['nombre'].toString()));
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Gestión de Manzanas'),
@@ -105,129 +150,233 @@ class _ManzanasScreenState extends State<ManzanasScreen> {
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.pop(),
         ),
+        bottom: _isRefreshing
+            ? const PreferredSize(
+                preferredSize: Size.fromHeight(2),
+                child: LinearProgressIndicator(minHeight: 2),
+              )
+            : null,
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _etapas.isEmpty
-          ? const EmptyState(
-              icon: Icons.grid_view_rounded,
-              title: 'No hay manzanas',
-              description: 'Aún no has creado ninguna etapa para organizar las manzanas.',
-            )
-          : SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-              child: ExpansionPanelList(
-                elevation: 0,
-                dividerColor: Colors.transparent,
-                expansionCallback: (int index, bool isExpanded) {
-                  setState(() {
-                    _etapas[index]['isExpanded'] = isExpanded;
-                  });
-                },
-                children: _etapas.map<ExpansionPanel>((etapa) {
-                  final manzanas = etapa['manzanas'] as List;
-                  return ExpansionPanel(
-                    backgroundColor: Colors.transparent,
-                    canTapOnHeader: true,
-                    isExpanded: etapa['isExpanded'],
-                    headerBuilder: (context, isExpanded) {
-                      return ListTile(
-                        leading: Icon(
-                          isExpanded ? Icons.folder_open_rounded : Icons.folder_rounded,
-                          color: AppColors.primary,
+      body: RefreshIndicator(
+        color: AppColors.primary,
+        onRefresh: () => _loadData(silent: true),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: AppSpacing.md),
+            // Header con etiqueta de etapa activa
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
+              child: Text(
+                'ETAPA ACTIVA',
+                style: AppTypography.caption.copyWith(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.8,
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            // Selector horizontal de ChoiceChips
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
+              child: Row(
+                children: _etapas.map((etapa) {
+                  final isSelected = _selectedEtapaId == etapa['id'];
+                  final mzs = etapa['manzanas'] as List? ?? [];
+                  return Padding(
+                    padding: const EdgeInsets.only(right: AppSpacing.sm),
+                    child: ChoiceChip(
+                      label: Text('${etapa['nombre']} (${mzs.length})'),
+                      selected: isSelected,
+                      onSelected: (selected) {
+                        if (selected) {
+                          setState(() => _selectedEtapaId = etapa['id']);
+                        }
+                      },
+                      selectedColor: AppColors.primary,
+                      labelStyle: AppTypography.caption.copyWith(
+                        color: isSelected ? Colors.white : AppColors.textSecondary,
+                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                        fontSize: 12,
+                      ),
+                      backgroundColor: AppColors.surface,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
+                        side: BorderSide(
+                          color: isSelected ? AppColors.primary : AppColors.border,
                         ),
-                        title: Text(
-                          etapa['nombre'],
-                          style: AppTypography.subtitle.copyWith(fontWeight: FontWeight.w600),
-                        ),
-                        subtitle: Text('${manzanas.length} manzanas'),
-                      );
-                    },
-                    body: _buildManzanasList(etapa['id'], manzanas),
+                      ),
+                    ),
                   );
                 }).toList(),
               ),
             ),
-    );
-  }
-
-  Widget _buildManzanasList(String etapaId, List manzanas) {
-    final sortedManzanas = List<Map<String, dynamic>>.from(manzanas)
-      ..sort((a, b) => a['nombre'].toString().compareTo(b['nombre'].toString()));
-
-    return Padding(
-      padding: const EdgeInsets.only(left: 56.0, right: AppSpacing.md, bottom: AppSpacing.md),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (manzanas.isEmpty)
-            const Padding(
-              padding: EdgeInsets.only(bottom: AppSpacing.md),
-              child: Text('No hay manzanas en esta etapa', style: TextStyle(color: Colors.grey)),
-            ),
-          ...sortedManzanas.map((m) {
-            return Card(
-              margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-            color: AppColors.surface,
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: AppColors.border),
-            ),
-            child: ListTile(
-              leading: Icon(Icons.grid_view_rounded, color: AppColors.primary),
-              title: Text(
-                m['nombre'].toString(),
-                style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w600),
-              ),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
+            const SizedBox(height: AppSpacing.md),
+            // Acciones fijas superiores
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
+              child: Row(
                 children: [
-                  IconButton(
-                    icon: Icon(Icons.edit_rounded, color: AppColors.info, size: 20),
-                    onPressed: () {
-                      TopToast.show(context, message: 'Editar Manzana', icon: Icons.edit_rounded);
-                    },
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => _crearManzanaAutomatica(_selectedEtapaId, activeManzanas),
+                      icon: const Icon(Icons.add_rounded, size: 18),
+                      label: const Text('Agregar 1'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.primary,
+                        side: BorderSide(color: AppColors.primary),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
+                        ),
+                      ),
+                    ),
                   ),
-                  IconButton(
-                    icon: Icon(Icons.delete_rounded, color: AppColors.error, size: 20),
-                    onPressed: () {
-                      _mostrarConfirmacionEliminacionManzana(m['nombre'].toString(), m['id'].toString());
-                    },
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: FilledButton.tonalIcon(
+                      onPressed: () => _mostrarDialogoCrearManzanaConCasas(_selectedEtapaId, activeManzanas),
+                      icon: const Icon(Icons.library_add_rounded, size: 18),
+                      label: const Text('Crear con Casas'),
+                      style: FilledButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
             ),
-          );
-        }),
-        const SizedBox(height: AppSpacing.sm),
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () => _crearManzanaAutomatica(etapaId, manzanas),
-                icon: const Icon(Icons.add_rounded),
-                label: const Text('Agregar 1'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.primary,
-                  side: BorderSide(color: AppColors.primary),
-                ),
+            const SizedBox(height: AppSpacing.md),
+            const Divider(height: 1),
+            // Encabezado del listado con contador
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.screenPadding,
+                AppSpacing.md,
+                AppSpacing.screenPadding,
+                AppSpacing.sm,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Manzanas en ${activeEtapa['nombre']}',
+                    style: AppTypography.bodyMedium.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      '${activeManzanas.length} registradas',
+                      style: AppTypography.smallBold.copyWith(
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(width: AppSpacing.sm),
+            // Lista de tarjetas de manzana
             Expanded(
-              child: FilledButton.tonalIcon(
-                onPressed: () => _mostrarDialogoCrearManzanaConCasas(etapaId, manzanas),
-                icon: const Icon(Icons.library_add_rounded),
-                label: const Text('Crear con Casas'),
-              ),
+              child: activeManzanas.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.grid_off_rounded, size: 48, color: AppColors.textDisabled),
+                          const SizedBox(height: AppSpacing.sm),
+                          Text(
+                            'No hay manzanas en ${activeEtapa['nombre']}',
+                            style: AppTypography.body.copyWith(color: AppColors.textSecondary),
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                          OutlinedButton.icon(
+                            onPressed: () => _crearManzanaAutomatica(_selectedEtapaId, activeManzanas),
+                            icon: const Icon(Icons.add_rounded),
+                            label: const Text('Crear primera manzana'),
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.screenPadding,
+                        AppSpacing.xs,
+                        AppSpacing.screenPadding,
+                        AppSpacing.xl,
+                      ),
+                      itemCount: activeManzanas.length,
+                      itemBuilder: (context, index) {
+                        final m = activeManzanas[index];
+                        final nombre = m['nombre'].toString();
+                        final id = m['id'].toString();
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+                          color: AppColors.card,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+                            side: BorderSide(
+                              color: AppColors.border.withValues(alpha: 0.6),
+                            ),
+                          ),
+                          child: ListTile(
+                            leading: Container(
+                              width: 38,
+                              height: 38,
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Icon(
+                                Icons.grid_view_rounded,
+                                color: AppColors.primary,
+                                size: 20,
+                              ),
+                            ),
+                            title: Text(
+                              nombre,
+                              style: AppTypography.bodyMedium.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: Icon(Icons.edit_rounded, color: AppColors.info, size: 20),
+                                  onPressed: () {
+                                    TopToast.show(context, message: 'Editar Manzana', icon: Icons.edit_rounded);
+                                  },
+                                ),
+                                IconButton(
+                                  icon: Icon(Icons.delete_rounded, color: AppColors.error, size: 20),
+                                  onPressed: () {
+                                    _mostrarConfirmacionEliminacionManzana(nombre, id);
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
             ),
           ],
         ),
-      ],
-    ),
-  );
-}
+      ),
+    );
+  }
 
   void _mostrarConfirmacionEliminacionManzana(String nombreManzana, String id) {
     showDialog(
@@ -253,15 +402,13 @@ class _ManzanasScreenState extends State<ManzanasScreen> {
             style: FilledButton.styleFrom(backgroundColor: AppColors.error),
             onPressed: () async {
               Navigator.pop(ctx);
-              setState(() => _isLoading = true);
               try {
                 await _repo.deleteManzana(id);
-                await _loadData();
+                await _loadData(silent: true);
                 if (mounted) {
                   TopToast.showSuccess(context, '$nombreManzana eliminada correctamente');
                 }
               } catch (e) {
-                setState(() => _isLoading = false);
                 if (mounted) {
                   TopToast.showError(context, 'Error al eliminar: $e');
                 }
@@ -394,7 +541,7 @@ class _ManzanasScreenState extends State<ManzanasScreen> {
   }
 
   Future<void> _crearRangoManzanasConCasas(String etapaId, String letraInicio, String letraFin, int inicio, int fin) async {
-    setState(() => _isLoading = true);
+    setState(() => _isRefreshing = true);
     try {
       int startCode = letraInicio.codeUnitAt(0);
       int endCode = letraFin.codeUnitAt(0);
@@ -408,12 +555,12 @@ class _ManzanasScreenState extends State<ManzanasScreen> {
         }
       }
       
-      await _loadData();
+      await _loadData(silent: true);
       if (mounted) {
         TopToast.showSuccess(context, 'Manzanas ($letraInicio ➔ $letraFin) creadas exitosamente con casas');
       }
     } catch (e) {
-      setState(() => _isLoading = false);
+      setState(() => _isRefreshing = false);
       if (mounted) {
         TopToast.showError(context, 'Error al crear manzanas: $e');
       }
