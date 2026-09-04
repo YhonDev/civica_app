@@ -47,7 +47,22 @@ describe('EliminarCobroUseCase', () => {
   it('should throw NotFoundException if cobro does not exist', async () => {
     mockCobroRepo.findById.mockResolvedValue(null);
 
-    await expect(useCase.execute('cobro-1')).rejects.toThrow(NotFoundException);
+    await expect(useCase.execute('cobro-1', 'tenant-1')).rejects.toThrow(
+      NotFoundException,
+    );
+    expect(mockCobroRepo.delete).not.toHaveBeenCalled();
+    expect(mockCobroRepo.findById).toHaveBeenCalledWith('cobro-1', 'tenant-1');
+  });
+
+  it('should throw NotFoundException if cobro belongs to another tenant', async () => {
+    const cobro = crearCobro(); // tenant-1
+    mockCobroRepo.findById.mockImplementation(async (_id, tenantId) =>
+      tenantId === 'tenant-1' ? cobro : null,
+    );
+
+    await expect(
+      useCase.execute('cobro-1', 'tenant-OTHER'),
+    ).rejects.toThrow(NotFoundException);
     expect(mockCobroRepo.delete).not.toHaveBeenCalled();
   });
 
@@ -56,7 +71,7 @@ describe('EliminarCobroUseCase', () => {
     mockCobroRepo.findById.mockResolvedValue(cobro);
     mockPagoRepo.countByCobro.mockResolvedValue(1);
 
-    await expect(useCase.execute('cobro-1')).rejects.toThrow(
+    await expect(useCase.execute('cobro-1', 'tenant-1')).rejects.toThrow(
       BadRequestException,
     );
     expect(mockCobroRepo.delete).not.toHaveBeenCalled();
@@ -68,7 +83,7 @@ describe('EliminarCobroUseCase', () => {
     mockPagoRepo.countByCobro.mockResolvedValue(0);
     mockCobroRepo.delete.mockResolvedValue(undefined);
 
-    await expect(useCase.execute('cobro-1')).resolves.not.toThrow();
+    await expect(useCase.execute('cobro-1', 'tenant-1')).resolves.not.toThrow();
     expect(mockCobroRepo.delete).toHaveBeenCalledWith('cobro-1');
   });
 });

@@ -18,15 +18,15 @@ export class ProyectoRepository {
     });
   }
 
-  async findById(id: string): Promise<Proyecto | null> {
+  async findById(id: string, tenantId: string): Promise<Proyecto | null> {
     return this.repo.findOne({
-      where: { id },
+      where: { id, tenantId },
       relations: { etapas: { manzanas: { casas: true } } },
     });
   }
 
-  async findByIdPlano(id: string): Promise<Proyecto | null> {
-    return this.repo.findOne({ where: { id } });
+  async findByIdPlano(id: string, tenantId: string): Promise<Proyecto | null> {
+    return this.repo.findOne({ where: { id, tenantId } });
   }
 
   async save(proyecto: Proyecto): Promise<Proyecto> {
@@ -37,9 +37,9 @@ export class ProyectoRepository {
    * Verifica si un proyecto está en modo mantenimiento.
    * Retorna true si el proyecto no existe (fail-closed: bloquea si no se puede determinar).
    */
-  async estaEnMantenimiento(id: string): Promise<boolean> {
+  async estaEnMantenimiento(id: string, tenantId: string): Promise<boolean> {
     const proyecto = await this.repo.findOne({
-      where: { id },
+      where: { id, tenantId },
       select: { modoMantenimiento: true },
     });
     return proyecto?.modoMantenimiento ?? true;

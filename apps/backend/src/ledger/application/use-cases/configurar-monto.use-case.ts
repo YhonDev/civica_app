@@ -40,7 +40,7 @@ export class ConfigurarMontoUseCase {
 
     // Auto-assign orden: next number
     const existingMontos =
-      await this.montoRepository.findAllByConjunto(proyectoId);
+      await this.montoRepository.findAllByConjunto(proyectoId, tenantId);
     const nextOrden =
       existingMontos.length > 0
         ? Math.max(...existingMontos.map((m) => m.orden)) + 1

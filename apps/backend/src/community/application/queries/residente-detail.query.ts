@@ -14,7 +14,10 @@ export class ResidenteDetailQuery {
   ) {}
 
   async execute(id: string, tenantId: string): Promise<ResidenteDetailDto> {
-    const residente = await this.residenteRepository.findByIdWithRelations(id);
+    const residente = await this.residenteRepository.findByIdWithRelations(
+      id,
+      tenantId,
+    );
 
     if (!residente) {
       throw new NotFoundException('Residente no encontrado');
@@ -22,7 +25,7 @@ export class ResidenteDetailQuery {
 
     // Buscar el username del usuario asociado a este residente
     const usuario = await this.usuarioRepository.findOne({
-      where: { residenteId: id },
+      where: { residenteId: id, tenantId },
     });
 
     return {

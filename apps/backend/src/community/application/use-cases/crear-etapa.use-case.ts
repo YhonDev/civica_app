@@ -10,14 +10,21 @@ import { ProyectoRepository } from '../../infrastructure/proyecto.repository';
 export class CrearEtapaUseCase {
   constructor(private readonly proyectoRepository: ProyectoRepository) {}
 
-  async execute(nombre: string, proyectoId: string): Promise<Etapa> {
+  async execute(
+    nombre: string,
+    proyectoId: string,
+    tenantId: string,
+  ): Promise<Etapa> {
     if (!nombre || nombre.trim().length < 2) {
       throw new BadRequestException(
         'El nombre debe tener al menos 2 caracteres',
       );
     }
 
-    const proyecto = await this.proyectoRepository.findById(proyectoId);
+    const proyecto = await this.proyectoRepository.findById(
+      proyectoId,
+      tenantId,
+    );
     if (!proyecto) {
       throw new NotFoundException(
         `Proyecto con ID ${proyectoId} no encontrado`,

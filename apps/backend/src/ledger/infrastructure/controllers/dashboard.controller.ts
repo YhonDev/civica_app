@@ -5,7 +5,6 @@ import {
   UseGuards,
   ParseIntPipe,
   DefaultValuePipe,
-  Optional,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { DashboardQuery } from '../../application/queries/dashboard.query';
@@ -14,8 +13,6 @@ import { PagoRepository } from '../persistence/pago.repository';
 import { PlanDeCobroRepository } from '../persistence/plan-de-cobro.repository';
 import { SolicitudRepository } from '../persistence/solicitud.repository';
 import { TarifaRepository } from '../persistence/tarifa.repository';
-import { GenerarCobrosUseCase } from '../../application/use-cases/generar-cobros.use-case';
-import { MarcarVencidasUseCase } from '../../application/use-cases/marcar-vencidas.use-case';
 import { Cobro } from '../../domain/cobro.entity';
 import type {
   TimelineItemDto,
@@ -50,8 +47,6 @@ export class DashboardController {
     private readonly tarifaRepository: TarifaRepository,
     private readonly residenteRepository: ResidenteRepository,
     private readonly dataSource: DataSource,
-    @Optional() private readonly generarCobrosUC?: GenerarCobrosUseCase,
-    @Optional() private readonly marcarVencidasUC?: MarcarVencidasUseCase,
   ) {}
 
   @Get('dashboard/administrador')
@@ -100,7 +95,7 @@ export class DashboardController {
     // Bulk query for cobros to prevent N+1 query
     const residenteIds = residentes.map((r) => r.id);
     const todosLosCobros =
-      await this.cobroRepository.findByResidentes(residenteIds);
+      await this.cobroRepository.findByResidentes(residenteIds, tenantId);
 
     // Group cobros by residenteId in memory
     const cobrosMap = new Map<string, Cobro[]>();
@@ -201,7 +196,7 @@ export class DashboardController {
       pagos: pagosHoy,
       total: totalHoy,
       count: countHoy,
-    } = await this.pagoRepository.findByCobradorToday(user.id);
+    } = await this.pagoRepository.findByCobradorToday(user.id, tenantId);
 
     // 3.5. Buscar solicitudes activas del tenant para el cobrador (orden cronológico ascendente: FIFO)
     const listaSolicitudes = await this.getSolicitudesActivasCobrador(
@@ -610,19 +605,18 @@ export class DashboardController {
       };
     }
 
-    if (this.generarCobrosUC) {
-      await this.generarCobrosUC.execute().catch(() => {});
-    }
-    if (this.marcarVencidasUC) {
-      await this.marcarVencidasUC.execute().catch(() => {});
-    }
-
     const [cobrosRaw, pagos, cuenta, residente, solicitudesResidente] =
       await Promise.all([
         this.cobroRepository.findByResidente(user.residenteId, tenantId),
         this.pagoRepository.findByPropietario(user.residenteId, tenantId),
-        this.planDeCobroRepository.findByResidente(user.residenteId),
-        this.residenteRepository.findByIdWithRelations(user.residenteId),
+        this.planDeCobroRepository.findByResidente(
+          user.residenteId,
+          tenantId,
+        ),
+        this.residenteRepository.findByIdWithRelations(
+          user.residenteId,
+          tenantId,
+        ),
         this.solicitudRepository.findByUsuario(user.id),
       ]);
 
@@ -657,6 +651,7 @@ export class DashboardController {
     if (cuenta) {
       const vigentes = await this.tarifaRepository.findVigentesPorConjunto(
         cuenta.proyectoId,
+        tenantId,
         hoy,
       );
       tarifaMensual = vigentes.MENSUAL;

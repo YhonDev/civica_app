@@ -13,8 +13,8 @@ export class EliminarCobroUseCase {
     private readonly pagoRepository: PagoRepository,
   ) {}
 
-  async execute(id: string): Promise<void> {
-    const cobro = await this.cobroRepository.findById(id);
+  async execute(id: string, tenantId: string): Promise<void> {
+    const cobro = await this.cobroRepository.findById(id, tenantId);
     if (!cobro) {
       throw new NotFoundException('Cobro no encontrado');
     }

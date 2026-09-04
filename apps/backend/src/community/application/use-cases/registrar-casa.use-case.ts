@@ -20,7 +20,11 @@ export class RegistrarCasaUseCase {
     private readonly casaRepository: Repository<Casa>,
   ) {}
 
-  async execute(direccionInterna: string, manzanaId: string): Promise<Casa> {
+  async execute(
+    direccionInterna: string,
+    manzanaId: string,
+    tenantId: string,
+  ): Promise<Casa> {
     if (!direccionInterna || direccionInterna.trim().length === 0) {
       throw new BadRequestException(
         'La dirección interna no puede estar vacía',
@@ -29,8 +33,9 @@ export class RegistrarCasaUseCase {
 
     const manzana = await this.manzanaRepository.findOne({
       where: { id: manzanaId },
+      relations: { etapa: { proyecto: true } },
     });
-    if (!manzana) {
+    if (!manzana || manzana.etapa?.proyecto?.tenantId !== tenantId) {
       throw new NotFoundException(`Manzana con ID ${manzanaId} no encontrada`);
     }
 

@@ -91,9 +91,11 @@ describe('ResidenteRepository', () => {
   describe('findById()', () => {
     it('should find residente by id', async () => {
       mockRepo.findOne.mockResolvedValue({ id: 'r1' });
-      const result = await repo.findById('r1');
+      const result = await repo.findById('r1', TENANT_ID);
       expect(result?.id).toBe('r1');
-      expect(mockRepo.findOne).toHaveBeenCalledWith({ where: { id: 'r1' } });
+      expect(mockRepo.findOne).toHaveBeenCalledWith({
+        where: { id: 'r1', tenantId: TENANT_ID },
+      });
     });
   });
 
@@ -105,10 +107,10 @@ describe('ResidenteRepository', () => {
       };
       mockRepo.findOne.mockResolvedValue(mockResidente);
 
-      const result = await repo.findByIdWithRelations('r1');
+      const result = await repo.findByIdWithRelations('r1', TENANT_ID);
 
       expect(mockRepo.findOne).toHaveBeenCalledWith({
-        where: { id: 'r1' },
+        where: { id: 'r1', tenantId: TENANT_ID },
         relations: {
           tenencias: {
             casa: {
@@ -160,9 +162,9 @@ describe('ResidenteRepository', () => {
   describe('findWithTenencia()', () => {
     it('should load tenencias relation', async () => {
       mockRepo.findOne.mockResolvedValue({ id: 'r1', tenencias: [] });
-      const result = await repo.findWithTenencia('r1');
+      const result = await repo.findWithTenencia('r1', TENANT_ID);
       expect(mockRepo.findOne).toHaveBeenCalledWith({
-        where: { id: 'r1' },
+        where: { id: 'r1', tenantId: TENANT_ID },
         relations: { tenencias: true },
       });
       expect(result?.id).toBe('r1');

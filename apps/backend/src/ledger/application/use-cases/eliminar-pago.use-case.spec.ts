@@ -129,11 +129,14 @@ describe('EliminarPagoUseCase', () => {
 
   it('should throw NotFoundException if payment belongs to another tenant', async () => {
     const pago = crearPago(40000, 'pago-1');
-    mockPagoRepo.findById.mockResolvedValue(pago);
+    mockPagoRepo.findById.mockImplementation(async (_id, tenantId) =>
+      tenantId === TENANT_ID ? pago : null,
+    );
 
     await expect(useCase.execute('pago-1', 'tenant-OTHER')).rejects.toThrow(
       /no encontrado/,
     );
+    expect(mockPagoRepo.findById).toHaveBeenCalledWith('pago-1', 'tenant-OTHER');
   });
 
   it('should revert exactly the cobros touched by the payment via pago_cobros (B1: multi-cobro FIFO)', async () => {

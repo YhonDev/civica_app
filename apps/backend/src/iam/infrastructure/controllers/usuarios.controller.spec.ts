@@ -7,6 +7,7 @@ import { UsuariosController } from './usuarios.controller';
 import { AsignarEtapaUseCase } from '../../application/use-cases/asignar-etapa.use-case';
 import { Usuario, RolUsuario } from '../../domain/usuario.entity';
 import { AsignacionEtapa } from '../../domain/asignacion-etapa.entity';
+import { AuthService } from '../../../shared/auth/auth.service';
 
 jest.mock('bcrypt');
 
@@ -71,6 +72,12 @@ describe('UsuariosController', () => {
           provide: AsignarEtapaUseCase,
           useValue: {
             execute: jest.fn(),
+          },
+        },
+        {
+          provide: AuthService,
+          useValue: {
+            revokeAllSessionsForUser: jest.fn(),
           },
         },
       ],
@@ -173,7 +180,7 @@ describe('UsuariosController', () => {
       expect(result).toHaveLength(1);
       expect(result[0].etapaId).toBe('etapa-1');
       expect(asignacionRepo.find).toHaveBeenCalledWith({
-        where: { usuarioId: 'cob-1' },
+        where: { usuarioId: 'cob-1', tenantId: 'tenant-1' },
       });
     });
 
@@ -298,7 +305,6 @@ describe('UsuariosController', () => {
       );
 
       expect(result.message).toContain('Reset User');
-      expect(result.tempPassword).toBe('TempPass1');
       expect(bcrypt.hash).toHaveBeenCalledWith('TempPass1', 10);
     });
 
@@ -319,8 +325,7 @@ describe('UsuariosController', () => {
 
       const result = await controller.resetearPassword('usr-3', {}, mockAdmin);
 
-      expect(result.tempPassword).toMatch(/^Civica\d{4}!\d{4}$/);
-      expect(bcrypt.hash).toHaveBeenCalledWith(result.tempPassword, 10);
+      expect(bcrypt.hash).toHaveBeenCalledWith(expect.any(String), 10);
     });
 
     it('should throw NotFoundException when user not found', async () => {

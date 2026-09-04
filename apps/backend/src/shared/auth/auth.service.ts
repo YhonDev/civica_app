@@ -5,7 +5,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
@@ -29,6 +29,7 @@ export class AuthService {
     private readonly sessionRepository: Repository<AuthSession>,
     private readonly jwtService: JwtService,
     private readonly tokenRevocation: TokenRevocationService,
+    private readonly dataSource: DataSource,
   ) {}
 
   private hashToken(token: string): string {
@@ -69,13 +70,18 @@ export class AuthService {
 
     const accessToken = this.jwtService.sign(payload, { expiresIn: '15m' });
     const refreshToken = this.jwtService.sign(
-      { sub: usuario.id, type: 'refresh' },
+      {
+        sub: usuario.id,
+        type: 'refresh',
+        jti: crypto.randomUUID(),
+      },
       { expiresIn: '30d' },
     );
 
     const session = new AuthSession();
     session.usuarioId = usuario.id;
     session.refreshTokenHash = this.hashToken(refreshToken);
+    session.previousRefreshTokenHash = null;
     session.deviceId = deviceInfo?.deviceId ?? null;
     session.deviceName = deviceInfo?.deviceName ?? null;
     session.ipAddress = deviceInfo?.ipAddress ?? null;
@@ -92,98 +98,81 @@ export class AuthService {
   async refreshToken(
     token: string,
   ): Promise<{ accessToken: string; refreshToken: string; usuario: Usuario }> {
-    const isRevokedInRedis = await this.tokenRevocation.isRevoked(token);
-    if (isRevokedInRedis) {
-      throw new UnauthorizedException(
-        'Sesión cerrada. Inicia sesión nuevamente.',
-      );
-    }
-
     try {
       const payload = this.jwtService.verify<{
         sub: string;
         type: string;
       }>(token);
 
-      if (payload.type !== 'refresh') {
+      if (payload.type !== 'refresh' || !payload.sub) {
         throw new UnauthorizedException('Token de refresco inválido');
       }
 
       const user = await this.usuarioRepository.findOne({
         where: { id: payload.sub },
       });
-
-      if (!user) {
-        throw new NotFoundException('Usuario no encontrado');
-      }
-
-      if (!user.activo) {
-        throw new UnauthorizedException('Usuario inactivo');
-      }
+      if (!user) throw new NotFoundException('Usuario no encontrado');
+      if (!user.activo) throw new UnauthorizedException('Usuario inactivo');
 
       const incomingHash = this.hashToken(token);
-
-      const session = await this.sessionRepository.findOne({
-        where: { usuarioId: user.id, refreshTokenHash: incomingHash },
-      });
-
-      if (!session) {
-        const revokedSession = await this.sessionRepository.findOne({
-          where: { refreshTokenHash: incomingHash },
+      const result = await this.dataSource.transaction(async (manager) => {
+        // Lock the session row so concurrent requests cannot rotate it twice.
+        const session = await manager.findOne(AuthSession, {
+          where: { usuarioId: user.id, refreshTokenHash: incomingHash },
+          lock: { mode: 'pessimistic_write' },
         });
 
-        if (revokedSession) {
-          await this.sessionRepository.update(
-            { usuarioId: user.id },
-            { isRevoked: true },
-          );
+        if (!session) {
+          // A previous hash proves this token was already consumed (reuse).
+          const consumed = await manager.findOne(AuthSession, {
+            where: { usuarioId: user.id, previousRefreshTokenHash: incomingHash },
+            lock: { mode: 'pessimistic_write' },
+          });
+          if (consumed) {
+            await manager.update(
+              AuthSession,
+              { usuarioId: user.id },
+              { isRevoked: true },
+            );
+            throw new UnauthorizedException(
+              'Se detectó un intento de reutilización de token. Por seguridad, todas las sesiones han sido cerradas.',
+            );
+          }
           throw new UnauthorizedException(
-            'Se detectó un intento de reutilización de token. Por seguridad, todas las sesiones han sido cerradas.',
+            'Sesión no encontrada o expirada. Inicia sesión nuevamente.',
           );
         }
 
-        throw new UnauthorizedException(
-          'Sesión no encontrada o expirada. Inicia sesión nuevamente.',
+        if (session.isRevoked || session.expiresAt <= new Date()) {
+          throw new UnauthorizedException(
+            'Sesión expirada o revocada. Inicia sesión nuevamente.',
+          );
+        }
+
+        const newPayload = {
+          sub: user.id,
+          email: user.email,
+          rol: user.rol,
+          tenantId: user.tenantId,
+          residenteId: user.residenteId ?? undefined,
+        };
+        const newAccessToken = this.jwtService.sign(newPayload, { expiresIn: '15m' });
+        const newRefreshToken = this.jwtService.sign(
+          { sub: user.id, type: 'refresh', jti: crypto.randomUUID() },
+          { expiresIn: '30d' },
         );
-      }
 
-      if (session.isRevoked || session.expiresAt < new Date()) {
-        throw new UnauthorizedException(
-          'Sesión expirada o revocada. Inicia sesión nuevamente.',
-        );
-      }
-
-      const newPayload = {
-        sub: user.id,
-        email: user.email,
-        rol: user.rol,
-        tenantId: user.tenantId,
-        residenteId: user.residenteId ?? undefined,
-      };
-
-      const newAccessToken = this.jwtService.sign(newPayload, {
-        expiresIn: '15m',
+        session.previousRefreshTokenHash = session.refreshTokenHash;
+        session.refreshTokenHash = this.hashToken(newRefreshToken);
+        session.lastUsedAt = new Date();
+        session.expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+        await manager.save(AuthSession, session);
+        return { accessToken: newAccessToken, refreshToken: newRefreshToken };
       });
-      const newRefreshToken = this.jwtService.sign(
-        { sub: user.id, type: 'refresh' },
-        { expiresIn: '30d' },
-      );
 
-      session.refreshTokenHash = this.hashToken(newRefreshToken);
-      session.lastUsedAt = new Date();
-      session.expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-      await this.sessionRepository.save(session);
-
-      return {
-        accessToken: newAccessToken,
-        refreshToken: newRefreshToken,
-        usuario: user,
-      };
+      return { ...result, usuario: user };
     } catch (error) {
-      if (
-        error instanceof UnauthorizedException ||
-        error instanceof NotFoundException
-      ) {
+      if (error instanceof UnauthorizedException || error instanceof NotFoundException) {
         throw error;
       }
       throw new UnauthorizedException('Token de refresco inválido o expirado');
@@ -252,6 +241,7 @@ export class AuthService {
     const passwordHash = await bcrypt.hash(nuevaPassword, 10);
     usuario.passwordHash = passwordHash;
     await this.usuarioRepository.save(usuario);
+    await this.revokeAllSessionsForUser(usuario.id);
 
     return { username: usuario.email, password: nuevaPassword };
   }
@@ -291,12 +281,16 @@ export class AuthService {
       usuario.email = params.newUsername;
     }
 
+    const passwordChanged = Boolean(params.newPassword);
     if (params.newPassword) {
       const passwordHash = await bcrypt.hash(params.newPassword, 10);
       usuario.passwordHash = passwordHash;
     }
 
     await this.usuarioRepository.save(usuario);
+    if (passwordChanged) {
+      await this.revokeAllSessionsForUser(usuario.id);
+    }
 
     return { username: usuario.email };
   }

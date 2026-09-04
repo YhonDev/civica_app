@@ -13,15 +13,21 @@ export class PlanDeCobroRepository extends BaseTenantRepository<PlanDeCobro> {
     super(repo);
   }
 
-  async findByResidente(residenteId: string): Promise<PlanDeCobro | null> {
+  async findByResidente(
+    residenteId: string,
+    tenantId: string,
+  ): Promise<PlanDeCobro | null> {
     return this.repo.findOne({
-      where: { residenteId, activa: true },
+      where: { residenteId, tenantId, activa: true },
     });
   }
 
-  async findByCasa(casaId: string): Promise<PlanDeCobro | null> {
+  async findByCasa(
+    casaId: string,
+    tenantId: string,
+  ): Promise<PlanDeCobro | null> {
     return this.repo.findOne({
-      where: { casaId, activa: true },
+      where: { casaId, tenantId, activa: true },
     });
   }
 

@@ -10,15 +10,21 @@ export class MontoPagoPredefinidoRepository {
     private readonly repo: Repository<MontoPagoPredefinido>,
   ) {}
 
-  async findAllByConjunto(proyectoId: string): Promise<MontoPagoPredefinido[]> {
+  async findAllByConjunto(
+    proyectoId: string,
+    tenantId: string,
+  ): Promise<MontoPagoPredefinido[]> {
     return this.repo.find({
-      where: { proyectoId, activo: true },
+      where: { proyectoId, tenantId, activo: true },
       order: { orden: 'ASC' },
     });
   }
 
-  async findById(id: string): Promise<MontoPagoPredefinido | null> {
-    return this.repo.findOne({ where: { id } });
+  async findById(
+    id: string,
+    tenantId: string,
+  ): Promise<MontoPagoPredefinido | null> {
+    return this.repo.findOne({ where: { id, tenantId } });
   }
 
   async save(monto: MontoPagoPredefinido): Promise<MontoPagoPredefinido> {

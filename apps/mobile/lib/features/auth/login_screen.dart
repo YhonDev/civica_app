@@ -1,8 +1,10 @@
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'auth_cubit.dart';
 import '../../core/security/biometric_auth_service.dart';
+import '../../core/network/api_client.dart';
 
 /// Pantalla de inicio de sesión con JWT.
 class LoginScreen extends StatefulWidget {
@@ -42,11 +44,11 @@ class _LoginScreenState extends State<LoginScreen> {
       localizedReason: 'Inicia sesión con tu huella dactilar o Face ID',
     );
     if (success && mounted) {
-      if (_emailCtrl.text.isEmpty) {
-        _emailCtrl.text = 'manzana_a_casa_1_residente';
-        _passwordCtrl.text = 'Casa1ManzanaA..';
+      final authCubit = context.read<AuthCubit>();
+      final hasSession = await ApiClient.instance.isLoggedIn();
+      if (mounted && hasSession) {
+        await authCubit.checkSession();
       }
-      _handleLogin(context);
     }
   }
 
@@ -218,74 +220,65 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ],
                       const SizedBox(height: 24),
-                      const Divider(),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Autocompletado de prueba',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colorScheme.outline,
-                          fontWeight: FontWeight.w600,
+                      if (kDebugMode) ...[
+                        const Divider(),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Autocompletado de prueba',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.outline,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        alignment: WrapAlignment.center,
-                        children: [
-                          ActionChip(
-                            avatar: const Icon(Icons.admin_panel_settings_outlined, size: 16),
-                            label: const Text('Admin'),
-                            onPressed: () {
-                              setState(() {
+                        const SizedBox(height: 12),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          alignment: WrapAlignment.center,
+                          children: [
+                            ActionChip(
+                              avatar: const Icon(Icons.admin_panel_settings_outlined, size: 16),
+                              label: const Text('Admin'),
+                              onPressed: () => setState(() {
                                 _emailCtrl.text = 'admin';
                                 _passwordCtrl.text = 'Admin2026!';
-                              });
-                            },
-                          ),
-
-                          ActionChip(
-                            avatar: const Icon(Icons.badge_outlined, size: 16),
-                            label: const Text('Cobrador (Ricardo Arrieta)'),
-                            onPressed: () {
-                              setState(() {
+                              }),
+                            ),
+                            ActionChip(
+                              avatar: const Icon(Icons.badge_outlined, size: 16),
+                              label: const Text('Cobrador'),
+                              onPressed: () => setState(() {
                                 _emailCtrl.text = 'ricardoarrietacobrador';
                                 _passwordCtrl.text = 'ricardoArrieta2026.';
-                              });
-                            },
-                          ),
-                          ActionChip(
-                            avatar: const Icon(Icons.home_outlined, size: 16),
-                            label: const Text('Residente Mz A (Camilo Silva)'),
-                            onPressed: () {
-                              setState(() {
+                              }),
+                            ),
+                            ActionChip(
+                              avatar: const Icon(Icons.home_outlined, size: 16),
+                              label: const Text('Residente A'),
+                              onPressed: () => setState(() {
                                 _emailCtrl.text = 'manzana_a_casa_1_residente';
                                 _passwordCtrl.text = 'Casa1ManzanaA..';
-                              });
-                            },
-                          ),
-                          ActionChip(
-                            avatar: const Icon(Icons.home_outlined, size: 16),
-                            label: const Text('Residente Mz B (Carmen Cabarca)'),
-                            onPressed: () {
-                              setState(() {
+                              }),
+                            ),
+                            ActionChip(
+                              avatar: const Icon(Icons.home_outlined, size: 16),
+                              label: const Text('Residente B'),
+                              onPressed: () => setState(() {
                                 _emailCtrl.text = 'manzana_b_casa_1_residente';
                                 _passwordCtrl.text = 'Casa1ManzanaB';
-                              });
-                            },
-                          ),
-                          ActionChip(
-                            avatar: const Icon(Icons.home_outlined, size: 16),
-                            label: const Text('Residente Mz C (Yhon Barrios)'),
-                            onPressed: () {
-                              setState(() {
+                              }),
+                            ),
+                            ActionChip(
+                              avatar: const Icon(Icons.home_outlined, size: 16),
+                              label: const Text('Residente C'),
+                              onPressed: () => setState(() {
                                 _emailCtrl.text = 'manzana_c_casa_1_residente';
                                 _passwordCtrl.text = 'Casa1ManzanaC';
-                              });
-                            },
-                          ),
-                        ],
-                      ),
+                              }),
+                            ),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
                 ),

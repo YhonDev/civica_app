@@ -39,9 +39,9 @@ export class CorregirPagoUseCase {
   ) {}
 
   async execute(input: CorregirPagoInput): Promise<Pago> {
-    const pago = await this.pagoRepo.findById(input.pagoId);
+    const pago = await this.pagoRepo.findById(input.pagoId, input.tenantId);
 
-    if (!pago || pago.tenantId !== input.tenantId) {
+    if (!pago) {
       throw new NotFoundException(`Pago ${input.pagoId} no encontrado`);
     }
 

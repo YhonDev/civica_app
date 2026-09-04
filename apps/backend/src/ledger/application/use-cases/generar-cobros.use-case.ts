@@ -131,6 +131,7 @@ export class GenerarCobrosUseCase {
       plan.proyectoId,
       modalidad,
       fechaRefTarifa,
+      plan.tenantId,
     );
 
     // 3. Calcular valor total del mes

@@ -17,7 +17,11 @@ export class CrearManzanaUseCase {
     private readonly manzanaRepository: Repository<Manzana>,
   ) {}
 
-  async execute(nombre: string, etapaId: string): Promise<Manzana> {
+  async execute(
+    nombre: string,
+    etapaId: string,
+    tenantId: string,
+  ): Promise<Manzana> {
     if (!nombre || nombre.trim().length === 0) {
       throw new BadRequestException(
         'El nombre de la manzana no puede estar vacío',
@@ -26,8 +30,9 @@ export class CrearManzanaUseCase {
 
     const etapa = await this.etapaRepository.findOne({
       where: { id: etapaId },
+      relations: { proyecto: true },
     });
-    if (!etapa) {
+    if (!etapa || etapa.proyecto?.tenantId !== tenantId) {
       throw new NotFoundException(`Etapa con ID ${etapaId} no encontrada`);
     }
 

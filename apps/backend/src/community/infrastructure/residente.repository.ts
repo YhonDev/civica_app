@@ -29,8 +29,8 @@ export class ResidenteRepository extends BaseTenantRepository<Residente> {
     return super.countByTenant(tenantId);
   }
 
-  async findById(id: string): Promise<Residente | null> {
-    return this.repo.findOne({ where: { id } });
+  async findById(id: string, tenantId: string): Promise<Residente | null> {
+    return this.repo.findOne({ where: { id, tenantId } });
   }
 
   /**
@@ -65,16 +65,22 @@ export class ResidenteRepository extends BaseTenantRepository<Residente> {
     return qb.getMany();
   }
 
-  async findWithTenencia(residenteId: string): Promise<Residente | null> {
+  async findWithTenencia(
+    residenteId: string,
+    tenantId: string,
+  ): Promise<Residente | null> {
     return this.repo.findOne({
-      where: { id: residenteId },
+      where: { id: residenteId, tenantId },
       relations: { tenencias: true },
     });
   }
 
-  async findByIdWithRelations(id: string): Promise<Residente | null> {
+  async findByIdWithRelations(
+    id: string,
+    tenantId: string,
+  ): Promise<Residente | null> {
     return this.repo.findOne({
-      where: { id },
+      where: { id, tenantId },
       relations: {
         tenencias: {
           casa: {

@@ -62,19 +62,47 @@ describe('CobroRepository', () => {
   });
 
   describe('findById()', () => {
-    it('should call findOne with correct id', async () => {
+    it('should call findOne with id and tenantId', async () => {
       mockRepo.findOne.mockResolvedValue({ id: 'cobro-1' });
-      const result = await repo.findById('cobro-1');
+      const result = await repo.findById('cobro-1', TENANT_ID);
       expect(mockRepo.findOne).toHaveBeenCalledWith({
-        where: { id: 'cobro-1' },
+        where: { id: 'cobro-1', tenantId: TENANT_ID },
       });
       expect(result?.id).toBe('cobro-1');
     });
 
     it('should return null when not found', async () => {
       mockRepo.findOne.mockResolvedValue(null);
-      const result = await repo.findById('no-existe');
+      const result = await repo.findById('no-existe', TENANT_ID);
       expect(result).toBeNull();
+    });
+
+    it('should include tenantId in where to enforce multi-tenant isolation', async () => {
+      mockRepo.findOne.mockResolvedValue(null);
+      await repo.findById('cobro-1', 'other-tenant');
+      expect(mockRepo.findOne).toHaveBeenCalledWith({
+        where: { id: 'cobro-1', tenantId: 'other-tenant' },
+      });
+    });
+  });
+
+  describe('findByResidentes()', () => {
+    it('should filter by tenantId to enforce multi-tenant isolation', async () => {
+      mockQueryBuilder.getMany.mockResolvedValue([]);
+      await repo.findByResidentes(['res-1', 'res-2'], TENANT_ID);
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith(
+        'cobro.residenteId IN (:...residenteIds)',
+        { residenteIds: ['res-1', 'res-2'] },
+      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'cobro.tenantId = :tenantId',
+        { tenantId: TENANT_ID },
+      );
+    });
+
+    it('should return empty array when no residenteIds', async () => {
+      const result = await repo.findByResidentes([], TENANT_ID);
+      expect(result).toEqual([]);
     });
   });
 
@@ -215,12 +243,13 @@ describe('CobroRepository', () => {
       const mockCobro = { id: 'oldest', estado: 'PENDIENTE' };
       mockRepo.findOne.mockResolvedValue(mockCobro);
 
-      const result = await repo.findMasAntiguoConSaldo('res-1');
+      const result = await repo.findMasAntiguoConSaldo('res-1', TENANT_ID);
 
       expect(result?.id).toBe('oldest');
       expect(mockRepo.findOne).toHaveBeenCalledWith({
         where: {
           residenteId: 'res-1',
+          tenantId: TENANT_ID,
           estado: In(['VENCIDA', 'PARCIAL', 'PENDIENTE']),
         },
         order: { fechaVencimiento: 'ASC' },
@@ -229,7 +258,7 @@ describe('CobroRepository', () => {
 
     it('should return null when no pending cobros', async () => {
       mockRepo.findOne.mockResolvedValue(null);
-      const result = await repo.findMasAntiguoConSaldo('res-1');
+      const result = await repo.findMasAntiguoConSaldo('res-1', TENANT_ID);
       expect(result).toBeNull();
     });
   });

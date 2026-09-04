@@ -1,45 +1,66 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import Redis from 'ioredis';
+import { createHash } from 'node:crypto';
+
+export type RedisStatus = 'disabled' | 'connected' | 'unavailable';
+
+export interface RedisHealthStatus {
+  status: RedisStatus;
+  connected: boolean;
+  usingFallback: boolean;
+}
 
 /**
- * Persistent token revocation store backed by Redis.
+ * Persistent token revocation store backed by Redis when explicitly enabled.
  *
- * When Redis is unavailable (local dev without Redis), falls back to
- * an in-memory Set so the application still works — but with the caveat
- * that revocations are lost on restart. This fallback is logged clearly.
- *
- * TTL is set to 31 days (refresh token max lifetime + 1 day buffer)
- * so expired tokens are automatically cleaned by Redis.
+ * Redis is optional for local development. When it is disabled or unavailable,
+ * revocations are kept in memory; they are lost when the process restarts.
  */
 @Injectable()
 export class TokenRevocationService implements OnModuleDestroy {
   private readonly logger = new Logger(TokenRevocationService.name);
   private readonly REVOCATION_PREFIX = 'revoked:';
-  private readonly TTL_SECONDS = 31 * 24 * 60 * 60; // 31 days
+  private readonly TTL_SECONDS = 31 * 24 * 60 * 60;
+  private readonly redisEnabled = this.isRedisEnabled();
 
   private redis: Redis | null = null;
   private readonly memoryFallback = new Set<string>();
   private usingFallback = false;
+  private redisStatus: RedisStatus = this.redisEnabled
+    ? 'unavailable'
+    : 'disabled';
 
   constructor() {
-    this.connect();
+    if (this.redisEnabled) {
+      this.connect();
+    } else {
+      this.usingFallback = true;
+      this.logger.log(
+        'Redis deshabilitado; usando fallback en memoria para desarrollo',
+      );
+    }
+  }
+
+  private isRedisEnabled(): boolean {
+    return process.env.REDIS_ENABLED?.toLowerCase() === 'true';
   }
 
   private connect(): void {
-    const host = process.env.REDIS_HOST || '127.0.0.1';
-    const port = parseInt(process.env.REDIS_PORT || '6379', 10);
-    const password = process.env.REDIS_PASSWORD;
-    const db = parseInt(process.env.REDIS_DB || '0', 10);
+    const redisUrl = process.env.REDIS_URL;
+    if (!redisUrl) {
+      this.usingFallback = true;
+      this.redisStatus = 'unavailable';
+      this.logger.warn(
+        'REDIS_ENABLED=true pero REDIS_URL no está configurada; usando fallback en memoria',
+      );
+      return;
+    }
 
     try {
-      this.redis = new Redis({
-        host,
-        port,
-        password: password || undefined,
-        db,
+      this.redis = new Redis(redisUrl, {
         maxRetriesPerRequest: 3,
         retryStrategy(times: number) {
-          if (times > 3) return null; // Stop retrying after 3 attempts
+          if (times > 3) return null;
           return Math.min(times * 200, 2000);
         },
         lazyConnect: true,
@@ -48,99 +69,86 @@ export class TokenRevocationService implements OnModuleDestroy {
 
       this.redis.on('connect', () => {
         this.usingFallback = false;
-        this.logger.log('✅ Redis conectado para revocación de tokens');
+        this.redisStatus = 'connected';
+        this.logger.log('Redis conectado para revocación de tokens');
       });
 
       this.redis.on('error', (err) => {
-        if (!this.usingFallback) {
-          this.usingFallback = true;
-          this.logger.warn(
-            `⚠️ Redis no disponible, usando fallback en memoria para revocación de tokens: ${err.message}`,
-          );
-        }
-      });
-
-      // Non-blocking connect
-      this.redis.connect().catch(() => {
+        this.redisStatus = 'unavailable';
         this.usingFallback = true;
         this.logger.warn(
-          '⚠️ Redis no disponible al inicio, usando fallback en memoria para revocación de tokens',
+          `Redis no disponible, usando fallback en memoria para revocación de tokens: ${err.message}`,
+        );
+      });
+
+      void this.redis.connect().catch(() => {
+        this.redisStatus = 'unavailable';
+        this.usingFallback = true;
+        this.logger.warn(
+          'Redis no disponible al inicio, usando fallback en memoria para revocación de tokens',
         );
       });
     } catch {
+      this.redis = null;
+      this.redisStatus = 'unavailable';
       this.usingFallback = true;
       this.logger.warn(
-        '⚠️ No se pudo crear conexión Redis, usando fallback en memoria',
+        'No se pudo crear conexión Redis, usando fallback en memoria',
       );
     }
   }
 
-  /**
-   * Revoca un refresh token. Idempotente.
-   * Stores with TTL so Redis auto-cleans expired entries.
-   */
-  async revoke(token: string): Promise<void> {
-    if (this.redis && !this.usingFallback) {
-      try {
-        await this.redis.setex(
-          `${this.REVOCATION_PREFIX}${token}`,
-          this.TTL_SECONDS,
-          '1',
-        );
-        return; // Redis succeeded — no memory fallback needed
-      } catch (err) {
-        this.logger.warn(`Redis revoke failed, memory fallback active: ${err}`);
-        this.memoryFallback.add(token);
-      }
-    } else {
-      this.memoryFallback.add(token);
-    }
+  private key(token: string): string {
+    return `${this.REVOCATION_PREFIX}${createHash('sha256').update(token).digest('hex')}`;
   }
 
-  /**
-   * Checks if a token has been revoked.
-   * Checks memory first (fast path), then Redis.
-   */
+  /** Revoca un refresh token. Idempotente. */
+  async revoke(token: string): Promise<void> {
+    const key = this.key(token);
+    if (this.redis && !this.usingFallback) {
+      try {
+        await this.redis.setex(key, this.TTL_SECONDS, '1');
+        return;
+      } catch (err) {
+        this.redisStatus = 'unavailable';
+        this.usingFallback = true;
+        this.logger.warn(`Redis revoke failed, memory fallback active: ${err}`);
+      }
+    }
+    this.memoryFallback.add(key);
+  }
+
+  /** Checks whether a token has been revoked. */
   async isRevoked(token: string): Promise<boolean> {
-    // Fast path: memory check
-    if (this.memoryFallback.has(token)) {
+    const key = this.key(token);
+    if (this.memoryFallback.has(key)) {
       return true;
     }
 
-    // Slow path: Redis check
     if (this.redis && !this.usingFallback) {
       try {
-        const result = await this.redis.exists(
-          `${this.REVOCATION_PREFIX}${token}`,
-        );
+        const result = await this.redis.exists(key);
         if (result === 1) {
-          // Also add to memory cache for faster future lookups
-          this.memoryFallback.add(token);
+          this.memoryFallback.add(key);
           return true;
         }
         return false;
       } catch {
-        return this.memoryFallback.has(token);
+        this.redisStatus = 'unavailable';
+        this.usingFallback = true;
+        return this.memoryFallback.has(key);
       }
     }
 
     return false;
   }
 
-  /**
-   * Returns the current Redis connection status for health checks.
-   */
-  getRedisStatus(): {
-    connected: boolean;
-    usingFallback: boolean;
-    host: string;
-    port: number;
-  } {
+  /** Returns Redis state without exposing connection details. */
+  getRedisStatus(): RedisHealthStatus {
     return {
-      connected: this.redis !== null && !this.usingFallback,
+      status: this.redisStatus,
+      connected: this.redisStatus === 'connected',
       usingFallback: this.usingFallback,
-      host: process.env.REDIS_HOST || '127.0.0.1',
-      port: parseInt(process.env.REDIS_PORT || '6379', 10),
     };
   }
 

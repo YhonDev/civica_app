@@ -1,4 +1,4 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
@@ -46,6 +46,17 @@ export class RegistrarResidenteUseCase {
   async execute(
     params: RegistrarResidenteParams,
   ): Promise<ResultadoRegistroResidente> {
+    let casa: Casa | null = null;
+    if (params.casaId) {
+      casa = await this.casaRepository.findOne({
+        where: { id: params.casaId },
+        relations: { manzana: { etapa: { proyecto: true } } },
+      });
+      if (!casa || casa.manzana?.etapa?.proyecto?.tenantId !== params.tenantId) {
+        throw new NotFoundException('Casa no encontrada en el tenant actual');
+      }
+    }
+
     const residente = Residente.crear(
       params.nombre,
       params.telefono,
@@ -58,14 +69,6 @@ export class RegistrarResidenteUseCase {
 
     let username: string;
     let password: string;
-    let casa: Casa | null = null;
-
-    if (params.casaId) {
-      casa = await this.casaRepository.findOne({
-        where: { id: params.casaId },
-        relations: { manzana: { etapa: true } },
-      });
-    }
 
     // Si se proporcionó una casa, crear tenencia y plan de cobro
     if (params.casaId && casa) {

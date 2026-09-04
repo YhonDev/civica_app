@@ -72,6 +72,7 @@ export class TarifasController {
   ) {
     const vigentes = await this.tarifaRepository.findVigentesPorConjunto(
       query.proyectoId,
+      tenantId,
     );
 
     const toDto = (tarifa: typeof vigentes.MENSUAL) =>
@@ -102,8 +103,11 @@ export class TarifasController {
   @Get(':id')
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN, RolUsuario.RESIDENTE)
-  async obtener(@Param('id') id: string) {
-    const tarifa = await this.tarifaRepository.findById(id);
+  async obtener(
+    @Param('id') id: string,
+    @CurrentTenant() tenantId: string,
+  ) {
+    const tarifa = await this.tarifaRepository.findById(id, tenantId);
     if (!tarifa) {
       return { error: 'Tarifa no encontrada' };
     }
@@ -113,19 +117,27 @@ export class TarifasController {
   @Patch(':id')
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN)
-  async actualizar(@Param('id') id: string, @Body() dto: ActualizarTarifaDto) {
+  async actualizar(
+    @Param('id') id: string,
+    @Body() dto: ActualizarTarifaDto,
+    @CurrentTenant() tenantId: string,
+  ) {
     return this.actualizarTarifaUseCase.execute({
       tarifaId: id,
       montoPesos: dto.monto,
       fechaVigencia: dto.fechaVigencia,
+      tenantId,
     });
   }
 
   @Delete(':id')
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN)
-  async desactivar(@Param('id') id: string) {
-    const tarifa = await this.tarifaRepository.findById(id);
+  async desactivar(
+    @Param('id') id: string,
+    @CurrentTenant() tenantId: string,
+  ) {
+    const tarifa = await this.tarifaRepository.findById(id, tenantId);
     if (!tarifa) {
       return { error: 'Tarifa no encontrada' };
     }

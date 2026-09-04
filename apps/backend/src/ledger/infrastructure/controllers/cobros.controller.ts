@@ -226,8 +226,8 @@ export class CobrosController {
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN)
   @ApiOperation({ summary: 'Eliminar un cobro (solo ADMIN)' })
-  async eliminar(@Param('id') id: string) {
-    await this.eliminarCobroUseCase.execute(id);
+  async eliminar(@Param('id') id: string, @CurrentTenant() tenantId: string) {
+    await this.eliminarCobroUseCase.execute(id, tenantId);
     return { success: true };
   }
 }

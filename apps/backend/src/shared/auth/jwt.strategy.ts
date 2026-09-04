@@ -10,6 +10,7 @@ interface JwtPayload {
   email: string;
   rol: string;
   tenantId: string;
+  type?: string;
 }
 
 @Injectable()
@@ -21,11 +22,19 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: process.env.JWT_SECRET!,
+      secretOrKey: process.env.JWT_SECRET || (() => {
+        throw new Error('JWT_SECRET debe estar configurado');
+      })(),
     });
   }
 
   async validate(payload: JwtPayload): Promise<Usuario> {
+    // Reject refresh tokens used as access tokens — they have a 30d TTL
+    // and must never grant API access.
+    if (payload.type === 'refresh') {
+      throw new UnauthorizedException('Token de refresco no es válido para acceso a la API');
+    }
+
     const user = await this.usuarioRepository.findOne({
       where: { id: payload.sub },
     });

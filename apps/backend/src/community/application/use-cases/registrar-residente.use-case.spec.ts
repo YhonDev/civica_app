@@ -34,6 +34,7 @@ describe('RegistrarResidenteUseCase', () => {
       etapa: Object.assign(new Etapa(), {
         id: 'etapa-1',
         proyectoId: 'proy-1',
+        proyecto: { tenantId: 'tenant-1' },
       }),
     }),
   });
@@ -190,7 +191,7 @@ describe('RegistrarResidenteUseCase', () => {
       // Verify plan de cobro was created
       expect(casaRepo.findOne).toHaveBeenCalledWith({
         where: { id: 'casa-1' },
-        relations: { manzana: { etapa: true } },
+        relations: { manzana: { etapa: { proyecto: true } } },
       });
       expect(planDeCobroRepo.save).toHaveBeenCalledTimes(1);
       expect(generarCobrosUC.generarCobrosParaPlan).toHaveBeenCalledWith(
@@ -205,41 +206,20 @@ describe('RegistrarResidenteUseCase', () => {
   // ─── Casa not found ───────────────────────────────────
 
   describe('execute with casa that is not found', () => {
-    it('should still create residente and user but skip plan', async () => {
-      const savedResidente = Residente.crear(
-        'Ana Ruiz',
-        '3001112233',
-        'ana@test.com',
-        'tenant-1',
-      );
-      Object.assign(savedResidente, { id: 'res-3' });
-      residenteRepo.save.mockResolvedValue(savedResidente);
-
+    it('should reject the resident when casa is outside the tenant lineage', async () => {
       casaRepo.findOne.mockResolvedValue(null);
 
-      jest.spyOn(generarCredenciales, 'generarUsernameResidente');
-      jest
-        .spyOn(generarCredenciales, 'generarPasswordAleatoria')
-        .mockReturnValue('fallback789');
+      await expect(
+        useCase.execute({
+          nombre: 'Ana Ruiz',
+          telefono: '3001112233',
+          email: 'ana@test.com',
+          tenantId: 'tenant-1',
+          casaId: 'nonexistent-casa',
+        }),
+      ).rejects.toThrow('Casa no encontrada en el tenant actual');
 
-      (bcrypt.hash as jest.Mock).mockResolvedValue('hashed-pass');
-      usuarioRepo.save.mockResolvedValue(
-        Object.assign(new Usuario(), { id: 'usr-3' }),
-      );
-
-      const result = await useCase.execute({
-        nombre: 'Ana Ruiz',
-        telefono: '3001112233',
-        email: 'ana@test.com',
-        tenantId: 'tenant-1',
-        casaId: 'nonexistent-casa',
-      });
-
-      expect(result.residente).toEqual(savedResidente);
-      // Without casa, should use fallback username
-      expect(result.credenciales.username).toContain('residente_');
-      expect(planDeCobroRepo.save).not.toHaveBeenCalled();
-      expect(generarCobrosUC.generarCobrosParaPlan).not.toHaveBeenCalled();
+      expect(residenteRepo.save).not.toHaveBeenCalled();
     });
   });
 });

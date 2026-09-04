@@ -142,8 +142,8 @@ export class PagosController {
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN, RolUsuario.COBRADOR)
   async getById(@Param('id') id: string, @CurrentTenant() tenantId: string) {
-    const pago = await this.pagoRepo.findById(id);
-    if (!pago || pago.tenantId !== tenantId) {
+    const pago = await this.pagoRepo.findById(id, tenantId);
+    if (!pago) {
       throw new NotFoundException(`Pago ${id} no encontrado`);
     }
     return pago;

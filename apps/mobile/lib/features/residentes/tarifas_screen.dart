@@ -234,21 +234,27 @@ class _TarifasScreenState extends State<TarifasScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Row(
-                                children: [
-                                  Icon(Icons.account_balance_wallet_outlined, color: AppColors.primary),
-                                  const SizedBox(width: AppSpacing.sm),
-                                  Text(
-                                    'Tarifa General Mensual',
-                                    style: AppTypography.subtitle.copyWith(fontWeight: FontWeight.bold),
-                                  ),
-                                ],
+                              Expanded(
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.account_balance_wallet_outlined, color: AppColors.primary),
+                                    const SizedBox(width: AppSpacing.sm),
+                                    Flexible(
+                                      child: Text(
+                                        'Tarifa General Mensual',
+                                        style: AppTypography.subtitle.copyWith(fontWeight: FontWeight.bold),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                               Row(
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
                                   IconButton(
+                                    visualDensity: VisualDensity.compact,
                                     icon: const Icon(Icons.edit_outlined),
                                     tooltip: 'Editar Tarifa',
                                     onPressed: () => _crearOEditarTarifaDialog(
@@ -258,6 +264,7 @@ class _TarifasScreenState extends State<TarifasScreen> {
                                   ),
                                   if (tarifaId != null)
                                     IconButton(
+                                      visualDensity: VisualDensity.compact,
                                       icon: Icon(Icons.delete_outline_rounded, color: AppColors.error),
                                       tooltip: 'Desactivar Tarifa',
                                       onPressed: () => _eliminarTarifa(tarifaId),

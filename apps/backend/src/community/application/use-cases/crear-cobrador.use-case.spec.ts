@@ -144,6 +144,11 @@ describe('CrearCobradorUseCase', () => {
       );
       Object.assign(savedUser, { id: 'user-2' });
       mockQueryRunner.manager.save.mockResolvedValue(savedUser);
+      // Validation query: returns 2 valid etapas matching the 2 requested
+      mockQueryRunner.manager.query.mockResolvedValueOnce([
+        { id: 'etapa-1' },
+        { id: 'etapa-2' },
+      ]);
 
       const result = await useCase.execute({
         nombre: 'Carlos Lopez',
@@ -153,17 +158,61 @@ describe('CrearCobradorUseCase', () => {
       });
 
       expect(result.usuario.id).toBe('user-2');
-      expect(mockQueryRunner.manager.query).toHaveBeenCalledTimes(2);
+      // 1 validation query + 2 INSERT queries = 3 total
+      expect(mockQueryRunner.manager.query).toHaveBeenCalledTimes(3);
       expect(mockQueryRunner.manager.query).toHaveBeenNthCalledWith(
         1,
-        expect.stringContaining('INSERT INTO asignaciones_etapa'),
-        ['user-2', 'etapa-1', 'tenant-1'],
+        expect.stringContaining('SELECT e.id FROM etapas'),
+        [['etapa-1', 'etapa-2'], 'tenant-1'],
       );
       expect(mockQueryRunner.manager.query).toHaveBeenNthCalledWith(
         2,
         expect.stringContaining('INSERT INTO asignaciones_etapa'),
+        ['user-2', 'etapa-1', 'tenant-1'],
+      );
+      expect(mockQueryRunner.manager.query).toHaveBeenNthCalledWith(
+        3,
+        expect.stringContaining('INSERT INTO asignaciones_etapa'),
         ['user-2', 'etapa-2', 'tenant-1'],
       );
+    });
+
+    it('should throw BadRequestException when etapaIds belong to another tenant', async () => {
+      jest
+        .spyOn(generarCredenciales, 'generarUsernameCobrador')
+        .mockReturnValue('crosscobrador');
+      jest
+        .spyOn(generarCredenciales, 'generarPasswordCobrador')
+        .mockReturnValue('cross2026');
+      usuarioRepo.findOne.mockResolvedValue(null);
+      (bcrypt.hash as jest.Mock).mockResolvedValue('hashed-password');
+
+      const savedUser = Usuario.crear(
+        'crosscobrador',
+        'hashed-password',
+        'Cross Tenant',
+        RolUsuario.COBRADOR,
+        'tenant-1',
+      );
+      Object.assign(savedUser, { id: 'user-3' });
+      mockQueryRunner.manager.save.mockResolvedValue(savedUser);
+      // Validation query: returns only 1 of 2 etapas → cross-tenant attempt
+      mockQueryRunner.manager.query.mockResolvedValueOnce([
+        { id: 'etapa-1' },
+      ]);
+
+      await expect(
+        useCase.execute({
+          nombre: 'Cross Tenant',
+          telefono: '3000000000',
+          tenantId: 'tenant-1',
+          etapaIds: ['etapa-1', 'etapa-foreign'],
+        }),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+      // Only the validation query should have been called, no INSERTs
+      expect(mockQueryRunner.manager.query).toHaveBeenCalledTimes(1);
     });
 
     it('should throw BadRequestException when username already exists', async () => {

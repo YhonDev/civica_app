@@ -86,6 +86,7 @@ describe('GenerarTicketUseCase', () => {
 
     expect(mockResidenteRepo.findByIdWithRelations).toHaveBeenCalledWith(
       'residente-1',
+      'tenant-1',
     );
     expect(mockTicketRepo.nextNumero).toHaveBeenCalledWith('tenant-1');
     expect(mockTicketRepo.save).toHaveBeenCalled();

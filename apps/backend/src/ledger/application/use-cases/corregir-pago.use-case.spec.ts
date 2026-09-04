@@ -122,6 +122,23 @@ describe('CorregirPagoUseCase', () => {
     ).rejects.toThrow(/no encontrado/);
   });
 
+  it('should throw NotFoundException if payment belongs to another tenant', async () => {
+    const pago = crearPago(40000);
+    mockPagoRepo.findById.mockImplementation(async (_id, tenantId) =>
+      tenantId === TENANT_ID ? pago : null,
+    );
+
+    await expect(
+      useCase.execute({
+        pagoId: 'pago-1',
+        nuevoMonto: 30000,
+        motivo: 'Monto errado',
+        usuarioId: USUARIO_ID,
+        tenantId: 'tenant-OTHER',
+      }),
+    ).rejects.toThrow(/no encontrado/);
+  });
+
   it('should throw BadRequestException if payment state is not PENDIENTE_REVISION', async () => {
     const pago = crearPago(40000, EstadoValidacionPago.VALIDADO);
     mockPagoRepo.findById.mockResolvedValue(pago);

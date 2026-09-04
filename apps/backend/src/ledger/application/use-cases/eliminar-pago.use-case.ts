@@ -16,9 +16,9 @@ export class EliminarPagoUseCase {
   ) {}
 
   async execute(id: string, tenantId: string): Promise<void> {
-    const pago = await this.pagoRepo.findById(id);
+    const pago = await this.pagoRepo.findById(id, tenantId);
 
-    if (!pago || pago.tenantId !== tenantId) {
+    if (!pago) {
       throw new NotFoundException(`Pago ${id} no encontrado`);
     }
 

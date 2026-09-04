@@ -30,11 +30,13 @@ export class TarifaRepository {
     proyectoId: string,
     modalidad: ModalidadRecaudo,
     fecha: Date,
+    tenantId: string,
   ): Promise<Tarifa | null> {
     const dateStr = fecha.toISOString().split('T')[0];
     const result = await this.repo
       .createQueryBuilder('tarifa')
       .where('tarifa.proyectoId = :proyectoId', { proyectoId })
+      .andWhere('tarifa.tenantId = :tenantId', { tenantId })
       .andWhere('tarifa.modalidad = :modalidad', { modalidad })
       .andWhere('tarifa.fechaVigencia <= :fecha', { fecha: dateStr })
       .andWhere('tarifa.activa = :activa', { activa: true })
@@ -45,8 +47,8 @@ export class TarifaRepository {
     return result ?? null;
   }
 
-  async findById(id: string): Promise<Tarifa | null> {
-    return this.repo.findOne({ where: { id } });
+  async findById(id: string, tenantId: string): Promise<Tarifa | null> {
+    return this.repo.findOne({ where: { id, tenantId } });
   }
 
   /**
@@ -55,6 +57,7 @@ export class TarifaRepository {
    */
   async findVigentesPorConjunto(
     proyectoId: string,
+    tenantId: string,
     fecha = new Date(),
   ): Promise<Record<ModalidadRecaudo, Tarifa | null>> {
     const modalidades: ModalidadRecaudo[] = ['SEMANAL', 'QUINCENAL', 'MENSUAL'];
@@ -66,6 +69,7 @@ export class TarifaRepository {
           proyectoId,
           modalidad,
           fecha,
+          tenantId,
         );
       }),
     );

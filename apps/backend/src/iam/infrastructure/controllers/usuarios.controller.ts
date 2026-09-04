@@ -24,6 +24,7 @@ import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { JwtAuthGuard } from '../../../shared/auth/jwt-auth.guard';
+import { AuthService } from '../../../shared/auth/auth.service';
 import { RolesGuard } from '../../../shared/auth/guards/roles.guard';
 import { Roles } from '../../../shared/auth/decorators/roles.decorator';
 import { CurrentUser } from '../../../shared/tenant/current-user.decorator';
@@ -69,6 +70,7 @@ export class UsuariosController {
     @InjectRepository(Usuario)
     private readonly usuarioRepository: Repository<Usuario>,
     private readonly asignarEtapaUseCase: AsignarEtapaUseCase,
+    private readonly authService: AuthService,
   ) {}
 
   @Get('residentes')
@@ -144,7 +146,7 @@ export class UsuariosController {
     }
 
     const asignaciones = await this.asignacionRepository.find({
-      where: { usuarioId },
+      where: { usuarioId, tenantId: currentUser.tenantId },
     });
     return asignaciones.map((a) => ({
       id: a.id,
@@ -237,6 +239,7 @@ export class UsuariosController {
     const passwordHash = await bcrypt.hash(dto.newPassword, 10);
     usuario.passwordHash = passwordHash;
     await this.usuarioRepository.save(usuario);
+    await this.authService.revokeAllSessionsForUser(usuario.id);
 
     return {
       message: `Contraseña actualizada para ${usuario.nombre}`,
@@ -264,11 +267,11 @@ export class UsuariosController {
     const passwordHash = await bcrypt.hash(tempPassword, 10);
     usuario.passwordHash = passwordHash;
     await this.usuarioRepository.save(usuario);
+    await this.authService.revokeAllSessionsForUser(usuario.id);
 
     return {
       message: `Contraseña reseteada para ${usuario.nombre}`,
       email: usuario.email,
-      tempPassword: tempPassword,
     };
   }
 

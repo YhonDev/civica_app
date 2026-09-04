@@ -1,11 +1,14 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { Usuario } from '../iam/domain/usuario.entity';
 import { EventsGateway } from './events.gateway';
 
 describe('EventsGateway', () => {
   let gateway: EventsGateway;
   let mockServer: any;
   let mockJwtService: any;
+  let mockUsuarioRepository: any;
 
   beforeEach(async () => {
     mockServer = {
@@ -17,12 +20,20 @@ describe('EventsGateway', () => {
       verify: jest.fn(),
     };
 
+    mockUsuarioRepository = {
+      findOne: jest.fn().mockResolvedValue({ activo: true }),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         EventsGateway,
         {
           provide: JwtService,
           useValue: mockJwtService,
+        },
+        {
+          provide: getRepositoryToken(Usuario),
+          useValue: mockUsuarioRepository,
         },
       ],
     }).compile();
@@ -44,7 +55,7 @@ describe('EventsGateway', () => {
         data: {},
       };
 
-      gateway.handleConnection(mockSocket);
+      void gateway.handleConnection(mockSocket);
 
       expect(mockSocket.disconnect).toHaveBeenCalled();
       expect(mockSocket.data.user).toBeUndefined();
@@ -62,14 +73,14 @@ describe('EventsGateway', () => {
         data: {},
       };
 
-      gateway.handleConnection(mockSocket);
+      void gateway.handleConnection(mockSocket);
 
       expect(mockSocket.disconnect).toHaveBeenCalled();
       expect(mockSocket.data.user).toBeUndefined();
     });
 
-    it('should attach user payload to socket.data when token is valid', () => {
-      const payload = { sub: 'user-123', tenantId: 'tenant-123', rol: 'ADMIN' };
+    it('should attach user payload to socket.data when token is valid', async () => {
+      const payload = { sub: 'user-123', tenantId: 'tenant-123', rol: 'ADMIN', type: 'access' };
       mockJwtService.verify.mockReturnValue(payload);
 
       const mockSocket: any = {
@@ -79,10 +90,89 @@ describe('EventsGateway', () => {
         data: {},
       };
 
-      gateway.handleConnection(mockSocket);
+      await gateway.handleConnection(mockSocket);
 
       expect(mockSocket.disconnect).not.toHaveBeenCalled();
       expect(mockSocket.data.user).toEqual(payload);
+    });
+
+    it('should reject connection when token is a refresh token', async () => {
+      mockJwtService.verify.mockReturnValue({
+        sub: 'user-123',
+        tenantId: 'tenant-123',
+        type: 'refresh',
+      });
+
+      const mockSocket: any = {
+        id: 'socket-refresh',
+        handshake: { auth: { token: 'refresh-token' } },
+        disconnect: jest.fn(),
+        data: {},
+      };
+
+      await gateway.handleConnection(mockSocket);
+
+      expect(mockSocket.disconnect).toHaveBeenCalled();
+      expect(mockSocket.data.user).toBeUndefined();
+    });
+
+    it('should reject connection when user is inactive', async () => {
+      mockJwtService.verify.mockReturnValue({
+        sub: 'user-123',
+        tenantId: 'tenant-123',
+        type: 'access',
+      });
+      mockUsuarioRepository.findOne.mockResolvedValue({ activo: false });
+
+      const mockSocket: any = {
+        id: 'socket-inactive',
+        handshake: { auth: { token: 'valid-token' } },
+        disconnect: jest.fn(),
+        data: {},
+      };
+
+      await gateway.handleConnection(mockSocket);
+
+      expect(mockSocket.disconnect).toHaveBeenCalled();
+      expect(mockSocket.data.user).toBeUndefined();
+    });
+
+    it('should reject connection when user is not found', async () => {
+      mockJwtService.verify.mockReturnValue({
+        sub: 'user-123',
+        tenantId: 'tenant-123',
+        type: 'access',
+      });
+      mockUsuarioRepository.findOne.mockResolvedValue(null);
+
+      const mockSocket: any = {
+        id: 'socket-notfound',
+        handshake: { auth: { token: 'valid-token' } },
+        disconnect: jest.fn(),
+        data: {},
+      };
+
+      await gateway.handleConnection(mockSocket);
+
+      expect(mockSocket.disconnect).toHaveBeenCalled();
+    });
+
+    it('should reject connection when token has no tenantId', async () => {
+      mockJwtService.verify.mockReturnValue({
+        sub: 'user-123',
+        type: 'access',
+      });
+
+      const mockSocket: any = {
+        id: 'socket-notenant',
+        handshake: { auth: { token: 'valid-token' } },
+        disconnect: jest.fn(),
+        data: {},
+      };
+
+      await gateway.handleConnection(mockSocket);
+
+      expect(mockSocket.disconnect).toHaveBeenCalled();
     });
   });
 

@@ -68,8 +68,8 @@ export class SolicitudRepository extends BaseTenantRepository<Solicitud> {
     );
   }
 
-  async findById(id: string): Promise<Solicitud | null> {
-    return this.repo.findOne({ where: { id } });
+  async findById(id: string, tenantId: string): Promise<Solicitud | null> {
+    return this.repo.findOne({ where: { id, tenantId } });
   }
 
   async delete(id: string): Promise<void> {

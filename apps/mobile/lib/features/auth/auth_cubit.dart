@@ -74,7 +74,7 @@ class AuthCubit extends Cubit<AuthState> {
       final token = await ApiClient.instance.tokenStorage.getAccessToken();
 
       final wsUrl = detectWsUrl();
-      debugPrint('[AuthCubit] WebSocket URL: $wsUrl');
+      debugPrint('[AuthCubit] Initializing realtime connection');
 
       RealtimeSocketService.instance.init(
         serverUrl: wsUrl,

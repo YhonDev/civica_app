@@ -3,6 +3,7 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
+  Index,
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
@@ -22,9 +23,19 @@ export class AuthSession {
   @JoinColumn({ name: 'usuario_id' })
   usuario: Usuario;
 
+  @Index({ unique: true })
   @Column({ name: 'refresh_token_hash', type: 'varchar', length: 255 })
   @Exclude()
   refreshTokenHash: string;
+
+  @Column({
+    name: 'previous_refresh_token_hash',
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+  })
+  @Exclude()
+  previousRefreshTokenHash: string | null;
 
   @Column({ name: 'device_id', type: 'varchar', length: 255, nullable: true })
   deviceId: string | null;

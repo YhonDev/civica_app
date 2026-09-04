@@ -94,6 +94,21 @@ describe('ValidarPagoUseCase', () => {
     useCase = module.get<ValidarPagoUseCase>(ValidarPagoUseCase);
   });
 
+  it('should throw NotFoundException if payment belongs to another tenant', async () => {
+    const pago = crearPago(40000);
+    mockPagoRepo.findById.mockImplementation(async (_id, tenantId) =>
+      tenantId === TENANT_ID ? pago : null,
+    );
+
+    await expect(
+      useCase.execute({
+        pagoId: 'pago-1',
+        estado: EstadoValidacionPago.VALIDADO,
+        tenantId: 'tenant-OTHER',
+      }),
+    ).rejects.toThrow(/no encontrado/);
+  });
+
   it('should change state to VALIDADO successfully', async () => {
     const pago = crearPago(40000);
     mockPagoRepo.findById.mockResolvedValue(pago);

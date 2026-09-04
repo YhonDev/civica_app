@@ -188,6 +188,8 @@ CREATE TABLE pagos (
   residente_id      UUID NOT NULL,
   fecha_sync        TIMESTAMPTZ,
   sync_status       VARCHAR(20) NOT NULL DEFAULT 'SYNC_OK',
+  estado            VARCHAR(30) NOT NULL DEFAULT 'PENDIENTE_REVISION'
+                    CHECK (estado IN ('PENDIENTE_REVISION', 'VALIDADO', 'RECHAZADO')),
   created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (tenant_id, client_payment_id)
@@ -232,6 +234,7 @@ CREATE TABLE auth_sessions (
   id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   usuario_id          UUID NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
   refresh_token_hash  VARCHAR(255) NOT NULL,
+  previous_refresh_token_hash VARCHAR(255),
   device_id           VARCHAR(255),
   device_name         VARCHAR(255),
   ip_address          VARCHAR(64),
@@ -331,6 +334,26 @@ CREATE INDEX idx_tickets_residente         ON tickets (residente_id);
 CREATE INDEX idx_tickets_pago              ON tickets (pago_id);
 CREATE INDEX idx_tickets_tipo              ON tickets (tipo);
 
+-- ── 18. Notificaciones ──────────────────────────────────
+CREATE TABLE notificaciones (
+  id                 UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tipo               VARCHAR(50) NOT NULL DEFAULT 'CUOTA_VENCIDA',
+  destinatario_email VARCHAR(255) NOT NULL,
+  asunto             VARCHAR(255) NOT NULL,
+  cuerpo             TEXT NOT NULL,
+  estado             VARCHAR(20) NOT NULL DEFAULT 'PENDIENTE'
+                     CHECK (estado IN ('PENDIENTE', 'ENVIADA', 'FALLIDA')),
+  intentos           INTEGER NOT NULL DEFAULT 0,
+  ultimo_intento     TIMESTAMPTZ,
+  cobro_id           UUID,
+  tenant_id          UUID NOT NULL,
+  created_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at         TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_notificaciones_tenant ON notificaciones (tenant_id);
+CREATE INDEX idx_notificaciones_estado ON notificaciones (estado);
+CREATE INDEX idx_notificaciones_cobro  ON notificaciones (cobro_id);
+
 -- ═══════════════════════════════════════════════════════════
 -- VISTA: Estado de Cartera por Casa
 -- ═══════════════════════════════════════════════════════════
@@ -380,11 +403,14 @@ ORDER BY e.nombre, m.nombre, c.direccion_interna;
 -- ═══════════════════════════════════════════════════════════
 ALTER TABLE actividad              ENABLE ROW LEVEL SECURITY;
 ALTER TABLE asignaciones_etapa     ENABLE ROW LEVEL SECURITY;
+ALTER TABLE auth_sessions          ENABLE ROW LEVEL SECURITY;
 ALTER TABLE casas                  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE cobros                 ENABLE ROW LEVEL SECURITY;
 ALTER TABLE etapas                 ENABLE ROW LEVEL SECURITY;
 ALTER TABLE manzanas               ENABLE ROW LEVEL SECURITY;
 ALTER TABLE montos_predefinidos    ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notificaciones         ENABLE ROW LEVEL SECURITY;
+ALTER TABLE pago_cobros            ENABLE ROW LEVEL SECURITY;
 ALTER TABLE pagos                  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE periodos_cobro         ENABLE ROW LEVEL SECURITY;
 ALTER TABLE planes_de_cobro        ENABLE ROW LEVEL SECURITY;
@@ -399,11 +425,14 @@ ALTER TABLE usuarios               ENABLE ROW LEVEL SECURITY;
 -- Policies service_role (backend)
 CREATE POLICY service_role_all_actividad             ON actividad             FOR ALL TO service_role USING (true);
 CREATE POLICY service_role_all_asignaciones_etapa    ON asignaciones_etapa    FOR ALL TO service_role USING (true);
+CREATE POLICY service_role_all_auth_sessions         ON auth_sessions         FOR ALL TO service_role USING (true);
 CREATE POLICY service_role_all_casas                 ON casas                 FOR ALL TO service_role USING (true);
 CREATE POLICY service_role_all_cobros                ON cobros                FOR ALL TO service_role USING (true);
 CREATE POLICY service_role_all_etapas                ON etapas                FOR ALL TO service_role USING (true);
 CREATE POLICY service_role_all_manzanas              ON manzanas              FOR ALL TO service_role USING (true);
 CREATE POLICY service_role_all_montos_predefinidos   ON montos_predefinidos   FOR ALL TO service_role USING (true);
+CREATE POLICY service_role_all_notificaciones        ON notificaciones        FOR ALL TO service_role USING (true);
+CREATE POLICY service_role_all_pago_cobros           ON pago_cobros           FOR ALL TO service_role USING (true);
 CREATE POLICY service_role_all_pagos                 ON pagos                 FOR ALL TO service_role USING (true);
 CREATE POLICY service_role_all_periodos_cobro        ON periodos_cobro        FOR ALL TO service_role USING (true);
 CREATE POLICY service_role_all_planes_de_cobro       ON planes_de_cobro       FOR ALL TO service_role USING (true);

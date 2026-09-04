@@ -1,5 +1,5 @@
 -- ═══════════════════════════════════════════════════════════════
--- SEED OFICIAL: Cívica Pago — Base de Datos Actual (Cloud / Local)
+-- SEED OFICIAL: Cívica Pago — Base de Datos Actual
 -- Proyecto: Urb San Sebastian (Lenguaje Ubicuo y Dominio Real)
 -- Modalidades: SEMANAL (Camilo Silva), QUINCENAL (Carmen Cabarca), MENSUAL (Yhon Barrios)
 -- Cobrador: Ricardo Arrieta (ricardoarrietacobrador)

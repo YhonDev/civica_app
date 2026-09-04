@@ -4,8 +4,10 @@ import { CobroRepository } from '../../infrastructure/persistence/cobro.reposito
 /**
  * Marks overdue cobros as VENCIDA.
  *
- * Finds all cobros in PENDIENTE or PARCIAL state whose fechaVencimiento
- * has passed, and transitions them to VENCIDA.
+ * Uses a single atomic SQL UPDATE to transition all PENDIENTE/PARCIAL cobros
+ * whose fechaVencimiento has passed to VENCIDA. This avoids the lost-update
+ * race condition that a read-modify-write approach would have with concurrent
+ * payments modifying the same cobros.
  *
  * Called by the daily cron job MarcarVencidasJob.
  */
@@ -15,18 +17,13 @@ export class MarcarVencidasUseCase {
 
   constructor(private readonly cobroRepo: CobroRepository) {}
 
-  async execute(fechaHoy?: string): Promise<{ marcadas: number }> {
-    const vencidas = await this.cobroRepo.findVencidas();
+  async execute(): Promise<{ marcadas: number }> {
+    const marcadas = await this.cobroRepo.markVencidasAtomic();
 
-    for (const cobro of vencidas) {
-      cobro.marcarVencida();
+    if (marcadas > 0) {
+      this.logger.log(`${marcadas} cobro(s) marcado(s) como VENCIDO(s)`);
     }
 
-    if (vencidas.length > 0) {
-      await this.cobroRepo.saveMany(vencidas);
-      this.logger.log(`${vencidas.length} cobro(s) marcado(s) como VENCIDO(s)`);
-    }
-
-    return { marcadas: vencidas.length };
+    return { marcadas };
   }
 }

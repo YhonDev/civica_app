@@ -78,7 +78,7 @@ class RealtimeSocketService {
       // Dispose previous socket if exists
       _disposeSocket();
 
-      debugPrint('[RealtimeSocket] Connecting to WebSockets gateway at $_serverUrl...');
+      debugPrint('[RealtimeSocket] Connecting to WebSockets gateway...');
       final optionsBuilder = io.OptionBuilder()
           .setTransports(['websocket'])
           .disableAutoConnect()

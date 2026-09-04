@@ -12,9 +12,9 @@ export class EliminarResidenteUseCase {
   ) {}
 
   async execute(id: string, tenantId: string): Promise<void> {
-    const residente = await this.residenteRepository.findById(id);
+    const residente = await this.residenteRepository.findById(id, tenantId);
 
-    if (!residente || residente.tenantId !== tenantId) {
+    if (!residente) {
       throw new NotFoundException('Residente no encontrado');
     }
 

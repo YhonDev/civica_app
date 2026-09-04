@@ -4,8 +4,11 @@ import {
   Inject,
   forwardRef,
 } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { Residente } from '../../domain/residente.entity';
 import { ResidenteRepository } from '../../infrastructure/residente.repository';
+import { Casa } from '../../domain/casa.entity';
 import { type ModalidadRecaudo } from '../../../shared/common/value-objects';
 import { ReconciliarModalidadUseCase } from '../../../ledger/application/use-cases/reconciliar-modalidad.use-case';
 
@@ -25,10 +28,15 @@ export class ActualizarResidenteUseCase {
     private readonly residenteRepository: ResidenteRepository,
     @Inject(forwardRef(() => ReconciliarModalidadUseCase))
     private readonly reconciliarModalidadUseCase: ReconciliarModalidadUseCase,
+    @InjectRepository(Casa)
+    private readonly casaRepository: Repository<Casa>,
   ) {}
 
   async execute(params: ActualizarResidenteParams): Promise<void> {
-    const residente = await this.residenteRepository.findById(params.id);
+    const residente = await this.residenteRepository.findById(
+      params.id,
+      params.tenantId,
+    );
 
     if (!residente) {
       throw new NotFoundException('Residente no encontrado');
@@ -45,6 +53,16 @@ export class ActualizarResidenteUseCase {
       residente.modalidadPago = params.modalidadPago;
     }
     if (params.casaId !== undefined) {
+      const casa = await this.casaRepository.findOne({
+        where: { id: params.casaId },
+        relations: { manzana: { etapa: { proyecto: true } } },
+      });
+      if (
+        !casa ||
+        casa.manzana?.etapa?.proyecto?.tenantId !== params.tenantId
+      ) {
+        throw new NotFoundException('Casa no encontrada en el tenant actual');
+      }
       residente.asignarCasa(params.casaId);
     }
 
@@ -55,6 +73,7 @@ export class ActualizarResidenteUseCase {
       await this.reconciliarModalidadUseCase.execute(
         residente.id,
         params.modalidadPago,
+        params.tenantId,
       );
     }
   }

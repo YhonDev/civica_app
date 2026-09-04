@@ -112,10 +112,13 @@ describe('AuthController', () => {
       authService.validateUser.mockResolvedValue(mockUsuario);
       authService.login.mockResolvedValue(loginResult);
 
-      const result = await controller.login({
-        username: 'test@test.com',
-        password: 'correct-password',
-      });
+      const result = await controller.login(
+        {
+          username: 'test@test.com',
+          password: 'correct-password',
+        },
+        { headers: {}, socket: {} },
+      );
 
       expect(result).toEqual(loginResult);
       expect(authService.validateUser).toHaveBeenCalledWith(

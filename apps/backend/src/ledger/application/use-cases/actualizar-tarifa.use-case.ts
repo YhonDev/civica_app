@@ -11,6 +11,7 @@ interface ActualizarTarifaParams {
   tarifaId: string;
   montoPesos?: number;
   fechaVigencia?: string;
+  tenantId: string;
 }
 
 @Injectable()
@@ -21,9 +22,9 @@ export class ActualizarTarifaUseCase {
   ) {}
 
   async execute(params: ActualizarTarifaParams): Promise<Tarifa> {
-    const { tarifaId, montoPesos, fechaVigencia } = params;
+    const { tarifaId, montoPesos, fechaVigencia, tenantId } = params;
 
-    const tarifa = await this.tarifaRepository.findById(tarifaId);
+    const tarifa = await this.tarifaRepository.findById(tarifaId, tenantId);
     if (!tarifa) {
       throw new NotFoundException('Tarifa no encontrada');
     }

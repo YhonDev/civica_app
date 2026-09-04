@@ -174,13 +174,32 @@ describe('RegistrarPagoUseCase', () => {
         RESIDENTE_ID,
       );
       mockPagoRepo.findByIdempotentKey.mockResolvedValue(existingPago);
-      mockCobroRepo.findByResidente.mockResolvedValue([]);
+      mockTicketRepo.findByPago.mockResolvedValue(new TicketCobro());
 
       const result = await useCase.execute(crearInput());
 
       expect(result.pago.id).toBe(existingPago.id);
+      expect(result.cobrosAfectados).toEqual([]);
+      expect(mockCobroRepo.findByResidente).not.toHaveBeenCalled();
       expect(mockCobroRepo.save).not.toHaveBeenCalled();
       expect(mockPagoRepo.save).not.toHaveBeenCalled();
+    });
+
+    it('should reject idempotency key mismatch', async () => {
+      const existingPago = Pago.crear(
+        'pay-001',
+        TENANT_ID,
+        Money.ofCOP(40000),
+        '2026-01-20',
+        COBRADOR_ID,
+        RESIDENTE_ID,
+      );
+      mockPagoRepo.findByIdempotentKey.mockResolvedValue(existingPago);
+
+      await expect(
+        useCase.execute(crearInput({ monto: 50000 })),
+      ).rejects.toThrow(/clientPaymentId ya está asociado/);
+      expect(mockPlanRepo.findByResidente).not.toHaveBeenCalled();
     });
   });
 
@@ -319,7 +338,10 @@ describe('RegistrarPagoUseCase', () => {
 
       await useCase.execute(crearInput({ solicitudId: 'sol-1' }));
 
-      expect(mockSolicitudRepo.findById).toHaveBeenCalledWith('sol-1');
+      expect(mockSolicitudRepo.findById).toHaveBeenCalledWith(
+        'sol-1',
+        TENANT_ID,
+      );
       expect(mockEntityManager.save).toHaveBeenCalled();
       expect(mockSolicitud.estado).toBe('RESUELTA');
       expect(mockSolicitud.pagoId).toBeTruthy();

@@ -47,6 +47,7 @@ export async function revertirAbonos(
 
       const cobro = await entityManager.findOne(Cobro, {
         where: { id: vinculo.cobroId },
+        lock: { mode: 'pessimistic_write' },
       });
       if (!cobro) continue;
 
@@ -70,6 +71,7 @@ export async function revertirAbonos(
   const cobros = await entityManager.getRepository(Cobro).find({
     where: { residenteId: pago.residenteId, tenantId: pago.tenantId },
     order: { periodoInicio: 'DESC' },
+    lock: { mode: 'pessimistic_write' },
   });
 
   for (const cobro of cobros) {

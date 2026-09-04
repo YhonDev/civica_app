@@ -44,6 +44,7 @@ describe('TicketsController', () => {
     user.id = 'user-1';
     user.rol = rol;
     user.tenantId = 'tenant-1';
+    user.residenteId = rol === RolUsuario.RESIDENTE ? 'residente-1' : null;
     return user;
   };
 
@@ -65,6 +66,7 @@ describe('TicketsController', () => {
         controller.getById(
           'non-existent',
           createMockUser(RolUsuario.RESIDENTE),
+          'tenant-1',
         ),
       ).rejects.toThrow(NotFoundException);
     });
@@ -75,6 +77,7 @@ describe('TicketsController', () => {
       const result = (await controller.getById(
         'ticket-1',
         createMockUser(RolUsuario.RESIDENTE),
+        'tenant-1',
       )) as any;
 
       expect(result.numero).toBe('TKT-2026-000001');
@@ -92,6 +95,7 @@ describe('TicketsController', () => {
       const result = (await controller.getById(
         'ticket-1',
         createMockUser(RolUsuario.COBRADOR),
+        'tenant-1',
       )) as any;
 
       expect(result.residenteId).toBe('residente-1');
@@ -108,6 +112,7 @@ describe('TicketsController', () => {
       const result = (await controller.getById(
         'ticket-1',
         createMockUser(RolUsuario.ADMIN),
+        'tenant-1',
       )) as any;
 
       expect(result.residenteId).toBe('residente-1');
@@ -129,7 +134,10 @@ describe('TicketsController', () => {
         'tenant-1',
       );
 
-      expect(mockTicketRepo.findByPago).toHaveBeenCalledWith('pago-1');
+      expect(mockTicketRepo.findByPago).toHaveBeenCalledWith(
+        'pago-1',
+        'tenant-1',
+      );
       expect((result as any).numero).toBe('TKT-2026-000001');
     });
 
@@ -146,10 +154,42 @@ describe('TicketsController', () => {
 
       expect(mockTicketRepo.findByResidente).toHaveBeenCalledWith(
         'residente-1',
+        'tenant-1',
         { limit: 10 },
       );
       expect(result).toHaveLength(1);
       expect(result[0].numero).toBe('TKT-2026-000001');
+    });
+  });
+
+  describe('tenant isolation', () => {
+    it('should not return a ticket from another tenant by id', async () => {
+      mockTicketRepo.findById.mockResolvedValue(null);
+
+      await expect(
+        controller.getById(
+          'ticket-1',
+          createMockUser(RolUsuario.ADMIN),
+          'tenant-2',
+        ),
+      ).rejects.toThrow(NotFoundException);
+      expect(mockTicketRepo.findById).toHaveBeenCalledWith(
+        'ticket-1',
+        'tenant-2',
+      );
+    });
+
+    it('should not list tickets for another residente when resident role', async () => {
+      const result = await controller.list(
+        'residente-2',
+        '',
+        '',
+        createMockUser(RolUsuario.RESIDENTE),
+        'tenant-1',
+      );
+
+      expect(result).toEqual([]);
+      expect(mockTicketRepo.findByResidente).not.toHaveBeenCalled();
     });
   });
 

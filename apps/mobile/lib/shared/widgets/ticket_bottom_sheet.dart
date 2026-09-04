@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme/app_colors.dart';
@@ -99,8 +98,8 @@ class TicketBottomSheet extends StatelessWidget {
   const TicketBottomSheet({super.key, required this.ticket});
 
   /// Convenience method to show the bottom sheet.
-  static Future<void> show(BuildContext context, TicketData ticket) {
-    return showModalBottomSheet(
+  static Future<dynamic> show(BuildContext context, TicketData ticket) {
+    return showModalBottomSheet<dynamic>(
       context: context,
       isScrollControlled: true,
       builder: (_) => TicketBottomSheet(ticket: ticket),
@@ -219,17 +218,7 @@ class TicketBottomSheet extends StatelessWidget {
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: () {
-                      Navigator.of(context).pop(); // Close bottom sheet
-                      context.push(
-                        '/solicitud-nueva',
-                        extra: {
-                          'cobroId': ticket.cobroId,
-                          'pagoId': ticket.pagoId,
-                          'concepto': ticket.concepto,
-                          'nroRecibo': ticket.numero,
-                          'monto': ticket.monto,
-                        },
-                      );
+                      Navigator.of(context).pop(ticket);
                     },
                     icon: const Icon(Icons.report_problem_outlined, size: 16),
                     label: const Text('Revisar pago'),

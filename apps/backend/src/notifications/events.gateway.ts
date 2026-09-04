@@ -6,7 +6,10 @@ import {
   OnGatewayDisconnect,
 } from '@nestjs/websockets';
 import { Logger, Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
 import { JwtService } from '@nestjs/jwt';
+import { Repository } from 'typeorm';
+import { Usuario } from '../iam/domain/usuario.entity';
 import { Server, Socket } from 'socket.io';
 
 /**
@@ -27,9 +30,13 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   private readonly logger = new Logger(EventsGateway.name);
 
-  constructor(private readonly jwtService: JwtService) {}
+  constructor(
+    private readonly jwtService: JwtService,
+    @InjectRepository(Usuario)
+    private readonly usuarioRepository: Repository<Usuario>,
+  ) {}
 
-  handleConnection(client: Socket) {
+  async handleConnection(client: Socket) {
     try {
       const rawHeader = client.handshake.headers?.authorization;
       const headerToken =
@@ -50,15 +57,30 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
         return;
       }
 
-      const payload = this.jwtService.verify(token);
+      const payload = this.jwtService.verify<{
+        sub?: string;
+        tenantId?: string;
+        type?: string;
+      }>(token);
+      if (payload.type === 'refresh' || !payload.sub || !payload.tenantId) {
+        client.disconnect();
+        return;
+      }
+
+      const user = await this.usuarioRepository.findOne({
+        where: { id: payload.sub, tenantId: payload.tenantId },
+      });
+      if (!user || !user.activo) {
+        client.disconnect();
+        return;
+      }
+
       client.data = client.data || {};
       client.data.user = payload;
-      this.logger.log(
-        `Cliente autenticado en WebSockets: ${client.id} (user: ${payload.sub}, tenant: ${payload.tenantId})`,
-      );
+      this.logger.log(`Cliente autenticado en WebSockets: ${client.id}`);
     } catch (err: any) {
       this.logger.warn(
-        `Conexión WS rechazada para socket ${client.id}: token inválido (${err.message}).`,
+        `Conexión WS rechazada para socket ${client.id}: token inválido.`,
       );
       client.disconnect();
     }

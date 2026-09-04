@@ -76,8 +76,9 @@ export class ProyectosController {
   async crearEtapa(
     @Param('id') proyectoId: string,
     @Body() dto: CrearEtapaDto,
+    @CurrentTenant() tenantId: string,
   ) {
-    return this.crearEtapaUseCase.execute(dto.nombre, proyectoId);
+    return this.crearEtapaUseCase.execute(dto.nombre, proyectoId, tenantId);
   }
 
   @Post('etapas/:id/manzanas')
@@ -86,8 +87,9 @@ export class ProyectosController {
   async crearManzana(
     @Param('id') etapaId: string,
     @Body() dto: CrearManzanaDto,
+    @CurrentTenant() tenantId: string,
   ) {
-    return this.crearManzanaUseCase.execute(dto.nombre, etapaId);
+    return this.crearManzanaUseCase.execute(dto.nombre, etapaId, tenantId);
   }
 
   @Post('manzanas/:id/casas')
@@ -96,14 +98,30 @@ export class ProyectosController {
   async crearCasa(
     @Param('id') manzanaId: string,
     @Body() dto: RegistrarCasaDto,
+    @CurrentTenant() tenantId: string,
   ) {
-    return this.registrarCasaUseCase.execute(dto.direccionInterna, manzanaId);
+    return this.registrarCasaUseCase.execute(
+      dto.direccionInterna,
+      manzanaId,
+      tenantId,
+    );
   }
 
   @Delete('etapas/:id')
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN)
-  async eliminarEtapa(@Param('id', ParseUUIDPipe) id: string) {
+  async eliminarEtapa(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentTenant() tenantId: string,
+  ) {
+    const etapaRow = await this.dataSource.query(
+      `SELECT 1 FROM etapas e JOIN proyectos p ON e.proyecto_id = p.id WHERE e.id = $1 AND p.tenant_id = $2`,
+      [id, tenantId],
+    );
+    if (!etapaRow || etapaRow.length === 0) {
+      throw new NotFoundException(`Etapa ${id} no encontrada`);
+    }
+
     const tenenciasCount = await this.dataSource.query(
       'SELECT COUNT(*) as count FROM tenencias t JOIN casas c ON t.casa_id = c.id JOIN manzanas m ON c.manzana_id = m.id WHERE m.etapa_id = $1',
       [id],
@@ -121,14 +139,28 @@ export class ProyectosController {
       );
     }
 
-    await this.dataSource.query('DELETE FROM etapas WHERE id = $1', [id]);
+    await this.dataSource.query(
+      'DELETE FROM etapas WHERE id = $1 AND proyecto_id IN (SELECT id FROM proyectos WHERE tenant_id = $2)',
+      [id, tenantId],
+    );
     return { success: true };
   }
 
   @Delete('manzanas/:id')
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN)
-  async eliminarManzana(@Param('id', ParseUUIDPipe) id: string) {
+  async eliminarManzana(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentTenant() tenantId: string,
+  ) {
+    const manzanaRow = await this.dataSource.query(
+      `SELECT 1 FROM manzanas m JOIN etapas e ON m.etapa_id = e.id JOIN proyectos p ON e.proyecto_id = p.id WHERE m.id = $1 AND p.tenant_id = $2`,
+      [id, tenantId],
+    );
+    if (!manzanaRow || manzanaRow.length === 0) {
+      throw new NotFoundException(`Manzana ${id} no encontrada`);
+    }
+
     const tenenciasCount = await this.dataSource.query(
       'SELECT COUNT(*) as count FROM tenencias t JOIN casas c ON t.casa_id = c.id WHERE c.manzana_id = $1',
       [id],
@@ -146,14 +178,28 @@ export class ProyectosController {
       );
     }
 
-    await this.dataSource.query('DELETE FROM manzanas WHERE id = $1', [id]);
+    await this.dataSource.query(
+      `DELETE FROM manzanas WHERE id = $1 AND etapa_id IN (SELECT e.id FROM etapas e JOIN proyectos p ON e.proyecto_id = p.id WHERE p.tenant_id = $2)`,
+      [id, tenantId],
+    );
     return { success: true };
   }
 
   @Delete('casas/:id')
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN)
-  async eliminarCasa(@Param('id', ParseUUIDPipe) id: string) {
+  async eliminarCasa(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentTenant() tenantId: string,
+  ) {
+    const casaRow = await this.dataSource.query(
+      `SELECT 1 FROM casas c JOIN manzanas m ON c.manzana_id = m.id JOIN etapas e ON m.etapa_id = e.id JOIN proyectos p ON e.proyecto_id = p.id WHERE c.id = $1 AND p.tenant_id = $2`,
+      [id, tenantId],
+    );
+    if (!casaRow || casaRow.length === 0) {
+      throw new NotFoundException(`Casa ${id} no encontrada`);
+    }
+
     const tenenciasCount = await this.dataSource.query(
       'SELECT COUNT(*) as count FROM tenencias WHERE casa_id = $1',
       [id],
@@ -171,7 +217,10 @@ export class ProyectosController {
       );
     }
 
-    await this.dataSource.query('DELETE FROM casas WHERE id = $1', [id]);
+    await this.dataSource.query(
+      `DELETE FROM casas WHERE id = $1 AND manzana_id IN (SELECT m.id FROM manzanas m JOIN etapas e ON m.etapa_id = e.id JOIN proyectos p ON e.proyecto_id = p.id WHERE p.tenant_id = $2)`,
+      [id, tenantId],
+    );
     return { success: true };
   }
 
@@ -197,8 +246,11 @@ export class ProyectosController {
   @Get(':id/ajustes')
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN)
-  async getAjustes(@Param('id') id: string) {
-    const proyecto = await this.proyectoRepository.findByIdPlano(id);
+  async getAjustes(
+    @Param('id') id: string,
+    @CurrentTenant() tenantId: string,
+  ) {
+    const proyecto = await this.proyectoRepository.findByIdPlano(id, tenantId);
     if (!proyecto) {
       throw new NotFoundException(`Proyecto ${id} no encontrado`);
     }
@@ -218,8 +270,9 @@ export class ProyectosController {
   async actualizarAjustes(
     @Param('id') id: string,
     @Body() dto: ActualizarAjustesProyectoDto,
+    @CurrentTenant() tenantId: string,
   ) {
-    const proyecto = await this.proyectoRepository.findByIdPlano(id);
+    const proyecto = await this.proyectoRepository.findByIdPlano(id, tenantId);
     if (!proyecto) {
       throw new NotFoundException(`Proyecto ${id} no encontrado`);
     }

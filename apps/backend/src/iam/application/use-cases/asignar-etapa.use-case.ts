@@ -43,12 +43,14 @@ export class AsignarEtapaUseCase {
       );
     }
 
-    // Validar que la etapa existe (usando DataSource para evitar dependencia circular con CommunityModule)
+    // Validar que la etapa existe y pertenece al tenant
     const etapaExists = await this.dataSource
       .createQueryBuilder()
       .select('1')
       .from('etapas', 'e')
+      .innerJoin('proyectos', 'p', 'e.proyecto_id = p.id')
       .where('e.id = :etapaId', { etapaId: params.etapaId })
+      .andWhere('p.tenant_id = :tenantId', { tenantId: params.tenantId })
       .getRawOne();
 
     if (!etapaExists) {

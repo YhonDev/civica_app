@@ -16,14 +16,13 @@ class PushNotificationService {
 
   /// Initializes device token for FCM push dispatching
   Future<void> init() async {
-    // In production, retrieves FirebaseMessaging.instance.getToken()
-    _fcmToken = 'dev-device-token-12345';
-    debugPrint('[PushNotificationService] FCM Token initialized: $_fcmToken');
+    // Register the token through the push provider in production. Do not log it.
+    _fcmToken = null;
   }
 
   /// Handles deep linking navigation when notification banner is tapped
   void handleDeepLinkPayload(Map<String, dynamic> data, BuildContext context) {
-    debugPrint('[PushNotificationService] Processing Deep Link payload: $data');
+    debugPrint('[PushNotificationService] Processing notification payload');
 
     final deepLink = data['deepLink'] as String?;
     final type = data['type'] as String?;

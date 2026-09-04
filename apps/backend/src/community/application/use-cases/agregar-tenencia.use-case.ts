@@ -22,9 +22,11 @@ export class AgregarTenenciaUseCase {
     residenteId: string;
     casaId: string;
     fechaInicio: Date;
+    tenantId: string;
   }): Promise<Tenencia> {
     const residente = await this.residenteRepository.findWithTenencia(
       params.residenteId,
+      params.tenantId,
     );
     if (!residente) {
       throw new NotFoundException(

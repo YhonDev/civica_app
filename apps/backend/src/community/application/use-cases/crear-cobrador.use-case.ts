@@ -83,6 +83,19 @@ export class CrearCobradorUseCase {
 
       // Asignar etapas si se especificaron
       if (params.etapaIds && params.etapaIds.length > 0) {
+        // Validar que todas las etapas pertenecen al tenant
+        const validEtapas = await queryRunner.manager.query(
+          `SELECT e.id FROM etapas e
+           JOIN proyectos p ON e.proyecto_id = p.id
+           WHERE e.id = ANY($1) AND p.tenant_id = $2`,
+          [params.etapaIds, params.tenantId],
+        );
+        if (validEtapas.length !== params.etapaIds.length) {
+          throw new BadRequestException(
+            'Una o más etapas no pertenecen al conjunto',
+          );
+        }
+
         for (const etapaId of params.etapaIds) {
           await queryRunner.manager.query(
             `INSERT INTO asignaciones_etapa (id, usuario_id, etapa_id, tenant_id, created_at)

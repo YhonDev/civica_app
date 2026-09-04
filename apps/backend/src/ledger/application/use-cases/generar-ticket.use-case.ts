@@ -34,6 +34,7 @@ export class GenerarTicketUseCase {
     // 1. Load residente with full location chain for snapshot
     const residente = await this.residenteRepo.findByIdWithRelations(
       input.pago.residenteId,
+      input.pago.tenantId,
     );
 
     if (!residente) {

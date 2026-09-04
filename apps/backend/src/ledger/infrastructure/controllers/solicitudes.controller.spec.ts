@@ -224,5 +224,58 @@ describe('SolicitudesController', () => {
       expect(res.success).toBe(true);
     });
   });
+
+  describe('marcarEnCamino', () => {
+    it('should mark solicitud as EN_CAMINO when found in tenant', async () => {
+      const mockSol = { id: 'sol-1', estado: SolicitudEstado.PENDIENTE };
+      mockSolicitudRepo.findById.mockResolvedValue(mockSol);
+
+      const res = await controller.marcarEnCamino('sol-1', 'tenant-123');
+
+      expect(mockSolicitudRepo.findById).toHaveBeenCalledWith(
+        'sol-1',
+        'tenant-123',
+      );
+      expect(res.estado).toBe(SolicitudEstado.EN_CAMINO);
+    });
+
+    it('should throw NotFoundException when solicitud is from another tenant (repo filters by tenantId)', async () => {
+      mockSolicitudRepo.findById.mockResolvedValue(null);
+
+      await expect(
+        controller.marcarEnCamino('sol-x', 'tenant-123'),
+      ).rejects.toThrow(/no encontrada/);
+    });
+  });
+
+  describe('resolver', () => {
+    it('should throw NotFoundException when solicitud is from another tenant', async () => {
+      mockSolicitudRepo.findById.mockResolvedValue(null);
+
+      await expect(
+        controller.resolver('sol-x', { estado: 'RESUELTA' }, 'tenant-123'),
+      ).rejects.toThrow(/no encontrada/);
+    });
+  });
+
+  describe('eliminar', () => {
+    it('should throw NotFoundException when solicitud is from another tenant', async () => {
+      mockSolicitudRepo.findById.mockResolvedValue(null);
+
+      await expect(controller.eliminar('sol-x', 'tenant-123')).rejects.toThrow(
+        /no encontrada/,
+      );
+    });
+  });
+
+  describe('getDetalleResolucion (cross-tenant)', () => {
+    it('should throw NotFoundException when solicitud is from another tenant', async () => {
+      mockSolicitudRepo.findById.mockResolvedValue(null);
+
+      await expect(
+        controller.getDetalleResolucion('sol-x', 'tenant-123'),
+      ).rejects.toThrow(/no encontrada/);
+    });
+  });
 });
 

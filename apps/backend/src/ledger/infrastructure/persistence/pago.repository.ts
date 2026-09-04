@@ -13,8 +13,8 @@ export class PagoRepository extends BaseTenantRepository<Pago> {
     super(repo);
   }
 
-  async findById(id: string): Promise<Pago | null> {
-    return this.repo.findOne({ where: { id } });
+  async findById(id: string, tenantId: string): Promise<Pago | null> {
+    return this.repo.findOne({ where: { id, tenantId } });
   }
 
   async findByIdempotentKey(
@@ -49,9 +49,9 @@ export class PagoRepository extends BaseTenantRepository<Pago> {
     });
   }
 
-  async findByCobro(cobroId: string): Promise<Pago[]> {
+  async findByCobro(cobroId: string, tenantId: string): Promise<Pago[]> {
     return this.repo.find({
-      where: { cobroId },
+      where: { cobroId, tenantId },
       order: { createdAt: 'DESC' },
     });
   }
@@ -175,18 +175,17 @@ export class PagoRepository extends BaseTenantRepository<Pago> {
    */
   async findByCobradorToday(
     cobradorId: string,
+    tenantId: string,
   ): Promise<{ pagos: Pago[]; total: number; count: number }> {
     const hoy = new Date();
-    const start = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')} 00:00:00`;
-    const end = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')} 23:59:59`;
+    const hoyStr = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
 
     const pagos = await this.repo.find({
-      where: { cobradorId },
+      where: { cobradorId, tenantId },
       order: { fechaPago: 'DESC' },
     });
 
     // Filter in-memory by today's date (fechaPago is a string YYYY-MM-DD)
-    const hoyStr = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
     const hoyPagos = pagos.filter((p) => p.fechaPago.startsWith(hoyStr));
 
     const total = hoyPagos.reduce((sum, p) => sum + p.monto, 0);

@@ -10,6 +10,7 @@ BEGIN;
 TRUNCATE TABLE 
   solicitudes, 
   tickets, 
+  pago_cobros,
   pagos, 
   cobros, 
   periodos_cobro, 
@@ -24,7 +25,8 @@ TRUNCATE TABLE
   etapas, 
   proyectos, 
   notificaciones,
-  actividad 
+  actividad,
+  auth_sessions 
 CASCADE;
 
 -- 2. Eliminar usuarios que no sean ADMIN

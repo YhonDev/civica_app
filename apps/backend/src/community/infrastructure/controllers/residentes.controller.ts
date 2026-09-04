@@ -192,6 +192,7 @@ export class ResidentesController {
       }
       const residente = await this.residenteRepository.findById(
         user.residenteId,
+        tenantId,
       );
       if (!residente) return [];
       return this.adjuntarUsernames([residente]);

@@ -360,7 +360,7 @@ describe('ResidentesController', () => {
       );
 
       expect(result).toHaveLength(1);
-      expect(residenteRepo.findById).toHaveBeenCalledWith('res-1');
+      expect(residenteRepo.findById).toHaveBeenCalledWith('res-1', 'tenant-1');
     });
 
     it('should return empty for RESIDENTE without residenteId', async () => {

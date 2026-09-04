@@ -68,14 +68,20 @@ export class RegistrarPagoUseCase {
         `Pago idempotente detectado: ${input.clientPaymentId} ya existe (${existingPago.id}). Retornando pago existente.`,
       );
 
-      const cobrosAfectados = existingPago.cobroId
-        ? await this.cobroRepo.findByResidente(
-            input.residenteId,
-            input.tenantId,
-          )
-        : [];
+      if (
+        existingPago.tenantId !== input.tenantId ||
+        existingPago.residenteId !== input.residenteId ||
+        existingPago.monto !== input.monto
+      ) {
+        throw new BadRequestException(
+          'El clientPaymentId ya está asociado a otro pago.',
+        );
+      }
 
-      // Build event from existing pago
+      // No reconstruir la lista desde la cartera actual: puede incluir cobros
+      // que no fueron afectados por el pago original.
+      const cobrosAfectados: Cobro[] = [];
+
       const event = new PagoRegistradoEvent(
         existingPago.id,
         existingPago.clientPaymentId,
@@ -85,8 +91,10 @@ export class RegistrarPagoUseCase {
         existingPago.createdAt,
       );
 
-      // Look up the ticket that was generated on the original payment
-      const existingTicket = await this.ticketRepo.findByPago(existingPago.id);
+      const existingTicket = await this.ticketRepo.findByPago(
+        existingPago.id,
+        input.tenantId,
+      );
 
       return {
         pago: existingPago,
@@ -97,7 +105,10 @@ export class RegistrarPagoUseCase {
     }
 
     // 2. Validate: residente must have an active plan
-    const plan = await this.planDeCobroRepo.findByResidente(input.residenteId);
+    const plan = await this.planDeCobroRepo.findByResidente(
+      input.residenteId,
+      input.tenantId,
+    );
 
     if (!plan) {
       throw new BadRequestException(
@@ -177,6 +188,7 @@ export class RegistrarPagoUseCase {
         if (input.solicitudId) {
           const solicitud = await this.solicitudRepo.findById(
             input.solicitudId,
+            input.tenantId,
           );
           if (solicitud) {
             solicitud.estado = SolicitudEstado.RESUELTA;

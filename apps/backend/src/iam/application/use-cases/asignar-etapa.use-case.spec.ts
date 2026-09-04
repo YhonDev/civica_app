@@ -77,7 +77,9 @@ describe('AsignarEtapaUseCase', () => {
       const mockQueryBuilder: any = {
         select: jest.fn().mockReturnThis(),
         from: jest.fn().mockReturnThis(),
+        innerJoin: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
         getRawOne: jest.fn().mockResolvedValue({ '1': 1 }),
       };
       dataSource.createQueryBuilder.mockReturnValue(mockQueryBuilder);
@@ -132,16 +134,18 @@ describe('AsignarEtapaUseCase', () => {
     });
   });
 
-  // ─── Stage not found ─────────────────────────────────
+  // ─── Stage not found (or belongs to another tenant) ──
 
   describe('etapa not found', () => {
-    it('should throw NotFoundException when etapa does not exist', async () => {
+    it('should throw NotFoundException when etapa does not exist or belongs to another tenant', async () => {
       usuarioRepo.findOne.mockResolvedValue(mockUsuario);
 
       const mockQueryBuilder: any = {
         select: jest.fn().mockReturnThis(),
         from: jest.fn().mockReturnThis(),
+        innerJoin: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
         getRawOne: jest.fn().mockResolvedValue(null),
       };
       dataSource.createQueryBuilder.mockReturnValue(mockQueryBuilder);
@@ -162,7 +166,9 @@ describe('AsignarEtapaUseCase', () => {
       const mockQueryBuilder: any = {
         select: jest.fn().mockReturnThis(),
         from: jest.fn().mockReturnThis(),
+        innerJoin: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
         getRawOne: jest.fn().mockResolvedValue({ '1': 1 }),
       };
       dataSource.createQueryBuilder.mockReturnValue(mockQueryBuilder);

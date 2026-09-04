@@ -18,14 +18,24 @@ describe('DashboardController — Cobrador Logic', () => {
   const mockDashboardQuery = {};
   const mockCobroRepo = {
     findPendientesByTenant: jest.fn(),
+    findByResidente: jest.fn(),
   };
   const mockPagoRepo = {
     findByCobradorToday: jest.fn(),
+    findByPropietario: jest.fn(),
   };
-  const mockPlanDeCobroRepo = {};
-  const mockSolicitudRepo = {};
-  const mockTarifaRepo = {};
-  const mockResidenteRepo = {};
+  const mockPlanDeCobroRepo = {
+    findByResidente: jest.fn(),
+  };
+  const mockSolicitudRepo = {
+    findByUsuario: jest.fn(),
+  };
+  const mockTarifaRepo = {
+    findVigentesPorConjunto: jest.fn(),
+  };
+  const mockResidenteRepo = {
+    findByIdWithRelations: jest.fn(),
+  };
   const mockDataSource = {
     query: jest.fn(),
   };
@@ -384,6 +394,47 @@ describe('DashboardController — Cobrador Logic', () => {
       const result = await controller.getViviendasExplorer(user, TENANT_ID);
 
       expect(result.etapas).toHaveLength(0);
+    });
+  });
+
+  describe('getDashboardResidente()', () => {
+    it('should read dashboard data without generating cobros or marking vencidas', async () => {
+      const generarCobrosUC = { execute: jest.fn() };
+      const marcarVencidasUC = { execute: jest.fn() };
+      const controllerWithLegacyDependencies = new (DashboardController as any)(
+        mockDashboardQuery,
+        mockCobroRepo,
+        mockPagoRepo,
+        mockPlanDeCobroRepo,
+        mockSolicitudRepo,
+        mockTarifaRepo,
+        mockResidenteRepo,
+        mockDataSource,
+        generarCobrosUC,
+        marcarVencidasUC,
+      ) as DashboardController;
+      const user = crearUser({ residenteId: 'residente-1' });
+
+      mockCobroRepo.findByResidente.mockResolvedValue([]);
+      mockPagoRepo.findByPropietario.mockResolvedValue([]);
+      mockPlanDeCobroRepo.findByResidente.mockResolvedValue(null);
+      mockResidenteRepo.findByIdWithRelations.mockResolvedValue({
+        id: 'residente-1',
+        nombre: 'Residente Test',
+        modalidadPago: 'MENSUAL',
+        tenencias: [],
+      });
+      mockSolicitudRepo.findByUsuario.mockResolvedValue([]);
+
+      const result = await controllerWithLegacyDependencies.getDashboardResidente(
+        user,
+        TENANT_ID,
+      );
+
+      expect(result.status).toBe('AL_DIA');
+      expect(result.movimientos).toEqual([]);
+      expect(generarCobrosUC.execute).not.toHaveBeenCalled();
+      expect(marcarVencidasUC.execute).not.toHaveBeenCalled();
     });
   });
 });

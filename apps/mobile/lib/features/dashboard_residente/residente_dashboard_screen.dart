@@ -911,24 +911,43 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
         ? item.nroRecibo!
         : 'TK-${item.id.hashCode.abs().toString().padLeft(6, '0')}';
 
-    await TicketBottomSheet.show(
-      context,
-      TicketData(
-        numero: ticketNum,
-        fecha: item.timestamp.toLocal(),
-        residente: nombre,
-        casa: casa,
-        monto: item.monto ?? 0,
-        metodo: item.contexto ?? 'Efectivo',
-        estado: item.tipo == 'pago' ? 'PAGADO' : 'Generada',
-        cobrador: item.cobrador ?? 'Administración',
-        concepto: item.descripcion,
-        cobroId: item.cobroId,
-        pagoId: item.pagoId,
-      ),
+    final ticketData = TicketData(
+      numero: ticketNum,
+      fecha: item.timestamp.toLocal(),
+      residente: nombre,
+      casa: casa,
+      monto: item.monto ?? 0,
+      metodo: item.contexto ?? 'Efectivo',
+      estado: item.tipo == 'pago' ? 'PAGADO' : 'Generada',
+      cobrador: item.cobrador ?? 'Administración',
+      concepto: item.descripcion,
+      cobroId: item.cobroId,
+      pagoId: item.pagoId,
     );
 
-    if (mounted) {
+    final result = await TicketBottomSheet.show(
+      context,
+      ticketData,
+    );
+
+    if (!mounted) return;
+
+    if (result is TicketData) {
+      final created = await context.push<bool>(
+        '/solicitud-nueva',
+        extra: {
+          'cobroId': result.cobroId,
+          'pagoId': result.pagoId,
+          'concepto': result.concepto,
+          'nroRecibo': result.numero,
+          'monto': result.monto,
+        },
+      );
+
+      if (created == true && mounted) {
+        await _loadDashboardData(silent: true);
+      }
+    } else {
       _loadDashboardData(silent: true);
     }
   }

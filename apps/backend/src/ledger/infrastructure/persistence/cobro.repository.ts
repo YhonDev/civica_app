@@ -13,8 +13,8 @@ export class CobroRepository extends BaseTenantRepository<Cobro> {
     super(repo);
   }
 
-  async findById(id: string): Promise<Cobro | null> {
-    return this.repo.findOne({ where: { id } });
+  async findById(id: string, tenantId: string): Promise<Cobro | null> {
+    return this.repo.findOne({ where: { id, tenantId } });
   }
 
   async findByResidente(
@@ -31,11 +31,15 @@ export class CobroRepository extends BaseTenantRepository<Cobro> {
     });
   }
 
-  async findByResidentes(residenteIds: string[]): Promise<Cobro[]> {
+  async findByResidentes(
+    residenteIds: string[],
+    tenantId: string,
+  ): Promise<Cobro[]> {
     if (residenteIds.length === 0) return [];
     return this.repo
       .createQueryBuilder('cobro')
       .where('cobro.residenteId IN (:...residenteIds)', { residenteIds })
+      .andWhere('cobro.tenantId = :tenantId', { tenantId })
       .orderBy('cobro.periodoInicio', 'DESC')
       .getMany();
   }
@@ -236,9 +240,16 @@ export class CobroRepository extends BaseTenantRepository<Cobro> {
     }));
   }
 
-  async findMasAntiguoConSaldo(residenteId: string): Promise<Cobro | null> {
+  async findMasAntiguoConSaldo(
+    residenteId: string,
+    tenantId: string,
+  ): Promise<Cobro | null> {
     return this.repo.findOne({
-      where: { residenteId, estado: In(['VENCIDA', 'PARCIAL', 'PENDIENTE']) },
+      where: {
+        residenteId,
+        tenantId,
+        estado: In(['VENCIDA', 'PARCIAL', 'PENDIENTE']),
+      },
       order: { fechaVencimiento: 'ASC' },
     });
   }
@@ -277,6 +288,26 @@ export class CobroRepository extends BaseTenantRepository<Cobro> {
         { estado: 'PARCIAL', fechaVencimiento: LessThan(hoy) },
       ],
     });
+  }
+
+  /**
+   * Atomically transitions all PENDIENTE/PARCIAL cobros with a past
+   * fecha_vencimiento to VENCIDA via a single SQL UPDATE.
+   *
+   * Prevents lost-update race conditions vs concurrent payments that
+   * could occur with a read-modify-write approach.
+   *
+   * @returns number of rows affected
+   */
+  async markVencidasAtomic(): Promise<number> {
+    const result = await this.repo
+      .createQueryBuilder()
+      .update(Cobro)
+      .set({ estado: 'VENCIDA' })
+      .where("estado IN ('PENDIENTE', 'PARCIAL')")
+      .andWhere('fecha_vencimiento < CURRENT_DATE')
+      .execute();
+    return result.affected ?? 0;
   }
 
   async findAllWithFilters(

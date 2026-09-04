@@ -40,9 +40,7 @@ export class FcmPushService {
   async sendToToken(token: string, payload: PushPayload): Promise<boolean> {
     if (!token) return false;
 
-    this.logger.log(
-      `[FCM Push] Enviando notificación a token (${token.slice(0, 10)}...): "${payload.title}"`,
-    );
+    this.logger.log(`[FCM Push] Enviando notificación: "${payload.title}"`);
 
     if (!this.firebaseApp) {
       this.logger.debug(
@@ -77,7 +75,7 @@ export class FcmPushService {
       });
       return true;
     } catch (e) {
-      this.logger.error(`Error enviando FCM Push a token ${token}: ${e}`);
+      this.logger.error(`Error enviando FCM Push: ${e}`);
       return false;
     }
   }

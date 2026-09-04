@@ -80,7 +80,7 @@ export class SolicitudesController {
     if (!targetCobroId) {
       throw new BadRequestException('Se requiere cobroId o cuotaId');
     }
-    const cobro = await this.cobroRepo.findById(targetCobroId);
+    const cobro = await this.cobroRepo.findById(targetCobroId, tenantId);
     if (!cobro) {
       throw new NotFoundException(
         `No existe un cobro válido asignado para el id ${targetCobroId}`,
@@ -154,8 +154,11 @@ export class SolicitudesController {
       estado: r.estado,
     }),
   })
-  async marcarEnCamino(@Param('id') id: string) {
-    const solicitud = await this.solicitudRepo.findById(id);
+  async marcarEnCamino(
+    @Param('id') id: string,
+    @CurrentTenant() tenantId: string,
+  ) {
+    const solicitud = await this.solicitudRepo.findById(id, tenantId);
     if (!solicitud) {
       throw new NotFoundException(`Solicitud ${id} no encontrada`);
     }
@@ -182,8 +185,9 @@ export class SolicitudesController {
   async resolver(
     @Param('id') id: string,
     @Body() dto: { estado: string; respuesta?: string },
+    @CurrentTenant() tenantId: string,
   ) {
-    const solicitud = await this.solicitudRepo.findById(id);
+    const solicitud = await this.solicitudRepo.findById(id, tenantId);
     if (!solicitud) {
       throw new NotFoundException(`Solicitud ${id} no encontrada`);
     }
@@ -221,19 +225,19 @@ export class SolicitudesController {
     @Param('id') id: string,
     @CurrentTenant() tenantId: string,
   ) {
-    const solicitud = await this.solicitudRepo.findById(id);
-    if (!solicitud || solicitud.tenantId !== tenantId) {
+    const solicitud = await this.solicitudRepo.findById(id, tenantId);
+    if (!solicitud) {
       throw new NotFoundException(`Solicitud ${id} no encontrada`);
     }
 
-    const cobro = await this.cobroRepo.findById(solicitud.cobroId);
+    const cobro = await this.cobroRepo.findById(solicitud.cobroId, tenantId);
 
     let pago: Pago | null = null;
     if (solicitud.pagoId) {
-      pago = await this.pagoRepo.findById(solicitud.pagoId);
+      pago = await this.pagoRepo.findById(solicitud.pagoId, tenantId);
     }
     if (!pago && solicitud.cobroId) {
-      const pagos = await this.pagoRepo.findByCobro(solicitud.cobroId);
+      const pagos = await this.pagoRepo.findByCobro(solicitud.cobroId, tenantId);
       if (pagos.length > 0) {
         pago = pagos[0];
       }
@@ -241,7 +245,7 @@ export class SolicitudesController {
 
     let ticket: Ticket | null = null;
     if (pago) {
-      ticket = await this.ticketRepo.findByPago(pago.id);
+      ticket = await this.ticketRepo.findByPago(pago.id, tenantId);
     }
 
     return {
@@ -300,14 +304,14 @@ export class SolicitudesController {
     @CurrentUser() user: Usuario,
     @CurrentTenant() tenantId: string,
   ) {
-    const solicitud = await this.solicitudRepo.findById(id);
-    if (!solicitud || solicitud.tenantId !== tenantId) {
+    const solicitud = await this.solicitudRepo.findById(id, tenantId);
+    if (!solicitud) {
       throw new NotFoundException(`Solicitud ${id} no encontrada`);
     }
 
     let targetPagoId = solicitud.pagoId;
     if (!targetPagoId && solicitud.cobroId) {
-      const pagos = await this.pagoRepo.findByCobro(solicitud.cobroId);
+      const pagos = await this.pagoRepo.findByCobro(solicitud.cobroId, tenantId);
       if (pagos.length > 0) targetPagoId = pagos[0].id;
     }
 
@@ -317,8 +321,8 @@ export class SolicitudesController {
       );
     }
 
-    const pago = await this.pagoRepo.findById(targetPagoId);
-    if (!pago || pago.tenantId !== tenantId) {
+    const pago = await this.pagoRepo.findById(targetPagoId, tenantId);
+    if (!pago) {
       throw new NotFoundException(`Pago ${targetPagoId} no encontrado`);
     }
 
@@ -369,14 +373,14 @@ export class SolicitudesController {
     @CurrentUser() user: Usuario,
     @CurrentTenant() tenantId: string,
   ) {
-    const solicitud = await this.solicitudRepo.findById(id);
-    if (!solicitud || solicitud.tenantId !== tenantId) {
+    const solicitud = await this.solicitudRepo.findById(id, tenantId);
+    if (!solicitud) {
       throw new NotFoundException(`Solicitud ${id} no encontrada`);
     }
 
     let targetPagoId = solicitud.pagoId;
     if (!targetPagoId && solicitud.cobroId) {
-      const pagos = await this.pagoRepo.findByCobro(solicitud.cobroId);
+      const pagos = await this.pagoRepo.findByCobro(solicitud.cobroId, tenantId);
       if (pagos.length > 0) targetPagoId = pagos[0].id;
     }
 
@@ -413,8 +417,11 @@ export class SolicitudesController {
       solicitudId: r.id,
     }),
   })
-  async eliminar(@Param('id') id: string) {
-    const solicitud = await this.solicitudRepo.findById(id);
+  async eliminar(
+    @Param('id') id: string,
+    @CurrentTenant() tenantId: string,
+  ) {
+    const solicitud = await this.solicitudRepo.findById(id, tenantId);
     if (!solicitud) {
       throw new NotFoundException(`Solicitud ${id} no encontrada`);
     }

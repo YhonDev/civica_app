@@ -85,5 +85,12 @@ describe('JwtStrategy', () => {
         UnauthorizedException,
       );
     });
+
+    it('should reject a refresh token used as an access token', async () => {
+      await expect(
+        strategy.validate({ ...mockPayload, type: 'refresh' }),
+      ).rejects.toThrow(UnauthorizedException);
+      expect(usuarioRepo.findOne).not.toHaveBeenCalled();
+    });
   });
 });

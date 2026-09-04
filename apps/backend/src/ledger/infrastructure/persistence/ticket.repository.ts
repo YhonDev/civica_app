@@ -18,26 +18,30 @@ export class TicketRepository extends BaseTenantRepository<Ticket> {
     return this.repo.save(ticket);
   }
 
-  async findById(id: string): Promise<Ticket | null> {
-    return this.repo.findOne({ where: { id } });
+  async findById(id: string, tenantId: string): Promise<Ticket | null> {
+    return this.repo.findOne({ where: { id, tenantId } });
   }
 
   async findByNumero(tenantId: string, numero: string): Promise<Ticket | null> {
     return this.repo.findOne({ where: { tenantId, numero } });
   }
 
-  async findByPago(pagoId: string): Promise<TicketCobro | null> {
+  async findByPago(
+    pagoId: string,
+    tenantId: string,
+  ): Promise<TicketCobro | null> {
     return this.repo.findOne({
-      where: { tipo: 'COBRO', pagoId } as any,
+      where: { tipo: 'COBRO', pagoId, tenantId } as any,
     }) as Promise<TicketCobro | null>;
   }
 
   async findByResidente(
     residenteId: string,
+    tenantId: string,
     options?: { limit?: number },
   ): Promise<Ticket[]> {
     return this.repo.find({
-      where: { residenteId },
+      where: { residenteId, tenantId },
       order: { fecha: 'DESC' },
       take: options?.limit,
     });

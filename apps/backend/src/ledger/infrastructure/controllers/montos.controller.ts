@@ -43,16 +43,24 @@ export class MontosController {
   }
 
   @Get()
+  @UseGuards(RolesGuard)
+  @Roles(RolUsuario.ADMIN, RolUsuario.RESIDENTE)
   @ApiOperation({ summary: 'Listar montos predefinidos por proyecto' })
-  async listar(@Query() query: ListarMontosQueryDto) {
-    return this.montoRepository.findAllByConjunto(query.proyectoId);
+  async listar(
+    @Query() query: ListarMontosQueryDto,
+    @CurrentTenant() tenantId: string,
+  ) {
+    return this.montoRepository.findAllByConjunto(query.proyectoId, tenantId);
   }
 
   @Delete(':id')
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN)
-  async eliminar(@Param('id') id: string) {
-    const monto = await this.montoRepository.findById(id);
+  async eliminar(
+    @Param('id') id: string,
+    @CurrentTenant() tenantId: string,
+  ) {
+    const monto = await this.montoRepository.findById(id, tenantId);
     if (!monto) {
       throw new NotFoundException('Monto no encontrado');
     }

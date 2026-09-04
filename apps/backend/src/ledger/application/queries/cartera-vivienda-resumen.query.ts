@@ -36,6 +36,11 @@ export class CarteraViviendaResumenQuery {
       .from('casas', 'casa')
       .innerJoin('manzanas', 'manzana', 'manzana.id = casa.manzana_id')
       .innerJoin('etapas', 'etapa', 'etapa.id = manzana.etapa_id')
+      .innerJoin(
+        'proyectos',
+        'proyecto',
+        'proyecto.id = etapa.proyecto_id',
+      )
       .leftJoin(
         'tenencias',
         'tenencia',
@@ -46,7 +51,7 @@ export class CarteraViviendaResumenQuery {
         'residente',
         'residente.id = tenencia.residente_id',
       )
-      .where('etapa.proyecto_id = :tenantId', { tenantId }); // proyecto_id es equivalente al tenantId en community
+      .where('proyecto.tenant_id = :tenantId', { tenantId });
 
     if (etapaId) {
       query = query.andWhere('etapa.id = :etapaId', { etapaId });
