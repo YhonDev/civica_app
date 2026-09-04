@@ -214,45 +214,25 @@ class _ManzanasScreenState extends State<ManzanasScreen> {
               ),
             ),
             const SizedBox(height: AppSpacing.md),
-            // Acciones fijas superiores
+            // Acción fija superior
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: FilledButton.tonalIcon(
-                      onPressed: () => _crearManzanaAutomatica(_selectedEtapaId, activeManzanas),
-                      icon: const Icon(Icons.add_rounded, size: 18),
-                      label: const Text(
-                        '+ 1 Manzana',
-                        style: TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      style: FilledButton.styleFrom(
-                        minimumSize: const Size.fromHeight(44),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
-                        ),
-                      ),
+              child: SizedBox(
+                width: double.infinity,
+                child: FilledButton.tonalIcon(
+                  onPressed: () => _crearManzanaAutomatica(_selectedEtapaId, activeManzanas),
+                  icon: const Icon(Icons.add_rounded, size: 18),
+                  label: const Text(
+                    '+ Nueva Manzana',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(44),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                     ),
                   ),
-                  const SizedBox(width: AppSpacing.sm),
-                  Expanded(
-                    child: FilledButton.tonalIcon(
-                      onPressed: () => _mostrarDialogoCrearManzanaConCasas(_selectedEtapaId, activeManzanas),
-                      icon: const Icon(Icons.library_add_rounded, size: 18),
-                      label: const Text(
-                        '+ Con Casas',
-                        style: TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      style: FilledButton.styleFrom(
-                        minimumSize: const Size.fromHeight(44),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
             const SizedBox(height: AppSpacing.md),
@@ -415,151 +395,5 @@ class _ManzanasScreenState extends State<ManzanasScreen> {
         ],
       ),
     );
-  }
-
-  void _mostrarDialogoCrearManzanaConCasas(String etapaId, List manzanas) {
-    final nextNum = _getMaxManzanaNumber(manzanas) + 1;
-    final nextLetter = (nextNum > 0 && nextNum <= 26) ? String.fromCharCode(64 + nextNum) : 'A';
-    
-    final letraInicioController = TextEditingController(text: nextLetter);
-    final letraFinController = TextEditingController(text: nextLetter);
-    final inicioController = TextEditingController(text: '1');
-    final finController = TextEditingController(text: '20');
-    final formKey = GlobalKey<FormState>();
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Crear Manzanas y Casas'),
-        content: Form(
-          key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: letraInicioController,
-                      textCapitalization: TextCapitalization.characters,
-                      maxLength: 1,
-                      decoration: InputDecoration(
-                        labelText: 'Letra Inicio',
-                        counterText: '',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      validator: (val) {
-                        if (val == null || val.isEmpty) return 'Requerido';
-                        if (!RegExp(r'^[A-Z]$').hasMatch(val.toUpperCase())) return 'A-Z';
-                        return null;
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  Expanded(
-                    child: TextFormField(
-                      controller: letraFinController,
-                      textCapitalization: TextCapitalization.characters,
-                      maxLength: 1,
-                      decoration: InputDecoration(
-                        labelText: 'Letra Fin',
-                        counterText: '',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      validator: (val) {
-                        if (val == null || val.isEmpty) return 'Requerido';
-                        if (!RegExp(r'^[A-Z]$').hasMatch(val.toUpperCase())) return 'A-Z';
-                        if (val.toUpperCase().codeUnitAt(0) < letraInicioController.text.toUpperCase().codeUnitAt(0)) {
-                          return 'Inválido';
-                        }
-                        return null;
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: inicioController,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: 'Casa Inicial',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      validator: (val) => val == null || val.isEmpty ? 'Requerido' : null,
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  Expanded(
-                    child: TextFormField(
-                      controller: finController,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: 'Casa Final',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      validator: (val) {
-                        if (val == null || val.isEmpty) return 'Requerido';
-                        if (int.parse(val) < int.parse(inicioController.text)) return 'Inválido';
-                        return null;
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              if (formKey.currentState!.validate()) {
-                final letraInicio = letraInicioController.text.toUpperCase();
-                final letraFin = letraFinController.text.toUpperCase();
-                final inicio = int.parse(inicioController.text);
-                final fin = int.parse(finController.text);
-                Navigator.pop(ctx);
-                await _crearRangoManzanasConCasas(etapaId, letraInicio, letraFin, inicio, fin);
-              }
-            },
-            child: const Text('Crear'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _crearRangoManzanasConCasas(String etapaId, String letraInicio, String letraFin, int inicio, int fin) async {
-    setState(() => _isRefreshing = true);
-    try {
-      int startCode = letraInicio.codeUnitAt(0);
-      int endCode = letraFin.codeUnitAt(0);
-      for (int code = startCode; code <= endCode; code++) {
-        final letter = String.fromCharCode(code);
-        final nombre = 'Manzana $letter';
-        final manzana = await _repo.createManzana(nombre, etapaId);
-        final manzanaId = manzana['id'];
-        for (int i = inicio; i <= fin; i++) {
-          await _repo.createCasa('Casa $i', manzanaId);
-        }
-      }
-      
-      await _loadData(silent: true);
-      if (mounted) {
-        TopToast.showSuccess(context, 'Manzanas ($letraInicio ➔ $letraFin) creadas exitosamente con casas');
-      }
-    } catch (e) {
-      setState(() => _isRefreshing = false);
-      if (mounted) {
-        TopToast.showError(context, 'Error al crear manzanas: $e');
-      }
-    }
   }
 }
