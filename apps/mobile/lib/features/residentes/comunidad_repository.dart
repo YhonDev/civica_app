@@ -152,8 +152,11 @@ class ComunidadRepository {
     }
   }
 
-  // Obtiene todo el árbol: Etapas -> Manzanas -> Casas (Solo disponibles + includeCasaId)
-  Future<List<Map<String, dynamic>>> getArbolCompleto({String? includeCasaId}) async {
+  // Obtiene todo el árbol: Etapas -> Manzanas -> Casas (Disponibles o Todas si includeOccupied=true)
+  Future<List<Map<String, dynamic>>> getArbolCompleto({
+    String? includeCasaId,
+    bool includeOccupied = false,
+  }) async {
     try {
       final response = await _api.get('/proyectos');
       final proyectos = response.data as List<dynamic>;
@@ -178,15 +181,20 @@ class ComunidadRepository {
         'id': e['id'],
         'nombre': e['nombre'],
         'manzanas': (e['manzanas'] as List<dynamic>? ?? []).map((m) {
-          // Filtrar las casas ocupadas, pero mantener la casa actual si se está editando
+          // Filtrar las casas ocupadas (a menos que se pida includeOccupied), pero mantener la casa actual si se está editando
           final casasList = (m['casas'] as List<dynamic>? ?? [])
               .where((c) {
+                if (includeOccupied) return true;
                 final id = c['id'].toString();
                 return id == includeCasaId || !ocupadasSet.contains(id);
               })
-              .map((c) => {
-                'id': c['id'],
-                'nombre': c['direccionInterna'] ?? '',
+              .map((c) {
+                final id = c['id'].toString();
+                return {
+                  'id': id,
+                  'nombre': c['direccionInterna'] ?? '',
+                  'ocupada': ocupadasSet.contains(id),
+                };
               }).toList();
           return {
             'id': m['id'],

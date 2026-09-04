@@ -17,7 +17,10 @@ class CasasScreen extends StatefulWidget {
 class _CasasScreenState extends State<CasasScreen> {
   final ComunidadRepository _repo = ComunidadRepository();
   bool _isLoading = true;
-  late List<Map<String, dynamic>> _etapas = [];
+  bool _isRefreshing = false;
+  List<Map<String, dynamic>> _etapas = [];
+  String? _selectedEtapaId;
+  String? _selectedManzanaId;
 
   @override
   void initState() {
@@ -25,77 +28,109 @@ class _CasasScreenState extends State<CasasScreen> {
     _loadData();
   }
 
-  Future<void> _loadData() async {
-    setState(() => _isLoading = true);
-    try {
-      final etapas = await _repo.getArbolCompleto();
-      setState(() {
-        _etapas = etapas.map((etapa) {
-          final manzanasEstructura = (etapa['manzanas'] as List).map((manzana) {
-            final casasList = (manzana['casas'] as List).map((c) {
-              return {
-                'id': c['id'],
-                'nombre': c['nombre'],
-              };
-            }).toList();
-            
-            // Natural sort for houses (e.g. Casa 2 before Casa 10)
-            casasList.sort((a, b) {
-              final aName = a['nombre'].toString();
-              final bName = b['nombre'].toString();
-              final aMatch = RegExp(r'\d+').firstMatch(aName);
-              final bMatch = RegExp(r'\d+').firstMatch(bName);
-              if (aMatch != null && bMatch != null) {
-                final aNum = int.tryParse(aMatch.group(0)!) ?? 0;
-                final bNum = int.tryParse(bMatch.group(0)!) ?? 0;
-                return aNum.compareTo(bNum);
-              }
-              return aName.compareTo(bName);
-            });
+  Future<void> _loadData({bool silent = false}) async {
+    if (silent) {
+      setState(() => _isRefreshing = true);
+    } else {
+      setState(() => _isLoading = true);
+    }
 
+    try {
+      final etapas = await _repo.getArbolCompleto(includeOccupied: true);
+
+      final processedEtapas = etapas.map((etapa) {
+        final manzanasEstructura = (etapa['manzanas'] as List).map((manzana) {
+          final casasList = (manzana['casas'] as List).map((c) {
             return {
-              'id': manzana['id'],
-              'nombre': manzana['nombre'],
-              'casas': casasList,
+              'id': c['id'].toString(),
+              'nombre': c['nombre'].toString(),
+              'ocupada': c['ocupada'] == true,
             };
           }).toList();
 
-          // Alphabetical sort for manzanas
-          manzanasEstructura.sort((a, b) => a['nombre'].toString().compareTo(b['nombre'].toString()));
+          // Natural sort for houses (e.g. Casa 2 before Casa 10)
+          casasList.sort((a, b) {
+            final aName = a['nombre'].toString();
+            final bName = b['nombre'].toString();
+            final aMatch = RegExp(r'\d+').firstMatch(aName);
+            final bMatch = RegExp(r'\d+').firstMatch(bName);
+            if (aMatch != null && bMatch != null) {
+              final aNum = int.tryParse(aMatch.group(0)!) ?? 0;
+              final bNum = int.tryParse(bMatch.group(0)!) ?? 0;
+              return aNum.compareTo(bNum);
+            }
+            return aName.compareTo(bName);
+          });
 
           return {
-            'id': etapa['id'],
-            'nombre': etapa['nombre'],
-            'manzanas': manzanasEstructura,
+            'id': manzana['id'].toString(),
+            'nombre': manzana['nombre'].toString(),
+            'casas': casasList,
           };
         }).toList();
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() => _isLoading = false);
+
+        // Alphabetical sort for manzanas
+        manzanasEstructura.sort(
+          (a, b) => a['nombre'].toString().compareTo(b['nombre'].toString()),
+        );
+
+        return {
+          'id': etapa['id'].toString(),
+          'nombre': etapa['nombre'].toString(),
+          'manzanas': manzanasEstructura,
+        };
+      }).toList();
+
       if (mounted) {
+        setState(() {
+          _etapas = processedEtapas;
+          _isLoading = false;
+          _isRefreshing = false;
+
+          // Preservar o seleccionar la primera etapa
+          if (_etapas.isNotEmpty) {
+            if (_selectedEtapaId == null ||
+                !_etapas.any((e) => e['id'] == _selectedEtapaId)) {
+              _selectedEtapaId = _etapas.first['id'];
+            }
+          } else {
+            _selectedEtapaId = null;
+          }
+
+          // Sincronizar la manzana seleccionada en la etapa activa
+          _syncSelectedManzana();
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _isRefreshing = false;
+        });
         TopToast.showError(context, 'Error al cargar casas: $e');
       }
     }
   }
 
-  Future<void> _crearCasaAutomatica(String manzanaId, List casas) async {
-    setState(() => _isLoading = true);
-    
-    final maxNumber = _getMaxCasaNumber(casas);
-    final nombre = 'Casa ${maxNumber + 1}';
-    
-    try {
-      await _repo.createCasa(nombre, manzanaId);
-      await _loadData();
-      if (mounted) {
-        TopToast.showSuccess(context, '$nombre creada exitosamente');
+  void _syncSelectedManzana() {
+    if (_selectedEtapaId == null) {
+      _selectedManzanaId = null;
+      return;
+    }
+
+    final activeEtapa = _etapas.firstWhere(
+      (e) => e['id'] == _selectedEtapaId,
+      orElse: () => {'manzanas': []},
+    );
+    final manzanas = activeEtapa['manzanas'] as List? ?? [];
+
+    if (manzanas.isNotEmpty) {
+      if (_selectedManzanaId == null ||
+          !manzanas.any((m) => m['id'] == _selectedManzanaId)) {
+        _selectedManzanaId = manzanas.first['id'];
       }
-    } catch (e) {
-      setState(() => _isLoading = false);
-      if (mounted) {
-        TopToast.showError(context, 'Error al crear casa: $e');
-      }
+    } else {
+      _selectedManzanaId = null;
     }
   }
 
@@ -112,132 +147,59 @@ class _CasasScreenState extends State<CasasScreen> {
     return max == 0 && casas.isNotEmpty ? casas.length : max;
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Gestión de Casas / Lotes'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: () => context.pop(),
-        ),
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _etapas.isEmpty
-          ? const EmptyState(
-              icon: Icons.home_rounded,
-              title: 'No hay casas',
-              description: 'Aún no has creado ninguna estructura para organizar las casas.',
-            )
-          : ListView.builder(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              itemCount: _etapas.length,
-              itemBuilder: (context, index) {
-                final etapa = _etapas[index];
-                final manzanas = etapa['manzanas'] as List;
-                
-                return Theme(
-                  data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-                  child: ExpansionTile(
-                    leading: Icon(Icons.folder_rounded, color: AppColors.primary),
-                    title: Text(
-                      etapa['nombre'],
-                      style: AppTypography.subtitle.copyWith(fontWeight: FontWeight.w600),
-                    ),
-                    children: manzanas.map((m) => _buildManzanaTile(m)).toList(),
-                  ),
-                );
-              },
-            ),
-    );
+  Future<void> _crearCasaAutomatica(String manzanaId, List casas) async {
+    final maxNumber = _getMaxCasaNumber(casas);
+    final nombre = 'Casa ${maxNumber + 1}';
+
+    setState(() => _isRefreshing = true);
+    try {
+      await _repo.createCasa(nombre, manzanaId);
+      await _loadData(silent: true);
+      if (mounted) {
+        TopToast.showSuccess(context, '$nombre creada exitosamente');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isRefreshing = false);
+        TopToast.showError(context, 'Error al crear casa: $e');
+      }
+    }
   }
 
-  Widget _buildManzanaTile(Map<String, dynamic> manzana) {
-    final casas = manzana['casas'] as List;
-    return Padding(
-      padding: const EdgeInsets.only(left: AppSpacing.xl),
-      child: ExpansionTile(
-        leading: Icon(Icons.grid_view_rounded, color: AppColors.textSecondary),
-        title: Text(
-          manzana['nombre'],
-          style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w600),
-        ),
-        children: [
-          if (casas.isEmpty)
-            const Padding(
-              padding: EdgeInsets.only(bottom: AppSpacing.md),
-              child: Text('No hay casas en esta manzana', style: TextStyle(color: Colors.grey)),
-            ),
-          ...casas.map((c) => _buildCasaItem(c)),
-          Padding(
-            padding: const EdgeInsets.only(left: AppSpacing.xl, right: AppSpacing.md, bottom: AppSpacing.md, top: AppSpacing.sm),
-            child: Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => _crearCasaAutomatica(manzana['id'], casas),
-                    icon: const Icon(Icons.add_rounded),
-                    label: const Text('Agregar 1'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.primary,
-                      side: BorderSide(color: AppColors.primary),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: FilledButton.tonalIcon(
-                    onPressed: () => _mostrarDialogoCreacionMultiple(manzana['id'], casas),
-                    icon: const Icon(Icons.library_add_rounded),
-                    label: const Text('Agregar Varios'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+  Future<void> _crearMultiplesCasas(String manzanaId, List casas, int cantidad) async {
+    setState(() => _isRefreshing = true);
+    try {
+      final maxNumber = _getMaxCasaNumber(casas);
+      for (int i = 0; i < cantidad; i++) {
+        final nombre = 'Casa ${maxNumber + i + 1}';
+        await _repo.createCasa(nombre, manzanaId);
+      }
+      await _loadData(silent: true);
+      if (mounted) {
+        TopToast.showSuccess(context, '$cantidad casas creadas con éxito');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isRefreshing = false);
+        TopToast.showError(context, 'Error al crear casas: $e');
+      }
+    }
   }
 
-  Widget _buildCasaItem(Map<String, dynamic> casa) {
-    return Padding(
-      padding: const EdgeInsets.only(left: AppSpacing.xl, right: AppSpacing.md, bottom: AppSpacing.sm),
-      child: Card(
-        margin: EdgeInsets.zero,
-        color: AppColors.surface,
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: BorderSide(color: AppColors.border),
-        ),
-        child: ListTile(
-          leading: Icon(Icons.home_rounded, color: AppColors.primary),
-          title: Text(
-            casa['nombre'].toString(),
-            style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w600),
-          ),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              IconButton(
-                icon: Icon(Icons.edit_rounded, color: AppColors.info, size: 20),
-                onPressed: () {
-                  TopToast.show(context, message: 'Editar Casa', icon: Icons.edit_rounded);
-                },
-              ),
-              IconButton(
-                icon: Icon(Icons.delete_rounded, color: AppColors.error, size: 20),
-                onPressed: () {
-                  _mostrarConfirmacionEliminacionCasa(casa['nombre'].toString(), casa['id'].toString());
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+  Future<void> _eliminarCasa(String id, String nombre) async {
+    setState(() => _isRefreshing = true);
+    try {
+      await _repo.deleteCasa(id);
+      await _loadData(silent: true);
+      if (mounted) {
+        TopToast.showSuccess(context, '$nombre eliminada correctamente');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isRefreshing = false);
+        TopToast.showError(context, 'Error al eliminar casa: $e');
+      }
+    }
   }
 
   void _mostrarConfirmacionEliminacionCasa(String nombreCasa, String id) {
@@ -262,21 +224,9 @@ class _CasasScreenState extends State<CasasScreen> {
           ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: AppColors.error),
-            onPressed: () async {
+            onPressed: () {
               Navigator.pop(ctx);
-              setState(() => _isLoading = true);
-              try {
-                await _repo.deleteCasa(id);
-                await _loadData();
-                if (mounted) {
-                  TopToast.showSuccess(context, '$nombreCasa eliminada correctamente');
-                }
-              } catch (e) {
-                setState(() => _isLoading = false);
-                if (mounted) {
-                  TopToast.showError(context, 'Error al eliminar casa: $e');
-                }
-              }
+              _eliminarCasa(id, nombreCasa);
             },
             child: const Text('Eliminar'),
           ),
@@ -298,20 +248,20 @@ class _CasasScreenState extends State<CasasScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('¿Cuántas casas deseas crear automáticamente?'),
+              const Text('¿Cuántas casas deseas agregar a esta manzana?'),
               const SizedBox(height: AppSpacing.md),
               TextFormField(
                 controller: controller,
                 keyboardType: TextInputType.number,
                 autofocus: true,
                 decoration: InputDecoration(
-                  labelText: 'Cantidad',
+                  labelText: 'Cantidad de Casas',
                   hintText: 'Ej. 10',
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 validator: (val) {
-                  if (val == null || val.isEmpty) return 'Requerido';
-                  final num = int.tryParse(val);
+                  if (val == null || val.trim().isEmpty) return 'Requerido';
+                  final num = int.tryParse(val.trim());
                   if (num == null || num <= 0) return 'Ingrese un número válido';
                   if (num > 100) return 'Máximo 100 a la vez';
                   return null;
@@ -328,36 +278,449 @@ class _CasasScreenState extends State<CasasScreen> {
           FilledButton(
             onPressed: () async {
               if (formKey.currentState!.validate()) {
-                final cantidad = int.parse(controller.text);
+                final cantidad = int.parse(controller.text.trim());
                 Navigator.pop(ctx);
                 await _crearMultiplesCasas(manzanaId, casas, cantidad);
               }
             },
-            child: const Text('Crear'),
+            child: const Text('Crear Casas'),
           ),
         ],
       ),
     );
   }
 
-  Future<void> _crearMultiplesCasas(String manzanaId, List casas, int cantidad) async {
-    setState(() => _isLoading = true);
-    try {
-      final maxNumber = _getMaxCasaNumber(casas);
-      for (int i = 0; i < cantidad; i++) {
-        final nombre = 'Casa ${maxNumber + i + 1}';
-        await _repo.createCasa(nombre, manzanaId);
-      }
-      
-      await _loadData();
-      if (mounted) {
-        TopToast.showSuccess(context, '$cantidad casas creadas con éxito');
-      }
-    } catch (e) {
-      setState(() => _isLoading = false);
-      if (mounted) {
-        TopToast.showError(context, 'Error al crear casas: $e');
-      }
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Gestión de Casas / Lotes'),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_rounded),
+            onPressed: () => context.pop(),
+          ),
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
     }
+
+    if (_etapas.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Gestión de Casas / Lotes'),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_rounded),
+            onPressed: () => context.pop(),
+          ),
+        ),
+        body: const EmptyState(
+          icon: Icons.home_rounded,
+          title: 'No hay etapas',
+          description: 'Aún no has creado ninguna etapa ni estructura en el proyecto.',
+        ),
+      );
+    }
+
+    final activeEtapa = _etapas.firstWhere(
+      (e) => e['id'] == _selectedEtapaId,
+      orElse: () => _etapas.first,
+    );
+    final activeManzanas = List<Map<String, dynamic>>.from(activeEtapa['manzanas'] as List? ?? []);
+
+    Map<String, dynamic>? activeManzana;
+    if (activeManzanas.isNotEmpty) {
+      activeManzana = activeManzanas.firstWhere(
+        (m) => m['id'] == _selectedManzanaId,
+        orElse: () => activeManzanas.first,
+      );
+    }
+
+    final activeCasas = List<Map<String, dynamic>>.from(activeManzana?['casas'] as List? ?? []);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Gestión de Casas / Lotes'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => context.pop(),
+        ),
+        bottom: _isRefreshing
+            ? const PreferredSize(
+                preferredSize: Size.fromHeight(2),
+                child: LinearProgressIndicator(minHeight: 2),
+              )
+            : null,
+      ),
+      body: RefreshIndicator(
+        color: AppColors.primary,
+        onRefresh: () => _loadData(silent: true),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: AppSpacing.md),
+
+            // Fila 1: Selector de Etapa activa
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
+              child: Text(
+                'ETAPA ACTIVA',
+                style: AppTypography.caption.copyWith(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.8,
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
+              child: Row(
+                children: _etapas.map((etapa) {
+                  final isSelected = _selectedEtapaId == etapa['id'];
+                  final mzs = etapa['manzanas'] as List? ?? [];
+                  int totalCasas = 0;
+                  for (var m in mzs) {
+                    totalCasas += (m['casas'] as List? ?? []).length;
+                  }
+
+                  return Padding(
+                    padding: const EdgeInsets.only(right: AppSpacing.sm),
+                    child: ChoiceChip(
+                      label: Text('${etapa['nombre']} ($totalCasas)'),
+                      selected: isSelected,
+                      onSelected: (selected) {
+                        if (selected) {
+                          setState(() {
+                            _selectedEtapaId = etapa['id'];
+                            _syncSelectedManzana();
+                          });
+                        }
+                      },
+                      selectedColor: AppColors.primary,
+                      labelStyle: AppTypography.caption.copyWith(
+                        color: isSelected ? Colors.white : AppColors.textSecondary,
+                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                        fontSize: 12,
+                      ),
+                      backgroundColor: AppColors.surface,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
+                        side: BorderSide(
+                          color: isSelected ? AppColors.primary : AppColors.border,
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+
+            const SizedBox(height: AppSpacing.md),
+
+            // Fila 2: Selector de Manzana activa dentro de la etapa
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
+              child: Text(
+                'MANZANA ACTIVA',
+                style: AppTypography.caption.copyWith(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.8,
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            if (activeManzanas.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.screenPadding,
+                  vertical: AppSpacing.sm,
+                ),
+                child: Container(
+                  padding: const EdgeInsets.all(AppSpacing.sm),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline_rounded, size: 18, color: AppColors.textSecondary),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: Text(
+                          'No hay manzanas en esta etapa. Crea manzanas primero.',
+                          style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
+                child: Row(
+                  children: activeManzanas.map((manzana) {
+                    final isSelected = _selectedManzanaId == manzana['id'];
+                    final numCasas = (manzana['casas'] as List? ?? []).length;
+
+                    return Padding(
+                      padding: const EdgeInsets.only(right: AppSpacing.sm),
+                      child: ChoiceChip(
+                        label: Text('${manzana['nombre']} ($numCasas)'),
+                        selected: isSelected,
+                        onSelected: (selected) {
+                          if (selected) {
+                            setState(() => _selectedManzanaId = manzana['id']);
+                          }
+                        },
+                        selectedColor: AppColors.accentTeal,
+                        labelStyle: AppTypography.caption.copyWith(
+                          color: isSelected ? Colors.white : AppColors.textSecondary,
+                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                          fontSize: 12,
+                        ),
+                        backgroundColor: AppColors.surface,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
+                          side: BorderSide(
+                            color: isSelected ? AppColors.accentTeal : AppColors.border,
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+
+            const SizedBox(height: AppSpacing.md),
+
+            // Acciones fijas superiores de la Manzana activa
+            if (activeManzana != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _crearCasaAutomatica(
+                          activeManzana!['id'],
+                          activeCasas,
+                        ),
+                        icon: const Icon(Icons.add_rounded, size: 18),
+                        label: const Text(
+                          '+ 1 Casa',
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size.fromHeight(42),
+                          foregroundColor: AppColors.primary,
+                          side: BorderSide(color: AppColors.primary),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: FilledButton.tonalIcon(
+                        onPressed: () => _mostrarDialogoCreacionMultiple(
+                          activeManzana!['id'],
+                          activeCasas,
+                        ),
+                        icon: const Icon(Icons.library_add_rounded, size: 18),
+                        label: const Text(
+                          '+ Agregar Varias',
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        style: FilledButton.styleFrom(
+                          minimumSize: const Size.fromHeight(42),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+            const SizedBox(height: AppSpacing.md),
+            const Divider(height: 1),
+
+            // Encabezado del listado con contador
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.screenPadding,
+                AppSpacing.md,
+                AppSpacing.screenPadding,
+                AppSpacing.sm,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    activeManzana != null
+                        ? 'Casas en ${activeManzana['nombre']}'
+                        : 'Casas',
+                    style: AppTypography.subtitle.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
+                    ),
+                    child: Text(
+                      '${activeCasas.length} ${activeCasas.length == 1 ? "casa" : "casas"}',
+                      style: AppTypography.caption.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Listado de casas de la manzana activa
+            Expanded(
+              child: activeManzana == null
+                  ? Center(
+                      child: Text(
+                        'Selecciona o crea una manzana para ver sus casas.',
+                        style: TextStyle(color: AppColors.textSecondary),
+                      ),
+                    )
+                  : activeCasas.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.home_work_outlined, size: 48, color: AppColors.textSecondary),
+                              const SizedBox(height: AppSpacing.sm),
+                              Text(
+                                'No hay casas en ${activeManzana['nombre']}',
+                                style: AppTypography.bodyMedium.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                              const SizedBox(height: AppSpacing.xs),
+                              Text(
+                                'Usa los botones superiores para agregar casas a esta manzana.',
+                                style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+                              ),
+                            ],
+                          ),
+                        )
+                      : ListView.separated(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.screenPadding,
+                            vertical: AppSpacing.sm,
+                          ),
+                          itemCount: activeCasas.length,
+                          separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.xs),
+                          itemBuilder: (context, index) {
+                            final casa = activeCasas[index];
+                            final bool isOcupada = casa['ocupada'] == true;
+
+                            return Card(
+                              margin: EdgeInsets.zero,
+                              color: AppColors.card,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+                                side: BorderSide(color: AppColors.border),
+                              ),
+                              child: ListTile(
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: AppSpacing.md,
+                                  vertical: 2,
+                                ),
+                                leading: Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: (isOcupada ? AppColors.success : AppColors.primary)
+                                        .withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+                                  ),
+                                  child: Icon(
+                                    Icons.home_rounded,
+                                    color: isOcupada ? AppColors.success : AppColors.primary,
+                                    size: 20,
+                                  ),
+                                ),
+                                title: Text(
+                                  casa['nombre'].toString(),
+                                  style: AppTypography.bodyMedium.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                                subtitle: Row(
+                                  children: [
+                                    Container(
+                                      margin: const EdgeInsets.only(top: 4),
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: isOcupada
+                                            ? AppColors.success.withValues(alpha: 0.12)
+                                            : AppColors.surface,
+                                        borderRadius: BorderRadius.circular(4),
+                                        border: Border.all(
+                                          color: isOcupada
+                                              ? AppColors.success.withValues(alpha: 0.3)
+                                              : AppColors.border,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        isOcupada ? 'Ocupada' : 'Disponible',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: isOcupada ? FontWeight.w700 : FontWeight.w500,
+                                          color: isOcupada ? AppColors.success : AppColors.textSecondary,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                trailing: isOcupada
+                                    ? Tooltip(
+                                        message: 'Casa ocupada por residente',
+                                        child: Icon(
+                                          Icons.person_rounded,
+                                          color: AppColors.success,
+                                          size: 20,
+                                        ),
+                                      )
+                                    : IconButton(
+                                        icon: Icon(
+                                          Icons.delete_outline_rounded,
+                                          color: AppColors.error,
+                                          size: 20,
+                                        ),
+                                        onPressed: () => _mostrarConfirmacionEliminacionCasa(
+                                          casa['nombre'].toString(),
+                                          casa['id'].toString(),
+                                        ),
+                                      ),
+                              ),
+                            );
+                          },
+                        ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
