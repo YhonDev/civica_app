@@ -1,3 +1,4 @@
+import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../features/auth/auth_cubit.dart';
@@ -6,11 +7,11 @@ import 'session_lifecycle_manager.dart';
 
 /// Detector global de actividad e inactividad biométrica.
 ///
-/// Si la sesión está activa y la biometría habilitada:
+/// Protege la privacidad visual con desenfoque (blur) cuando se requiere autenticación:
 /// - Al ocurrir inactividad (>5 min) o retorno de segundo plano (>30 seg),
-///   se activa directamente el diálogo nativo del sensor de huellas de Android
-///   sobre la pantalla en la que el usuario estaba trabajando.
-/// - Si el usuario verifica la huella, continúa en su pantalla sin interrupciones.
+///   desenfoca el contenido sensible de la pantalla con un velo translúcido claro
+///   y activa directamente el sensor nativo de huella dactilar de Android.
+/// - Si el usuario verifica la huella, el desenfoque se retira al instante y continúa en su pantalla.
 /// - Si cancela o falla, se redirige limpiamente a la pantalla de Login.
 class BiometricLifecycleLock extends StatefulWidget {
   final Widget child;
@@ -22,6 +23,8 @@ class BiometricLifecycleLock extends StatefulWidget {
 }
 
 class _BiometricLifecycleLockState extends State<BiometricLifecycleLock> {
+  bool _isBlurred = false;
+
   @override
   void initState() {
     super.initState();
@@ -35,11 +38,17 @@ class _BiometricLifecycleLockState extends State<BiometricLifecycleLock> {
     final authState = authCubit.state;
     if (!authState.isAuthenticated) return;
 
+    if (mounted) {
+      setState(() => _isBlurred = true);
+    }
+
     final success = await BiometricAuthService.instance.authenticate(
       localizedReason: 'Escanea tu huella dactilar para continuar en Cívica Pago',
     );
 
     if (!mounted) return;
+
+    setState(() => _isBlurred = false);
 
     if (success) {
       SessionLifecycleManager.instance.recordUserActivity();
@@ -55,7 +64,20 @@ class _BiometricLifecycleLockState extends State<BiometricLifecycleLock> {
       behavior: HitTestBehavior.translucent,
       onPointerDown: (_) => SessionLifecycleManager.instance.recordUserActivity(),
       onPointerMove: (_) => SessionLifecycleManager.instance.recordUserActivity(),
-      child: widget.child,
+      child: Stack(
+        children: [
+          widget.child,
+          if (_isBlurred)
+            Positioned.fill(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
+                child: Container(
+                  color: Colors.white.withValues(alpha: 0.35),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
