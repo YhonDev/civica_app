@@ -41,75 +41,68 @@ class CivicaPagoApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<bool>(
-      valueListenable: darkThemeNotifier,
-      builder: (context, isDark, _) {
-        AppColors.setDarkMode(isDark);
-        return MaterialApp(
-          title: 'Cívica Pago',
-          debugShowCheckedModeBanner: false,
-          theme: buildLightTheme(),
-          darkTheme: buildDarkTheme(),
-          themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
-          home: BlocProvider(
-            create: (_) => AuthCubit()..checkSession(),
-            child: const AuthGate(),
-          ),
-        );
-      },
+    return BlocProvider(
+      create: (_) => AuthCubit()..checkSession(),
+      child: const _AppRoot(),
     );
   }
 }
 
-class AuthGate extends StatelessWidget {
-  const AuthGate({super.key});
+class _AppRoot extends StatelessWidget {
+  const _AppRoot();
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<AuthCubit, AuthState>(
-      builder: (context, state) {
-        if (state.status == AuthStatus.initial ||
-            state.status == AuthStatus.loading) {
-          return Scaffold(
-            body: Center(
-              child: SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Theme.of(context).colorScheme.primary,
+    return ValueListenableBuilder<bool>(
+      valueListenable: darkThemeNotifier,
+      builder: (context, isDark, _) {
+        return BlocBuilder<AuthCubit, AuthState>(
+          builder: (context, state) {
+            if (state.status == AuthStatus.initial ||
+                state.status == AuthStatus.loading) {
+              return MaterialApp(
+                title: 'Cívica Pago',
+                debugShowCheckedModeBanner: false,
+                theme: buildLightTheme(),
+                darkTheme: buildDarkTheme(),
+                themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
+                themeAnimationDuration: const Duration(milliseconds: 300),
+                themeAnimationCurve: Curves.easeInOut,
+                home: Scaffold(
+                  body: Center(
+                    child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-            ),
-          );
-        }
-        return _RouterWithAuth();
-      },
-    );
-  }
-}
-
-class _RouterWithAuth extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return ValueListenableBuilder<bool>(
-      valueListenable: darkThemeNotifier,
-      builder: (context, isDark, _) {
-        AppColors.setDarkMode(isDark);
-        return BlocListener<AuthCubit, AuthState>(
-          listener: (context, state) {
-            if (!state.isAuthenticated) {
-              appRouter.go('/login');
+              );
             }
+
+            return BlocListener<AuthCubit, AuthState>(
+              listener: (context, authState) {
+                if (authState.isAuthenticated) {
+                  appRouter.go('/');
+                } else {
+                  appRouter.go('/login');
+                }
+              },
+              child: MaterialApp.router(
+                title: 'Cívica Pago',
+                debugShowCheckedModeBanner: false,
+                theme: buildLightTheme(),
+                darkTheme: buildDarkTheme(),
+                themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
+                themeAnimationDuration: const Duration(milliseconds: 300),
+                themeAnimationCurve: Curves.easeInOut,
+                routerConfig: appRouter,
+              ),
+            );
           },
-          child: MaterialApp.router(
-            title: 'Cívica Pago',
-            debugShowCheckedModeBanner: false,
-            theme: buildLightTheme(),
-            darkTheme: buildDarkTheme(),
-            themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
-            routerConfig: appRouter,
-          ),
         );
       },
     );

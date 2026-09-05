@@ -148,11 +148,15 @@ class _SystemSettingsSectionState extends State<SystemSettingsSection> {
                 ),
               ),
             ),
-            Container(
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
               decoration: BoxDecoration(
-                color: AppColors.card,
+                color: isDark ? AppColors.darkCard : AppColors.lightCard,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+                border: Border.all(
+                  color: (isDark ? AppColors.darkBorder : AppColors.lightBorder).withValues(alpha: 0.5),
+                ),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.02),
@@ -170,18 +174,20 @@ class _SystemSettingsSectionState extends State<SystemSettingsSection> {
                         color: AppColors.accentPurple.withValues(alpha: 0.10),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Icon(Icons.palette_outlined, color: AppColors.accentPurple, size: 20),
+                      child: const Icon(Icons.palette_outlined, color: AppColors.accentPurple, size: 20),
                     ),
                     title: Text(
                       'Tema oscuro',
                       style: AppTypography.body.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                        color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
                       ),
                     ),
                     subtitle: Text(
                       isDark ? 'Modo noche activo' : 'Modo claro activo',
-                      style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+                      style: AppTypography.caption.copyWith(
+                        color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                      ),
                     ),
                     trailing: Switch(
                       value: isDark,
@@ -191,7 +197,11 @@ class _SystemSettingsSectionState extends State<SystemSettingsSection> {
                       activeThumbColor: AppColors.primary,
                     ),
                   ),
-                  Divider(height: 1, indent: 56, color: AppColors.border.withValues(alpha: 0.5)),
+                  Divider(
+                    height: 1,
+                    indent: 56,
+                    color: (isDark ? AppColors.darkBorder : AppColors.lightBorder).withValues(alpha: 0.5),
+                  ),
                   ListTile(
                     leading: Container(
                       padding: const EdgeInsets.all(8),
@@ -199,20 +209,22 @@ class _SystemSettingsSectionState extends State<SystemSettingsSection> {
                         color: AppColors.primary.withValues(alpha: 0.10),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Icon(Icons.fingerprint_rounded, color: AppColors.primary, size: 20),
+                      child: const Icon(Icons.fingerprint_rounded, color: AppColors.primary, size: 20),
                     ),
                     title: Text(
                       'Acceso Biométrico / Face ID',
                       style: AppTypography.body.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                        color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
                       ),
                     ),
                     subtitle: Text(
                       _isBiometricsSupported
                           ? (_isBiometricsEnabled ? 'Habilitado para inicio rápido' : 'Deshabilitado')
                           : 'No disponible en este dispositivo',
-                      style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+                      style: AppTypography.caption.copyWith(
+                        color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                      ),
                     ),
                     trailing: _isBiometricsSupported
                         ? Switch(
@@ -222,7 +234,11 @@ class _SystemSettingsSectionState extends State<SystemSettingsSection> {
                           )
                         : null,
                   ),
-                  Divider(height: 1, indent: 56, color: AppColors.border.withValues(alpha: 0.5)),
+                  Divider(
+                    height: 1,
+                    indent: 56,
+                    color: (isDark ? AppColors.darkBorder : AppColors.lightBorder).withValues(alpha: 0.5),
+                  ),
                   ListTile(
                     leading: Container(
                       padding: const EdgeInsets.all(8),
@@ -230,18 +246,20 @@ class _SystemSettingsSectionState extends State<SystemSettingsSection> {
                         color: AppColors.warning.withValues(alpha: 0.10),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Icon(Icons.notifications_active_outlined, color: AppColors.warning, size: 20),
+                      child: const Icon(Icons.notifications_active_outlined, color: AppColors.warning, size: 20),
                     ),
                     title: Text(
                       'Notificaciones y Recordatorios',
                       style: AppTypography.body.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                        color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
                       ),
                     ),
                     subtitle: Text(
                       _notificacionesEnabled ? 'Avisos de cobros y vencimientos' : 'Alertas desactivadas',
-                      style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+                      style: AppTypography.caption.copyWith(
+                        color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                      ),
                     ),
                     trailing: Switch(
                       value: _notificacionesEnabled,
@@ -255,7 +273,11 @@ class _SystemSettingsSectionState extends State<SystemSettingsSection> {
                       activeThumbColor: AppColors.primary,
                     ),
                   ),
-                  Divider(height: 1, indent: 56, color: AppColors.border.withValues(alpha: 0.5)),
+                  Divider(
+                    height: 1,
+                    indent: 56,
+                    color: (isDark ? AppColors.darkBorder : AppColors.lightBorder).withValues(alpha: 0.5),
+                  ),
                   ListTile(
                     leading: Container(
                       padding: const EdgeInsets.all(8),
@@ -263,20 +285,25 @@ class _SystemSettingsSectionState extends State<SystemSettingsSection> {
                         color: AppColors.error.withValues(alpha: 0.10),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Icon(Icons.lock_outlined, color: AppColors.error, size: 20),
+                      child: const Icon(Icons.lock_outlined, color: AppColors.error, size: 20),
                     ),
                     title: Text(
                       'Seguridad y Contraseña',
                       style: AppTypography.body.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                        color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
                       ),
                     ),
                     subtitle: Text(
                       'Actualiza tu clave de acceso',
-                      style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+                      style: AppTypography.caption.copyWith(
+                        color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                      ),
                     ),
-                    trailing: Icon(Icons.chevron_right_rounded, color: AppColors.textDisabled),
+                    trailing: Icon(
+                      Icons.chevron_right_rounded,
+                      color: isDark ? AppColors.darkTextDisabled : AppColors.lightTextDisabled,
+                    ),
                     onTap: () => _mostrarModalCambiarPassword(context),
                   ),
                 ],
