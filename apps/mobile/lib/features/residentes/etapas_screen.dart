@@ -19,15 +19,16 @@ class EtapasScreen extends StatefulWidget {
 class _EtapasScreenState extends State<EtapasScreen> {
   final ComunidadRepository _repo = ComunidadRepository();
   bool _isLoading = true;
+  bool _isRefreshing = false;
   List<Map<String, dynamic>> _etapas = [];
 
   @override
   void initState() {
     super.initState();
-    _loadEtapas();
+    _loadData();
   }
 
-  /// Obtiene el proyecto por defecto si no se proporcionó un proyectoId.
+  /// Obtains the default project ID if none was provided.
   Future<String> _getProyectoId() async {
     if (widget.proyectoId.isNotEmpty) return widget.proyectoId;
     final proys = await _repo.getProyectos();
@@ -35,46 +36,79 @@ class _EtapasScreenState extends State<EtapasScreen> {
     throw Exception('No hay proyectos disponibles');
   }
 
-  Future<void> _loadEtapas() async {
-    setState(() => _isLoading = true);
+  Future<void> _loadData({bool silent = false}) async {
+    if (!silent) {
+      setState(() => _isLoading = true);
+    } else {
+      setState(() => _isRefreshing = true);
+    }
     try {
       final pId = await _getProyectoId();
       final etapas = await _repo.getEtapasPorProyecto(pId);
-      setState(() {
-        _etapas = etapas;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() => _isLoading = false);
       if (mounted) {
+        setState(() {
+          _etapas = etapas;
+          _isLoading = false;
+          _isRefreshing = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _isRefreshing = false;
+        });
         TopToast.showError(context, 'Error al cargar etapas: $e');
       }
     }
   }
 
   Future<void> _crearEtapaAutomatica() async {
-    setState(() => _isLoading = true);
     try {
       final pId = await _getProyectoId();
-      
       final maxNumber = _getMaxEtapaNumber();
       final nombre = 'Etapa ${maxNumber + 1}';
-      
+
       await _repo.createEtapa(nombre, pId);
-      await _loadEtapas();
+      await _loadData(silent: true);
       if (mounted) {
         TopToast.showSuccess(context, '$nombre creada exitosamente');
       }
     } catch (e) {
-      setState(() => _isLoading = false);
       if (mounted) {
         TopToast.showError(context, 'Error al crear etapa: $e');
       }
     }
   }
 
+  int _getMaxEtapaNumber() {
+    int max = 0;
+    for (var e in _etapas) {
+      final name = e['nombre'].toString();
+      final match = RegExp(r'Etapa\s+(\d+)').firstMatch(name);
+      if (match != null) {
+        final num = int.tryParse(match.group(1)!) ?? 0;
+        if (num > max) max = num;
+      }
+    }
+    // If none match 'Etapa X' pattern, fall back to list length
+    return max == 0 && _etapas.isNotEmpty ? _etapas.length : max;
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Gestión de Etapas'),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_rounded),
+            onPressed: () => context.pop(),
+          ),
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -90,59 +124,181 @@ class _EtapasScreenState extends State<EtapasScreen> {
             onPressed: () => _mostrarDialogoCreacionMultiple(),
           ),
         ],
+        bottom: _isRefreshing
+            ? const PreferredSize(
+                preferredSize: Size.fromHeight(2),
+                child: LinearProgressIndicator(minHeight: 2),
+              )
+            : null,
       ),
-      body: _isLoading 
-          ? const Center(child: CircularProgressIndicator())
-          : _etapas.isEmpty
-          ? const EmptyState(
-              icon: Icons.account_tree_outlined,
-              title: 'No hay etapas',
-              description: 'Aún no has creado ninguna etapa para este proyecto.',
-            )
-          : ListView.builder(
-              padding: const EdgeInsets.all(AppSpacing.screenPadding),
-              itemCount: _etapas.length,
-              itemBuilder: (context, index) {
-                final etapa = _etapas[index];
-                return Card(
-                  margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-                  color: AppColors.surface,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    side: BorderSide(color: AppColors.border),
+      body: RefreshIndicator(
+        color: AppColors.primary,
+        onRefresh: () => _loadData(silent: true),
+        child: _etapas.isEmpty
+            ? ListView(
+                children: [
+                  SizedBox(height: MediaQuery.of(context).size.height * 0.25),
+                  const EmptyState(
+                    icon: Icons.account_tree_outlined,
+                    title: 'No hay etapas',
+                    description:
+                        'Aún no has creado ninguna etapa para este proyecto.',
                   ),
-                  child: ListTile(
-                    leading: Icon(Icons.folder_rounded, color: AppColors.primary),
-                    title: Text(
-                      etapa['nombre'],
-                      style: AppTypography.subtitle.copyWith(fontWeight: FontWeight.w600),
+                  const SizedBox(height: AppSpacing.md),
+                  Center(
+                    child: OutlinedButton.icon(
+                      onPressed: _crearEtapaAutomatica,
+                      icon: const Icon(Icons.add_rounded),
+                      label: const Text('Crear primera etapa'),
                     ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: Icon(Icons.edit_rounded, color: AppColors.info, size: 20),
-                          onPressed: () {
-                            TopToast.show(context, message: 'Editar Etapa', icon: Icons.edit_rounded);
-                          },
+                  ),
+                ],
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: AppSpacing.md),
+                  // Compact action button
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.screenPadding,
+                    ),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: FilledButton.tonalIcon(
+                        onPressed: _crearEtapaAutomatica,
+                        icon: const Icon(Icons.add_rounded, size: 18),
+                        label: const Text(
+                          'Nueva Etapa',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                          ),
                         ),
-                        IconButton(
-                          icon: Icon(Icons.delete_rounded, color: AppColors.error, size: 20),
-                          onPressed: () {
-                            _mostrarConfirmacionEliminacion(etapa['nombre'], etapa['id'].toString());
-                          },
+                        style: FilledButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 8,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.circular(AppSpacing.buttonRadius),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  const Divider(height: 1),
+                  // List header with counter
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.screenPadding,
+                      AppSpacing.md,
+                      AppSpacing.screenPadding,
+                      AppSpacing.sm,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Etapas del Proyecto',
+                          style: AppTypography.bodyMedium.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            '${_etapas.length} registradas',
+                            style: AppTypography.smallBold.copyWith(
+                              color: AppColors.primary,
+                            ),
+                          ),
                         ),
                       ],
                     ),
                   ),
-                );
-              },
-            ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _crearEtapaAutomatica,
-        backgroundColor: AppColors.primary,
-        child: Icon(Icons.add_rounded, color: Colors.white),
+                  // Etapas list
+                  Expanded(
+                    child: ListView.builder(
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.screenPadding,
+                        AppSpacing.xs,
+                        AppSpacing.screenPadding,
+                        AppSpacing.xl,
+                      ),
+                      itemCount: _etapas.length,
+                      itemBuilder: (context, index) {
+                        final etapa = _etapas[index];
+                        final nombre = etapa['nombre'].toString();
+                        final id = etapa['id'].toString();
+                        final manzanaCount =
+                            (etapa['manzanas'] as List?)?.length ?? 0;
+
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+                          color: AppColors.card,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.circular(AppSpacing.cardRadius),
+                            side: BorderSide(
+                              color: AppColors.border.withValues(alpha: 0.6),
+                            ),
+                          ),
+                          child: ListTile(
+                            leading: Container(
+                              width: 38,
+                              height: 38,
+                              decoration: BoxDecoration(
+                                color:
+                                    AppColors.primary.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Icon(
+                                Icons.folder_rounded,
+                                color: AppColors.primary,
+                                size: 20,
+                              ),
+                            ),
+                            title: Text(
+                              nombre,
+                              style: AppTypography.bodyMedium.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            subtitle: Text(
+                              '$manzanaCount manzana${manzanaCount == 1 ? '' : 's'}',
+                              style: AppTypography.caption.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                            trailing: IconButton(
+                              icon: Icon(Icons.delete_rounded,
+                                  color: AppColors.error, size: 20),
+                              tooltip: 'Eliminar Etapa',
+                              onPressed: () {
+                                _mostrarConfirmacionEliminacion(nombre, id);
+                              },
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
       ),
     );
   }
@@ -199,17 +355,17 @@ class _EtapasScreenState extends State<EtapasScreen> {
             style: FilledButton.styleFrom(backgroundColor: AppColors.error),
             onPressed: () async {
               Navigator.pop(ctx);
-              setState(() => _isLoading = true);
               try {
                 await _repo.deleteEtapa(id);
-                await _loadEtapas();
+                await _loadData(silent: true);
                 if (mounted) {
-                  TopToast.showSuccess(context, '$nombreEtapa eliminada correctamente');
+                  TopToast.showSuccess(
+                      context, '$nombreEtapa eliminada correctamente');
                 }
               } catch (e) {
-                setState(() => _isLoading = false);
                 if (mounted) {
-                  TopToast.showError(context, 'Error al eliminar etapa: $e');
+                  TopToast.showError(
+                      context, 'Error al eliminar etapa: $e');
                 }
               }
             },
@@ -218,20 +374,6 @@ class _EtapasScreenState extends State<EtapasScreen> {
         ],
       ),
     );
-  }
-
-  int _getMaxEtapaNumber() {
-    int max = 0;
-    for (var e in _etapas) {
-      final name = e['nombre'].toString();
-      final match = RegExp(r'Etapa\s+(\d+)').firstMatch(name);
-      if (match != null) {
-        final num = int.tryParse(match.group(1)!) ?? 0;
-        if (num > max) max = num;
-      }
-    }
-    // Si no hay ninguna con formato 'Etapa X', usamos el tamaño de la lista como fallback
-    return max == 0 && _etapas.isNotEmpty ? _etapas.length : max;
   }
 
   void _mostrarDialogoCreacionMultiple() {
@@ -256,12 +398,15 @@ class _EtapasScreenState extends State<EtapasScreen> {
                 decoration: InputDecoration(
                   labelText: 'Cantidad',
                   hintText: 'Ej. 5',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12)),
                 ),
                 validator: (val) {
                   if (val == null || val.isEmpty) return 'Requerido';
                   final num = int.tryParse(val);
-                  if (num == null || num <= 0) return 'Ingrese un número válido';
+                  if (num == null || num <= 0) {
+                    return 'Ingrese un número válido';
+                  }
                   if (num > 50) return 'Máximo 50 a la vez';
                   return null;
                 },
@@ -290,7 +435,6 @@ class _EtapasScreenState extends State<EtapasScreen> {
   }
 
   Future<void> _crearMultiplesEtapas(int cantidad) async {
-    setState(() => _isLoading = true);
     try {
       final pId = await _getProyectoId();
       int maxNumber = _getMaxEtapaNumber();
@@ -298,13 +442,12 @@ class _EtapasScreenState extends State<EtapasScreen> {
         final nombre = 'Etapa ${maxNumber + i + 1}';
         await _repo.createEtapa(nombre, pId);
       }
-      
-      await _loadEtapas();
+
+      await _loadData(silent: true);
       if (mounted) {
         TopToast.showSuccess(context, '$cantidad etapas creadas con éxito');
       }
     } catch (e) {
-      setState(() => _isLoading = false);
       if (mounted) {
         TopToast.showError(context, 'Error al crear etapas: $e');
       }
