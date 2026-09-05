@@ -72,7 +72,7 @@ class _BiometricLifecycleLockState extends State<BiometricLifecycleLock> {
     }
   }
 
-  void _handleLogout() {
+  void _handleIngresarConClave() {
     SessionLifecycleManager.instance.unlock();
     context.read<AuthCubit>().logout();
   }
@@ -160,9 +160,9 @@ class _BiometricLifecycleLockState extends State<BiometricLifecycleLock> {
                               ),
                               const SizedBox(height: AppSpacing.sm),
                               TextButton(
-                                onPressed: _handleLogout,
+                                onPressed: _handleIngresarConClave,
                                 child: Text(
-                                  'Cerrar sesión / Ingresar con clave',
+                                  'Ingresar con clave',
                                   style: AppTypography.caption.copyWith(
                                     color: AppColors.primary,
                                     fontWeight: FontWeight.w600,

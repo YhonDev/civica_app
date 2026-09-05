@@ -38,6 +38,9 @@ class _LoginScreenState extends State<LoginScreen> {
         _rememberUser = rememberEnabled;
         if (savedUsername != null && savedUsername.isNotEmpty) {
           _emailCtrl.text = savedUsername;
+          _emailCtrl.selection = TextSelection.fromPosition(
+            TextPosition(offset: savedUsername.length),
+          );
         }
       });
     }
@@ -47,11 +50,6 @@ class _LoginScreenState extends State<LoginScreen> {
     final enabled = await BiometricAuthService.instance.isBiometricsEnabled();
     if (mounted) {
       setState(() => _isBiometricsEnabled = enabled);
-      if (enabled) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _autenticarConHuella();
-        });
-      }
     }
   }
 
@@ -361,11 +359,8 @@ class _LoginScreenState extends State<LoginScreen> {
       username: username,
     );
 
-    // Si la biometría está habilitada, guardar credenciales seguras para inicio rápido
-    final bioEnabled = await BiometricAuthService.instance.isBiometricsEnabled();
-    if (bioEnabled) {
-      await BiometricAuthService.instance.saveBiometricCredentials(username, password);
-    }
+    // Guardar credenciales cifradas en Keystore para permitir acceso biométrico
+    await BiometricAuthService.instance.saveBiometricCredentials(username, password);
 
     if (!context.mounted) return;
     context.read<AuthCubit>().login(
