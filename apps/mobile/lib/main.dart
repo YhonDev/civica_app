@@ -10,6 +10,7 @@ import 'core/sync/connectivity_detector.dart';
 import 'core/sync/sync_service.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/app_colors.dart';
+import 'core/security/biometric_lifecycle_lock.dart';
 import 'core/router/app_router.dart';
 import 'features/auth/auth_cubit.dart';
 
@@ -100,6 +101,9 @@ class _AppRoot extends StatelessWidget {
                 themeAnimationDuration: const Duration(milliseconds: 300),
                 themeAnimationCurve: Curves.easeInOut,
                 routerConfig: appRouter,
+                builder: (context, child) => BiometricLifecycleLock(
+                  child: child ?? const SizedBox.shrink(),
+                ),
               ),
             );
           },

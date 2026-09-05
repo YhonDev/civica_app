@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'auth_cubit.dart';
 import '../../core/security/biometric_auth_service.dart';
 import '../../core/network/api_client.dart';
+import '../../core/widgets/top_toast.dart';
 
 /// Pantalla de inicio de sesión con JWT.
 class LoginScreen extends StatefulWidget {
@@ -20,11 +21,26 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordCtrl = TextEditingController();
   bool _obscurePassword = true;
   bool _isBiometricsEnabled = false;
+  bool _rememberUser = false;
 
   @override
   void initState() {
     super.initState();
+    _loadInitialPreferences();
     _checkAutoBiometrics();
+  }
+
+  Future<void> _loadInitialPreferences() async {
+    final rememberEnabled = await BiometricAuthService.instance.isRememberUsernameEnabled();
+    final savedUsername = await BiometricAuthService.instance.getRememberedUsername();
+    if (mounted) {
+      setState(() {
+        _rememberUser = rememberEnabled;
+        if (savedUsername != null && savedUsername.isNotEmpty) {
+          _emailCtrl.text = savedUsername;
+        }
+      });
+    }
   }
 
   Future<void> _checkAutoBiometrics() async {
@@ -43,11 +59,27 @@ class _LoginScreenState extends State<LoginScreen> {
     final success = await BiometricAuthService.instance.authenticate(
       localizedReason: 'Inicia sesión con tu huella dactilar o Face ID',
     );
-    if (success && mounted) {
-      final authCubit = context.read<AuthCubit>();
-      final hasSession = await ApiClient.instance.isLoggedIn();
-      if (mounted && hasSession) {
-        await authCubit.checkSession();
+    if (!success || !mounted) return;
+
+    final authCubit = context.read<AuthCubit>();
+    final hasSession = await ApiClient.instance.isLoggedIn();
+    if (hasSession) {
+      await authCubit.checkSession();
+      return;
+    }
+
+    final creds = await BiometricAuthService.instance.getBiometricCredentials();
+    if (creds != null && creds['username'] != null && creds['password'] != null) {
+      await authCubit.login(
+        username: creds['username']!,
+        password: creds['password']!,
+      );
+    } else {
+      if (mounted) {
+        TopToast.showInfo(
+          context,
+          'Inicia sesión con tu contraseña una vez para sincronizar tu huella',
+        );
       }
     }
   }
@@ -156,6 +188,33 @@ class _LoginScreenState extends State<LoginScreen> {
                         },
                         textInputAction: TextInputAction.done,
                         onFieldSubmitted: (_) => _handleLogin(context),
+                      ),
+                      const SizedBox(height: 8),
+
+                      // Recordar usuario Checkbox
+                      Row(
+                        children: [
+                          SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: Checkbox(
+                              value: _rememberUser,
+                              onChanged: (val) {
+                                setState(() => _rememberUser = val ?? false);
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          GestureDetector(
+                            onTap: () => setState(() => _rememberUser = !_rememberUser),
+                            child: Text(
+                              'Recordar usuario',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 8),
 
@@ -290,12 +349,28 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  void _handleLogin(BuildContext context) {
+  void _handleLogin(BuildContext context) async {
     if (!_formKey.currentState!.validate()) return;
 
+    final username = _emailCtrl.text.trim();
+    final password = _passwordCtrl.text;
+
+    // Guardar preferencia de recordar usuario
+    await BiometricAuthService.instance.setRememberUsername(
+      remember: _rememberUser,
+      username: username,
+    );
+
+    // Si la biometría está habilitada, guardar credenciales seguras para inicio rápido
+    final bioEnabled = await BiometricAuthService.instance.isBiometricsEnabled();
+    if (bioEnabled) {
+      await BiometricAuthService.instance.saveBiometricCredentials(username, password);
+    }
+
+    if (!context.mounted) return;
     context.read<AuthCubit>().login(
-          username: _emailCtrl.text.trim(),
-          password: _passwordCtrl.text,
+          username: username,
+          password: password,
         );
   }
 }

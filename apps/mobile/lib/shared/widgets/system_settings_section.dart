@@ -28,7 +28,6 @@ class SystemSettingsSection extends StatefulWidget {
 class _SystemSettingsSectionState extends State<SystemSettingsSection> {
   bool _isBiometricsSupported = false;
   bool _isBiometricsEnabled = false;
-  bool _notificacionesEnabled = true;
 
   @override
   void initState() {
@@ -233,45 +232,6 @@ class _SystemSettingsSectionState extends State<SystemSettingsSection> {
                             activeThumbColor: AppColors.primary,
                           )
                         : null,
-                  ),
-                  Divider(
-                    height: 1,
-                    indent: 56,
-                    color: (isDark ? AppColors.darkBorder : AppColors.lightBorder).withValues(alpha: 0.5),
-                  ),
-                  ListTile(
-                    leading: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AppColors.warning.withValues(alpha: 0.10),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(Icons.notifications_active_outlined, color: AppColors.warning, size: 20),
-                    ),
-                    title: Text(
-                      'Notificaciones y Recordatorios',
-                      style: AppTypography.body.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
-                      ),
-                    ),
-                    subtitle: Text(
-                      _notificacionesEnabled ? 'Avisos de cobros y vencimientos' : 'Alertas desactivadas',
-                      style: AppTypography.caption.copyWith(
-                        color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
-                      ),
-                    ),
-                    trailing: Switch(
-                      value: _notificacionesEnabled,
-                      onChanged: (val) {
-                        setState(() => _notificacionesEnabled = val);
-                        TopToast.showSuccess(
-                          context,
-                          val ? 'Notificaciones activadas' : 'Notificaciones pausadas',
-                        );
-                      },
-                      activeThumbColor: AppColors.primary,
-                    ),
                   ),
                   Divider(
                     height: 1,

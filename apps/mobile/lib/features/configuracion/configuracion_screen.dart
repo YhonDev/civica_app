@@ -45,27 +45,14 @@ class ConfiguracionScreen extends StatelessWidget {
                     const SizedBox(height: AppSpacing.lg),
 
                     // Herramientas adicionales según rol
-                    if (rol == 'COBRADOR' || rol == 'ADMIN') ...[
+                    if (rol == 'COBRADOR') ...[
                       Card(
-                        child: Column(
-                          children: [
-                            if (rol == 'COBRADOR')
-                              ListTile(
-                                leading: const Icon(Icons.cloud_sync_outlined),
-                                title: const Text('Cola de Sincronización'),
-                                subtitle: const Text('Ver pagos pendientes de envío'),
-                                trailing: Icon(Icons.chevron_right_rounded, color: AppColors.textDisabled),
-                                onTap: () => context.push('/sync-queue'),
-                              ),
-                            if (rol == 'ADMIN')
-                              ListTile(
-                                leading: const Icon(Icons.mail_lock_outlined),
-                                title: const Text('Notificaciones Fallidas'),
-                                subtitle: const Text('Revisar correos no entregados'),
-                                trailing: Icon(Icons.chevron_right_rounded, color: AppColors.textDisabled),
-                                onTap: () => context.push('/notificaciones-fallidas'),
-                              ),
-                          ],
+                        child: ListTile(
+                          leading: const Icon(Icons.cloud_sync_outlined),
+                          title: const Text('Cola de Sincronización'),
+                          subtitle: const Text('Ver pagos pendientes de envío'),
+                          trailing: Icon(Icons.chevron_right_rounded, color: AppColors.textDisabled),
+                          onTap: () => context.push('/sync-queue'),
                         ),
                       ),
                       const SizedBox(height: AppSpacing.lg),
