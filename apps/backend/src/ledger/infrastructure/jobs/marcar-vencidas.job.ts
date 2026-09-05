@@ -14,7 +14,7 @@ export class MarcarVencidasJob {
 
   constructor(private readonly marcarVencidasUC: MarcarVencidasUseCase) {}
 
-  @Cron('0 48 * * * *')
+  @Cron('0 10 0 * * *')
   async handleCron() {
     this.logger.log('⏰ Iniciando marcado de cobros vencidos...');
 

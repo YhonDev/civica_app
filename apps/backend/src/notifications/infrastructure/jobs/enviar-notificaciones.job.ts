@@ -18,7 +18,7 @@ export class EnviarNotificacionesJob {
     private readonly emailSender: EmailSender,
   ) {}
 
-  @Cron('0 51 * * * *')
+  @Cron(CronExpression.EVERY_5_MINUTES)
   async handleCron() {
     const pendientes = await this.notificacionRepository.find({
       where: [
