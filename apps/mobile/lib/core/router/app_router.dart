@@ -44,7 +44,6 @@ import '../../features/reportes/reportes_screen.dart';
 import '../../features/residentes/asignar_etapas_screen.dart';
 import '../../features/residentes/montos_screen.dart';
 import '../../features/residentes/residente_inmueble_screen.dart';
-import '../../features/notificaciones/notificaciones_fallidas_screen.dart';
 import '../../features/sync/sync_queue_screen.dart';
 
 /// GoRouter configuration — role-aware.
@@ -310,13 +309,6 @@ final GoRouter appRouter = GoRouter(
           path: '/sync-queue',
           name: 'sync-queue',
           builder: (_, _) => const SyncQueueScreen(),
-        ),
-
-        // Notificaciones Fallidas (Admin)
-        GoRoute(
-          path: '/notificaciones-fallidas',
-          name: 'notificaciones-fallidas',
-          builder: (_, _) => const NotificacionesFallidasScreen(),
         ),
       ],
     ),
