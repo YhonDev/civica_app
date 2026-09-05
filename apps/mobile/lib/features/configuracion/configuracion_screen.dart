@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../features/auth/auth_cubit.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/user_profile_header.dart';
 import '../../shared/widgets/system_settings_section.dart';
 import '../../shared/widgets/screen_header.dart';
@@ -23,7 +24,10 @@ class ConfiguracionScreen extends StatelessWidget {
     final nombre = user?['nombre'] as String? ?? 'Usuario';
     final rol = user?['rol'] as String? ?? '';
 
-    return Scaffold(
+    return ValueListenableBuilder<bool>(
+      valueListenable: darkThemeNotifier,
+      builder: (context, isDark, _) {
+        return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(
@@ -99,6 +103,8 @@ class ConfiguracionScreen extends StatelessWidget {
           ),
         ),
       ),
+    );
+      },
     );
   }
 }

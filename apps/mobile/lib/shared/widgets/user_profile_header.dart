@@ -42,6 +42,7 @@ class UserProfileHeader extends StatelessWidget {
           nombre,
           style: AppTypography.subtitle.copyWith(
             fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
           ),
           textAlign: TextAlign.center,
         ),

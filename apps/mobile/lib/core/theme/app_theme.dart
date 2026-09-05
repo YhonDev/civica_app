@@ -4,7 +4,17 @@ import 'app_colors.dart';
 import 'app_spacing.dart';
 import 'app_typography.dart';
 
-final darkThemeNotifier = ValueNotifier<bool>(false);
+class DarkThemeNotifier extends ValueNotifier<bool> {
+  DarkThemeNotifier(super.value);
+
+  @override
+  set value(bool newValue) {
+    AppColors.setDarkMode(newValue);
+    super.value = newValue;
+  }
+}
+
+final darkThemeNotifier = DarkThemeNotifier(false);
 
 /// Builds the light [ThemeData] for the Civica Pago app.
 ThemeData buildLightTheme() {

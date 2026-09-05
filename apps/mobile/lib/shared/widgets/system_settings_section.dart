@@ -132,37 +132,38 @@ class _SystemSettingsSectionState extends State<SystemSettingsSection> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: AppSpacing.sm),
-          child: Text(
-            'Ajustes del Sistema',
-            style: AppTypography.bodyMedium.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-        Container(
-          decoration: BoxDecoration(
-            color: AppColors.card,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.02),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
+    return ValueListenableBuilder<bool>(
+      valueListenable: darkThemeNotifier,
+      builder: (context, isDark, _) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(left: 4, bottom: AppSpacing.sm),
+              child: Text(
+                'Ajustes del Sistema',
+                style: AppTypography.bodyMedium.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
               ),
-            ],
-          ),
-          child: Column(
-            children: [
-              ValueListenableBuilder<bool>(
-                valueListenable: darkThemeNotifier,
-                builder: (context, isDark, _) {
-                  return ListTile(
+            ),
+            Container(
+              decoration: BoxDecoration(
+                color: AppColors.card,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.02),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  ListTile(
                     leading: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
@@ -173,7 +174,10 @@ class _SystemSettingsSectionState extends State<SystemSettingsSection> {
                     ),
                     title: Text(
                       'Tema oscuro',
-                      style: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
+                      style: AppTypography.body.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
                     ),
                     subtitle: Text(
                       isDark ? 'Modo noche activo' : 'Modo claro activo',
@@ -186,92 +190,101 @@ class _SystemSettingsSectionState extends State<SystemSettingsSection> {
                       },
                       activeThumbColor: AppColors.primary,
                     ),
-                  );
-                },
-              ),
-              const Divider(height: 1, indent: 56),
-              ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Icon(Icons.fingerprint_rounded, color: AppColors.primary, size: 20),
-                ),
-                title: Text(
-                  'Acceso Biométrico / Face ID',
-                  style: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
-                ),
-                subtitle: Text(
-                  _isBiometricsSupported
-                      ? (_isBiometricsEnabled ? 'Habilitado para inicio rápido' : 'Deshabilitado')
-                      : 'No disponible en este dispositivo',
-                  style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
-                ),
-                trailing: _isBiometricsSupported
-                    ? Switch(
-                        value: _isBiometricsEnabled,
-                        onChanged: _toggleBiometria,
-                        activeThumbColor: AppColors.primary,
-                      )
-                    : null,
-              ),
-              const Divider(height: 1, indent: 56),
-              ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppColors.warning.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(10),
+                  Divider(height: 1, indent: 56, color: AppColors.border.withValues(alpha: 0.5)),
+                  ListTile(
+                    leading: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.10),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(Icons.fingerprint_rounded, color: AppColors.primary, size: 20),
+                    ),
+                    title: Text(
+                      'Acceso Biométrico / Face ID',
+                      style: AppTypography.body.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    subtitle: Text(
+                      _isBiometricsSupported
+                          ? (_isBiometricsEnabled ? 'Habilitado para inicio rápido' : 'Deshabilitado')
+                          : 'No disponible en este dispositivo',
+                      style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+                    ),
+                    trailing: _isBiometricsSupported
+                        ? Switch(
+                            value: _isBiometricsEnabled,
+                            onChanged: _toggleBiometria,
+                            activeThumbColor: AppColors.primary,
+                          )
+                        : null,
                   ),
-                  child: Icon(Icons.notifications_active_outlined, color: AppColors.warning, size: 20),
-                ),
-                title: Text(
-                  'Notificaciones y Recordatorios',
-                  style: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
-                ),
-                subtitle: Text(
-                  _notificacionesEnabled ? 'Avisos de cobros y vencimientos' : 'Alertas desactivadas',
-                  style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
-                ),
-                trailing: Switch(
-                  value: _notificacionesEnabled,
-                  onChanged: (val) {
-                    setState(() => _notificacionesEnabled = val);
-                    TopToast.showSuccess(
-                      context,
-                      val ? 'Notificaciones activadas' : 'Notificaciones pausadas',
-                    );
-                  },
-                  activeThumbColor: AppColors.primary,
-                ),
-              ),
-              const Divider(height: 1, indent: 56),
-              ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppColors.error.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(10),
+                  Divider(height: 1, indent: 56, color: AppColors.border.withValues(alpha: 0.5)),
+                  ListTile(
+                    leading: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.warning.withValues(alpha: 0.10),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(Icons.notifications_active_outlined, color: AppColors.warning, size: 20),
+                    ),
+                    title: Text(
+                      'Notificaciones y Recordatorios',
+                      style: AppTypography.body.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    subtitle: Text(
+                      _notificacionesEnabled ? 'Avisos de cobros y vencimientos' : 'Alertas desactivadas',
+                      style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+                    ),
+                    trailing: Switch(
+                      value: _notificacionesEnabled,
+                      onChanged: (val) {
+                        setState(() => _notificacionesEnabled = val);
+                        TopToast.showSuccess(
+                          context,
+                          val ? 'Notificaciones activadas' : 'Notificaciones pausadas',
+                        );
+                      },
+                      activeThumbColor: AppColors.primary,
+                    ),
                   ),
-                  child: Icon(Icons.lock_outlined, color: AppColors.error, size: 20),
-                ),
-                title: Text(
-                  'Seguridad y Contraseña',
-                  style: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
-                ),
-                subtitle: Text(
-                  'Actualiza tu clave de acceso',
-                  style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
-                ),
-                trailing: Icon(Icons.chevron_right_rounded, color: AppColors.textDisabled),
-                onTap: () => _mostrarModalCambiarPassword(context),
+                  Divider(height: 1, indent: 56, color: AppColors.border.withValues(alpha: 0.5)),
+                  ListTile(
+                    leading: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.error.withValues(alpha: 0.10),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(Icons.lock_outlined, color: AppColors.error, size: 20),
+                    ),
+                    title: Text(
+                      'Seguridad y Contraseña',
+                      style: AppTypography.body.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    subtitle: Text(
+                      'Actualiza tu clave de acceso',
+                      style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+                    ),
+                    trailing: Icon(Icons.chevron_right_rounded, color: AppColors.textDisabled),
+                    onTap: () => _mostrarModalCambiarPassword(context),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
-      ],
+            ),
+          ],
+        );
+      },
     );
   }
 }
