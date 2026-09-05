@@ -5,6 +5,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/top_toast.dart';
 import '../../shared/widgets/empty_state.dart';
+import '../../shared/widgets/fading_horizontal_scroll.dart';
 import 'comunidad_repository.dart';
 
 class ManzanasScreen extends StatefulWidget {
@@ -177,19 +178,20 @@ class _ManzanasScreenState extends State<ManzanasScreen> {
               ),
             ),
             const SizedBox(height: AppSpacing.sm),
-            // Selector horizontal de ChoiceChips
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
+            // Selector horizontal de ChoiceChips con desvanecimiento elegante
+            FadingHorizontalScroll(
               child: Row(
                 children: _etapas.map((etapa) {
                   final isSelected = _selectedEtapaId == etapa['id'];
                   final mzs = etapa['manzanas'] as List? ?? [];
                   return Padding(
-                    padding: const EdgeInsets.only(right: AppSpacing.sm),
+                    padding: const EdgeInsets.only(right: AppSpacing.xs),
                     child: ChoiceChip(
                       label: Text('${etapa['nombre']} (${mzs.length})'),
                       selected: isSelected,
+                      visualDensity: VisualDensity.compact,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
                       onSelected: (selected) {
                         if (selected) {
                           setState(() => _selectedEtapaId = etapa['id']);
@@ -199,7 +201,7 @@ class _ManzanasScreenState extends State<ManzanasScreen> {
                       labelStyle: AppTypography.caption.copyWith(
                         color: isSelected ? Colors.white : AppColors.textSecondary,
                         fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                        fontSize: 12,
+                        fontSize: 11,
                       ),
                       backgroundColor: AppColors.surface,
                       shape: RoundedRectangleBorder(

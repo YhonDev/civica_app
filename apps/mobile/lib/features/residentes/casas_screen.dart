@@ -5,6 +5,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/top_toast.dart';
 import '../../shared/widgets/empty_state.dart';
+import '../../shared/widgets/fading_horizontal_scroll.dart';
 import 'comunidad_repository.dart';
 
 class CasasScreen extends StatefulWidget {
@@ -38,10 +39,10 @@ class _CasasScreenState extends State<CasasScreen> {
     try {
       final etapas = await _repo.getArbolCompleto(includeOccupied: true);
 
-      final processedEtapas = etapas.map((etapa) {
-        final manzanasEstructura = (etapa['manzanas'] as List).map((manzana) {
-          final casasList = (manzana['casas'] as List).map((c) {
-            return {
+      final List<Map<String, dynamic>> processedEtapas = etapas.map<Map<String, dynamic>>((etapa) {
+        final List<Map<String, dynamic>> manzanasEstructura = ((etapa['manzanas'] as List?) ?? []).map<Map<String, dynamic>>((manzana) {
+          final List<Map<String, dynamic>> casasList = ((manzana['casas'] as List?) ?? []).map<Map<String, dynamic>>((c) {
+            return <String, dynamic>{
               'id': c['id'].toString(),
               'nombre': c['nombre'].toString(),
               'ocupada': c['ocupada'] == true,
@@ -62,7 +63,7 @@ class _CasasScreenState extends State<CasasScreen> {
             return aName.compareTo(bName);
           });
 
-          return {
+          return <String, dynamic>{
             'id': manzana['id'].toString(),
             'nombre': manzana['nombre'].toString(),
             'casas': casasList,
@@ -74,7 +75,7 @@ class _CasasScreenState extends State<CasasScreen> {
           (a, b) => a['nombre'].toString().compareTo(b['nombre'].toString()),
         );
 
-        return {
+        return <String, dynamic>{
           'id': etapa['id'].toString(),
           'nombre': etapa['nombre'].toString(),
           'manzanas': manzanasEstructura,
@@ -113,14 +114,14 @@ class _CasasScreenState extends State<CasasScreen> {
   }
 
   void _syncSelectedManzana() {
-    if (_selectedEtapaId == null) {
+    if (_selectedEtapaId == null || _etapas.isEmpty) {
       _selectedManzanaId = null;
       return;
     }
 
     final activeEtapa = _etapas.firstWhere(
       (e) => e['id'] == _selectedEtapaId,
-      orElse: () => {'manzanas': []},
+      orElse: () => _etapas.first,
     );
     final manzanas = activeEtapa['manzanas'] as List? ?? [];
 
@@ -373,9 +374,8 @@ class _CasasScreenState extends State<CasasScreen> {
               ),
             ),
             const SizedBox(height: AppSpacing.xs),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
+            // Fila 1: Selector de Etapa activa con desvanecimiento elegante
+            FadingHorizontalScroll(
               child: Row(
                 children: _etapas.map((etapa) {
                   final isSelected = _selectedEtapaId == etapa['id'];
@@ -386,10 +386,13 @@ class _CasasScreenState extends State<CasasScreen> {
                   }
 
                   return Padding(
-                    padding: const EdgeInsets.only(right: AppSpacing.sm),
+                    padding: const EdgeInsets.only(right: AppSpacing.xs),
                     child: ChoiceChip(
                       label: Text('${etapa['nombre']} ($totalCasas)'),
                       selected: isSelected,
+                      visualDensity: VisualDensity.compact,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
                       onSelected: (selected) {
                         if (selected) {
                           setState(() {
@@ -402,7 +405,7 @@ class _CasasScreenState extends State<CasasScreen> {
                       labelStyle: AppTypography.caption.copyWith(
                         color: isSelected ? Colors.white : AppColors.textSecondary,
                         fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                        fontSize: 12,
+                        fontSize: 11,
                       ),
                       backgroundColor: AppColors.surface,
                       shape: RoundedRectangleBorder(
@@ -460,19 +463,20 @@ class _CasasScreenState extends State<CasasScreen> {
                 ),
               )
             else
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
+              FadingHorizontalScroll(
                 child: Row(
                   children: activeManzanas.map((manzana) {
                     final isSelected = _selectedManzanaId == manzana['id'];
                     final numCasas = (manzana['casas'] as List? ?? []).length;
 
                     return Padding(
-                      padding: const EdgeInsets.only(right: AppSpacing.sm),
+                      padding: const EdgeInsets.only(right: AppSpacing.xs),
                       child: ChoiceChip(
                         label: Text('${manzana['nombre']} ($numCasas)'),
                         selected: isSelected,
+                        visualDensity: VisualDensity.compact,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
                         onSelected: (selected) {
                           if (selected) {
                             setState(() => _selectedManzanaId = manzana['id']);
@@ -482,7 +486,7 @@ class _CasasScreenState extends State<CasasScreen> {
                         labelStyle: AppTypography.caption.copyWith(
                           color: isSelected ? Colors.white : AppColors.textSecondary,
                           fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                          fontSize: 12,
+                          fontSize: 11,
                         ),
                         backgroundColor: AppColors.surface,
                         shape: RoundedRectangleBorder(
@@ -499,50 +503,47 @@ class _CasasScreenState extends State<CasasScreen> {
 
             const SizedBox(height: AppSpacing.md),
 
-            // Acciones fijas superiores de la Manzana activa
+            // Acciones fijas superiores de la Manzana activa (simétricas con Manzanas)
             if (activeManzana != null)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
                 child: Row(
                   children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () => _crearCasaAutomatica(
-                          activeManzana!['id'],
-                          activeCasas,
-                        ),
-                        icon: const Icon(Icons.add_rounded, size: 18),
-                        label: const Text(
-                          '+ 1 Casa',
-                          style: TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          minimumSize: const Size.fromHeight(42),
-                          foregroundColor: AppColors.primary,
-                          side: BorderSide(color: AppColors.primary),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
-                          ),
+                    FilledButton.tonalIcon(
+                      onPressed: () => _crearCasaAutomatica(
+                        activeManzana!['id'],
+                        activeCasas,
+                      ),
+                      icon: const Icon(Icons.add_rounded, size: 18),
+                      label: const Text(
+                        'Nueva Casa',
+                        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                      ),
+                      style: FilledButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                         ),
                       ),
                     ),
-                    const SizedBox(width: AppSpacing.md),
-                    Expanded(
-                      child: FilledButton.tonalIcon(
-                        onPressed: () => _mostrarDialogoCreacionMultiple(
-                          activeManzana!['id'],
-                          activeCasas,
-                        ),
-                        icon: const Icon(Icons.library_add_rounded, size: 18),
-                        label: const Text(
-                          '+ Agregar Varias',
-                          style: TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        style: FilledButton.styleFrom(
-                          minimumSize: const Size.fromHeight(42),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
-                          ),
+                    const SizedBox(width: AppSpacing.sm),
+                    OutlinedButton.icon(
+                      onPressed: () => _mostrarDialogoCreacionMultiple(
+                        activeManzana!['id'],
+                        activeCasas,
+                      ),
+                      icon: const Icon(Icons.library_add_rounded, size: 16),
+                      label: const Text(
+                        'Agregar Varias',
+                        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        side: BorderSide(color: AppColors.border),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                         ),
                       ),
                     ),
@@ -568,22 +569,21 @@ class _CasasScreenState extends State<CasasScreen> {
                     activeManzana != null
                         ? 'Casas en ${activeManzana['nombre']}'
                         : 'Casas',
-                    style: AppTypography.subtitle.copyWith(
+                    style: AppTypography.bodyMedium.copyWith(
                       fontWeight: FontWeight.w700,
                       color: AppColors.textPrimary,
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
                       color: AppColors.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
+                      borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
-                      '${activeCasas.length} ${activeCasas.length == 1 ? "casa" : "casas"}',
-                      style: AppTypography.caption.copyWith(
+                      '${activeCasas.length} registradas',
+                      style: AppTypography.smallBold.copyWith(
                         color: AppColors.primary,
-                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
@@ -605,53 +605,51 @@ class _CasasScreenState extends State<CasasScreen> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.home_work_outlined, size: 48, color: AppColors.textSecondary),
+                              Icon(Icons.home_work_outlined, size: 48, color: AppColors.textDisabled),
                               const SizedBox(height: AppSpacing.sm),
                               Text(
                                 'No hay casas en ${activeManzana['nombre']}',
-                                style: AppTypography.bodyMedium.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.textSecondary,
-                                ),
+                                style: AppTypography.body.copyWith(color: AppColors.textSecondary),
                               ),
-                              const SizedBox(height: AppSpacing.xs),
-                              Text(
-                                'Usa los botones superiores para agregar casas a esta manzana.',
-                                style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+                              const SizedBox(height: AppSpacing.md),
+                              OutlinedButton.icon(
+                                onPressed: () => _crearCasaAutomatica(activeManzana!['id'], activeCasas),
+                                icon: const Icon(Icons.add_rounded),
+                                label: const Text('Crear primera casa'),
                               ),
                             ],
                           ),
                         )
-                      : ListView.separated(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.screenPadding,
-                            vertical: AppSpacing.sm,
+                      : ListView.builder(
+                          padding: const EdgeInsets.fromLTRB(
+                            AppSpacing.screenPadding,
+                            AppSpacing.xs,
+                            AppSpacing.screenPadding,
+                            AppSpacing.xl,
                           ),
                           itemCount: activeCasas.length,
-                          separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.xs),
                           itemBuilder: (context, index) {
                             final casa = activeCasas[index];
                             final bool isOcupada = casa['ocupada'] == true;
 
                             return Card(
-                              margin: EdgeInsets.zero,
+                              margin: const EdgeInsets.only(bottom: AppSpacing.sm),
                               color: AppColors.card,
                               elevation: 0,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-                                side: BorderSide(color: AppColors.border),
+                                side: BorderSide(
+                                  color: AppColors.border.withValues(alpha: 0.6),
+                                ),
                               ),
                               child: ListTile(
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: AppSpacing.md,
-                                  vertical: 2,
-                                ),
                                 leading: Container(
-                                  padding: const EdgeInsets.all(8),
+                                  width: 38,
+                                  height: 38,
                                   decoration: BoxDecoration(
                                     color: (isOcupada ? AppColors.success : AppColors.primary)
                                         .withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+                                    borderRadius: BorderRadius.circular(10),
                                   ),
                                   child: Icon(
                                     Icons.home_rounded,
@@ -666,32 +664,34 @@ class _CasasScreenState extends State<CasasScreen> {
                                     color: AppColors.textPrimary,
                                   ),
                                 ),
-                                subtitle: Row(
-                                  children: [
-                                    Container(
-                                      margin: const EdgeInsets.only(top: 4),
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: isOcupada
-                                            ? AppColors.success.withValues(alpha: 0.12)
-                                            : AppColors.surface,
-                                        borderRadius: BorderRadius.circular(4),
-                                        border: Border.all(
+                                subtitle: Padding(
+                                  padding: const EdgeInsets.only(top: 2),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                        decoration: BoxDecoration(
                                           color: isOcupada
-                                              ? AppColors.success.withValues(alpha: 0.3)
-                                              : AppColors.border,
+                                              ? AppColors.success.withValues(alpha: 0.12)
+                                              : AppColors.surface,
+                                          borderRadius: BorderRadius.circular(4),
+                                          border: Border.all(
+                                            color: isOcupada
+                                                ? AppColors.success.withValues(alpha: 0.3)
+                                                : AppColors.border,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          isOcupada ? 'Ocupada' : 'Disponible',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: isOcupada ? FontWeight.w700 : FontWeight.w500,
+                                            color: isOcupada ? AppColors.success : AppColors.textSecondary,
+                                          ),
                                         ),
                                       ),
-                                      child: Text(
-                                        isOcupada ? 'Ocupada' : 'Disponible',
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          fontWeight: isOcupada ? FontWeight.w700 : FontWeight.w500,
-                                          color: isOcupada ? AppColors.success : AppColors.textSecondary,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                                 trailing: isOcupada
                                     ? Tooltip(
@@ -704,10 +704,11 @@ class _CasasScreenState extends State<CasasScreen> {
                                       )
                                     : IconButton(
                                         icon: Icon(
-                                          Icons.delete_outline_rounded,
+                                          Icons.delete_rounded,
                                           color: AppColors.error,
                                           size: 20,
                                         ),
+                                        tooltip: 'Eliminar Casa',
                                         onPressed: () => _mostrarConfirmacionEliminacionCasa(
                                           casa['nombre'].toString(),
                                           casa['id'].toString(),

@@ -117,13 +117,6 @@ class _EtapasScreenState extends State<EtapasScreen> {
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.pop(),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.library_add_rounded),
-            tooltip: 'Crear Múltiples',
-            onPressed: () => _mostrarDialogoCreacionMultiple(),
-          ),
-        ],
         bottom: _isRefreshing
             ? const PreferredSize(
                 preferredSize: Size.fromHeight(2),
@@ -158,35 +151,60 @@ class _EtapasScreenState extends State<EtapasScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: AppSpacing.md),
-                  // Compact action button
+                  // Compact action buttons
                   Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.screenPadding,
                     ),
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: FilledButton.tonalIcon(
-                        onPressed: _crearEtapaAutomatica,
-                        icon: const Icon(Icons.add_rounded, size: 18),
-                        label: const Text(
-                          'Nueva Etapa',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13,
+                    child: Row(
+                      children: [
+                        FilledButton.tonalIcon(
+                          onPressed: _crearEtapaAutomatica,
+                          icon: const Icon(Icons.add_rounded, size: 18),
+                          label: const Text(
+                            'Nueva Etapa',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                            ),
+                          ),
+                          style: FilledButton.styleFrom(
+                            visualDensity: VisualDensity.compact,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 8,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius:
+                                  BorderRadius.circular(AppSpacing.buttonRadius),
+                            ),
                           ),
                         ),
-                        style: FilledButton.styleFrom(
-                          visualDensity: VisualDensity.compact,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 8,
+                        const SizedBox(width: AppSpacing.sm),
+                        OutlinedButton.icon(
+                          onPressed: _mostrarDialogoCreacionMultiple,
+                          icon: const Icon(Icons.library_add_rounded, size: 16),
+                          label: const Text(
+                            'Agregar Varias',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                            ),
                           ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius:
-                                BorderRadius.circular(AppSpacing.buttonRadius),
+                          style: OutlinedButton.styleFrom(
+                            visualDensity: VisualDensity.compact,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                            side: BorderSide(color: AppColors.border),
+                            shape: RoundedRectangleBorder(
+                              borderRadius:
+                                  BorderRadius.circular(AppSpacing.buttonRadius),
+                            ),
                           ),
                         ),
-                      ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: AppSpacing.md),
