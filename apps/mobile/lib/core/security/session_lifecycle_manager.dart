@@ -26,11 +26,18 @@ class SessionLifecycleManager with WidgetsBindingObserver {
   bool _isInitialized = false;
 
   /// Inicializa el observador de ciclo de vida global
-  void init() {
+  Future<void> init() async {
     if (_isInitialized) return;
     _isInitialized = true;
     WidgetsBinding.instance.addObserver(this);
     _resetInactivityTimer();
+
+    // En Cold Start: si la biometría está habilitada, la interfaz arranca protegida
+    final isBioEnabled = await BiometricAuthService.instance.isBiometricsEnabled();
+    if (isBioEnabled) {
+      debugPrint('[SessionLifecycleManager] Cold start con biometría activa: bloqueando interfaz');
+      lock();
+    }
   }
 
   /// Limpia recursos

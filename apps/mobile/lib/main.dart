@@ -11,6 +11,7 @@ import 'core/sync/sync_service.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/app_colors.dart';
 import 'core/security/biometric_lifecycle_lock.dart';
+import 'core/security/session_lifecycle_manager.dart';
 import 'core/router/app_router.dart';
 import 'features/auth/auth_cubit.dart';
 
@@ -33,6 +34,9 @@ void main() async {
 
   final detector = ConnectivityDetector.init();
   SyncService.init(detector: detector);
+
+  // Inicializar ciclo de vida y verificar bloqueo biométrico en Cold Start
+  await SessionLifecycleManager.instance.init();
 
   runApp(const CivicaPagoApp());
 }

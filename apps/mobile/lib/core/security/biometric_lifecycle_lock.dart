@@ -83,11 +83,21 @@ class _BiometricLifecycleLockState extends State<BiometricLifecycleLock> {
       behavior: HitTestBehavior.translucent,
       onPointerDown: (_) => SessionLifecycleManager.instance.recordUserActivity(),
       onPointerMove: (_) => SessionLifecycleManager.instance.recordUserActivity(),
-      child: Stack(
-        children: [
-          widget.child,
-          ValueListenableBuilder<bool>(
-            valueListenable: SessionLifecycleManager.instance.isLockedNotifier,
+      child: BlocListener<AuthCubit, AuthState>(
+        listener: (context, authState) {
+          if (!authState.isAuthenticated) {
+            SessionLifecycleManager.instance.unlock();
+          } else if (SessionLifecycleManager.instance.isLockedNotifier.value) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _unlockWithBiometrics();
+            });
+          }
+        },
+        child: Stack(
+          children: [
+            widget.child,
+            ValueListenableBuilder<bool>(
+              valueListenable: SessionLifecycleManager.instance.isLockedNotifier,
             builder: (context, isLocked, _) {
               final authState = context.watch<AuthCubit>().state;
               if (!isLocked || !authState.isAuthenticated) {
@@ -182,7 +192,7 @@ class _BiometricLifecycleLockState extends State<BiometricLifecycleLock> {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
 }
-
+}
