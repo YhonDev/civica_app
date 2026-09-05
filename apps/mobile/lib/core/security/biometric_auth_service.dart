@@ -119,6 +119,13 @@ class BiometricAuthService {
         biometricOnly: false,
         persistAcrossBackgrounding: true,
       );
+    } on LocalAuthException catch (e) {
+      if (e.code == LocalAuthExceptionCode.userCanceled || e.code.name == 'userCanceled') {
+        debugPrint('BiometricAuthService: Autenticación cancelada por el usuario');
+      } else {
+        debugPrint('BiometricAuthService LocalAuthException: [${e.code}] ${e.description}');
+      }
+      return false;
     } on PlatformException catch (e) {
       debugPrint('BiometricAuthService authenticate PlatformException: [${e.code}] ${e.message}');
       return false;
