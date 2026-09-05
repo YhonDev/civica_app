@@ -70,9 +70,9 @@ class _BiometricLifecycleLockState extends State<BiometricLifecycleLock> {
           if (_isBlurred)
             Positioned.fill(
               child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 8.0, sigmaY: 8.0),
+                filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
                 child: Container(
-                  color: Colors.white.withValues(alpha: 0.08),
+                  color: Colors.black.withValues(alpha: 0.10),
                 ),
               ),
             ),
