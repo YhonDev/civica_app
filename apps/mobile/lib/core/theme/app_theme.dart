@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app_colors.dart';
 import 'app_spacing.dart';
@@ -7,10 +8,33 @@ import 'app_typography.dart';
 class DarkThemeNotifier extends ValueNotifier<bool> {
   DarkThemeNotifier(super.value);
 
+  static const String _prefKey = 'civica_dark_mode';
+
+  /// Loads saved theme preference from local storage on app start.
+  static Future<void> init() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final isDark = prefs.getBool(_prefKey) ?? false;
+      darkThemeNotifier.value = isDark;
+    } catch (e) {
+      debugPrint('Error loading saved theme preference: $e');
+    }
+  }
+
   @override
   set value(bool newValue) {
     AppColors.setDarkMode(newValue);
     super.value = newValue;
+    _savePreference(newValue);
+  }
+
+  void _savePreference(bool newValue) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_prefKey, newValue);
+    } catch (e) {
+      debugPrint('Error saving theme preference: $e');
+    }
   }
 }
 

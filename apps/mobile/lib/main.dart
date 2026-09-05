@@ -35,6 +35,9 @@ void main() async {
   final detector = ConnectivityDetector.init();
   SyncService.init(detector: detector);
 
+  // Cargar preferencia persistente de tema (Dark / Light Mode)
+  await DarkThemeNotifier.init();
+
   // Inicializar ciclo de vida de la sesión
   SessionLifecycleManager.instance.init();
 
