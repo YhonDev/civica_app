@@ -50,3 +50,8 @@ lerna-debug.log*
 Thumbs.db
 *.swp
 .freebuff/
+
+# ─── Database Local Seeds & Test Scripts (local-only) ──
+apps/backend/database/seed.sql
+apps/backend/database/reset-db.sql
+apps/backend/database/scripts/

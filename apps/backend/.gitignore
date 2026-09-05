@@ -4,3 +4,8 @@ dist/
 *.log
 .vscode/
 .idea/
+
+# Local-only database test seeds and reset scripts
+database/seed.sql
+database/reset-db.sql
+database/scripts/
