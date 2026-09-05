@@ -6,12 +6,14 @@ import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
 import '../theme/app_theme.dart';
 import 'biometric_auth_service.dart';
+import 'session_lifecycle_manager.dart';
 
 /// App Lifecycle Biometric Lock (estilo Nequi / Banca Móvil).
 ///
-/// Protege la aplicación cuando pasa a segundo plano.
+/// Observa toques táctiles e inactividad mediante [SessionLifecycleManager].
 /// Si la biometría está habilitada y el usuario tiene sesión activa,
-/// al reabrir la aplicación se solicita la huella dactilar para desbloquear.
+/// ante inactividad (5 min) o segundo plano (30 seg), se bloquea y
+/// solicita la huella dactilar para continuar.
 class BiometricLifecycleLock extends StatefulWidget {
   final Widget child;
 
@@ -21,52 +23,35 @@ class BiometricLifecycleLock extends StatefulWidget {
   State<BiometricLifecycleLock> createState() => _BiometricLifecycleLockState();
 }
 
-class _BiometricLifecycleLockState extends State<BiometricLifecycleLock>
-    with WidgetsBindingObserver {
-  DateTime? _pausedAt;
-  bool _isLocked = false;
+class _BiometricLifecycleLockState extends State<BiometricLifecycleLock> {
   bool _isAuthenticating = false;
-
-  // Umbral en segundos para bloquear tras estar en segundo plano
-  static const int _lockThresholdSeconds = 4;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
+    SessionLifecycleManager.instance.init();
+    SessionLifecycleManager.instance.isLockedNotifier.addListener(_onLockStateChanged);
   }
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
+    SessionLifecycleManager.instance.isLockedNotifier.removeListener(_onLockStateChanged);
     super.dispose();
   }
 
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused) {
-      _pausedAt = DateTime.now();
-    } else if (state == AppLifecycleState.resumed) {
-      _checkResumeLock();
-    }
-  }
-
-  Future<void> _checkResumeLock() async {
-    final pausedTime = _pausedAt;
-    _pausedAt = null;
-
-    if (pausedTime == null) return;
-
-    final secondsInBackground = DateTime.now().difference(pausedTime).inSeconds;
-    if (secondsInBackground < _lockThresholdSeconds) return;
-
-    final isBioEnabled = await BiometricAuthService.instance.isBiometricsEnabled();
-    if (!mounted) return;
-
-    final isAuthenticated = context.read<AuthCubit>().state.isAuthenticated;
-    if (isBioEnabled && isAuthenticated) {
-      setState(() => _isLocked = true);
-      _unlockWithBiometrics();
+  void _onLockStateChanged() {
+    final isLocked = SessionLifecycleManager.instance.isLockedNotifier.value;
+    if (isLocked && mounted) {
+      final isAuth = context.read<AuthCubit>().state.isAuthenticated;
+      if (isAuth) {
+        // Disparar automáticamente el prompt al bloquear
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _unlockWithBiometrics();
+        });
+      } else {
+        // Si no está autenticado, no hay nada que bloquear
+        SessionLifecycleManager.instance.unlock();
+      }
     }
   }
 
@@ -83,104 +68,121 @@ class _BiometricLifecycleLockState extends State<BiometricLifecycleLock>
     if (!mounted) return;
 
     if (success) {
-      setState(() => _isLocked = false);
+      SessionLifecycleManager.instance.unlock();
     }
   }
 
   void _handleLogout() {
-    setState(() => _isLocked = false);
+    SessionLifecycleManager.instance.unlock();
     context.read<AuthCubit>().logout();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        widget.child,
-        if (_isLocked)
-          Positioned.fill(
-            child: ValueListenableBuilder<bool>(
-              valueListenable: darkThemeNotifier,
-              builder: (context, isDark, _) {
-                final bgColor = isDark ? AppColors.darkBackground : AppColors.lightBackground;
-                final textColor = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-                final subtextColor = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerDown: (_) => SessionLifecycleManager.instance.recordUserActivity(),
+      onPointerMove: (_) => SessionLifecycleManager.instance.recordUserActivity(),
+      child: Stack(
+        children: [
+          widget.child,
+          ValueListenableBuilder<bool>(
+            valueListenable: SessionLifecycleManager.instance.isLockedNotifier,
+            builder: (context, isLocked, _) {
+              final authState = context.watch<AuthCubit>().state;
+              if (!isLocked || !authState.isAuthenticated) {
+                return const SizedBox.shrink();
+              }
 
-                return Material(
-                  color: bgColor,
-                  child: SafeArea(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Spacer(),
-                          Container(
-                            width: 88,
-                            height: 88,
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: 0.12),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.fingerprint_rounded,
-                              size: 52,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                          const SizedBox(height: AppSpacing.lg),
-                          Text(
-                            'Sesión Protegida',
-                            style: AppTypography.subtitle.copyWith(
-                              fontSize: 22,
-                              color: textColor,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: AppSpacing.xs),
-                          Text(
-                            'Usa tu huella dactilar para reanudar el acceso',
-                            textAlign: TextAlign.center,
-                            style: AppTypography.body.copyWith(
-                              color: subtextColor,
-                            ),
-                          ),
-                          const Spacer(),
-                          SizedBox(
-                            width: double.infinity,
-                            height: 52,
-                            child: FilledButton.icon(
-                              onPressed: _unlockWithBiometrics,
-                              icon: const Icon(Icons.fingerprint_rounded),
-                              label: const Text('Desbloquear con huella'),
-                              style: FilledButton.styleFrom(
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14),
+              final nombreUsuario = authState.usuario?['nombre'] as String? ?? 'Usuario';
+
+              return Positioned.fill(
+                child: ValueListenableBuilder<bool>(
+                  valueListenable: darkThemeNotifier,
+                  builder: (context, isDark, _) {
+                    final bgColor = isDark ? AppColors.darkBackground : AppColors.lightBackground;
+                    final textColor = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+                    final subtextColor = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+
+                    return Material(
+                      color: bgColor,
+                      child: SafeArea(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Spacer(),
+                              Container(
+                                width: 92,
+                                height: 92,
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary.withValues(alpha: 0.12),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.fingerprint_rounded,
+                                  size: 54,
+                                  color: AppColors.primary,
                                 ),
                               ),
-                            ),
-                          ),
-                          const SizedBox(height: AppSpacing.sm),
-                          TextButton(
-                            onPressed: _handleLogout,
-                            child: Text(
-                              'Cerrar sesión / Ingresar con clave',
-                              style: AppTypography.caption.copyWith(
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.w600,
+                              const SizedBox(height: AppSpacing.lg),
+                              Text(
+                                'Hola, $nombreUsuario',
+                                style: AppTypography.subtitle.copyWith(
+                                  fontSize: 22,
+                                  color: textColor,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                            ),
+                              const SizedBox(height: AppSpacing.xs),
+                              Text(
+                                'Sesión protegida por biometría.\nUsa tu huella dactilar para continuar.',
+                                textAlign: TextAlign.center,
+                                style: AppTypography.body.copyWith(
+                                  color: subtextColor,
+                                ),
+                              ),
+                              const Spacer(),
+                              SizedBox(
+                                width: double.infinity,
+                                height: 52,
+                                child: FilledButton.icon(
+                                  onPressed: _unlockWithBiometrics,
+                                  icon: const Icon(Icons.fingerprint_rounded),
+                                  label: const Text('Desbloquear con huella'),
+                                  style: FilledButton.styleFrom(
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: AppSpacing.sm),
+                              TextButton(
+                                onPressed: _handleLogout,
+                                child: Text(
+                                  'Cerrar sesión / Ingresar con clave',
+                                  style: AppTypography.caption.copyWith(
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: AppSpacing.md),
+                            ],
                           ),
-                          const SizedBox(height: AppSpacing.md),
-                        ],
+                        ),
                       ),
-                    ),
-                  ),
-                );
-              },
-            ),
+                    );
+                  },
+                ),
+              );
+            },
           ),
-      ],
+        ],
+      ),
     );
   }
 }
+
