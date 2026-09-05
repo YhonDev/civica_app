@@ -211,7 +211,7 @@ class _SystemSettingsSectionState extends State<SystemSettingsSection> {
                       child: const Icon(Icons.fingerprint_rounded, color: AppColors.primary, size: 20),
                     ),
                     title: Text(
-                      'Acceso Biométrico / Face ID',
+                      'Acceso biométrico',
                       style: AppTypography.body.copyWith(
                         fontWeight: FontWeight.w600,
                         color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
@@ -219,7 +219,7 @@ class _SystemSettingsSectionState extends State<SystemSettingsSection> {
                     ),
                     subtitle: Text(
                       _isBiometricsSupported
-                          ? (_isBiometricsEnabled ? 'Habilitado para inicio rápido' : 'Deshabilitado')
+                          ? (_isBiometricsEnabled ? 'Protege tu sesión con huella dactilar' : 'Deshabilitado')
                           : 'No disponible en este dispositivo',
                       style: AppTypography.caption.copyWith(
                         color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,

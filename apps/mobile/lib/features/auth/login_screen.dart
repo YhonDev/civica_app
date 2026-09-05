@@ -55,14 +55,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _autenticarConHuella() async {
     final success = await BiometricAuthService.instance.authenticate(
-      localizedReason: 'Inicia sesión con tu huella dactilar o Face ID',
+      localizedReason: 'Inicia sesión con tu huella dactilar',
     );
     if (!success || !mounted) return;
 
     final authCubit = context.read<AuthCubit>();
     final hasSession = await ApiClient.instance.isLoggedIn();
     if (hasSession) {
-      await authCubit.checkSession();
+      await authCubit.checkSession(forceRestore: true);
       return;
     }
 
@@ -267,7 +267,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: OutlinedButton.icon(
                             onPressed: _autenticarConHuella,
                             icon: const Icon(Icons.fingerprint_rounded, size: 22),
-                            label: const Text('Ingresar con Huella dactilar / Face ID'),
+                            label: const Text('Ingresar con huella dactilar'),
                             style: OutlinedButton.styleFrom(
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),

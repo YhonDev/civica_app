@@ -1,19 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../features/auth/auth_cubit.dart';
-import '../theme/app_colors.dart';
-import '../theme/app_spacing.dart';
-import '../theme/app_typography.dart';
-import '../theme/app_theme.dart';
 import 'biometric_auth_service.dart';
 import 'session_lifecycle_manager.dart';
 
-/// App Lifecycle Biometric Lock (estilo Nequi / Banca Móvil).
+/// Detector global de actividad e inactividad biométrica.
 ///
-/// Observa toques táctiles e inactividad mediante [SessionLifecycleManager].
-/// Si la biometría está habilitada y el usuario tiene sesión activa,
-/// ante inactividad (5 min) o segundo plano (30 seg), se bloquea y
-/// solicita la huella dactilar para continuar.
+/// Si la sesión está activa y la biometría habilitada:
+/// - Al ocurrir inactividad (>5 min) o retorno de segundo plano (>30 seg),
+///   se activa directamente el diálogo nativo del sensor de huellas de Android
+///   sobre la pantalla en la que el usuario estaba trabajando.
+/// - Si el usuario verifica la huella, continúa en su pantalla sin interrupciones.
+/// - Si cancela o falla, se redirige limpiamente a la pantalla de Login.
 class BiometricLifecycleLock extends StatefulWidget {
   final Widget child;
 
@@ -24,57 +22,31 @@ class BiometricLifecycleLock extends StatefulWidget {
 }
 
 class _BiometricLifecycleLockState extends State<BiometricLifecycleLock> {
-  bool _isAuthenticating = false;
-
   @override
   void initState() {
     super.initState();
-    SessionLifecycleManager.instance.init();
-    SessionLifecycleManager.instance.isLockedNotifier.addListener(_onLockStateChanged);
+    SessionLifecycleManager.instance.init(
+      onReauthenticateRequired: _handleReauthentication,
+    );
   }
 
-  @override
-  void dispose() {
-    SessionLifecycleManager.instance.isLockedNotifier.removeListener(_onLockStateChanged);
-    super.dispose();
-  }
-
-  void _onLockStateChanged() {
-    final isLocked = SessionLifecycleManager.instance.isLockedNotifier.value;
-    if (isLocked && mounted) {
-      final isAuth = context.read<AuthCubit>().state.isAuthenticated;
-      if (isAuth) {
-        // Disparar automáticamente el prompt al bloquear
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _unlockWithBiometrics();
-        });
-      } else {
-        // Si no está autenticado, no hay nada que bloquear
-        SessionLifecycleManager.instance.unlock();
-      }
-    }
-  }
-
-  Future<void> _unlockWithBiometrics() async {
-    if (_isAuthenticating) return;
-    _isAuthenticating = true;
+  Future<void> _handleReauthentication() async {
+    final authCubit = context.read<AuthCubit>();
+    final authState = authCubit.state;
+    if (!authState.isAuthenticated) return;
 
     final success = await BiometricAuthService.instance.authenticate(
-      localizedReason: 'Escanea tu huella dactilar para reanudar Cívica Pago',
+      localizedReason: 'Escanea tu huella dactilar para continuar en Cívica Pago',
     );
-
-    _isAuthenticating = false;
 
     if (!mounted) return;
 
     if (success) {
-      SessionLifecycleManager.instance.unlock();
+      SessionLifecycleManager.instance.recordUserActivity();
+    } else {
+      // Si canceló la huella o falló, redirige a LoginScreen
+      authCubit.logout();
     }
-  }
-
-  void _handleIngresarConClave() {
-    SessionLifecycleManager.instance.unlock();
-    context.read<AuthCubit>().logout();
   }
 
   @override
@@ -83,116 +55,7 @@ class _BiometricLifecycleLockState extends State<BiometricLifecycleLock> {
       behavior: HitTestBehavior.translucent,
       onPointerDown: (_) => SessionLifecycleManager.instance.recordUserActivity(),
       onPointerMove: (_) => SessionLifecycleManager.instance.recordUserActivity(),
-      child: BlocListener<AuthCubit, AuthState>(
-        listener: (context, authState) {
-          if (!authState.isAuthenticated) {
-            SessionLifecycleManager.instance.unlock();
-          } else if (SessionLifecycleManager.instance.isLockedNotifier.value) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              _unlockWithBiometrics();
-            });
-          }
-        },
-        child: Stack(
-          children: [
-            widget.child,
-            ValueListenableBuilder<bool>(
-              valueListenable: SessionLifecycleManager.instance.isLockedNotifier,
-            builder: (context, isLocked, _) {
-              final authState = context.watch<AuthCubit>().state;
-              if (!isLocked || !authState.isAuthenticated) {
-                return const SizedBox.shrink();
-              }
-
-              final nombreUsuario = authState.usuario?['nombre'] as String? ?? 'Usuario';
-
-              return Positioned.fill(
-                child: ValueListenableBuilder<bool>(
-                  valueListenable: darkThemeNotifier,
-                  builder: (context, isDark, _) {
-                    final bgColor = isDark ? AppColors.darkBackground : AppColors.lightBackground;
-                    final textColor = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-                    final subtextColor = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-
-                    return Material(
-                      color: bgColor,
-                      child: SafeArea(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Spacer(),
-                              Container(
-                                width: 92,
-                                height: 92,
-                                decoration: BoxDecoration(
-                                  color: AppColors.primary.withValues(alpha: 0.12),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.fingerprint_rounded,
-                                  size: 54,
-                                  color: AppColors.primary,
-                                ),
-                              ),
-                              const SizedBox(height: AppSpacing.lg),
-                              Text(
-                                'Hola, $nombreUsuario',
-                                style: AppTypography.subtitle.copyWith(
-                                  fontSize: 22,
-                                  color: textColor,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: AppSpacing.xs),
-                              Text(
-                                'Sesión protegida por biometría.\nUsa tu huella dactilar para continuar.',
-                                textAlign: TextAlign.center,
-                                style: AppTypography.body.copyWith(
-                                  color: subtextColor,
-                                ),
-                              ),
-                              const Spacer(),
-                              SizedBox(
-                                width: double.infinity,
-                                height: 52,
-                                child: FilledButton.icon(
-                                  onPressed: _unlockWithBiometrics,
-                                  icon: const Icon(Icons.fingerprint_rounded),
-                                  label: const Text('Desbloquear con huella'),
-                                  style: FilledButton.styleFrom(
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(14),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: AppSpacing.sm),
-                              TextButton(
-                                onPressed: _handleIngresarConClave,
-                                child: Text(
-                                  'Ingresar con clave',
-                                  style: AppTypography.caption.copyWith(
-                                    color: AppColors.primary,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: AppSpacing.md),
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-    ),
-  );
-}
+      child: widget.child,
+    );
+  }
 }

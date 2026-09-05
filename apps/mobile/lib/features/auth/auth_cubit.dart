@@ -8,6 +8,7 @@ import '../../core/network/api_exceptions.dart';
 import '../../core/network/base_url.dart';
 import '../../core/network/local_cache_repository.dart';
 import '../../core/network/realtime_socket_service.dart';
+import '../../core/security/biometric_auth_service.dart';
 
 // ════════════════════════════════════════════════════════════
 // STATE
@@ -89,11 +90,20 @@ class AuthCubit extends Cubit<AuthState> {
   }
 
   /// Verifica si hay sesión activa (al iniciar la app).
-  Future<void> checkSession() async {
+  Future<void> checkSession({bool forceRestore = false}) async {
     emit(const AuthState.loading());
     try {
       final hasTokens = await _authApi.isLoggedIn();
       if (!hasTokens) {
+        emit(const AuthState.unauthenticated());
+        return;
+      }
+
+      // Si la biometría está habilitada y es arranque en frío, abrimos en LoginScreen
+      // para permitir al usuario ingresar mediante huella dactilar o contraseña
+      final isBioEnabled = await BiometricAuthService.instance.isBiometricsEnabled();
+      if (isBioEnabled && !forceRestore) {
+        debugPrint('[AuthCubit] Cold start con biometría activa: mostrando LoginScreen');
         emit(const AuthState.unauthenticated());
         return;
       }

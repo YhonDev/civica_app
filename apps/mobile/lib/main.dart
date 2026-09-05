@@ -35,8 +35,8 @@ void main() async {
   final detector = ConnectivityDetector.init();
   SyncService.init(detector: detector);
 
-  // Inicializar ciclo de vida y verificar bloqueo biométrico en Cold Start
-  await SessionLifecycleManager.instance.init();
+  // Inicializar ciclo de vida de la sesión
+  SessionLifecycleManager.instance.init();
 
   runApp(const CivicaPagoApp());
 }
