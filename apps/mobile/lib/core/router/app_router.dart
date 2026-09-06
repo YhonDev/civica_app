@@ -152,6 +152,14 @@ final GoRouter appRouter = GoRouter(
               selectedEtapaId: extra['selectedEtapaId'] as String? ?? 'TODAS',
               selectedEstadoFiltro: extra['selectedEstadoFiltro'] as String? ?? 'TODAS',
               sentidoInverso: extra['sentidoInverso'] as bool? ?? false,
+              selectedRecorridoFecha: (extra['selectedRecorrido'] as Map<String, dynamic>?)?['fecha'] as String?,
+              selectedRecorridoLabel: () {
+                final rec = extra['selectedRecorrido'] as Map<String, dynamic>?;
+                if (rec == null) return null;
+                final nombre = rec['nombre'] as String? ?? 'Recorrido';
+                final legible = rec['fechaLegible'] as String? ?? '';
+                return legible.isEmpty ? nombre : '$nombre · $legible';
+              }(),
             );
           },
         ),

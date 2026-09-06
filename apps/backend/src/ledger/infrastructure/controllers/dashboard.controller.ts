@@ -402,7 +402,12 @@ export class DashboardController {
     const etapaIds: string[] = asignaciones.map((a: any) => a.etapa_id);
 
     if (etapaIds.length === 0) {
-      return { etapas: [], solicitudes: [] };
+      return {
+        etapas: [],
+        solicitudes: [],
+        recorridos: [],
+        recorridoActualNumero: 1,
+      };
     }
 
     // 2. Obtener la jerarquía completa: etapas → manzanas → casas con sus residentes
@@ -530,6 +535,7 @@ export class DashboardController {
           let proximaCuotaNombre: string | null = null;
           let proximaCuotaMonto = 0;
           let proximaCuotaId: string | null = null;
+          let proximaCuotaFechaVencimiento: string | null = null;
 
           if (rawCuotas.length > 0) {
             const firstCu = rawCuotas[0];
@@ -541,6 +547,11 @@ export class DashboardController {
               firstCu.fecha_vencimiento,
               r.prop_modalidad,
             );
+            proximaCuotaFechaVencimiento = firstCu.fecha_vencimiento
+              ? (typeof firstCu.fecha_vencimiento === 'string'
+                  ? firstCu.fecha_vencimiento.slice(0, 10)
+                  : new Date(firstCu.fecha_vencimiento).toISOString().slice(0, 10))
+              : null;
           }
 
           manzana.casas.push({
@@ -555,6 +566,7 @@ export class DashboardController {
             proximaCuotaNombre,
             proximaCuotaMonto,
             proximaCuotaId,
+            proximaCuotaFechaVencimiento,
             cuotas: rawCuotas.map((cu: any) => ({
               id: cu.id,
               residenteId: cu.residente_id,
@@ -589,7 +601,22 @@ export class DashboardController {
       etapaIds,
     );
 
-    return { etapas, solicitudes };
+    // 7. Calcular los 4 Recorridos / Ciclos de Cobro del mes
+    const { recorridos, recorridoActualNumero } = calcularRecorridosMes(
+      Periodo.fechasCobroParciales(
+        'SEMANAL',
+        new Date().getFullYear(),
+        new Date().getMonth(),
+      ),
+      new Date(),
+    );
+
+    return {
+      etapas,
+      solicitudes,
+      recorridos,
+      recorridoActualNumero,
+    };
   }
 
   private async getSolicitudesActivasCobrador(
@@ -1170,4 +1197,70 @@ export class DashboardController {
       hasMore: offset + limit < items.length,
     };
   }
+}
+
+const MESES_ABREVIADOS = [
+  'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
+  'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic',
+] as const;
+
+/**
+ * Fecha local (YYYY-MM-DD) sin desfase UTC. `toISOString()` usa UTC y en
+ * UTC-5 después de las 7 p.m. reportaría el día siguiente.
+ */
+export function fechaLocalStr(d: Date): string {
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${mm}-${dd}`;
+}
+
+export interface RecorridoMes {
+  numero: number;
+  nombre: string;
+  fecha: string;
+  fechaLegible: string;
+  esActual: boolean;
+}
+
+/**
+ * Construye los 4 recorridos (sábados de cobro) del mes y marca el activo:
+ * el primer sábado cuya fecha sea >= hoy; si hoy supera a todos, el último.
+ */
+export function calcularRecorridosMes(
+  sabadosCobro: string[],
+  hoy: Date = new Date(),
+): { recorridos: RecorridoMes[]; recorridoActualNumero: number } {
+  const hoyStr = fechaLocalStr(hoy);
+
+  let recorridoActualNumero = 1;
+  let encontroActual = false;
+
+  const recorridos: RecorridoMes[] = sabadosCobro.map((fechaStr, idx) => {
+    const numero = idx + 1;
+    const [, mesStr, diaStr] = fechaStr.split('-');
+    const fechaLegible = `Sáb ${parseInt(diaStr, 10)} ${MESES_ABREVIADOS[parseInt(mesStr, 10) - 1]}`;
+
+    if (!encontroActual && hoyStr <= fechaStr) {
+      recorridoActualNumero = numero;
+      encontroActual = true;
+    }
+
+    return {
+      numero,
+      nombre: `Recorrido ${numero}`,
+      fecha: fechaStr,
+      fechaLegible,
+      esActual: false,
+    };
+  });
+
+  if (!encontroActual && recorridos.length > 0) {
+    recorridoActualNumero = recorridos.length;
+  }
+
+  for (const rec of recorridos) {
+    rec.esActual = rec.numero === recorridoActualNumero;
+  }
+
+  return { recorridos, recorridoActualNumero };
 }

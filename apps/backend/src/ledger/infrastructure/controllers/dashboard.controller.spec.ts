@@ -11,6 +11,10 @@ import { DataSource } from 'typeorm';
 import { Cobro } from '../../domain/cobro.entity';
 import { Money } from '../../../shared/common/value-objects';
 import { Usuario, RolUsuario } from '../../../iam/domain/usuario.entity';
+import {
+  calcularRecorridosMes,
+  fechaLocalStr,
+} from './dashboard.controller';
 
 describe('DashboardController — Cobrador Logic', () => {
   let controller: DashboardController;
@@ -394,6 +398,73 @@ describe('DashboardController — Cobrador Logic', () => {
       const result = await controller.getViviendasExplorer(user, TENANT_ID);
 
       expect(result.etapas).toHaveLength(0);
+    });
+  });
+
+  describe('calcularRecorridosMes()', () => {
+    it('returns exactly 4 recorridos when the engine yields 4 Saturdays', () => {
+      const { recorridos, recorridoActualNumero } = calcularRecorridosMes(
+        ['2026-09-05', '2026-09-12', '2026-09-19', '2026-09-26'],
+        new Date(2026, 8, 3), // Wed Sep 3 2026 (local)
+      );
+
+      expect(recorridos).toHaveLength(4);
+      expect(recorridos.map((r) => r.fecha)).toEqual([
+        '2026-09-05',
+        '2026-09-12',
+        '2026-09-19',
+        '2026-09-26',
+      ]);
+      expect(recorridos[0].fechaLegible).toBe('Sáb 5 Sep');
+      expect(recorridoActualNumero).toBe(1);
+      expect(recorridos[0].esActual).toBe(true);
+      expect(recorridos.slice(1).every((r) => !r.esActual)).toBe(true);
+    });
+
+    it('marks the first Saturday on or after today as actual', () => {
+      const { recorridoActualNumero } = calcularRecorridosMes(
+        ['2026-09-05', '2026-09-12', '2026-09-19', '2026-09-26'],
+        new Date(2026, 8, 15), // Tue Sep 15 → after Sáb 12, before Sáb 19
+      );
+
+      expect(recorridoActualNumero).toBe(3);
+    });
+
+    it('falls back to the last recorrido when today is past all Saturdays', () => {
+      const { recorridoActualNumero } = calcularRecorridosMes(
+        ['2026-09-05', '2026-09-12', '2026-09-19', '2026-09-26'],
+        new Date(2026, 8, 30),
+      );
+
+      expect(recorridoActualNumero).toBe(4);
+    });
+
+    it('treats today exactly on a Saturday as that recorrido', () => {
+      const { recorridoActualNumero } = calcularRecorridosMes(
+        ['2026-09-05', '2026-09-12', '2026-09-19', '2026-09-26'],
+        new Date(2026, 8, 12),
+      );
+
+      expect(recorridoActualNumero).toBe(2);
+    });
+
+    it('returns empty recorridos when no Saturdays are provided', () => {
+      const { recorridos, recorridoActualNumero } = calcularRecorridosMes(
+        [],
+        new Date(2026, 8, 3),
+      );
+
+      expect(recorridos).toHaveLength(0);
+      expect(recorridoActualNumero).toBe(1);
+    });
+  });
+
+  describe('fechaLocalStr()', () => {
+    it('uses local calendar components, not UTC', () => {
+      // 2026-09-03 21:00 local (UTC-5) === 2026-09-04T02:00Z — UTC would say day 4
+      const d = new Date(2026, 8, 3, 21, 0, 0);
+
+      expect(fechaLocalStr(d)).toBe('2026-09-03');
     });
   });
 

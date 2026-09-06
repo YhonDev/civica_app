@@ -78,6 +78,7 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
   String _selectedEtapaId = 'TODAS'; // 'TODAS' o id específico de Etapa
   bool _sentidoInverso = false; // false: Directo, true: Inverso
   String _filtroEstado = 'PENDIENTES'; // PENDIENTES, MORA, TODOS
+  String? _selectedRecorridoFecha; // fecha del recorrido (sábado) seleccionado; null = el actual
 
   @override
   void onAppResumed() {
@@ -97,7 +98,12 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                   if (state is ViviendasLoading || state is ViviendasInitial) {
                     return _buildSkeletonLoading();
                   } else if (state is ViviendasLoaded) {
-                    return _buildContent(state.etapas, state.solicitudes);
+                    return _buildContent(
+                      state.etapas,
+                      state.solicitudes,
+                      recorridos: state.recorridos,
+                      recorridoActualNumero: state.recorridoActualNumero,
+                    );
                   }
                   return _buildError((state as ViviendasError).message);
                 },
@@ -133,9 +139,16 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
 
   // ── Content ───────────────────────────────────────────────────────
 
-  Widget _buildContent(List<EtapaExplorer> etapas, List<Map<String, dynamic>> solicitudes) {
+  Widget _buildContent(
+    List<EtapaExplorer> etapas,
+    List<Map<String, dynamic>> solicitudes, {
+    List<RecorridoExplorer> recorridos = const [],
+    int recorridoActualNumero = 1,
+  }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final processedEtapas = _procesarRutaCaminata(etapas);
+    final recorridoSeleccionado = _recorridoSeleccionadoDe(recorridos, recorridoActualNumero);
+    final fechaCorte = recorridoSeleccionado?.fecha;
+    final processedEtapas = _procesarRutaCaminata(etapas, fechaCorte);
     final territorioItems = _flattenTerritorioItems(processedEtapas);
 
     return RefreshIndicator(
@@ -166,14 +179,20 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                   const SizedBox(height: AppSpacing.lg),
 
                   // ── SECCIÓN 2: Recorrido Programado por Territorio ───────
-                  _buildRecorridoHeader(etapas, solicitudes),
+                  _buildRecorridoHeader(etapas, solicitudes, recorridoSeleccionado),
 
                   const SizedBox(height: AppSpacing.sm),
 
                   // Selector por Sector / Etapa
-                  _buildEtapaFilterChips(etapas),
+                  _buildEtapaFilterChips(etapas, fechaCorte),
 
                   const SizedBox(height: AppSpacing.sm),
+
+                  // Selector de Recorrido (4 sábados de cobro del mes)
+                  if (recorridos.isNotEmpty) ...[
+                    _buildRecorridoSelector(recorridos, recorridoSeleccionado),
+                    const SizedBox(height: AppSpacing.sm),
+                  ],
 
                   // Toggle Dinámico de Sentido de Caminata (calculado según DB)
                   _buildSentidoToggle(etapas, isDark),
@@ -477,15 +496,35 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
 
   // ── SECCIÓN 2: Recorrido Programado ────────────────────────────────
 
-  Widget _buildRecorridoHeader(List<EtapaExplorer> etapas, List<dynamic> solicitudes) {
+  Widget _buildRecorridoHeader(
+    List<EtapaExplorer> etapas,
+    List<dynamic> solicitudes,
+    RecorridoExplorer? recorridoSeleccionado,
+  ) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          'Ruta a Cobrar',
-          style: AppTypography.title.copyWith(
-            fontWeight: FontWeight.w700,
-            fontSize: 16,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Ruta a Cobrar',
+                style: AppTypography.title.copyWith(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16,
+                ),
+              ),
+              Text(
+                recorridoSeleccionado != null
+                    ? '${recorridoSeleccionado.nombre} · ${recorridoSeleccionado.fechaLegible}'
+                    : 'Ciclo de cobro actual',
+                style: AppTypography.caption.copyWith(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
           ),
         ),
         FilledButton.icon(
@@ -504,12 +543,18 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                 'selectedEtapaId': _selectedEtapaId,
                 'selectedEstadoFiltro': _filtroEstado,
                 'sentidoInverso': _sentidoInverso,
+                if (recorridoSeleccionado != null)
+                  'selectedRecorrido': {
+                    'numero': recorridoSeleccionado.numero,
+                    'fecha': recorridoSeleccionado.fecha,
+                    'fechaLegible': recorridoSeleccionado.fechaLegible,
+                  },
               },
             );
           },
           icon: const Icon(Icons.play_arrow_rounded, size: 18),
           label: const Text(
-            'Modo Focus',
+            'Iniciar Recorrido',
             style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
           ),
         ),
@@ -517,10 +562,81 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
     );
   }
 
+  // ── Selector de Recorrido (4 sábados de cobro del mes) ────────────
+
+  RecorridoExplorer? _recorridoSeleccionadoDe(
+    List<RecorridoExplorer> recorridos,
+    int numeroPorDefecto,
+  ) {
+    if (recorridos.isEmpty) return null;
+    if (_selectedRecorridoFecha != null) {
+      for (final r in recorridos) {
+        if (r.fecha == _selectedRecorridoFecha) return r;
+      }
+    }
+    for (final r in recorridos) {
+      if (r.numero == numeroPorDefecto) return r;
+    }
+    return recorridos.first;
+  }
+
+  Widget _buildRecorridoSelector(
+    List<RecorridoExplorer> recorridos,
+    RecorridoExplorer? recorridoSeleccionado,
+  ) {
+    return FadingHorizontalScroll(
+      padding: EdgeInsets.zero,
+      child: Row(
+        children: recorridos.map((rec) {
+          final isSelected = recorridoSeleccionado?.fecha == rec.fecha;
+          return Padding(
+            padding: const EdgeInsets.only(right: AppSpacing.xs),
+            child: ChoiceChip(
+              label: Text('${rec.fechaLegible} · R${rec.numero}'),
+              selected: isSelected,
+              onSelected: (selected) {
+                if (selected) {
+                  AppFeedback.selection();
+                  setState(() => _selectedRecorridoFecha = rec.fecha);
+                }
+              },
+              selectedColor: AppColors.primary,
+              labelStyle: AppTypography.caption.copyWith(
+                color: isSelected ? Colors.white : AppColors.textSecondary,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                fontSize: 12,
+              ),
+              backgroundColor: AppColors.surface,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+                side: BorderSide(
+                  color: isSelected ? AppColors.primary : AppColors.border,
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  /// Formatea 'YYYY-MM-DD' → 'd MMM yyyy' sin depender de locales de intl.
+  String _formatFechaCorta(String? iso) {
+    if (iso == null || iso.length < 10) return '';
+    const meses = [
+      'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
+      'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic',
+    ];
+    final mes = int.tryParse(iso.substring(5, 7));
+    final dia = int.tryParse(iso.substring(8, 10));
+    if (mes == null || dia == null || mes < 1 || mes > 12) return iso;
+    return '$dia ${meses[mes - 1]} ${iso.substring(0, 4)}';
+  }
+
   // ── Selector de Sector / Etapa con Contadores en Tiempo Real ─────────
 
-  Widget _buildEtapaFilterChips(List<EtapaExplorer> etapas) {
-    final totalCount = _calcularTotalCasasPendientes(etapas);
+  Widget _buildEtapaFilterChips(List<EtapaExplorer> etapas, String? fechaCorte) {
+    final totalCount = _calcularTotalCasasPendientes(etapas, fechaCorte);
 
     return FadingHorizontalScroll(
       padding: EdgeInsets.zero,
@@ -557,7 +673,7 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
           // Chips por Etapa Individual
           ...etapas.map((etapa) {
             final isSelected = _selectedEtapaId == etapa.id;
-            final etapaCount = _calcularTotalCasasPendientes([etapa]);
+            final etapaCount = _calcularTotalCasasPendientes([etapa], fechaCorte);
 
             return Padding(
               padding: const EdgeInsets.only(right: AppSpacing.xs),
@@ -827,16 +943,13 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
 
   // ── Cálculo de Contadores de Casas Pendientes ──────────────────────
 
-  int _calcularTotalCasasPendientes(List<EtapaExplorer> etapas) {
+  int _calcularTotalCasasPendientes(List<EtapaExplorer> etapas, String? fechaCorte) {
     int total = 0;
     for (final e in etapas) {
       for (final m in e.manzanas) {
         for (final c in m.casas) {
-          if (_filtroEstado == 'PENDIENTES' && (c.estado == 'PENDIENTE' || c.estado == 'PARCIAL' || c.estado == 'VENCIDA') && c.saldo > 0) {
-            total++;
-          } else if (_filtroEstado == 'MORA' && (c.estado == 'VENCIDA' || c.estado == 'MORA' || c.estado == 'EN_MORA')) {
-            total++;
-          } else if (_filtroEstado == 'TODOS' && (c.estado != 'AL_DIA' && c.estado != 'PAGADA' || c.saldo > 0)) {
+          if (evaluarCasaParaRecorrido(c, _filtroEstado, fechaCorte) !=
+              CasaFiltroVeredicto.excluir) {
             total++;
           }
         }
@@ -847,7 +960,10 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
 
   // ── Procesador de Orden y Filtro de Ruta de Caminata ─────────────
 
-  List<EtapaExplorer> _procesarRutaCaminata(List<EtapaExplorer> etapasInput) {
+  List<EtapaExplorer> _procesarRutaCaminata(
+    List<EtapaExplorer> etapasInput,
+    String? fechaCorte,
+  ) {
     List<EtapaExplorer> scopedEtapas = etapasInput;
     if (_selectedEtapaId != 'TODAS') {
       scopedEtapas = etapasInput.where((e) => e.id == _selectedEtapaId).toList();
@@ -862,16 +978,20 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
 
       List<ManzanaExplorer> resultManzanas = manzanasOrdenadas.map((manzana) {
         List<CasaExplorer> resultCasas = manzana.casas.where((casa) {
-          if (_filtroEstado == 'PENDIENTES') {
-            return (casa.estado == 'PENDIENTE' || casa.estado == 'PARCIAL' || casa.estado == 'VENCIDA') && casa.saldo > 0;
-          } else if (_filtroEstado == 'MORA') {
-            return casa.estado == 'VENCIDA' || casa.estado == 'MORA' || casa.estado == 'EN_MORA';
-          }
-          // 'TODOS': Exclude houses that are fully paid / AL_DIA with 0 debt from active collection route
-          return (casa.estado != 'AL_DIA' && casa.estado != 'PAGADA') || casa.saldo > 0;
+          return evaluarCasaParaRecorrido(casa, _filtroEstado, fechaCorte) !=
+              CasaFiltroVeredicto.excluir;
         }).toList();
 
+        // Casas solo en mora se ordenan al final de la manzana; el resto
+        // respeta el orden secuencial de caminata.
         resultCasas.sort((a, b) {
+          final aMora = _filtroEstado == 'PENDIENTES' && fechaCorte != null &&
+              evaluarCasaParaRecorrido(a, _filtroEstado, fechaCorte) ==
+                  CasaFiltroVeredicto.mora;
+          final bMora = _filtroEstado == 'PENDIENTES' && fechaCorte != null &&
+              evaluarCasaParaRecorrido(b, _filtroEstado, fechaCorte) ==
+                  CasaFiltroVeredicto.mora;
+          if (aMora != bMora) return aMora ? 1 : -1;
           final comp = a.direccion.compareTo(b.direccion);
           return _sentidoInverso ? -comp : comp;
         });
@@ -1060,50 +1180,59 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                 ),
                 const SizedBox(width: AppSpacing.md),
 
-                // Info de Casa y Residente (con cuota actual, sin teléfono)
+                // Info de Casa y Residente — 4 filas estructuradas
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Fila 1: Manzana — Casa
                       Text(
                         direccionCompleta,
                         style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w700),
                       ),
                       const SizedBox(height: 2),
-                      Row(
-                        children: [
-                          Icon(Icons.person_rounded, size: 13, color: AppColors.textSecondary),
-                          const SizedBox(width: 3),
-                          Flexible(
-                            child: Text(
-                              casa.residenteNombre,
+                      // Fila 2: Residente
+                      Text(
+                        casa.residenteNombre,
+                        style: AppTypography.small.copyWith(
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      // Fila 3: Cuota
+                      if (casa.proximaCuotaNombre != null && casa.proximaCuotaNombre!.isNotEmpty) ...[
+                        const SizedBox(height: 3),
+                        Text(
+                          casa.proximaCuotaNombre!,
+                          style: AppTypography.small.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                      // Fila 4: Fecha de vencimiento
+                      if (casa.proximaCuotaFechaVencimiento != null &&
+                          casa.proximaCuotaFechaVencimiento!.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.event_rounded, size: 12, color: AppColors.textSecondary),
+                            const SizedBox(width: 3),
+                            Text(
+                              'Vence: ${_formatFechaCorta(casa.proximaCuotaFechaVencimiento)}',
                               style: AppTypography.small.copyWith(
                                 color: AppColors.textSecondary,
                                 fontWeight: FontWeight.w600,
                               ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          if (casa.proximaCuotaNombre != null && casa.proximaCuotaNombre!.isNotEmpty) ...[
-                            const SizedBox(width: 6),
-                            Text(
-                              '·',
-                              style: AppTypography.small.copyWith(color: AppColors.textSecondary),
-                            ),
-                            const SizedBox(width: 6),
-                            Flexible(
-                              child: Text(
-                                casa.proximaCuotaNombre!,
-                                style: AppTypography.small.copyWith(
-                                  color: AppColors.primary,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
                             ),
                           ],
-                        ],
-                      ),
+                        ),
+                      ],
                     ],
                   ),
                 ),

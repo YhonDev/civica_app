@@ -87,6 +87,12 @@ class ModoInmersivoRutaScreen extends StatefulWidget {
   final String selectedEstadoFiltro;
   final bool sentidoInverso;
 
+  /// Fecha de corte (YYYY-MM-DD) del recorrido seleccionado; null = sin ciclo.
+  final String? selectedRecorridoFecha;
+
+  /// Etiqueta legible del recorrido activo (ej. 'Recorrido 1 · Sáb 5 Sep').
+  final String? selectedRecorridoLabel;
+
   const ModoInmersivoRutaScreen({
     super.key,
     required this.etapas,
@@ -94,6 +100,8 @@ class ModoInmersivoRutaScreen extends StatefulWidget {
     this.selectedEtapaId = 'TODAS',
     this.selectedEstadoFiltro = 'TODAS',
     this.sentidoInverso = false,
+    this.selectedRecorridoFecha,
+    this.selectedRecorridoLabel,
   });
 
   @override
@@ -192,15 +200,14 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
           final double saldoReal = casa.saldo.toDouble();
           final String estadoReal = casa.estado;
 
-          bool incluir = true;
-          if (widget.selectedEstadoFiltro == 'PENDIENTES') {
-            incluir = estadoReal != 'AL_DIA' && estadoReal != 'PAGADA' && saldoReal > 0;
-          } else if (widget.selectedEstadoFiltro == 'MORA') {
-            incluir = estadoReal == 'EN_MORA' || estadoReal == 'MORA' || estadoReal == 'VENCIDA';
-          } else {
-            // 'TODAS' / 'TODOS': Exclude houses that are fully paid / AL_DIA with 0 debt from active route
-            incluir = (estadoReal != 'AL_DIA' && estadoReal != 'PAGADA') || saldoReal > 0;
-          }
+          // Filtro de ruta con fecha de corte del recorrido seleccionado
+          // (misma lógica que el explorer, compartida desde casas_cubit).
+          final incluir = evaluarCasaParaRecorrido(
+                casa,
+                widget.selectedEstadoFiltro == 'TODAS' ? 'TODOS' : widget.selectedEstadoFiltro,
+                widget.selectedRecorridoFecha,
+              ) !=
+              CasaFiltroVeredicto.excluir;
 
           if (incluir) {
             final solKey = '${manzana.nombre}_${casa.direccion}';
@@ -539,13 +546,25 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
             ),
             onPressed: () => _confirmarSalidaRuta(context),
           ),
-          Text(
-            'Ruta Iniciada',
-            style: AppTypography.title.copyWith(
-              fontWeight: FontWeight.w800,
-              fontSize: 20,
-              color: isDark ? Colors.white : AppColors.textPrimary,
-            ),
+          Column(
+            children: [
+              Text(
+                'Ruta Iniciada',
+                style: AppTypography.title.copyWith(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 20,
+                  color: isDark ? Colors.white : AppColors.textPrimary,
+                ),
+              ),
+              if (widget.selectedRecorridoLabel != null)
+                Text(
+                  widget.selectedRecorridoLabel!,
+                  style: AppTypography.caption.copyWith(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+            ],
           ),
           const SizedBox(width: 40),
         ],

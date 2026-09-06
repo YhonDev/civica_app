@@ -19,6 +19,7 @@ class CasaExplorer extends Equatable {
   final String? proximaCuotaNombre;
   final int proximaCuotaMonto;
   final String? proximaCuotaId;
+  final String? proximaCuotaFechaVencimiento;
   final List<Map<String, dynamic>> cuotas;
 
   const CasaExplorer({
@@ -33,6 +34,7 @@ class CasaExplorer extends Equatable {
     this.proximaCuotaNombre,
     this.proximaCuotaMonto = 0,
     this.proximaCuotaId,
+    this.proximaCuotaFechaVencimiento,
     this.cuotas = const [],
   });
 
@@ -49,6 +51,7 @@ class CasaExplorer extends Equatable {
       proximaCuotaNombre: json['proximaCuotaNombre'] as String?,
       proximaCuotaMonto: json['proximaCuotaMonto'] as int? ?? 0,
       proximaCuotaId: json['proximaCuotaId'] as String?,
+      proximaCuotaFechaVencimiento: json['proximaCuotaFechaVencimiento'] as String?,
       cuotas: (json['cuotas'] as List? ?? [])
           .map((c) => Map<String, dynamic>.from(c as Map))
           .toList(),
@@ -66,8 +69,130 @@ class CasaExplorer extends Equatable {
         saldo,
         proximaCuotaNombre,
         proximaCuotaMonto,
+        proximaCuotaId,
+        proximaCuotaFechaVencimiento,
         cuotas,
       ];
+}
+
+class RecorridoExplorer extends Equatable {
+  final int numero;
+  final String nombre;
+  final String fecha;
+  final String fechaLegible;
+  final bool esActual;
+
+  const RecorridoExplorer({
+    required this.numero,
+    required this.nombre,
+    required this.fecha,
+    required this.fechaLegible,
+    this.esActual = false,
+  });
+
+  factory RecorridoExplorer.fromJson(Map<String, dynamic> json) {
+    return RecorridoExplorer(
+      numero: json['numero'] as int? ?? 1,
+      nombre: json['nombre'] as String? ?? 'Recorrido',
+      fecha: json['fecha'] as String? ?? '',
+      fechaLegible: json['fechaLegible'] as String? ?? '',
+      esActual: json['esActual'] as bool? ?? false,
+    );
+  }
+
+  @override
+  List<Object?> get props => [numero, nombre, fecha, fechaLegible, esActual];
+}
+
+/// Estados de cuota que cuentan como "por cobrar en su semana".
+const List<String> kEstadosCuotaPorCobrar = ['PENDIENTE', 'PARCIAL'];
+
+/// Veredicto de una casa frente al filtro de ruta activo.
+enum CasaFiltroVeredicto { incluir, excluir, mora }
+
+///
+/// Decide si [casa] entra al recorrido según [filtro] y la fecha de corte
+/// del recorrido seleccionado ([fechaCorte], YYYY-MM-DD).
+///
+/// - PENDIENTES: alguna cuota por cobrar (PENDIENTE/PARCIAL) con saldo y
+///   `fechaVencimiento <= fechaCorte`. Las cuotas de sábados futuros NO
+///   entran al recorrido actual. `VENCIDA` no es "pendiente": es mora.
+/// - MORA: alguna cuota VENCIDA (fallback al estado de la casa si no hay
+///   detalle de cuotas).
+/// - TODOS: cualquier cuota con saldo (todos los ciclos, orden de caminata).
+///
+/// Con [fechaCorte] null (payload cacheado antiguo) se conserva el
+/// comportamiento previo, solo por estado de la casa.
+CasaFiltroVeredicto evaluarCasaParaRecorrido(
+  CasaExplorer casa,
+  String filtro,
+  String? fechaCorte,
+) {
+  switch (filtro) {
+    case 'PENDIENTES':
+      if (fechaCorte == null) {
+        return (casa.estado == 'PENDIENTE' ||
+                casa.estado == 'PARCIAL' ||
+                casa.estado == 'VENCIDA') &&
+              casa.saldo > 0
+            ? CasaFiltroVeredicto.incluir
+            : CasaFiltroVeredicto.excluir;
+      }
+      bool tieneVigente = false;
+      bool tieneVencida = false;
+      for (final cuota in casa.cuotas) {
+        final estado = cuota['estado'] as String? ?? '';
+        final saldoCuota = (cuota['saldo'] as num?)?.toInt() ?? 0;
+        if (saldoCuota <= 0) continue;
+        if (estado == 'VENCIDA') {
+          tieneVencida = true;
+        } else if (kEstadosCuotaPorCobrar.contains(estado) &&
+            _venceEnOAntesDe(cuota['fechaVencimiento'] as String?, fechaCorte)) {
+          tieneVigente = true;
+        }
+      }
+      // La casa entra al recorrido si tiene cuota por cobrar esta semana
+      // (allí también se cobra la mora); si solo debe mora, se reporta como mora.
+      if (tieneVigente) return CasaFiltroVeredicto.incluir;
+      if (tieneVencida) return CasaFiltroVeredicto.mora;
+      return CasaFiltroVeredicto.excluir;
+
+    case 'MORA':
+      if (casa.cuotas.isNotEmpty) {
+        final tieneVencida = casa.cuotas.any(
+          (cuota) => (cuota['estado'] as String? ?? '') == 'VENCIDA',
+        );
+        if (!tieneVencida) return CasaFiltroVeredicto.excluir;
+      } else if (!(casa.estado == 'VENCIDA' ||
+          casa.estado == 'MORA' ||
+          casa.estado == 'EN_MORA')) {
+        return CasaFiltroVeredicto.excluir;
+      }
+      return casa.saldo > 0
+          ? CasaFiltroVeredicto.incluir
+          : CasaFiltroVeredicto.excluir;
+
+    case 'TODOS':
+    default:
+      if (casa.cuotas.isNotEmpty) {
+        final tieneSaldo = casa.cuotas.any(
+          (cuota) => ((cuota['saldo'] as num?)?.toInt() ?? 0) > 0,
+        );
+        if (!tieneSaldo) return CasaFiltroVeredicto.excluir;
+      } else if (!(casa.estado != 'AL_DIA' && casa.estado != 'PAGADA') &&
+          casa.saldo <= 0) {
+        return CasaFiltroVeredicto.excluir;
+      }
+      return CasaFiltroVeredicto.incluir;
+  }
+}
+
+bool _venceEnOAntesDe(String? fechaVencimiento, String fechaCorte) {
+  if (fechaVencimiento == null || fechaVencimiento.isEmpty) return true;
+  final dia = fechaVencimiento.length >= 10
+      ? fechaVencimiento.substring(0, 10)
+      : fechaVencimiento;
+  return dia.compareTo(fechaCorte) <= 0;
 }
 
 class ManzanaExplorer extends Equatable {
@@ -133,10 +258,23 @@ class ViviendasLoading extends CasasState {
 class ViviendasLoaded extends CasasState {
   final List<EtapaExplorer> etapas;
   final List<Map<String, dynamic>> solicitudes;
+  final List<RecorridoExplorer> recorridos;
+  final int recorridoActualNumero;
 
-  const ViviendasLoaded(this.etapas, {this.solicitudes = const []});
+  const ViviendasLoaded(
+    this.etapas, {
+    this.solicitudes = const [],
+    this.recorridos = const [],
+    this.recorridoActualNumero = 1,
+  });
+
   @override
-  List<Object?> get props => [etapas, solicitudes];
+  List<Object?> get props => [
+        etapas,
+        solicitudes,
+        recorridos,
+        recorridoActualNumero,
+      ];
 }
 
 class ViviendasError extends CasasState {
@@ -177,7 +315,17 @@ class CasasCubit extends Cubit<CasasState> {
             .map((e) => EtapaExplorer.fromJson(e as Map<String, dynamic>))
             .toList();
         final solicitudes = List<Map<String, dynamic>>.from(data['solicitudes'] as List? ?? []);
-        emit(ViviendasLoaded(etapas, solicitudes: solicitudes));
+        final recorridos = (data['recorridos'] as List? ?? [])
+            .map((r) => RecorridoExplorer.fromJson(r as Map<String, dynamic>))
+            .toList();
+        final recorridoActualNumero = data['recorridoActualNumero'] as int? ?? 1;
+
+        emit(ViviendasLoaded(
+          etapas,
+          solicitudes: solicitudes,
+          recorridos: recorridos,
+          recorridoActualNumero: recorridoActualNumero,
+        ));
       },
       onError: (e) {
         if (!silent && LocalCacheRepository.instance.getCached('cobrador:viviendas') == null) {
@@ -199,7 +347,12 @@ class CasasCubit extends Cubit<CasasState> {
       return s;
     }).toList();
 
-    emit(ViviendasLoaded(current.etapas, solicitudes: updatedSolicitudes));
+    emit(ViviendasLoaded(
+      current.etapas,
+      solicitudes: updatedSolicitudes,
+      recorridos: current.recorridos,
+      recorridoActualNumero: current.recorridoActualNumero,
+    ));
 
     if (nuevoEstado == 'EN_CAMINO') {
       _api.patch('/solicitudes/$solicitudId/en-camino').ignore();
