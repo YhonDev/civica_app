@@ -72,21 +72,26 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
     _montoController = TextEditingController();
     _isQuickMode = widget.initialQuickMode;
 
-    final rawCuotas = widget.cuotas ?? [];
+    final rawCuotas = widget.cuotas ?? (widget.cobro.cuotas.isNotEmpty ? widget.cobro.cuotas : null) ?? [];
     if (rawCuotas.isNotEmpty) {
       _cuotasList = List.from(rawCuotas);
     } else if (widget.cobro.saldo > 0) {
-      // Si no vienen cuotas explícitas, dividimos el saldo total en cuotas individuales según el valor base
-      final double singleCuota = (widget.cobro.monto > 0 && widget.cobro.monto < widget.cobro.saldo)
-          ? widget.cobro.monto
-          : 30000.0;
+      final modalidadLower = widget.cobro.modalidad.toLowerCase();
+      final double singleCuota;
+      if (modalidadLower.contains('semanal')) {
+        singleCuota = 10000.0;
+      } else if (modalidadLower.contains('quincenal')) {
+        singleCuota = 20000.0;
+      } else {
+        singleCuota = 40000.0;
+      }
       final int count = (widget.cobro.saldo / singleCuota).clamp(1, 12).round();
       final double valPorCuota = widget.cobro.saldo / count;
 
       _cuotasList = List.generate(count, (i) => {
-        'periodo': 'Mes ${i + 1}',
+        'periodo': 'Cuota ${i + 1}',
         'monto': valPorCuota,
-        'estado': i == 0 ? 'VENCIDA' : 'PENDIENTE',
+        'estado': i == 0 ? (widget.cobro.estado == 'MORA' || widget.cobro.estado == 'VENCIDA' ? 'VENCIDA' : 'PENDIENTE') : 'PENDIENTE',
       });
     } else {
       _cuotasList = [];
@@ -111,6 +116,9 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
   }
 
   String _formatCuotaTitle(Map<String, dynamic> cuota, int idx) {
+    if (cuota['tituloCuota'] != null && (cuota['tituloCuota'] as String).isNotEmpty) {
+      return cuota['tituloCuota'] as String;
+    }
     final periodo = cuota['periodo'] as String? ?? '';
     final concepto = cuota['concepto'] as String? ?? '';
     final fechaVenc = cuota['fechaVencimiento'] as String? ?? periodo;
@@ -133,15 +141,15 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
     }
 
     final modalidad = widget.cobro.modalidad.toLowerCase();
-    String tipoPago = 'Pago ${idx + 1}';
+    String tipoPago = 'Cuota ${idx + 1}';
     if (modalidad.contains('mensual')) {
       tipoPago = 'Cuota Única';
     } else if (modalidad.contains('quincenal')) {
       final qNum = (idx % 2) + 1;
-      tipoPago = 'Pago $qNum';
+      tipoPago = 'Cuota $qNum';
     } else if (modalidad.contains('semanal')) {
       final sNum = (idx % 4) + 1;
-      tipoPago = 'Pago $sNum';
+      tipoPago = 'Cuota $sNum';
     }
 
     return '$mesNombre — $tipoPago';

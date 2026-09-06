@@ -52,6 +52,7 @@ class CobroItem extends Equatable {
   final String cobradorNombre;
   final String fechaPago;
   final String metodoPago;
+  final List<Map<String, dynamic>> cuotas;
 
   const CobroItem({
     required this.id,
@@ -73,6 +74,7 @@ class CobroItem extends Equatable {
     this.cobradorNombre = 'Administración',
     this.fechaPago = '',
     this.metodoPago = 'Efectivo',
+    this.cuotas = const [],
   });
 
   bool get isPaid {

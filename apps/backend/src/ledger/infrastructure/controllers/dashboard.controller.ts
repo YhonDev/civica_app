@@ -412,6 +412,7 @@ export class DashboardController {
         m.id AS manzana_id, m.nombre AS manzana_nombre,
         c.id AS casa_id, c.direccion_interna AS casa_direccion,
         p.id AS prop_id, p.nombre AS prop_nombre, p.telefono AS prop_telefono,
+        p.modalidad_pago AS prop_modalidad,
         t.id AS tenencia_id
       FROM etapas e
       LEFT JOIN manzanas m ON m.etapa_id = e.id
@@ -427,7 +428,7 @@ export class DashboardController {
     const cuotasRaw: any[] = await this.dataSource.query(
       `SELECT
         cu.id, cu.residente_id, cu.monto, cu.monto_pagado,
-        cu.estado, cu.periodo_inicio
+        cu.estado, cu.periodo_inicio, cu.fecha_vencimiento, cu.concepto
       FROM cobros cu
       JOIN residentes p ON p.id = cu.residente_id
       JOIN tenencias t ON t.residente_id = p.id AND t.fecha_fin IS NULL
@@ -437,7 +438,8 @@ export class DashboardController {
           SELECT c2.id FROM casas c2
           JOIN manzanas m2 ON m2.id = c2.manzana_id
           WHERE m2.etapa_id = ANY($2::uuid[])
-        )`,
+        )
+      ORDER BY cu.fecha_vencimiento ASC`,
       [tenantId, etapaIds],
     );
 
@@ -465,6 +467,33 @@ export class DashboardController {
       statusPorCasa.set(resId, { estado: peorEstado, saldo: saldoTotal });
     }
 
+    // Helper para nombre legible de cuota según fecha y modalidad
+    const formatCuotaNombre = (fechaVencimiento: string | Date, modalidad?: string): string => {
+      if (!fechaVencimiento) return 'Cuota de Recaudo';
+      const d = new Date(fechaVencimiento);
+      const meses = [
+        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+      ];
+      const mes = meses[d.getUTCMonth()];
+      const day = d.getUTCDate();
+      const mod = (modalidad || '').toUpperCase();
+
+      if (mod === 'MENSUAL') {
+        return `${mes} · Cuota Única`;
+      }
+      if (mod === 'QUINCENAL') {
+        const qNum = day <= 15 ? 1 : 2;
+        return `${mes} · Cuota ${qNum}`;
+      }
+      // SEMANAL
+      let cuotaNum = 1;
+      if (day > 21) cuotaNum = 4;
+      else if (day > 14) cuotaNum = 3;
+      else if (day > 7) cuotaNum = 2;
+      return `${mes} · Cuota ${cuotaNum}`;
+    };
+
     // 5. Armar árbol jerárquico: etapas → manzanas → casas
     const etapasMap = new Map<string, any>();
 
@@ -489,16 +518,59 @@ export class DashboardController {
         const manzana = etapa.manzanas.get(r.manzana_id);
 
         if (r.casa_id) {
-          // Buscar status para esta casa (a través del residente)
+          // Buscar status y cuotas reales para esta casa (a través del residente)
           const resStatus = r.prop_id ? statusPorCasa.get(r.prop_id) : null;
+          const rawCuotas = r.prop_id ? (cuotasPorRes.get(r.prop_id) || []) : [];
+          rawCuotas.sort(
+            (a, b) =>
+              new Date(a.fecha_vencimiento).getTime() -
+              new Date(b.fecha_vencimiento).getTime(),
+          );
+
+          let proximaCuotaNombre: string | null = null;
+          let proximaCuotaMonto = 0;
+          let proximaCuotaId: string | null = null;
+
+          if (rawCuotas.length > 0) {
+            const firstCu = rawCuotas[0];
+            proximaCuotaId = firstCu.id;
+            proximaCuotaMonto = Math.round(
+              (firstCu.monto - firstCu.monto_pagado) / 100,
+            );
+            proximaCuotaNombre = formatCuotaNombre(
+              firstCu.fecha_vencimiento,
+              r.prop_modalidad,
+            );
+          }
 
           manzana.casas.push({
             id: r.casa_id,
             direccion: r.casa_direccion,
+            residenteId: r.prop_id ?? '',
             residenteNombre: r.prop_nombre ?? 'Sin residente',
             residenteTelefono: r.prop_telefono ?? '',
+            modalidad: r.prop_modalidad ?? 'MENSUAL',
             estado: resStatus?.estado ?? 'AL_DIA',
             saldo: resStatus?.saldo ?? 0,
+            proximaCuotaNombre,
+            proximaCuotaMonto,
+            proximaCuotaId,
+            cuotas: rawCuotas.map((cu: any) => ({
+              id: cu.id,
+              residenteId: cu.residente_id,
+              monto: Math.round((cu.monto - cu.monto_pagado) / 100),
+              montoTotal: Math.round(cu.monto / 100),
+              montoPagado: Math.round(cu.monto_pagado / 100),
+              saldo: Math.round((cu.monto - cu.monto_pagado) / 100),
+              estado: cu.estado,
+              periodo: cu.periodo_inicio,
+              fechaVencimiento: cu.fecha_vencimiento,
+              concepto: cu.concepto,
+              tituloCuota: formatCuotaNombre(
+                cu.fecha_vencimiento,
+                r.prop_modalidad,
+              ),
+            })),
           });
         }
       }

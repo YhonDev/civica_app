@@ -13,6 +13,7 @@ import 'dashboard_cobrador_cubit.dart';
 import 'casas_cubit.dart';
 import 'widgets/cobrador_solicitud_card.dart';
 import '../../shared/widgets/screen_header.dart';
+import '../../shared/widgets/fading_horizontal_scroll.dart';
 
 /// Rutas Explorer — Navegador de Recorrido Continuo de Caminata para Cobrador (P05).
 ///
@@ -521,8 +522,8 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
   Widget _buildEtapaFilterChips(List<EtapaExplorer> etapas) {
     final totalCount = _calcularTotalCasasPendientes(etapas);
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
+    return FadingHorizontalScroll(
+      padding: EdgeInsets.zero,
       child: Row(
         children: [
           // Chip "Todas"
@@ -764,8 +765,8 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
       ('TODOS', '🔘 Todas las Casas'),
     ];
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
+    return FadingHorizontalScroll(
+      padding: EdgeInsets.zero,
       child: Row(
         children: opciones.map((opt) {
           final isSelected = _filtroEstado == opt.$1;
@@ -1008,19 +1009,26 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
           borderRadius: BorderRadius.circular(12),
           onTap: () {
             AppFeedback.light();
+            final defaultMonto = casa.proximaCuotaMonto > 0
+                ? casa.proximaCuotaMonto.toDouble()
+                : (casa.saldo > 0 ? (casa.saldo > 50000 ? 10000.0 : casa.saldo.toDouble()) : 20000.0);
+
             final cobroItem = CobroItem(
-              id: casa.id,
-              concepto: 'Cuota de Recaudo — $direccionCompleta',
-              monto: casa.saldo > 0 ? (casa.saldo / 2).clamp(10000, 50000).toDouble() : 20000.0,
+              id: casa.proximaCuotaId ?? casa.id,
+              concepto: casa.proximaCuotaNombre != null
+                  ? '${casa.proximaCuotaNombre} — $direccionCompleta'
+                  : 'Cuota de Recaudo — $direccionCompleta',
+              monto: defaultMonto,
               montoPagado: 0,
               saldo: casa.saldo.toDouble(),
               estado: casa.estado,
-              modalidad: 'Semanal',
+              modalidad: casa.modalidad,
               casa: casa.direccion,
               manzana: manzanaNombre,
               etapa: etapaNombre,
-              residenteId: casa.id,
+              residenteId: casa.residenteId.isNotEmpty ? casa.residenteId : casa.id,
               nombre: casa.residenteNombre,
+              cuotas: casa.cuotas,
             );
 
             final casasCubit = context.read<CasasCubit>();
@@ -1052,7 +1060,7 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                 ),
                 const SizedBox(width: AppSpacing.md),
 
-                // Info de Casa y Residente
+                // Info de Casa y Residente (con cuota actual, sin teléfono)
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1069,17 +1077,29 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                           Flexible(
                             child: Text(
                               casa.residenteNombre,
-                              style: AppTypography.small.copyWith(color: AppColors.textSecondary),
+                              style: AppTypography.small.copyWith(
+                                color: AppColors.textSecondary,
+                                fontWeight: FontWeight.w600,
+                              ),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          if (casa.residenteTelefono.isNotEmpty) ...[
-                            const SizedBox(width: 8),
-                            Icon(Icons.call_rounded, size: 12, color: AppColors.textSecondary),
-                            const SizedBox(width: 2),
+                          if (casa.proximaCuotaNombre != null && casa.proximaCuotaNombre!.isNotEmpty) ...[
+                            const SizedBox(width: 6),
                             Text(
-                              casa.residenteTelefono,
+                              '·',
                               style: AppTypography.small.copyWith(color: AppColors.textSecondary),
+                            ),
+                            const SizedBox(width: 6),
+                            Flexible(
+                              child: Text(
+                                casa.proximaCuotaNombre!,
+                                style: AppTypography.small.copyWith(
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                           ],
                         ],

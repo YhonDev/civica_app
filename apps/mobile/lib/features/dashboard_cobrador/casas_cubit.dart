@@ -10,33 +10,64 @@ import '../../core/network/local_cache_repository.dart';
 class CasaExplorer extends Equatable {
   final String id;
   final String direccion;
+  final String residenteId;
   final String residenteNombre;
   final String residenteTelefono;
+  final String modalidad;
   final String estado;  // AL_DIA, PENDIENTE, PARCIAL, VENCIDA
   final int saldo;
+  final String? proximaCuotaNombre;
+  final int proximaCuotaMonto;
+  final String? proximaCuotaId;
+  final List<Map<String, dynamic>> cuotas;
 
   const CasaExplorer({
     required this.id,
     required this.direccion,
+    this.residenteId = '',
     required this.residenteNombre,
     required this.residenteTelefono,
+    this.modalidad = 'MENSUAL',
     required this.estado,
     required this.saldo,
+    this.proximaCuotaNombre,
+    this.proximaCuotaMonto = 0,
+    this.proximaCuotaId,
+    this.cuotas = const [],
   });
 
   factory CasaExplorer.fromJson(Map<String, dynamic> json) {
     return CasaExplorer(
       id: json['id'] as String? ?? '',
       direccion: json['direccion'] as String? ?? '',
+      residenteId: json['residenteId'] as String? ?? '',
       residenteNombre: json['residenteNombre'] as String? ?? 'Sin residente',
       residenteTelefono: json['residenteTelefono'] as String? ?? '',
+      modalidad: json['modalidad'] as String? ?? 'MENSUAL',
       estado: json['estado'] as String? ?? 'AL_DIA',
       saldo: json['saldo'] as int? ?? 0,
+      proximaCuotaNombre: json['proximaCuotaNombre'] as String?,
+      proximaCuotaMonto: json['proximaCuotaMonto'] as int? ?? 0,
+      proximaCuotaId: json['proximaCuotaId'] as String?,
+      cuotas: (json['cuotas'] as List? ?? [])
+          .map((c) => Map<String, dynamic>.from(c as Map))
+          .toList(),
     );
   }
 
   @override
-  List<Object?> get props => [id, direccion, residenteNombre, estado, saldo];
+  List<Object?> get props => [
+        id,
+        direccion,
+        residenteId,
+        residenteNombre,
+        modalidad,
+        estado,
+        saldo,
+        proximaCuotaNombre,
+        proximaCuotaMonto,
+        cuotas,
+      ];
 }
 
 class ManzanaExplorer extends Equatable {

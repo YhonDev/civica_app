@@ -50,22 +50,43 @@ class CarteraState extends Equatable {
     );
   }
 
-  /// Retorna la lista de cobros filtrada según el filtro activo.
+  /// Retorna la lista de cobros filtrada según el filtro activo y ordenada por criterio financiero.
   List<CobroItem> get filteredCobros {
-    if (activeFilter == 'Todos') return cobros;
-    // Normalizamos a minúsculas para comparar con los estados 'Pendiente', 'Mora', 'Pagado'
     final filterLower = activeFilter.toLowerCase();
-    return cobros.where((c) {
-      final estadoLower = c.estado.toLowerCase();
-      // Soporte para variaciones de nombres de estado
-      if (filterLower == 'mora') {
-        return estadoLower == 'mora' || estadoLower == 'vencida';
-      }
-      if (filterLower == 'pagado') {
-        return estadoLower == 'pagado' || estadoLower == 'pagada';
-      }
-      return estadoLower == filterLower;
-    }).toList();
+    final List<CobroItem> list;
+
+    if (activeFilter == 'Todos') {
+      list = List.from(cobros);
+    } else {
+      list = cobros.where((c) {
+        final estadoLower = c.estado.toLowerCase();
+        if (filterLower == 'mora') {
+          return estadoLower == 'mora' || estadoLower == 'vencida';
+        }
+        if (filterLower == 'pagado') {
+          return estadoLower == 'pagado' || estadoLower == 'pagada';
+        }
+        return estadoLower == filterLower;
+      }).toList();
+    }
+
+    // Reglas de ordenamiento financiero:
+    if (filterLower == 'mora') {
+      // Mora: Deuda más antigua arriba (ascendente por fecha de vencimiento)
+      list.sort((a, b) => a.fechaVencimiento.compareTo(b.fechaVencimiento));
+    } else if (filterLower == 'pendiente') {
+      // Pendiente: Próximo vencimiento arriba (ascendente por fecha de vencimiento)
+      list.sort((a, b) => a.fechaVencimiento.compareTo(b.fechaVencimiento));
+    } else if (filterLower == 'pagado') {
+      // Pagado: Recaudo más reciente arriba (descendente por fecha de pago)
+      list.sort((a, b) {
+        final dateA = a.fechaPago.isNotEmpty ? a.fechaPago : a.fechaVencimiento;
+        final dateB = b.fechaPago.isNotEmpty ? b.fechaPago : b.fechaVencimiento;
+        return dateB.compareTo(dateA);
+      });
+    }
+
+    return list;
   }
 
   @override

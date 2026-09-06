@@ -20,10 +20,15 @@ class ModoInmersivoItem {
   final String residenteId;
   final String residenteNombre;
   final String residenteTelefono;
+  final String modalidad;
   final String estado;
   final double saldo;
   final bool tieneSolicitud;
   final String? solicitudNota;
+  final String? proximaCuotaNombre;
+  final int proximaCuotaMonto;
+  final String? proximaCuotaId;
+  final List<Map<String, dynamic>> cuotas;
 
   ModoInmersivoItem({
     required this.casaId,
@@ -33,10 +38,15 @@ class ModoInmersivoItem {
     required this.residenteId,
     required this.residenteNombre,
     required this.residenteTelefono,
+    this.modalidad = 'MENSUAL',
     required this.estado,
     required this.saldo,
     this.tieneSolicitud = false,
     this.solicitudNota,
+    this.proximaCuotaNombre,
+    this.proximaCuotaMonto = 0,
+    this.proximaCuotaId,
+    this.cuotas = const [],
   });
 
   ModoInmersivoItem copyWith({
@@ -44,6 +54,10 @@ class ModoInmersivoItem {
     double? saldo,
     bool? tieneSolicitud,
     String? solicitudNota,
+    String? proximaCuotaNombre,
+    int? proximaCuotaMonto,
+    String? proximaCuotaId,
+    List<Map<String, dynamic>>? cuotas,
   }) {
     return ModoInmersivoItem(
       casaId: casaId,
@@ -53,10 +67,15 @@ class ModoInmersivoItem {
       residenteId: residenteId,
       residenteNombre: residenteNombre,
       residenteTelefono: residenteTelefono,
+      modalidad: modalidad,
       estado: estado ?? this.estado,
       saldo: saldo ?? this.saldo,
       tieneSolicitud: tieneSolicitud ?? this.tieneSolicitud,
       solicitudNota: solicitudNota ?? this.solicitudNota,
+      proximaCuotaNombre: proximaCuotaNombre ?? this.proximaCuotaNombre,
+      proximaCuotaMonto: proximaCuotaMonto ?? this.proximaCuotaMonto,
+      proximaCuotaId: proximaCuotaId ?? this.proximaCuotaId,
+      cuotas: cuotas ?? this.cuotas,
     );
   }
 }
@@ -191,13 +210,18 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
                 casaNombre: casa.direccion,
                 manzanaNombre: manzana.nombre,
                 etapaNombre: etapa.nombre,
-                residenteId: casa.id,
+                residenteId: casa.residenteId.isNotEmpty ? casa.residenteId : casa.id,
                 residenteNombre: casa.residenteNombre.isNotEmpty ? casa.residenteNombre : 'Sin residente',
                 residenteTelefono: casa.residenteTelefono,
+                modalidad: casa.modalidad,
                 estado: estadoReal,
                 saldo: saldoReal,
                 tieneSolicitud: casasConSolicitud.contains(solKey),
                 solicitudNota: notasSolicitud[solKey],
+                proximaCuotaNombre: casa.proximaCuotaNombre,
+                proximaCuotaMonto: casa.proximaCuotaMonto,
+                proximaCuotaId: casa.proximaCuotaId,
+                cuotas: casa.cuotas,
               ),
             );
           }
@@ -226,24 +250,27 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
 
   void _abrirCobroRapido(ModoInmersivoItem item) {
     final cobroItem = CobroItem(
-      id: item.casaId,
-      concepto: 'Cuota de Recaudo',
-      monto: item.saldo > 0 ? item.saldo : 20000.0,
+      id: item.proximaCuotaId ?? item.casaId,
+      concepto: item.proximaCuotaNombre ?? 'Cuota de Recaudo',
+      monto: item.proximaCuotaMonto > 0
+          ? item.proximaCuotaMonto.toDouble()
+          : (item.saldo > 0 ? item.saldo : 20000.0),
       montoPagado: 0,
       saldo: item.saldo > 0 ? item.saldo : 20000.0,
       estado: item.estado,
-      modalidad: 'Mensual',
+      modalidad: item.modalidad,
       casa: item.casaNombre,
       manzana: item.manzanaNombre,
       etapa: item.etapaNombre,
       residenteId: item.residenteId,
       nombre: item.residenteNombre,
+      cuotas: item.cuotas,
     );
 
     RegistrarPagoBottomSheet.show(
       context,
       cobro: cobroItem,
-      cuotas: const [],
+      cuotas: item.cuotas,
       initialQuickMode: true,
       onSuccess: () {
         setState(() {
@@ -792,6 +819,16 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
                             color: isDark ? Colors.white : AppColors.textPrimary,
                           ),
                         ),
+                        if (item.proximaCuotaNombre != null && item.proximaCuotaNombre!.isNotEmpty) ...[
+                          const SizedBox(height: 3),
+                          Text(
+                            item.proximaCuotaNombre!,
+                            style: AppTypography.caption.copyWith(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
