@@ -118,8 +118,7 @@ enum CasaFiltroVeredicto { incluir, excluir, mora }
 ///   `fechaVencimiento <= fechaCorte`. Las cuotas de sábados futuros NO
 ///   entran al recorrido actual. `VENCIDA` no es "pendiente": es mora.
 /// - MORA: alguna cuota VENCIDA (fallback al estado de la casa si no hay
-///   detalle de cuotas).
-/// - TODOS: cualquier cuota con saldo (todos los ciclos, orden de caminata).
+///   detalle de cuotas). No depende de ningún sábado: [fechaCorte] se ignora.
 ///
 /// Con [fechaCorte] null (payload cacheado antiguo) se conserva el
 /// comportamiento previo, solo por estado de la casa.
@@ -172,19 +171,41 @@ CasaFiltroVeredicto evaluarCasaParaRecorrido(
           ? CasaFiltroVeredicto.incluir
           : CasaFiltroVeredicto.excluir;
 
-    case 'TODOS':
     default:
-      if (casa.cuotas.isNotEmpty) {
-        final tieneSaldo = casa.cuotas.any(
-          (cuota) => ((cuota['saldo'] as num?)?.toInt() ?? 0) > 0,
-        );
-        if (!tieneSaldo) return CasaFiltroVeredicto.excluir;
-      } else if (!(casa.estado != 'AL_DIA' && casa.estado != 'PAGADA') &&
-          casa.saldo <= 0) {
-        return CasaFiltroVeredicto.excluir;
-      }
-      return CasaFiltroVeredicto.incluir;
+      // Solo existen los filtros PENDIENTES y MORA.
+      return CasaFiltroVeredicto.excluir;
   }
+}
+
+/// Fecha de vencimiento (YYYY-MM-DD) más antigua con saldo pendiente dentro
+/// de [cuotas]; '' si ninguna cuota la tiene. ISO compara lexicográfico =
+/// cronológico, así que ascendente = más vieja primero.
+String fechaVencimientoMasAntiguaDeCuotas(List<Map<String, dynamic>> cuotas) {
+  String masAntigua = '';
+  for (final cuota in cuotas) {
+    final saldo = (cuota['saldo'] as num?)?.toInt() ?? 0;
+    if (saldo <= 0) continue;
+    final fv = cuota['fechaVencimiento'] as String?;
+    if (fv == null || fv.isEmpty) continue;
+    final dia = fv.length >= 10 ? fv.substring(0, 10) : fv;
+    if (masAntigua.isEmpty || dia.compareTo(masAntigua) < 0) {
+      masAntigua = dia;
+    }
+  }
+  return masAntigua;
+}
+
+/// Comparador para rutas de MORA: primero la casa con la deuda más vieja
+/// (menor fechaVencimiento con saldo). Empate o sin fechas conserva el orden
+/// de caminata (entrada estable de List.sort en Dart no está garantizada,
+/// por lo que el empate devuelve 0 y el llamador decide el orden base).
+int compararCasasPorMoraAntigua(CasaExplorer a, CasaExplorer b) {
+  final fa = fechaVencimientoMasAntiguaDeCuotas(a.cuotas);
+  final fb = fechaVencimientoMasAntiguaDeCuotas(b.cuotas);
+  if (fa.isEmpty && fb.isEmpty) return 0;
+  if (fa.isEmpty) return 1; // sin fecha utilizable: al final
+  if (fb.isEmpty) return -1;
+  return fa.compareTo(fb);
 }
 
 bool _venceEnOAntesDe(String? fechaVencimiento, String fechaCorte) {

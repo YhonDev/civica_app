@@ -1223,44 +1223,40 @@ export interface RecorridoMes {
 }
 
 /**
- * Construye los 4 recorridos (sábados de cobro) del mes y marca el activo:
- * el primer sábado cuya fecha sea >= hoy; si hoy supera a todos, el último.
+ * Construye los recorridos (sábados de cobro) del mes ya "rodantes": los
+ * sábados pasados desaparecen del listado, el activo es el primero vigente
+ * (hoy incluido) y conserva su número real para que coincida con el nombre
+ * de la cuota ("Septiembre · Cuota 2"). Cuando ya pasaron todos, retorna
+ * vacío con `recorridoActualNumero: 0` (fin de mes: no hay recorrido activo).
  */
 export function calcularRecorridosMes(
   sabadosCobro: string[],
   hoy: Date = new Date(),
 ): { recorridos: RecorridoMes[]; recorridoActualNumero: number } {
   const hoyStr = fechaLocalStr(hoy);
+  if (sabadosCobro.length === 0) {
+    return { recorridos: [], recorridoActualNumero: 0 };
+  }
 
-  let recorridoActualNumero = 1;
-  let encontroActual = false;
+  let recorridoActualNumero = 0;
+  const recorridos: RecorridoMes[] = [];
 
-  const recorridos: RecorridoMes[] = sabadosCobro.map((fechaStr, idx) => {
+  sabadosCobro.forEach((fechaStr, idx) => {
+    if (fechaStr < hoyStr) return; // Sábado ya pasado: desaparece del selector
+
     const numero = idx + 1;
     const [, mesStr, diaStr] = fechaStr.split('-');
-    const fechaLegible = `Sáb ${parseInt(diaStr, 10)} ${MESES_ABREVIADOS[parseInt(mesStr, 10) - 1]}`;
+    const esActual = recorridoActualNumero === 0;
+    if (esActual) recorridoActualNumero = numero;
 
-    if (!encontroActual && hoyStr <= fechaStr) {
-      recorridoActualNumero = numero;
-      encontroActual = true;
-    }
-
-    return {
+    recorridos.push({
       numero,
       nombre: `Recorrido ${numero}`,
       fecha: fechaStr,
-      fechaLegible,
-      esActual: false,
-    };
+      fechaLegible: `Sáb ${parseInt(diaStr, 10)} ${MESES_ABREVIADOS[parseInt(mesStr, 10) - 1]}`,
+      esActual,
+    });
   });
-
-  if (!encontroActual && recorridos.length > 0) {
-    recorridoActualNumero = recorridos.length;
-  }
-
-  for (const rec of recorridos) {
-    rec.esActual = rec.numero === recorridoActualNumero;
-  }
 
   return { recorridos, recorridoActualNumero };
 }

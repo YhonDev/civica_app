@@ -421,30 +421,39 @@ describe('DashboardController — Cobrador Logic', () => {
       expect(recorridos.slice(1).every((r) => !r.esActual)).toBe(true);
     });
 
-    it('marks the first Saturday on or after today as actual', () => {
-      const { recorridoActualNumero } = calcularRecorridosMes(
+    it('drops past Saturdays from the list and marks the first remaining as actual', () => {
+      const { recorridos, recorridoActualNumero } = calcularRecorridosMes(
         ['2026-09-05', '2026-09-12', '2026-09-19', '2026-09-26'],
-        new Date(2026, 8, 15), // Tue Sep 15 → after Sáb 12, before Sáb 19
+        new Date(2026, 8, 15), // Tue Sep 15 → Sáb 5 and Sáb 12 already passed
       );
 
+      expect(recorridos.map((r) => r.fecha)).toEqual(['2026-09-19', '2026-09-26']);
+      expect(recorridos[0].numero).toBe(3); // keeps its real cycle number
+      expect(recorridos[0].esActual).toBe(true);
       expect(recorridoActualNumero).toBe(3);
     });
 
-    it('falls back to the last recorrido when today is past all Saturdays', () => {
-      const { recorridoActualNumero } = calcularRecorridosMes(
+    it('returns empty recorridos when today is past all Saturdays (end of month)', () => {
+      const { recorridos, recorridoActualNumero } = calcularRecorridosMes(
         ['2026-09-05', '2026-09-12', '2026-09-19', '2026-09-26'],
         new Date(2026, 8, 30),
       );
 
-      expect(recorridoActualNumero).toBe(4);
+      expect(recorridos).toHaveLength(0);
+      expect(recorridoActualNumero).toBe(0);
     });
 
-    it('treats today exactly on a Saturday as that recorrido', () => {
-      const { recorridoActualNumero } = calcularRecorridosMes(
+    it('treats today exactly on a Saturday as that recorrido (and drops earlier ones)', () => {
+      const { recorridos, recorridoActualNumero } = calcularRecorridosMes(
         ['2026-09-05', '2026-09-12', '2026-09-19', '2026-09-26'],
         new Date(2026, 8, 12),
       );
 
+      expect(recorridos.map((r) => r.fecha)).toEqual([
+        '2026-09-12',
+        '2026-09-19',
+        '2026-09-26',
+      ]);
       expect(recorridoActualNumero).toBe(2);
     });
 
@@ -455,7 +464,7 @@ describe('DashboardController — Cobrador Logic', () => {
       );
 
       expect(recorridos).toHaveLength(0);
-      expect(recorridoActualNumero).toBe(1);
+      expect(recorridoActualNumero).toBe(0);
     });
   });
 

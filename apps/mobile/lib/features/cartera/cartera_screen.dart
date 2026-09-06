@@ -52,6 +52,7 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   String _selectedStatusFilter = 'TODOS';
+  String? _selectedEtapa; // Filtro por etapa (solo cobrador)
 
   @override
   void onAppResumed() {
@@ -62,6 +63,69 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  /// Etapas distintas presentes en los cobros cargados (orden alfabético).
+  Set<String> _etapasDisponibles(List<CobroItem> cobros) {
+    return cobros.map((c) => c.etapa).where((e) => e.isNotEmpty).toSet();
+  }
+
+  Widget _buildEtapaChips(List<CobroItem> cobros) {
+    final etapas = _etapasDisponibles(cobros).toList()..sort();
+    return SizedBox(
+      height: 34,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(right: 4),
+            child: ChoiceChip(
+              label: const Text('Todas las etapas'),
+              selected: _selectedEtapa == null,
+              onSelected: (_) => setState(() => _selectedEtapa = null),
+              selectedColor: AppColors.primary,
+              labelStyle: AppTypography.caption.copyWith(
+                color: _selectedEtapa == null ? Colors.white : AppColors.textSecondary,
+                fontWeight: _selectedEtapa == null ? FontWeight.w700 : FontWeight.w500,
+                fontSize: 11.5,
+              ),
+              backgroundColor: AppColors.surface,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+                side: BorderSide(
+                  color: _selectedEtapa == null ? AppColors.primary : AppColors.border,
+                ),
+              ),
+            ),
+          ),
+          ...etapas.map((etapa) {
+            final isSelected = _selectedEtapa == etapa;
+            return Padding(
+              padding: const EdgeInsets.only(right: 4),
+              child: ChoiceChip(
+                label: Text(etapa),
+                selected: isSelected,
+                onSelected: (_) => setState(() => _selectedEtapa = etapa),
+                selectedColor: AppColors.primary,
+                labelStyle: AppTypography.caption.copyWith(
+                  color: isSelected ? Colors.white : AppColors.textSecondary,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  fontSize: 11.5,
+                ),
+                backgroundColor: AppColors.surface,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  side: BorderSide(
+                    color: isSelected ? AppColors.primary : AppColors.border,
+                  ),
+                ),
+              ),
+            );
+          }),
+        ],
+      ),
+    );
   }
 
   Widget _buildFilterChip(String key, String label, Color activeColor) {
@@ -142,12 +206,16 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                     );
                   }
 
-                  // Aplicar filtro de búsqueda y de estado (1-Tap) sobre la totalidad de cobros
+                  // Aplicar filtro de búsqueda, de estado (1-Tap) y de etapa sobre la totalidad de cobros
                   final searchLower = _searchQuery.trim().toLowerCase();
                   final List<CobroItem> displayCobros = state.cobros.where((c) {
                     final target = '${c.etapa} ${c.manzana} ${c.casa} ${c.nombre} ${c.concepto} ${c.tituloCuota}'.toLowerCase();
                     final matchSearch = searchLower.isEmpty || target.contains(searchLower);
                     if (!matchSearch) return false;
+
+                    if (_selectedEtapa != null && c.etapa != _selectedEtapa) {
+                      return false;
+                    }
 
                     if (_selectedStatusFilter == 'PENDIENTE') {
                       return c.isPendiente;
@@ -180,6 +248,7 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                       onSearchChanged: (val) => setState(() => _searchQuery = val),
                       onStatusFilterChanged: (key) => setState(() => _selectedStatusFilter = key),
                       buildFilterChip: _buildFilterChip,
+                      etapaChips: _buildEtapaChips(state.cobros),
                     );
                   }
 
@@ -370,6 +439,9 @@ class _CobradorCarteraView extends StatelessWidget {
   final ValueChanged<String> onStatusFilterChanged;
   final Widget Function(String key, String label, Color activeColor) buildFilterChip;
 
+  /// Chips de filtro por etapa (característico del cobrador).
+  final Widget? etapaChips;
+
   const _CobradorCarteraView({
     required this.state,
     required this.displayCobros,
@@ -379,6 +451,7 @@ class _CobradorCarteraView extends StatelessWidget {
     required this.onSearchChanged,
     required this.onStatusFilterChanged,
     required this.buildFilterChip,
+    this.etapaChips,
   });
 
   @override
@@ -394,6 +467,7 @@ class _CobradorCarteraView extends StatelessWidget {
       buildFilterChip: buildFilterChip,
       searchHint: 'Buscar por mes, casa o residente...',
       canRegisterPago: true,
+      etapaChips: etapaChips,
     );
   }
 }
@@ -450,6 +524,9 @@ class _CarteraSharedLayout extends StatelessWidget {
   final String searchHint;
   final bool canRegisterPago;
 
+  /// Chips de filtro por etapa (solo cobrador); null en otros roles.
+  final Widget? etapaChips;
+
   const _CarteraSharedLayout({
     required this.state,
     required this.displayCobros,
@@ -461,6 +538,7 @@ class _CarteraSharedLayout extends StatelessWidget {
     required this.buildFilterChip,
     required this.searchHint,
     required this.canRegisterPago,
+    this.etapaChips,
   });
 
   @override
@@ -543,6 +621,15 @@ class _CarteraSharedLayout extends StatelessWidget {
             ),
           ),
           const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.sm)),
+
+          // Chips de Etapa (solo cobrador): localizar cobros puntuales fuera de la ruta
+          if (etapaChips != null)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                child: etapaChips,
+              ),
+            ),
 
           // Chips de Filtro Rápido en 1-Tap
           SliverToBoxAdapter(

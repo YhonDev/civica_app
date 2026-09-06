@@ -98,7 +98,7 @@ class ModoInmersivoRutaScreen extends StatefulWidget {
     required this.etapas,
     required this.solicitudes,
     this.selectedEtapaId = 'TODAS',
-    this.selectedEstadoFiltro = 'TODAS',
+    this.selectedEstadoFiltro = 'PENDIENTES',
     this.sentidoInverso = false,
     this.selectedRecorridoFecha,
     this.selectedRecorridoLabel,
@@ -204,7 +204,7 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
           // (misma lógica que el explorer, compartida desde casas_cubit).
           final incluir = evaluarCasaParaRecorrido(
                 casa,
-                widget.selectedEstadoFiltro == 'TODAS' ? 'TODOS' : widget.selectedEstadoFiltro,
+                widget.selectedEstadoFiltro,
                 widget.selectedRecorridoFecha,
               ) !=
               CasaFiltroVeredicto.excluir;
@@ -234,6 +234,19 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
           }
         }
       }
+    }
+
+    if (widget.selectedEstadoFiltro == 'MORA') {
+      // Recuperación de cartera: la deuda más vieja siempre primero,
+      // independiente del sentido de caminata.
+      resultado.sort((a, b) {
+        final fa = fechaVencimientoMasAntiguaDeCuotas(a.cuotas);
+        final fb = fechaVencimientoMasAntiguaDeCuotas(b.cuotas);
+        if (fa.isEmpty && fb.isEmpty) return 0;
+        if (fa.isEmpty) return 1;
+        if (fb.isEmpty) return -1;
+        return fa.compareTo(fb);
+      });
     }
 
     return resultado;

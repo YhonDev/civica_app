@@ -14,6 +14,7 @@ import 'casas_cubit.dart';
 import 'widgets/cobrador_solicitud_card.dart';
 import '../../shared/widgets/screen_header.dart';
 import '../../shared/widgets/fading_horizontal_scroll.dart';
+import '../../core/widgets/top_toast.dart';
 
 /// Rutas Explorer — Navegador de Recorrido Continuo de Caminata para Cobrador (P05).
 ///
@@ -77,7 +78,7 @@ class _CasasExplorerView extends StatefulWidget {
 class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleObserverMixin {
   String _selectedEtapaId = 'TODAS'; // 'TODAS' o id específico de Etapa
   bool _sentidoInverso = false; // false: Directo, true: Inverso
-  String _filtroEstado = 'PENDIENTES'; // PENDIENTES, MORA, TODOS
+  String _filtroEstado = 'PENDIENTES'; // PENDIENTES, MORA
   String? _selectedRecorridoFecha; // fecha del recorrido (sábado) seleccionado; null = el actual
 
   @override
@@ -146,7 +147,11 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
     int recorridoActualNumero = 1,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final recorridoSeleccionado = _recorridoSeleccionadoDe(recorridos, recorridoActualNumero);
+    // El backend ya entrega el selector rodante (sábados pasados fuera).
+    // En MORA el selector se oculta: la mora no está ligada a ningún sábado.
+    final recorridosVisibles = _filtroEstado == 'MORA' ? const <RecorridoExplorer>[] : recorridos;
+    final recorridoSeleccionado =
+        _recorridoSeleccionadoDe(recorridosVisibles, recorridoActualNumero);
     final fechaCorte = recorridoSeleccionado?.fecha;
     final processedEtapas = _procesarRutaCaminata(etapas, fechaCorte);
     final territorioItems = _flattenTerritorioItems(processedEtapas);
@@ -188,9 +193,14 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
 
                   const SizedBox(height: AppSpacing.sm),
 
-                  // Selector de Recorrido (4 sábados de cobro del mes)
-                  if (recorridos.isNotEmpty) ...[
-                    _buildRecorridoSelector(recorridos, recorridoSeleccionado),
+                  // Selector de Recorrido (sábados vigentes; oculto en Mora)
+                  if (recorridosVisibles.isNotEmpty) ...[
+                    _buildRecorridoSelector(recorridosVisibles, recorridoSeleccionado),
+                    const SizedBox(height: AppSpacing.sm),
+                  ],
+                  if (_filtroEstado == 'PENDIENTES' &&
+                      recorridosVisibles.isEmpty) ...[
+                    _buildRecorridosAgotadosBanner(),
                     const SizedBox(height: AppSpacing.sm),
                   ],
 
@@ -199,7 +209,7 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
 
                   const SizedBox(height: AppSpacing.sm),
 
-                  // Filtros Rápidos de Cobro (Pendientes, Mora, Todos)
+                  // Filtros Rápidos de Cobro (Pendientes, Mora)
                   _buildFiltroEstadoChips(),
 
                   const SizedBox(height: AppSpacing.md),
@@ -501,6 +511,7 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
     List<dynamic> solicitudes,
     RecorridoExplorer? recorridoSeleccionado,
   ) {
+    final bloqueado = _inicioDeRutaBloqueado(recorridoSeleccionado);
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -516,9 +527,7 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                 ),
               ),
               Text(
-                recorridoSeleccionado != null
-                    ? '${recorridoSeleccionado.nombre} · ${recorridoSeleccionado.fechaLegible}'
-                    : 'Ciclo de cobro actual',
+                _subtituloRuta(recorridoSeleccionado),
                 style: AppTypography.caption.copyWith(
                   color: AppColors.textSecondary,
                   fontWeight: FontWeight.w600,
@@ -529,11 +538,22 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
         ),
         FilledButton.icon(
           style: FilledButton.styleFrom(
-            backgroundColor: AppColors.primary,
+            backgroundColor:
+                bloqueado ? AppColors.border : AppColors.primary,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
           onPressed: () {
+            if (bloqueado) {
+              TopToast.show(
+                context,
+                type: ToastType.warning,
+                title: 'Ruta no disponible',
+                message:
+                    'La ruta de pendientes solo puede iniciarse el ${recorridoSeleccionado?.fechaLegible.toLowerCase() ?? 'sábado'}. La mora puedes cobrarla cualquier día.',
+              );
+              return;
+            }
             AppFeedback.medium();
             context.push(
               '/modo-inmersivo-ruta',
@@ -559,6 +579,63 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
           ),
         ),
       ],
+    );
+  }
+
+  /// La ruta de PENDIENTES solo puede iniciarse el sábado exacto del
+  /// recorrido seleccionado. MORA no tiene restricción de día.
+  bool _inicioDeRutaBloqueado(RecorridoExplorer? recorridoSeleccionado) {
+    if (_filtroEstado != 'PENDIENTES') return false;
+    final fecha = recorridoSeleccionado?.fecha;
+    if (fecha == null || fecha.isEmpty) return true; // fin de mes: sin ciclo
+    return _fechaLocalHoy() != fecha;
+  }
+
+  String _subtituloRuta(RecorridoExplorer? recorridoSeleccionado) {
+    if (_filtroEstado == 'MORA') {
+      return 'Cobro de mora · cualquier día';
+    }
+    if (recorridoSeleccionado == null) {
+      return 'Los recorridos de este mes terminaron';
+    }
+    final hoy = _fechaLocalHoy();
+    if (hoy == recorridoSeleccionado.fecha) {
+      return 'Hoy · ${recorridoSeleccionado.nombre} · ${recorridoSeleccionado.fechaLegible}';
+    }
+    return '${recorridoSeleccionado.nombre} · ${recorridoSeleccionado.fechaLegible}';
+  }
+
+  /// Fecha local YYYY-MM-DD (mismas reglas que el backend).
+  String _fechaLocalHoy() {
+    final ahora = DateTime.now();
+    final mm = ahora.month.toString().padLeft(2, '0');
+    final dd = ahora.day.toString().padLeft(2, '0');
+    return '${ahora.year}-$mm-$dd';
+  }
+
+  Widget _buildRecorridosAgotadosBanner() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.warning.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.event_busy_rounded, size: 18, color: AppColors.warning),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Los recorridos de este mes terminaron. Los pendientes del próximo ciclo se activan el día 1; la mora puedes cobrarla cualquier día.',
+              style: AppTypography.caption.copyWith(
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -878,7 +955,6 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
     final opciones = [
       ('PENDIENTES', '🟠 Pendientes'),
       ('MORA', '🔴 En Mora'),
-      ('TODOS', '🔘 Todas las Casas'),
     ];
 
     return FadingHorizontalScroll(
@@ -926,12 +1002,16 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
             Icon(Icons.map_outlined, size: 48, color: AppColors.textSecondary),
             const SizedBox(height: AppSpacing.md),
             Text(
-              'No hay casas con saldo pendiente en esta ruta',
+              _filtroEstado == 'MORA'
+                  ? 'No hay casas con mora en esta ruta'
+                  : 'No hay pendientes para este recorrido',
               style: AppTypography.subtitle.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              'Selecciona "Todas las Casas" para explorar el territorio completo.',
+              _filtroEstado == 'MORA'
+                  ? 'Cuando el sistema marque cuotas vencidas aparecerán aquí, ordenadas de la más vieja a la más reciente.'
+                  : 'Cambia al filtro En Mora para recuperar cartera, o usa Gestión de Cobro para cobros puntuales.',
               style: AppTypography.body.copyWith(color: AppColors.textSecondary),
               textAlign: TextAlign.center,
             ),
@@ -983,8 +1063,12 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
         }).toList();
 
         // Casas solo en mora se ordenan al final de la manzana; el resto
-        // respeta el orden secuencial de caminata.
+        // respeta el orden secuencial de caminata. En MORA el orden es por
+        // deuda más antigua (fechaVencimiento más vieja primero).
         resultCasas.sort((a, b) {
+          if (_filtroEstado == 'MORA') {
+            return compararCasasPorMoraAntigua(a, b);
+          }
           final aMora = _filtroEstado == 'PENDIENTES' && fechaCorte != null &&
               evaluarCasaParaRecorrido(a, _filtroEstado, fechaCorte) ==
                   CasaFiltroVeredicto.mora;

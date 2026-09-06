@@ -131,31 +131,54 @@ void main() {
     });
   });
 
-  group('evaluarCasaParaRecorrido — TODOS', () {
-    test('incluye casa con cualquier cuota con saldo (cualquier ciclo)', () {
+  group('evaluarCasaParaRecorrido — filtros inexistentes', () {
+    test('un filtro desconocido excluye la casa (solo existen PENDIENTES y MORA)', () {
       final casa = _casa(cuotas: [
         {'estado': 'PENDIENTE', 'saldo': 10000, 'fechaVencimiento': '2026-09-26'},
       ]);
 
       expect(
         evaluarCasaParaRecorrido(casa, 'TODOS', '2026-09-12'),
-        CasaFiltroVeredicto.incluir,
-      );
-    });
-
-    test('excluye casa totalmente pagada', () {
-      final casa = _casa(
-        estado: 'AL_DIA',
-        saldo: 0,
-        cuotas: [
-          {'estado': 'PAGADO', 'saldo': 0, 'fechaVencimiento': '2026-09-12'},
-        ],
-      );
-
-      expect(
-        evaluarCasaParaRecorrido(casa, 'TODOS', '2026-09-12'),
         CasaFiltroVeredicto.excluir,
       );
+    });
+  });
+
+  group('fechaVencimientoMasAntiguaDeCuotas y compararCasasPorMoraAntigua', () {
+    test('devuelve la fecha más antigua entre cuotas con saldo', () {
+      final cuotas = [
+        {'saldo': 10000, 'fechaVencimiento': '2026-09-12'},
+        {'saldo': 5000, 'fechaVencimiento': '2026-08-29'},
+        {'saldo': 0, 'fechaVencimiento': '2026-07-01'}, // pagada: se ignora
+      ];
+
+      expect(fechaVencimientoMasAntiguaDeCuotas(cuotas), '2026-08-29');
+    });
+
+    test('sin fechas con saldo devuelve cadena vacía y ordena al final', () {
+      final sinFechas = _casa(cuotas: [
+        {'saldo': 9000, 'fechaVencimiento': null},
+      ]);
+      final conFecha = _casa(cuotas: [
+        {'saldo': 9000, 'fechaVencimiento': '2026-08-29'},
+      ]);
+
+      expect(fechaVencimientoMasAntiguaDeCuotas(sinFechas.cuotas), '');
+      expect(compararCasasPorMoraAntigua(sinFechas, conFecha), 1);
+      expect(compararCasasPorMoraAntigua(conFecha, sinFechas), -1);
+    });
+
+    test('mora: la deuda más vieja queda primero', () {
+      final vieja = _casa(cuotas: [
+        {'saldo': 10000, 'fechaVencimiento': '2026-08-01'},
+      ]);
+      final reciente = _casa(cuotas: [
+        {'saldo': 10000, 'fechaVencimiento': '2026-09-05'},
+      ]);
+
+      expect(compararCasasPorMoraAntigua(vieja, reciente), lessThan(0));
+      expect(compararCasasPorMoraAntigua(reciente, vieja), greaterThan(0));
+      expect(compararCasasPorMoraAntigua(vieja, vieja), 0);
     });
   });
 
