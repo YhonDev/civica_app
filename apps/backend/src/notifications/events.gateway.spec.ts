@@ -80,7 +80,12 @@ describe('EventsGateway', () => {
     });
 
     it('should attach user payload to socket.data when token is valid', async () => {
-      const payload = { sub: 'user-123', tenantId: 'tenant-123', rol: 'ADMIN', type: 'access' };
+      const payload = {
+        sub: 'user-123',
+        tenantId: 'tenant-123',
+        rol: 'ADMIN',
+        type: 'access',
+      };
       mockJwtService.verify.mockReturnValue(payload);
 
       const mockSocket: any = {

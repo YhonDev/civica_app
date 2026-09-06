@@ -4,7 +4,6 @@ import { ActualizarTarifaUseCase } from './actualizar-tarifa.use-case';
 import { TarifaRepository } from '../../infrastructure/persistence/tarifa.repository';
 import { TarifaDerivacionService } from '../services/tarifa-derivacion.service';
 import { Tarifa } from '../../domain/tarifa.entity';
-import { ModalidadRecaudo } from '../../../shared/common/value-objects';
 import { Money } from '../../../shared/common/value-objects';
 
 describe('ActualizarTarifaUseCase', () => {
@@ -26,7 +25,7 @@ describe('ActualizarTarifaUseCase', () => {
     tarifa.id = 'tarifa-1';
     tarifa.tenantId = TENANT_ID;
     tarifa.proyectoId = 'proy-1';
-    tarifa.modalidad = 'MENSUAL' as ModalidadRecaudo;
+    tarifa.modalidad = 'MENSUAL';
     tarifa.monto = Money.ofCOP(40000).amount;
     tarifa.activa = true;
     tarifa.fechaVigencia = '2026-01-01';
@@ -89,9 +88,6 @@ describe('ActualizarTarifaUseCase', () => {
     });
 
     expect(result.fechaVigencia).toBe('2026-03-01');
-    expect(mockTarifaRepo.findById).toHaveBeenCalledWith(
-      'tarifa-1',
-      TENANT_ID,
-    );
+    expect(mockTarifaRepo.findById).toHaveBeenCalledWith('tarifa-1', TENANT_ID);
   });
 });

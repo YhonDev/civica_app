@@ -99,7 +99,11 @@ describe('SolicitudesController', () => {
 
       const result = await controller.listar(mockUser, 20, 10);
 
-      expect(mockSolicitudRepo.findByUsuario).toHaveBeenCalledWith('usr-1', 20, 10);
+      expect(mockSolicitudRepo.findByUsuario).toHaveBeenCalledWith(
+        'usr-1',
+        20,
+        10,
+      );
       expect(result).toEqual(mockResult);
     });
 
@@ -108,7 +112,11 @@ describe('SolicitudesController', () => {
 
       const result = await controller.listar(mockUser);
 
-      expect(mockSolicitudRepo.findByUsuario).toHaveBeenCalledWith('usr-1', undefined, undefined);
+      expect(mockSolicitudRepo.findByUsuario).toHaveBeenCalledWith(
+        'usr-1',
+        undefined,
+        undefined,
+      );
       expect(result).toEqual([]);
     });
   });
@@ -119,7 +127,11 @@ describe('SolicitudesController', () => {
 
       await controller.listarAdmin('tenant-123', 50, 0);
 
-      expect(mockSolicitudRepo.findByTenant).toHaveBeenCalledWith('tenant-123', 50, 0);
+      expect(mockSolicitudRepo.findByTenant).toHaveBeenCalledWith(
+        'tenant-123',
+        50,
+        0,
+      );
     });
   });
 
@@ -180,7 +192,10 @@ describe('SolicitudesController', () => {
         tenantId: 'tenant-123',
         estado: EstadoValidacionPago.PENDIENTE_REVISION,
       });
-      mockCorregirPagoUC.execute.mockResolvedValue({ id: 'pago-1', monto: 1500000 });
+      mockCorregirPagoUC.execute.mockResolvedValue({
+        id: 'pago-1',
+        monto: 1500000,
+      });
 
       const res = await controller.corregirPagoDesdeSolicitud(
         'sol-1',
@@ -219,7 +234,10 @@ describe('SolicitudesController', () => {
         'tenant-123',
       );
 
-      expect(mockEliminarPagoUC.execute).toHaveBeenCalledWith('pago-1', 'tenant-123');
+      expect(mockEliminarPagoUC.execute).toHaveBeenCalledWith(
+        'pago-1',
+        'tenant-123',
+      );
       expect(mockSol.estado).toBe(SolicitudEstado.RESUELTA);
       expect(res.success).toBe(true);
     });
@@ -278,4 +296,3 @@ describe('SolicitudesController', () => {
     });
   });
 });
-

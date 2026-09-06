@@ -60,9 +60,9 @@ describe('EliminarCobroUseCase', () => {
       tenantId === 'tenant-1' ? cobro : null,
     );
 
-    await expect(
-      useCase.execute('cobro-1', 'tenant-OTHER'),
-    ).rejects.toThrow(NotFoundException);
+    await expect(useCase.execute('cobro-1', 'tenant-OTHER')).rejects.toThrow(
+      NotFoundException,
+    );
     expect(mockCobroRepo.delete).not.toHaveBeenCalled();
   });
 

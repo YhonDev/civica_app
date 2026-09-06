@@ -56,10 +56,7 @@ export class MontosController {
   @Delete(':id')
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN)
-  async eliminar(
-    @Param('id') id: string,
-    @CurrentTenant() tenantId: string,
-  ) {
+  async eliminar(@Param('id') id: string, @CurrentTenant() tenantId: string) {
     const monto = await this.montoRepository.findById(id, tenantId);
     if (!monto) {
       throw new NotFoundException('Monto no encontrado');

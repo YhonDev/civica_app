@@ -52,8 +52,8 @@ describe('ReconciliarModalidadUseCase', () => {
     mockDataSource = {
       transaction: jest
         .fn()
-        .mockImplementation(
-          async (cb: (em: any) => Promise<any>) => cb(mockEntityManager),
+        .mockImplementation(async (cb: (em: any) => Promise<any>) =>
+          cb(mockEntityManager),
         ),
     };
 
@@ -136,9 +136,7 @@ describe('ReconciliarModalidadUseCase', () => {
 
     // Cobros were locked with pessimistic_write
     expect(mockEntityManager.createQueryBuilder).toHaveBeenCalled();
-    expect(mockQueryBuilder.setLock).toHaveBeenCalledWith(
-      'pessimistic_write',
-    );
+    expect(mockQueryBuilder.setLock).toHaveBeenCalledWith('pessimistic_write');
 
     // Plan was saved inside the transaction
     expect(mockEntityManager.save).toHaveBeenCalledWith(

@@ -136,7 +136,10 @@ describe('EliminarPagoUseCase', () => {
     await expect(useCase.execute('pago-1', 'tenant-OTHER')).rejects.toThrow(
       /no encontrado/,
     );
-    expect(mockPagoRepo.findById).toHaveBeenCalledWith('pago-1', 'tenant-OTHER');
+    expect(mockPagoRepo.findById).toHaveBeenCalledWith(
+      'pago-1',
+      'tenant-OTHER',
+    );
   });
 
   it('should revert exactly the cobros touched by the payment via pago_cobros (B1: multi-cobro FIFO)', async () => {

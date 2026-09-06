@@ -11,10 +11,7 @@ import { DataSource } from 'typeorm';
 import { Cobro } from '../../domain/cobro.entity';
 import { Money } from '../../../shared/common/value-objects';
 import { Usuario, RolUsuario } from '../../../iam/domain/usuario.entity';
-import {
-  calcularRecorridosMes,
-  fechaLocalStr,
-} from './dashboard.controller';
+import { calcularRecorridosMes, fechaLocalStr } from './dashboard.controller';
 
 describe('DashboardController — Cobrador Logic', () => {
   let controller: DashboardController;
@@ -427,7 +424,10 @@ describe('DashboardController — Cobrador Logic', () => {
         new Date(2026, 8, 15), // Tue Sep 15 → Sáb 5 and Sáb 12 already passed
       );
 
-      expect(recorridos.map((r) => r.fecha)).toEqual(['2026-09-19', '2026-09-26']);
+      expect(recorridos.map((r) => r.fecha)).toEqual([
+        '2026-09-19',
+        '2026-09-26',
+      ]);
       expect(recorridos[0].numero).toBe(3); // keeps its real cycle number
       expect(recorridos[0].esActual).toBe(true);
       expect(recorridoActualNumero).toBe(3);
@@ -506,10 +506,11 @@ describe('DashboardController — Cobrador Logic', () => {
       });
       mockSolicitudRepo.findByUsuario.mockResolvedValue([]);
 
-      const result = await controllerWithLegacyDependencies.getDashboardResidente(
-        user,
-        TENANT_ID,
-      );
+      const result =
+        await controllerWithLegacyDependencies.getDashboardResidente(
+          user,
+          TENANT_ID,
+        );
 
       expect(result.status).toBe('AL_DIA');
       expect(result.movimientos).toEqual([]);

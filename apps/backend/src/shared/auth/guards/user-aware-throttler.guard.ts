@@ -17,7 +17,9 @@ export class UserAwareThrottlerGuard extends ThrottlerGuard {
     }
 
     const clientIp =
-      req.ips?.length > 0 ? req.ips[0] : req.ip || req.connection?.remoteAddress;
+      req.ips?.length > 0
+        ? req.ips[0]
+        : req.ip || req.connection?.remoteAddress;
 
     return `ip:${clientIp || 'unknown'}`;
   }

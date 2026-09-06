@@ -94,8 +94,10 @@ export class DashboardController {
 
     // Bulk query for cobros to prevent N+1 query
     const residenteIds = residentes.map((r) => r.id);
-    const todosLosCobros =
-      await this.cobroRepository.findByResidentes(residenteIds, tenantId);
+    const todosLosCobros = await this.cobroRepository.findByResidentes(
+      residenteIds,
+      tenantId,
+    );
 
     // Group cobros by residenteId in memory
     const cobrosMap = new Map<string, Cobro[]>();
@@ -473,12 +475,25 @@ export class DashboardController {
     }
 
     // Helper para nombre legible de cuota según fecha y modalidad
-    const formatCuotaNombre = (fechaVencimiento: string | Date, modalidad?: string): string => {
+    const formatCuotaNombre = (
+      fechaVencimiento: string | Date,
+      modalidad?: string,
+    ): string => {
       if (!fechaVencimiento) return 'Cuota de Recaudo';
       const d = new Date(fechaVencimiento);
       const meses = [
-        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+        'Enero',
+        'Febrero',
+        'Marzo',
+        'Abril',
+        'Mayo',
+        'Junio',
+        'Julio',
+        'Agosto',
+        'Septiembre',
+        'Octubre',
+        'Noviembre',
+        'Diciembre',
       ];
       const mes = meses[d.getUTCMonth()];
       const day = d.getUTCDate();
@@ -525,7 +540,7 @@ export class DashboardController {
         if (r.casa_id) {
           // Buscar status y cuotas reales para esta casa (a través del residente)
           const resStatus = r.prop_id ? statusPorCasa.get(r.prop_id) : null;
-          const rawCuotas = r.prop_id ? (cuotasPorRes.get(r.prop_id) || []) : [];
+          const rawCuotas = r.prop_id ? cuotasPorRes.get(r.prop_id) || [] : [];
           rawCuotas.sort(
             (a, b) =>
               new Date(a.fecha_vencimiento).getTime() -
@@ -548,9 +563,9 @@ export class DashboardController {
               r.prop_modalidad,
             );
             proximaCuotaFechaVencimiento = firstCu.fecha_vencimiento
-              ? (typeof firstCu.fecha_vencimiento === 'string'
-                  ? firstCu.fecha_vencimiento.slice(0, 10)
-                  : new Date(firstCu.fecha_vencimiento).toISOString().slice(0, 10))
+              ? typeof firstCu.fecha_vencimiento === 'string'
+                ? firstCu.fecha_vencimiento.slice(0, 10)
+                : new Date(firstCu.fecha_vencimiento).toISOString().slice(0, 10)
               : null;
           }
 
@@ -708,10 +723,7 @@ export class DashboardController {
       await Promise.all([
         this.cobroRepository.findByResidente(user.residenteId, tenantId),
         this.pagoRepository.findByPropietario(user.residenteId, tenantId),
-        this.planDeCobroRepository.findByResidente(
-          user.residenteId,
-          tenantId,
-        ),
+        this.planDeCobroRepository.findByResidente(user.residenteId, tenantId),
         this.residenteRepository.findByIdWithRelations(
           user.residenteId,
           tenantId,
@@ -1200,8 +1212,18 @@ export class DashboardController {
 }
 
 const MESES_ABREVIADOS = [
-  'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
-  'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic',
+  'Ene',
+  'Feb',
+  'Mar',
+  'Abr',
+  'May',
+  'Jun',
+  'Jul',
+  'Ago',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dic',
 ] as const;
 
 /**

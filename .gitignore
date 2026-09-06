@@ -14,6 +14,7 @@ node_modules/
 dist/
 build/
 *.tsbuildinfo
+coverage/
 
 # ─── Supabase (generated / temp) ───────────────────────
 supabase/.temp/

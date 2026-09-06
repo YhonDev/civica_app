@@ -246,10 +246,7 @@ export class ProyectosController {
   @Get(':id/ajustes')
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN)
-  async getAjustes(
-    @Param('id') id: string,
-    @CurrentTenant() tenantId: string,
-  ) {
+  async getAjustes(@Param('id') id: string, @CurrentTenant() tenantId: string) {
     const proyecto = await this.proyectoRepository.findByIdPlano(id, tenantId);
     if (!proyecto) {
       throw new NotFoundException(`Proyecto ${id} no encontrado`);

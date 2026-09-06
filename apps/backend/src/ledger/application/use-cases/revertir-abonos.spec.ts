@@ -1,4 +1,3 @@
-import { EntityManager } from 'typeorm';
 import { revertirAbonos } from './revertir-abonos';
 import { PagoCobroRepository } from '../../infrastructure/persistence/pago-cobro.repository';
 import { Pago } from '../../domain/pago.entity';
@@ -73,12 +72,14 @@ describe('revertirAbonos', () => {
     jest.clearAllMocks();
     cobrosPorId = new Map();
 
-    findOneSpy = jest.fn().mockImplementation(async (entity: any, opts: any) => {
-      if (entity === Cobro) {
-        return cobrosPorId.get(opts.where.id) ?? null;
-      }
-      return null;
-    });
+    findOneSpy = jest
+      .fn()
+      .mockImplementation(async (entity: any, opts: any) => {
+        if (entity === Cobro) {
+          return cobrosPorId.get(opts.where.id) ?? null;
+        }
+        return null;
+      });
 
     findSpy = jest.fn().mockResolvedValue([]);
 
@@ -110,11 +111,7 @@ describe('revertirAbonos', () => {
         crearVinculo('pago-1', 'cobro-1', 40000),
       ]);
 
-      await revertirAbonos(
-        mockEntityManager as unknown as EntityManager,
-        pago,
-        mockPagoCobroRepo,
-      );
+      await revertirAbonos(mockEntityManager, pago, mockPagoCobroRepo);
 
       expect(findOneSpy).toHaveBeenCalledWith(Cobro, {
         where: { id: 'cobro-1' },
@@ -132,7 +129,7 @@ describe('revertirAbonos', () => {
       ]);
 
       const result = await revertirAbonos(
-        mockEntityManager as unknown as EntityManager,
+        mockEntityManager,
         pago,
         mockPagoCobroRepo,
       );
@@ -160,11 +157,7 @@ describe('revertirAbonos', () => {
 
       mockPagoCobroRepo.findByPago.mockResolvedValue([]);
 
-      await revertirAbonos(
-        mockEntityManager as unknown as EntityManager,
-        pago,
-        mockPagoCobroRepo,
-      );
+      await revertirAbonos(mockEntityManager, pago, mockPagoCobroRepo);
 
       expect(findSpy).toHaveBeenCalledWith({
         where: { residenteId: RESIDENTE_ID, tenantId: TENANT_ID },
@@ -183,7 +176,7 @@ describe('revertirAbonos', () => {
       mockPagoCobroRepo.findByPago.mockResolvedValue([]);
 
       const result = await revertirAbonos(
-        mockEntityManager as unknown as EntityManager,
+        mockEntityManager,
         pago,
         mockPagoCobroRepo,
       );

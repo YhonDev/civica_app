@@ -36,11 +36,7 @@ export class CarteraViviendaResumenQuery {
       .from('casas', 'casa')
       .innerJoin('manzanas', 'manzana', 'manzana.id = casa.manzana_id')
       .innerJoin('etapas', 'etapa', 'etapa.id = manzana.etapa_id')
-      .innerJoin(
-        'proyectos',
-        'proyecto',
-        'proyecto.id = etapa.proyecto_id',
-      )
+      .innerJoin('proyectos', 'proyecto', 'proyecto.id = etapa.proyecto_id')
       .leftJoin(
         'tenencias',
         'tenencia',

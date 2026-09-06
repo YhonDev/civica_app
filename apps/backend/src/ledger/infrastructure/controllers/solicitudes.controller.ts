@@ -237,7 +237,10 @@ export class SolicitudesController {
       pago = await this.pagoRepo.findById(solicitud.pagoId, tenantId);
     }
     if (!pago && solicitud.cobroId) {
-      const pagos = await this.pagoRepo.findByCobro(solicitud.cobroId, tenantId);
+      const pagos = await this.pagoRepo.findByCobro(
+        solicitud.cobroId,
+        tenantId,
+      );
       if (pagos.length > 0) {
         pago = pagos[0];
       }
@@ -311,7 +314,10 @@ export class SolicitudesController {
 
     let targetPagoId = solicitud.pagoId;
     if (!targetPagoId && solicitud.cobroId) {
-      const pagos = await this.pagoRepo.findByCobro(solicitud.cobroId, tenantId);
+      const pagos = await this.pagoRepo.findByCobro(
+        solicitud.cobroId,
+        tenantId,
+      );
       if (pagos.length > 0) targetPagoId = pagos[0].id;
     }
 
@@ -380,7 +386,10 @@ export class SolicitudesController {
 
     let targetPagoId = solicitud.pagoId;
     if (!targetPagoId && solicitud.cobroId) {
-      const pagos = await this.pagoRepo.findByCobro(solicitud.cobroId, tenantId);
+      const pagos = await this.pagoRepo.findByCobro(
+        solicitud.cobroId,
+        tenantId,
+      );
       if (pagos.length > 0) targetPagoId = pagos[0].id;
     }
 
@@ -417,10 +426,7 @@ export class SolicitudesController {
       solicitudId: r.id,
     }),
   })
-  async eliminar(
-    @Param('id') id: string,
-    @CurrentTenant() tenantId: string,
-  ) {
+  async eliminar(@Param('id') id: string, @CurrentTenant() tenantId: string) {
     const solicitud = await this.solicitudRepo.findById(id, tenantId);
     if (!solicitud) {
       throw new NotFoundException(`Solicitud ${id} no encontrada`);

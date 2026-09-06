@@ -21,7 +21,8 @@ export class HealthController {
   @Get()
   @ApiOperation({
     summary: 'Health check',
-    description: 'Verifica que la aplicación y la base de datos estén disponibles',
+    description:
+      'Verifica que la aplicación y la base de datos estén disponibles',
   })
   async check() {
     const dbConnected = this.dataSource.isInitialized;
@@ -44,7 +45,8 @@ export class HealthController {
   @UseGuards(JwtAuthGuard)
   @ApiOperation({
     summary: 'Dependency diagnostics',
-    description: 'Muestra el estado de dependencias sin exponer datos de conexión',
+    description:
+      'Muestra el estado de dependencias sin exponer datos de conexión',
   })
   dependencies() {
     const dbConnected = this.dataSource.isInitialized;

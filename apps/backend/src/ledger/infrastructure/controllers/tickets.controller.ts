@@ -35,9 +35,11 @@ export class TicketsController {
     @CurrentTenant() tenantId: string,
   ) {
     const ticket = await this.ticketRepo.findById(id, tenantId);
-    if (!ticket ||
+    if (
+      !ticket ||
       (user.rol === RolUsuario.RESIDENTE &&
-        ticket.residenteId !== user.residenteId)) {
+        ticket.residenteId !== user.residenteId)
+    ) {
       throw new NotFoundException(`Ticket ${id} no encontrado`);
     }
     return mapTicketToResponse(ticket, this.resolveProjection(user.rol));
@@ -61,9 +63,11 @@ export class TicketsController {
     // By pagoId — find the ticket for a specific payment
     if (pagoId) {
       const ticket = await this.ticketRepo.findByPago(pagoId, tenantId);
-      if (!ticket ||
+      if (
+        !ticket ||
         (user.rol === RolUsuario.RESIDENTE &&
-          ticket.residenteId !== user.residenteId)) {
+          ticket.residenteId !== user.residenteId)
+      ) {
         throw new NotFoundException(`Ticket para pago ${pagoId} no encontrado`);
       }
       return mapTicketToResponse(ticket, projection);
@@ -71,12 +75,19 @@ export class TicketsController {
 
     // By residenteId — list tickets for a residente
     if (residenteId) {
-      if (user.rol === RolUsuario.RESIDENTE && user.residenteId !== residenteId) {
+      if (
+        user.rol === RolUsuario.RESIDENTE &&
+        user.residenteId !== residenteId
+      ) {
         return [];
       }
-      const tickets = await this.ticketRepo.findByResidente(residenteId, tenantId, {
-        limit: limit ? parseInt(limit, 10) : undefined,
-      });
+      const tickets = await this.ticketRepo.findByResidente(
+        residenteId,
+        tenantId,
+        {
+          limit: limit ? parseInt(limit, 10) : undefined,
+        },
+      );
       return tickets.map((t) => mapTicketToResponse(t, projection));
     }
 

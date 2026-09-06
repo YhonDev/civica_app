@@ -197,9 +197,7 @@ describe('CrearCobradorUseCase', () => {
       Object.assign(savedUser, { id: 'user-3' });
       mockQueryRunner.manager.save.mockResolvedValue(savedUser);
       // Validation query: returns only 1 of 2 etapas → cross-tenant attempt
-      mockQueryRunner.manager.query.mockResolvedValueOnce([
-        { id: 'etapa-1' },
-      ]);
+      mockQueryRunner.manager.query.mockResolvedValueOnce([{ id: 'etapa-1' }]);
 
       await expect(
         useCase.execute({

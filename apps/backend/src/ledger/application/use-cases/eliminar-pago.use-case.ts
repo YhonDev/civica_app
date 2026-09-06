@@ -39,7 +39,12 @@ export class EliminarPagoUseCase {
             { pagoId: id, tenantId },
             { estado: 'ANULADO' },
           );
-        } catch (_) {}
+        } catch (err) {
+          // Anulación de tickets es best-effort: si falla, el pago se elimina igual
+          this.logger.warn(
+            `No se pudieron anular tickets del pago ${id}: ${err}`,
+          );
+        }
       }
 
       // Eliminar el pago
@@ -51,4 +56,3 @@ export class EliminarPagoUseCase {
     });
   }
 }
-

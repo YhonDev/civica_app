@@ -103,10 +103,7 @@ export class TarifasController {
   @Get(':id')
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN, RolUsuario.RESIDENTE)
-  async obtener(
-    @Param('id') id: string,
-    @CurrentTenant() tenantId: string,
-  ) {
+  async obtener(@Param('id') id: string, @CurrentTenant() tenantId: string) {
     const tarifa = await this.tarifaRepository.findById(id, tenantId);
     if (!tarifa) {
       return { error: 'Tarifa no encontrada' };
@@ -133,10 +130,7 @@ export class TarifasController {
   @Delete(':id')
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN)
-  async desactivar(
-    @Param('id') id: string,
-    @CurrentTenant() tenantId: string,
-  ) {
+  async desactivar(@Param('id') id: string, @CurrentTenant() tenantId: string) {
     const tarifa = await this.tarifaRepository.findById(id, tenantId);
     if (!tarifa) {
       return { error: 'Tarifa no encontrada' };

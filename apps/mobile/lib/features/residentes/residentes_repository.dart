@@ -194,7 +194,7 @@ class ResidentesRepository {
       return true;
     } catch (e) {
       if (kDebugMode) {
-        print('Error al eliminar residente: $e');
+        debugPrint('[API] Error al eliminar residente: $e');
       }
       return false;
     }
@@ -209,7 +209,7 @@ class ResidentesRepository {
       return true;
     } catch (e) {
       if (kDebugMode) {
-        print('Error al actualizar residente: $e');
+        debugPrint('[API] Error al actualizar residente: $e');
       }
       return false;
     }
@@ -223,7 +223,7 @@ class ResidentesRepository {
       await _api.delete('/cobros/$cobroId');
       return true;
     } catch (e) {
-      if (kDebugMode) print('Error al eliminar cuota: $e');
+      if (kDebugMode) debugPrint('[API] Error al eliminar cuota: $e');
       return false;
     }
   }
@@ -233,7 +233,7 @@ class ResidentesRepository {
       await _api.delete('/pagos/$pagoId');
       return true;
     } catch (e) {
-      if (kDebugMode) print('Error al eliminar pago: $e');
+      if (kDebugMode) debugPrint('[API] Error al eliminar pago: $e');
       return false;
     }
   }

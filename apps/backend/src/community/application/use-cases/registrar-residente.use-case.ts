@@ -52,7 +52,10 @@ export class RegistrarResidenteUseCase {
         where: { id: params.casaId },
         relations: { manzana: { etapa: { proyecto: true } } },
       });
-      if (!casa || casa.manzana?.etapa?.proyecto?.tenantId !== params.tenantId) {
+      if (
+        !casa ||
+        casa.manzana?.etapa?.proyecto?.tenantId !== params.tenantId
+      ) {
         throw new NotFoundException('Casa no encontrada en el tenant actual');
       }
     }

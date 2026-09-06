@@ -125,7 +125,10 @@ export class AuthService {
         if (!session) {
           // A previous hash proves this token was already consumed (reuse).
           const consumed = await manager.findOne(AuthSession, {
-            where: { usuarioId: user.id, previousRefreshTokenHash: incomingHash },
+            where: {
+              usuarioId: user.id,
+              previousRefreshTokenHash: incomingHash,
+            },
             lock: { mode: 'pessimistic_write' },
           });
           if (consumed) {
@@ -156,7 +159,9 @@ export class AuthService {
           tenantId: user.tenantId,
           residenteId: user.residenteId ?? undefined,
         };
-        const newAccessToken = this.jwtService.sign(newPayload, { expiresIn: '15m' });
+        const newAccessToken = this.jwtService.sign(newPayload, {
+          expiresIn: '15m',
+        });
         const newRefreshToken = this.jwtService.sign(
           { sub: user.id, type: 'refresh', jti: crypto.randomUUID() },
           { expiresIn: '30d' },
@@ -172,7 +177,10 @@ export class AuthService {
 
       return { ...result, usuario: user };
     } catch (error) {
-      if (error instanceof UnauthorizedException || error instanceof NotFoundException) {
+      if (
+        error instanceof UnauthorizedException ||
+        error instanceof NotFoundException
+      ) {
         throw error;
       }
       throw new UnauthorizedException('Token de refresco inválido o expirado');
