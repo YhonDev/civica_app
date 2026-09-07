@@ -1,4 +1,5 @@
-import 'package:flutter/foundation.dart' show kDebugMode;
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, kDebugMode, kIsWeb, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -32,8 +33,10 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _loadInitialPreferences() async {
-    final rememberEnabled = await BiometricAuthService.instance.isRememberUsernameEnabled();
-    final savedUsername = await BiometricAuthService.instance.getRememberedUsername();
+    final rememberEnabled =
+        await BiometricAuthService.instance.isRememberUsernameEnabled();
+    final savedUsername =
+        await BiometricAuthService.instance.getRememberedUsername();
     if (mounted) {
       setState(() {
         _rememberUser = rememberEnabled;
@@ -48,6 +51,16 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _checkAutoBiometrics() async {
+    // La huella dactilar solo aplica a dispositivos móviles físicos (Android / iOS).
+    // En Web y Desktop se desactiva para priorizar el login estándar y gestores de contraseñas.
+    if (kIsWeb ||
+        (defaultTargetPlatform != TargetPlatform.android &&
+            defaultTargetPlatform != TargetPlatform.iOS)) {
+      return;
+    }
+    final isSupported =
+        await BiometricAuthService.instance.isHardwareSupported();
+    if (!isSupported) return;
     final enabled = await BiometricAuthService.instance.isBiometricsEnabled();
     if (mounted) {
       setState(() => _isBiometricsEnabled = enabled);

@@ -173,5 +173,26 @@ void main() {
       );
       expect(formConstraint.constraints.maxWidth, equals(440.0));
     });
+
+    testWidgets('Does not display biometrics button on non-mobile platforms/viewports', (tester) async {
+      tester.view.physicalSize = const Size(1280, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      final authCubit = AuthCubit();
+
+      await tester.pumpWidget(
+        BlocProvider<AuthCubit>.value(
+          value: authCubit,
+          child: const MaterialApp(
+            home: LoginScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Ingresar con huella dactilar'), findsNothing);
+      expect(find.byIcon(Icons.fingerprint_rounded), findsNothing);
+    });
   });
 }
