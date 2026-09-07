@@ -65,32 +65,11 @@ class CobroCard extends StatelessWidget {
         .round();
     final montoFormatted = r'$ ' + NumberFormat('#,##0', 'es_CO').format(montoRaw);
 
-    // Formatear dirección / ubicación como Título Principal
-    final houseParts = <String>[];
-    if (cobro.manzana.isNotEmpty) houseParts.add(cobro.manzana);
-    if (cobro.casa.isNotEmpty) houseParts.add(cobro.casa);
-    
-    final String mainTitle;
-    final String? cuotaSubtitle;
-
-    if (cobro.nombre.isNotEmpty && cobro.nombre != 'Residente') {
-      mainTitle = cobro.nombre;
-      cuotaSubtitle = cobro.tituloCuota.isNotEmpty
-          ? (houseParts.isNotEmpty ? '${cobro.tituloCuota} · ${houseParts.join(" — ")}' : cobro.tituloCuota)
-          : (houseParts.isNotEmpty ? houseParts.join(' — ') : null);
-    } else if (cobro.tituloCuota.isNotEmpty) {
-      mainTitle = cobro.tituloCuota;
-      cuotaSubtitle = houseParts.isNotEmpty
-          ? (cobro.etapa.isNotEmpty ? '${cobro.etapa} — ${houseParts.join(' — ')}' : houseParts.join(' — '))
-          : null;
-    } else if (houseParts.isNotEmpty) {
-      final loc = houseParts.join(' — ');
-      mainTitle = cobro.etapa.isNotEmpty ? '$loc (${cobro.etapa})' : loc;
-      cuotaSubtitle = null;
-    } else {
-      mainTitle = 'Cuota de Recaudo';
-      cuotaSubtitle = null;
-    }
+    // Extracción atómica de 3 dimensiones: Mes, Cuota y Ubicación (+ Residente si aplica)
+    final mes = cobro.mesNombre;
+    final cuota = cobro.cuotaNombre;
+    final ubicacion = cobro.ubicacionNombre;
+    final bool tieneResidente = cobro.nombre.isNotEmpty && cobro.nombre != 'Residente';
 
     final isOverdue = cobro.isMora;
     final cardBorderColor = isOverdue
@@ -145,42 +124,112 @@ class CobroCard extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // TÍTULO: Casa / Dirección
+                          // 1. CELDA SUPERIOR: MES (ej. "Septiembre")
                           Text(
-                            mainTitle,
+                            mes,
                             style: AppTypography.bodyMedium.copyWith(
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w800,
                               fontSize: 14,
                               color: isDark ? Colors.white : const Color(0xFF0F172A),
+                              letterSpacing: -0.2,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          const SizedBox(height: 2),
-                          // DESCRIPCIÓN: Cuota + Vencimiento + Días
-                          if (cuotaSubtitle != null && cuotaSubtitle.isNotEmpty)
-                            Text(
-                              cuotaSubtitle,
-                              style: AppTypography.caption.copyWith(
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 11.5,
+                          const SizedBox(height: 3),
+
+                          // 2. CELDA INTERMEDIA: CUOTA (ej. "Cuota 1")
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 7,
+                                  vertical: 1.5,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  cuota,
+                                  style: AppTypography.caption.copyWith(
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 11,
+                                  ),
+                                ),
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                            ],
+                          ),
+                          const SizedBox(height: 3),
+
+                          // 3. CELDA INFERIOR: UBICACIÓN / DIRECCIÓN (ej. "Manzana B · Casa 4")
+                          if (ubicacion.isNotEmpty) ...[
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.home_outlined,
+                                  size: 13,
+                                  color: AppColors.textSecondary,
+                                ),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: Text(
+                                    ubicacion,
+                                    style: AppTypography.caption.copyWith(
+                                      color: AppColors.textSecondary,
+                                      fontWeight: FontWeight.w500,
+                                      fontSize: 11,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
                             ),
-                          if (_fechaDetalle.isNotEmpty) ...[
+                          ],
+
+                          // RESIDENTE (si está disponible y no es genérico)
+                          if (tieneResidente) ...[
                             const SizedBox(height: 2),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.person_outline_rounded,
+                                  size: 13,
+                                  color: AppColors.textSecondary,
+                                ),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: Text(
+                                    cobro.nombre,
+                                    style: AppTypography.caption.copyWith(
+                                      color: isDark ? Colors.white70 : const Color(0xFF334155),
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 11,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+
+                          // 4. DETALLE DE FECHA (Vence / Pagado)
+                          if (_fechaDetalle.isNotEmpty) ...[
+                            const SizedBox(height: 3),
                             Text(
                               _fechaDetalle,
                               style: AppTypography.caption.copyWith(
                                 color: (cobro.estado == 'Mora' || cobro.estado == 'VENCIDA')
                                     ? AppColors.error
-                                    : AppColors.textSecondary,
+                                    : AppColors.textSecondary.withValues(alpha: 0.8),
                                 fontWeight: (cobro.estado == 'Mora' || cobro.estado == 'VENCIDA')
                                     ? FontWeight.w700
                                     : FontWeight.w500,
-                                fontSize: 11,
+                                fontSize: 10.5,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,

@@ -89,15 +89,28 @@ class CobroItem extends Equatable {
 
   bool get isPendiente => !isPaid && !isMora;
 
-  String get tituloCuota {
+  /// Retorna exclusivamente el nombre del mes (ej. "Septiembre")
+  String get mesNombre {
+    DateTime? date;
+    if (periodoInicio.isNotEmpty) {
+      date = DateTime.tryParse(periodoInicio);
+    }
+    date ??= DateTime.tryParse(fechaVencimiento);
+    if (date != null) {
+      final monthName = DateFormat('MMMM', 'es').format(date);
+      return monthName[0].toUpperCase() + monthName.substring(1);
+    }
+    return 'Mes Actual';
+  }
+
+  /// Retorna exclusivamente la cuota (ej. "Cuota 1" o concepto personalizado)
+  String get cuotaNombre {
     if (concepto.isNotEmpty && concepto != 'Cuota de Vigilancia') {
       return concepto;
     }
     if (fechaVencimiento.isNotEmpty) {
       final date = DateTime.tryParse(fechaVencimiento);
       if (date != null) {
-        final monthName = DateFormat('MMMM', 'es').format(date);
-        final capitalizedMonth = monthName[0].toUpperCase() + monthName.substring(1);
         final day = date.day;
         int cuotaNum = 1;
         if (day > 21) {
@@ -107,10 +120,38 @@ class CobroItem extends Equatable {
         } else if (day > 7) {
           cuotaNum = 2;
         }
-        return '$capitalizedMonth — Cuota $cuotaNum';
+        return 'Cuota $cuotaNum';
       }
     }
-    return concepto.isNotEmpty ? concepto : 'Cuota de Vigilancia';
+    return 'Cuota 1';
+  }
+
+  /// Retorna exclusivamente la ubicación formateada (ej. "Mz B · Casa 4")
+  String get ubicacionNombre {
+    final parts = <String>[];
+    if (manzana.isNotEmpty && manzana != 'Manzana') {
+      final mz = manzana.startsWith('Manzana') || manzana.startsWith('Mz')
+          ? manzana
+          : 'Mz $manzana';
+      parts.add(mz);
+    }
+    if (casa.isNotEmpty && casa != 'Inmueble') {
+      final c = casa.startsWith('Casa') ? casa : 'Casa $casa';
+      parts.add(c);
+    }
+    if (etapa.isNotEmpty && etapa != 'Etapa') {
+      final et = etapa.startsWith('Etapa') ? etapa : 'Etapa $etapa';
+      parts.add(et);
+    }
+    if (parts.isEmpty && casa.isNotEmpty) parts.add(casa);
+    return parts.join(' · ');
+  }
+
+  String get tituloCuota {
+    if (concepto.isNotEmpty && concepto != 'Cuota de Vigilancia') {
+      return concepto;
+    }
+    return '$mesNombre — $cuotaNombre';
   }
 
   factory CobroItem.fromJson(Map<String, dynamic> json) {

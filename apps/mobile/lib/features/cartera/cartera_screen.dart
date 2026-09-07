@@ -387,7 +387,7 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
               return SliverGrid(
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: cols,
-                  mainAxisExtent: 170,
+                  mainAxisExtent: 195,
                   crossAxisSpacing: 14,
                   mainAxisSpacing: 14,
                 ),
