@@ -67,6 +67,12 @@ class RealtimeSocketService {
     _intentionalDisconnect = false;
     _reconnectAttempt = 0;
 
+    // Realtime gateway strictly requires JWT token authentication
+    if (token == null || token.isEmpty) {
+      debugPrint('[RealtimeSocket] Token missing; skipping connection.');
+      return;
+    }
+
     _connect();
   }
 
@@ -183,6 +189,10 @@ class RealtimeSocketService {
   /// delay = min(baseDelay * 2^attempt, maxDelay)
   void _scheduleReconnect() {
     if (_intentionalDisconnect) return;
+    if (_token == null || _token!.isEmpty) {
+      debugPrint('[RealtimeSocket] Token missing; aborting reconnect.');
+      return;
+    }
     if (_reconnectAttempt >= _maxReconnectAttempt) {
       debugPrint('[RealtimeSocket] Max reconnection attempts reached ($_maxReconnectAttempt). Giving up.');
       return;

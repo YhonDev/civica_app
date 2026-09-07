@@ -68,12 +68,25 @@ async function bootstrap() {
   // Helmet: protege contra vulnerabilidades HTTP comunes
   app.use(helmet());
 
-  // CORS: solo orígenes permitidos (default: http://localhost:3000)
-  const corsOrigins = process.env.CORS_ORIGIN?.split(',') ?? [
+  // CORS: orígenes permitidos (en desarrollo admite cualquier puerto localhost/127.0.0.1 para Flutter Web)
+  const isDev = process.env.NODE_ENV !== 'production';
+  const corsOrigins = process.env.CORS_ORIGIN?.split(',').map((s) => s.trim()) ?? [
     'http://localhost:3000',
   ];
   app.enableCors({
-    origin: corsOrigins,
+    origin: (
+      origin: string | undefined,
+      callback: (err: Error | null, allow?: boolean) => void,
+    ) => {
+      if (!origin) return callback(null, true);
+      if (isDev && /^https?:\/\/(localhost|127\.0\.0\.1)(:[0-9]+)?$/.test(origin)) {
+        return callback(null, true);
+      }
+      if (corsOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error(`CORS bloqueado para origen: ${origin}`), false);
+    },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     credentials: true,
   });

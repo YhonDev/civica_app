@@ -73,6 +73,10 @@ class AuthCubit extends Cubit<AuthState> {
       final userId = user['id'] as String? ?? '';
       final residenteId = user['residenteId'] as String?;
       final token = await ApiClient.instance.tokenStorage.getAccessToken();
+      if (token == null || token.isEmpty) {
+        debugPrint('[AuthCubit] RealtimeSocket init skipped: no access token');
+        return;
+      }
 
       final wsUrl = detectWsUrl();
       debugPrint('[AuthCubit] Initializing realtime connection');

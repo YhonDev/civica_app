@@ -16,10 +16,32 @@ import { Server, Socket } from 'socket.io';
  * WebSocket Gateway for real-time events.
  * Protected with JWT handshake authentication and strict multi-tenant room isolation.
  */
+const isDev = process.env.NODE_ENV !== 'production';
+const wsCorsOrigins = process.env.CORS_ORIGIN?.split(',').map((s) => s.trim()) ?? [
+  'http://localhost:3000',
+];
+
+function isOriginAllowed(origin: string | undefined): boolean {
+  if (!origin) return true;
+  if (isDev && /^https?:\/\/(localhost|127\.0\.0\.1)(:[0-9]+)?$/.test(origin)) {
+    return true;
+  }
+  return wsCorsOrigins.includes(origin);
+}
+
 @Injectable()
 @WebSocketGateway({
   cors: {
-    origin: process.env.CORS_ORIGIN?.split(',') ?? ['http://localhost:3000'],
+    origin: (
+      origin: string | undefined,
+      callback: (err: Error | null, allow?: boolean) => void,
+    ) => {
+      if (isOriginAllowed(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error(`WebSocket CORS blocked for origin: ${origin}`), false);
+      }
+    },
     methods: ['GET', 'POST'],
     credentials: true,
   },
