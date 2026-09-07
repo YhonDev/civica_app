@@ -218,30 +218,38 @@ class CobroCard extends StatelessWidget {
                         const SizedBox(height: AppSpacing.md),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  cobro.isPaid ? 'Monto Pagado' : 'Saldo Pendiente',
-                                  style: AppTypography.caption.copyWith(
-                                    color: AppColors.textSecondary,
-                                    fontWeight: FontWeight.w600,
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    cobro.isPaid ? 'Monto Pagado' : 'Saldo Pendiente',
+                                    style: AppTypography.caption.copyWith(
+                                      color: AppColors.textSecondary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  montoFormatted,
-                                  style: AppTypography.title.copyWith(
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 19,
-                                    color: cobro.isMora
-                                        ? AppColors.error
-                                        : (isDark ? Colors.white : const Color(0xFF0F172A)),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    montoFormatted,
+                                    style: AppTypography.title.copyWith(
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 19,
+                                      color: cobro.isMora
+                                          ? AppColors.error
+                                          : (isDark ? Colors.white : const Color(0xFF0F172A)),
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
+                            const SizedBox(width: 8),
                             if (cobro.isPaid)
                               Row(
                                 children: [

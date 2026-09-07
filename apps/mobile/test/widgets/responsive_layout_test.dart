@@ -10,7 +10,9 @@ import 'package:civica_pago_mobile/core/theme/app_breakpoints.dart';
 import 'package:civica_pago_mobile/core/widgets/responsive_builder.dart';
 import 'package:civica_pago_mobile/features/auth/auth_cubit.dart';
 import 'package:civica_pago_mobile/features/auth/login_screen.dart';
+import 'package:civica_pago_mobile/features/cartera/cartera_screen.dart';
 import 'package:civica_pago_mobile/features/shell/scaffold_with_bottom_nav.dart';
+import 'fake_repositories.dart';
 
 void main() {
   setUp(() {
@@ -193,6 +195,38 @@ void main() {
 
       expect(find.text('Ingresar con huella dactilar'), findsNothing);
       expect(find.byIcon(Icons.fingerprint_rounded), findsNothing);
+    });
+  });
+
+  group('CarteraScreen Responsive Grid Tests', () {
+    testWidgets('Renders SliverGrid on wide screens (>= 900px)', (tester) async {
+      tester.view.physicalSize = const Size(1280, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      final authCubit = AuthCubit();
+      authCubit.emit(AuthState.authenticated({
+        'nombre': 'Admin Test',
+        'rol': 'ADMIN',
+        'email': 'admin@test.com',
+        'tenantId': 't1',
+      }));
+
+      final repo = FakeCarteraData.conTresCuotas();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: BlocProvider<AuthCubit>.value(
+            value: authCubit,
+            child: CarteraScreen(repository: repo),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      expect(find.byType(SliverGrid), findsOneWidget);
     });
   });
 }

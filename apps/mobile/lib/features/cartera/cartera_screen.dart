@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../core/theme/app_breakpoints.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
@@ -295,94 +296,119 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
       ),
       SliverPadding(
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
-        sliver: SliverList(
-          delegate: SliverChildBuilderDelegate(
-            (context, index) {
+        sliver: Builder(
+          builder: (context) {
+            final isWide = MediaQuery.sizeOf(context).width >= 900;
+
+            Widget buildCobroItem(int index) {
               final cobro = filteredCobros[index];
-              return Padding(
-                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                child: CobroCard(
-                  cobro: cobro,
-                  onTap: () {
-                    if (cobro.isPaid) {
-                      DateTime fecha = DateTime.now();
-                      if (cobro.fechaPago.isNotEmpty) {
-                        fecha = DateTime.tryParse(cobro.fechaPago)?.toLocal() ?? DateTime.now();
-                      } else if (cobro.fechaVencimiento.isNotEmpty) {
-                        fecha = DateTime.tryParse(cobro.fechaVencimiento)?.toLocal() ?? DateTime.now();
-                      }
-                      final ticketNum = cobro.nroRecibo.isNotEmpty
-                          ? cobro.nroRecibo
-                          : 'TK-${cobro.id.replaceAll("-", "").substring(0, 6).toUpperCase()}';
-                      TicketBottomSheet.show(
-                        context,
-                        TicketData(
-                          numero: ticketNum,
-                          fecha: fecha,
-                          residente: cobro.nombre.isNotEmpty && cobro.nombre != 'Residente'
-                              ? cobro.nombre
-                              : userName,
-                          casa: '${cobro.casa} · ${cobro.manzana}',
-                          monto: (cobro.monto > 0 ? cobro.monto : cobro.montoPagado).round(),
-                          metodo: cobro.metodoPago.isNotEmpty ? cobro.metodoPago : 'Efectivo',
-                          estado: 'PAGADO',
-                          concepto: cobro.concepto,
-                          cobrador: cobro.cobradorNombre.isNotEmpty ? cobro.cobradorNombre : 'Administración',
-                          etapa: cobro.etapa,
-                          manzana: cobro.manzana,
-                        ),
-                      );
-                    } else if (canRegisterPago) {
-                      RegistrarPagoBottomSheet.show(
-                        context,
-                        cobro: cobro,
-                        onSuccess: () => context.read<CarteraCubit>().loadCobros(),
-                      );
+              return CobroCard(
+                cobro: cobro,
+                onTap: () {
+                  if (cobro.isPaid) {
+                    DateTime fecha = DateTime.now();
+                    if (cobro.fechaPago.isNotEmpty) {
+                      fecha = DateTime.tryParse(cobro.fechaPago)?.toLocal() ?? DateTime.now();
+                    } else if (cobro.fechaVencimiento.isNotEmpty) {
+                      fecha = DateTime.tryParse(cobro.fechaVencimiento)?.toLocal() ?? DateTime.now();
                     }
-                  },
-                  onSolicitarCobro: !canRegisterPago && !cobro.isPaid
-                      ? () async {
-                          try {
-                            final repo = SolicitudesRepository();
-                            final resId = (user?['residenteId'] as String?) ?? (user?['id'] as String?) ?? '';
-                            await repo.crearSolicitud(
-                              cobroId: cobro.id,
-                              tipo: 'Solicitud de cobro',
-                              descripcion: 'El residente solicita cobro presencial en domicilio para ${cobro.tituloCuota}',
-                              residenteId: resId,
+                    final ticketNum = cobro.nroRecibo.isNotEmpty
+                        ? cobro.nroRecibo
+                        : 'TK-${cobro.id.replaceAll("-", "").substring(0, 6).toUpperCase()}';
+                    TicketBottomSheet.show(
+                      context,
+                      TicketData(
+                        numero: ticketNum,
+                        fecha: fecha,
+                        residente: cobro.nombre.isNotEmpty && cobro.nombre != 'Residente'
+                            ? cobro.nombre
+                            : userName,
+                        casa: '${cobro.casa} · ${cobro.manzana}',
+                        monto: (cobro.monto > 0 ? cobro.monto : cobro.montoPagado).round(),
+                        metodo: cobro.metodoPago.isNotEmpty ? cobro.metodoPago : 'Efectivo',
+                        estado: 'PAGADO',
+                        concepto: cobro.concepto,
+                        cobrador: cobro.cobradorNombre.isNotEmpty ? cobro.cobradorNombre : 'Administración',
+                        etapa: cobro.etapa,
+                        manzana: cobro.manzana,
+                      ),
+                    );
+                  } else if (canRegisterPago) {
+                    RegistrarPagoBottomSheet.show(
+                      context,
+                      cobro: cobro,
+                      onSuccess: () => context.read<CarteraCubit>().loadCobros(),
+                    );
+                  }
+                },
+                onSolicitarCobro: !canRegisterPago && !cobro.isPaid
+                    ? () async {
+                        try {
+                          final repo = SolicitudesRepository();
+                          final resId = (user?['residenteId'] as String?) ?? (user?['id'] as String?) ?? '';
+                          await repo.crearSolicitud(
+                            cobroId: cobro.id,
+                            tipo: 'Solicitud de cobro',
+                            descripcion: 'El residente solicita cobro presencial en domicilio para ${cobro.tituloCuota}',
+                            residenteId: resId,
+                          );
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: const Text('Solicitud enviada'),
+                                backgroundColor: AppColors.success,
+                              ),
                             );
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: const Text('Solicitud enviada'),
-                                  backgroundColor: AppColors.success,
-                                ),
-                              );
-                            }
-                          } catch (e) {
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Error al solicitar cobro: $e'),
-                                  backgroundColor: AppColors.error,
-                                ),
-                              );
-                            }
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Error al solicitar cobro: $e'),
+                                backgroundColor: AppColors.error,
+                              ),
+                            );
                           }
                         }
-                      : null,
-                  onRegistrarPago: canRegisterPago && !cobro.isPaid
-                      ? () => RegistrarPagoBottomSheet.show(
-                            context,
-                            cobro: cobro,
-                            onSuccess: () => context.read<CarteraCubit>().loadCobros(),
-                          )
-                      : null,
+                      }
+                    : null,
+                onRegistrarPago: canRegisterPago && !cobro.isPaid
+                    ? () => RegistrarPagoBottomSheet.show(
+                          context,
+                          cobro: cobro,
+                          onSuccess: () => context.read<CarteraCubit>().loadCobros(),
+                        )
+                    : null,
+              );
+            }
+
+            if (isWide) {
+              return SliverGrid(
+                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                  maxCrossAxisExtent: 440,
+                  mainAxisExtent: 230,
+                  crossAxisSpacing: 14,
+                  mainAxisSpacing: 14,
+                ),
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) => buildCobroItem(index),
+                  childCount: filteredCobros.length,
                 ),
               );
-            },
-            childCount: filteredCobros.length,
-          ),
+            }
+
+            return SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                    child: buildCobroItem(index),
+                  );
+                },
+                childCount: filteredCobros.length,
+              ),
+            );
+          },
         ),
       ),
     ];
