@@ -11,6 +11,8 @@ import {
   UseInterceptors,
   BadRequestException,
   NotFoundException,
+  HttpException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { SolicitudRepository } from '../persistence/solicitud.repository';
@@ -364,9 +366,10 @@ export class SolicitudesController {
   @UseInterceptors(ActividadInterceptor)
   @RegistrarActividad({
     tipo: 'SOLICITUD',
-    descripcionFn: (r) => `Pago revertido y solicitud resuelta: ${r.id}`,
+    descripcionFn: (r) =>
+      `Pago revertido y solicitud resuelta: ${r.solicitud?.id || r.id}`,
     metadataFn: (r) => ({
-      solicitudId: r.id,
+      solicitudId: r.solicitud?.id || r.id,
     }),
   })
   @ApiOperation({
@@ -379,40 +382,47 @@ export class SolicitudesController {
     @CurrentUser() user: Usuario,
     @CurrentTenant() tenantId: string,
   ) {
-    const solicitud = await this.solicitudRepo.findById(id, tenantId);
-    if (!solicitud) {
-      throw new NotFoundException(`Solicitud ${id} no encontrada`);
-    }
+    try {
+      const solicitud = await this.solicitudRepo.findById(id, tenantId);
+      if (!solicitud) {
+        throw new NotFoundException(`Solicitud ${id} no encontrada`);
+      }
 
-    let targetPagoId = solicitud.pagoId;
-    if (!targetPagoId && solicitud.cobroId) {
-      const pagos = await this.pagoRepo.findByCobro(
-        solicitud.cobroId,
-        tenantId,
+      let targetPagoId = solicitud.pagoId;
+      if (!targetPagoId && solicitud.cobroId) {
+        const pagos = await this.pagoRepo.findByCobro(
+          solicitud.cobroId,
+          tenantId,
+        );
+        if (pagos.length > 0) targetPagoId = pagos[0].id;
+      }
+
+      if (!targetPagoId) {
+        throw new BadRequestException(
+          'No se encontró un pago asociado a esta solicitud para revertir.',
+        );
+      }
+
+      await this.eliminarPagoUC.execute(targetPagoId, tenantId);
+
+      solicitud.estado = SolicitudEstado.RESUELTA;
+      solicitud.respuesta =
+        dto.motivo?.trim() ||
+        'Pago revertido y cuota liberada por la administración.';
+      solicitud.fechaRespuesta = new Date();
+      await this.solicitudRepo.save(solicitud);
+
+      return {
+        success: true,
+        solicitud,
+        message: 'Pago revertido y cuota liberada exitosamente.',
+      };
+    } catch (err: any) {
+      if (err instanceof HttpException) throw err;
+      throw new InternalServerErrorException(
+        `Error al revertir pago: ${err.message || err}`,
       );
-      if (pagos.length > 0) targetPagoId = pagos[0].id;
     }
-
-    if (!targetPagoId) {
-      throw new BadRequestException(
-        'No se encontró un pago asociado a esta solicitud para revertir.',
-      );
-    }
-
-    await this.eliminarPagoUC.execute(targetPagoId, tenantId);
-
-    solicitud.estado = SolicitudEstado.RESUELTA;
-    solicitud.respuesta =
-      dto.motivo?.trim() ||
-      'Pago revertido y cuota liberada por la administración.';
-    solicitud.fechaRespuesta = new Date();
-    await this.solicitudRepo.save(solicitud);
-
-    return {
-      success: true,
-      solicitud,
-      message: 'Pago revertido y cuota liberada exitosamente.',
-    };
   }
 
   @Delete(':id')

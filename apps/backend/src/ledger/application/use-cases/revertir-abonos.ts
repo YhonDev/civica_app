@@ -45,10 +45,17 @@ export async function revertirAbonos(
     for (const vinculo of vinculos) {
       if (vinculo.montoAplicado <= 0) continue;
 
-      const cobro = await entityManager.findOne(Cobro, {
-        where: { id: vinculo.cobroId },
-        lock: { mode: 'pessimistic_write' },
-      });
+      const cobro =
+        typeof entityManager.createQueryBuilder === 'function'
+          ? await entityManager
+              .createQueryBuilder(Cobro, 'cobro')
+              .where('cobro.id = :id', { id: vinculo.cobroId })
+              .setLock('pessimistic_write', undefined, ['cobro'])
+              .getOne()
+          : await entityManager.findOne(Cobro, {
+              where: { id: vinculo.cobroId },
+              lock: { mode: 'pessimistic_write' },
+            });
       if (!cobro) continue;
 
       cobro.montoPagado = Math.max(
@@ -68,11 +75,22 @@ export async function revertirAbonos(
 
   // Fallback legacy: LIFO inverso sobre todos los cobros del residente.
   let remainingToReverse = pago.monto;
-  const cobros = await entityManager.getRepository(Cobro).find({
-    where: { residenteId: pago.residenteId, tenantId: pago.tenantId },
-    order: { periodoInicio: 'DESC' },
-    lock: { mode: 'pessimistic_write' },
-  });
+  const cobros =
+    typeof entityManager.createQueryBuilder === 'function'
+      ? await entityManager
+          .createQueryBuilder(Cobro, 'cobro')
+          .where('cobro.residenteId = :residenteId', {
+            residenteId: pago.residenteId,
+          })
+          .andWhere('cobro.tenantId = :tenantId', { tenantId: pago.tenantId })
+          .orderBy('cobro.periodoInicio', 'DESC')
+          .setLock('pessimistic_write', undefined, ['cobro'])
+          .getMany()
+      : await entityManager.getRepository(Cobro).find({
+          where: { residenteId: pago.residenteId, tenantId: pago.tenantId },
+          order: { periodoInicio: 'DESC' },
+          lock: { mode: 'pessimistic_write' },
+        });
 
   for (const cobro of cobros) {
     if (remainingToReverse <= 0) break;

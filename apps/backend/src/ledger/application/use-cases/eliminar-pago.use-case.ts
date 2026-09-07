@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { PagoRepository } from '../../infrastructure/persistence/pago.repository';
 import { PagoCobroRepository } from '../../infrastructure/persistence/pago-cobro.repository';
-import { Ticket } from '../../domain/ticket.entity';
+import { TicketCobro } from '../../domain/ticket-cobro.entity';
 import { revertirAbonos } from './revertir-abonos';
 
 @Injectable()
@@ -35,7 +35,7 @@ export class EliminarPagoUseCase {
       if (typeof (entityManager as any).update === 'function') {
         try {
           await entityManager.update(
-            Ticket,
+            TicketCobro,
             { pagoId: id, tenantId },
             { estado: 'ANULADO' },
           );
