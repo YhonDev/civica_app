@@ -123,12 +123,12 @@ export class ProyectosController {
     }
 
     const tenenciasCount = await this.dataSource.query(
-      'SELECT COUNT(*) as count FROM tenencias t JOIN casas c ON t.casa_id = c.id JOIN manzanas m ON c.manzana_id = m.id WHERE m.etapa_id = $1',
-      [id],
+      'SELECT COUNT(*) as count FROM tenencias t JOIN casas c ON t.casa_id = c.id JOIN manzanas m ON c.manzana_id = m.id JOIN etapas e ON m.etapa_id = e.id JOIN proyectos p ON e.proyecto_id = p.id WHERE m.etapa_id = $1 AND p.tenant_id = $2',
+      [id, tenantId],
     );
     const cobrosCount = await this.dataSource.query(
-      'SELECT COUNT(*) as count FROM cobros co JOIN casas c ON co.casa_id = c.id JOIN manzanas m ON c.manzana_id = m.id WHERE m.etapa_id = $1',
-      [id],
+      'SELECT COUNT(*) as count FROM cobros co JOIN casas c ON co.casa_id = c.id JOIN manzanas m ON c.manzana_id = m.id JOIN etapas e ON m.etapa_id = e.id JOIN proyectos p ON e.proyecto_id = p.id WHERE m.etapa_id = $1 AND p.tenant_id = $2',
+      [id, tenantId],
     );
     if (
       Number(tenenciasCount[0]?.count ?? 0) > 0 ||
@@ -162,12 +162,12 @@ export class ProyectosController {
     }
 
     const tenenciasCount = await this.dataSource.query(
-      'SELECT COUNT(*) as count FROM tenencias t JOIN casas c ON t.casa_id = c.id WHERE c.manzana_id = $1',
-      [id],
+      'SELECT COUNT(*) as count FROM tenencias t JOIN casas c ON t.casa_id = c.id JOIN manzanas m ON c.manzana_id = m.id JOIN etapas e ON m.etapa_id = e.id JOIN proyectos p ON e.proyecto_id = p.id WHERE c.manzana_id = $1 AND p.tenant_id = $2',
+      [id, tenantId],
     );
     const cobrosCount = await this.dataSource.query(
-      'SELECT COUNT(*) as count FROM cobros co JOIN casas c ON co.casa_id = c.id WHERE c.manzana_id = $1',
-      [id],
+      'SELECT COUNT(*) as count FROM cobros co JOIN casas c ON co.casa_id = c.id JOIN manzanas m ON c.manzana_id = m.id JOIN etapas e ON m.etapa_id = e.id JOIN proyectos p ON e.proyecto_id = p.id WHERE c.manzana_id = $1 AND p.tenant_id = $2',
+      [id, tenantId],
     );
     if (
       Number(tenenciasCount[0]?.count ?? 0) > 0 ||
@@ -201,12 +201,12 @@ export class ProyectosController {
     }
 
     const tenenciasCount = await this.dataSource.query(
-      'SELECT COUNT(*) as count FROM tenencias WHERE casa_id = $1',
-      [id],
+      'SELECT COUNT(*) as count FROM tenencias t JOIN casas c ON t.casa_id = c.id JOIN manzanas m ON c.manzana_id = m.id JOIN etapas e ON m.etapa_id = e.id JOIN proyectos p ON e.proyecto_id = p.id WHERE t.casa_id = $1 AND p.tenant_id = $2',
+      [id, tenantId],
     );
     const cobrosCount = await this.dataSource.query(
-      'SELECT COUNT(*) as count FROM cobros WHERE casa_id = $1',
-      [id],
+      'SELECT COUNT(*) as count FROM cobros co JOIN casas c ON co.casa_id = c.id JOIN manzanas m ON c.manzana_id = m.id JOIN etapas e ON m.etapa_id = e.id JOIN proyectos p ON e.proyecto_id = p.id WHERE co.casa_id = $1 AND p.tenant_id = $2',
+      [id, tenantId],
     );
     if (
       Number(tenenciasCount[0]?.count ?? 0) > 0 ||
