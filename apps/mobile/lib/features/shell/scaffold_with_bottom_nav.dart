@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../core/theme/app_breakpoints.dart';
 import '../../features/auth/auth_cubit.dart';
 import '../../shared/widgets/connectivity_banner.dart';
 
-/// Shell route widget that wraps all bottom-navigation screens.
+/// Shell route widget that wraps all navigation screens with responsive navigation.
+/// Uses BottomNavigationBar on mobile (<600px) and NavigationRail on wide screens.
 class ScaffoldWithBottomNav extends StatelessWidget {
   final Widget child;
 
@@ -26,17 +28,14 @@ class ScaffoldWithBottomNav extends StatelessWidget {
             (t) => t.route != '/' && currentLocation.startsWith(t.route),
           );
         }
+        if (currentIndex < 0) currentIndex = 0;
 
-        return PopScope(
-          canPop: false,
-          onPopInvokedWithResult: (didPop, result) {
-            if (didPop) return;
-            if (currentIndex > 0) {
-              _onTabTap(context, tabs[0]);
-            }
-          },
-          child: Scaffold(
-            body: Column(
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final isWide = constraints.maxWidth >= AppBreakpoints.compact;
+            final isExpanded = constraints.maxWidth >= AppBreakpoints.medium;
+
+            final mainContent = Column(
               children: [
                 const ConnectivityBanner(),
                 Expanded(
@@ -51,9 +50,79 @@ class ScaffoldWithBottomNav extends StatelessWidget {
                   ),
                 ),
               ],
-            ),
-            bottomNavigationBar: _buildBottomNav(context, tabs, currentIndex),
-          ),
+            );
+
+            if (!isWide) {
+              return PopScope(
+                canPop: false,
+                onPopInvokedWithResult: (didPop, result) {
+                  if (didPop) return;
+                  if (currentIndex > 0) {
+                    _onTabTap(context, tabs[0]);
+                  }
+                },
+                child: Scaffold(
+                  body: mainContent,
+                  bottomNavigationBar: _buildBottomNav(context, tabs, currentIndex),
+                ),
+              );
+            }
+
+            final theme = Theme.of(context);
+            return Scaffold(
+              body: Row(
+                children: [
+                  NavigationRail(
+                    selectedIndex: currentIndex,
+                    extended: isExpanded,
+                    minExtendedWidth: 190,
+                    backgroundColor: theme.colorScheme.surface,
+                    leading: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 16.0,
+                        horizontal: 12.0,
+                      ),
+                      child: isExpanded
+                          ? Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.payments_rounded,
+                                  color: theme.colorScheme.primary,
+                                  size: 26,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Cívica Pago',
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: theme.colorScheme.primary,
+                                  ),
+                                ),
+                              ],
+                            )
+                          : Icon(
+                              Icons.payments_rounded,
+                              color: theme.colorScheme.primary,
+                              size: 26,
+                            ),
+                    ),
+                    onDestinationSelected: (index) =>
+                        _onTabTap(context, tabs[index]),
+                    destinations: tabs.map((t) {
+                      return NavigationRailDestination(
+                        icon: t.icon,
+                        selectedIcon: t.iconActive,
+                        label: Text(t.label),
+                      );
+                    }).toList(),
+                  ),
+                  const VerticalDivider(thickness: 1, width: 1),
+                  Expanded(child: mainContent),
+                ],
+              ),
+            );
+          },
         );
       },
     );

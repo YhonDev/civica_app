@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../features/auth/auth_cubit.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/theme/app_breakpoints.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
@@ -276,158 +277,246 @@ class _DashboardContentState extends State<_DashboardContent>
               widget.currentMonth.year,
             );
       },
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.screenPadding,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Month selector
-            Center(
-              child: MonthSelector(
-                currentMonth: widget.currentMonth,
-                onMonthChanged: (newMonth) {
-                  context.read<DashboardCubit>().changeMonth(
-                        newMonth.month,
-                        newMonth.year,
-                      );
-                },
-              ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isWide = constraints.maxWidth >= 900;
 
-            _buildAnimatedSection(
-              index: 0,
-              child: Builder(
-                builder: (context) {
-                  final recaudo = widget.data.recaudoMes;
-                  final amountStr = '\$ ${NumberFormat.decimalPattern('es_CO').format(recaudo.toInt())}';
-                  return KPICard.progress(
-                    title: 'Recaudo del Mes',
-                    amount: amountStr,
-                    percentage: widget.data.porcentaje,
-                    subtitle: 'Meta alcanzada',
-                    actionLabel: 'Abrir módulo',
-                    onTap: () => context.go('/estado'),
-                  );
-                },
-              ),
+          final monthSelector = Center(
+            child: MonthSelector(
+              currentMonth: widget.currentMonth,
+              onMonthChanged: (newMonth) {
+                context.read<DashboardCubit>().changeMonth(
+                      newMonth.month,
+                      newMonth.year,
+                    );
+              },
             ),
-            const SizedBox(height: AppSpacing.xl),
+          );
 
-            // 2. Centro de Atención
-            _buildAnimatedSection(
-              index: 1,
-              child: ModuleSummaryCard(
-                title: '⚠ Centro de Atención',
-                highlightBorder: widget.data.solicitudesPendientes > 0 || widget.data.residentesMora > 0 || widget.data.pagosRevision > 0,
-                items: [
-                  ModuleSummaryItem(
-                    label: 'Solicitudes pendientes',
-                    value: widget.data.solicitudesPendientes.toString(),
-                    color: AppColors.warning,
-                    onTap: () => context.push('/solicitudes'),
-                  ),
-                  ModuleSummaryItem(
-                    label: 'Residentes en mora',
-                    value: widget.data.residentesMora.toString(),
-                    color: AppColors.error,
-                    onTap: () => context.go('/cartera'),
-                  ),
-                  ModuleSummaryItem(
-                    label: 'Pagos requieren revisión',
-                    value: widget.data.pagosRevision.toString(),
-                    color: AppColors.info,
-                    onTap: () => context.push('/solicitudes'),
-                  ),
-                ],
-                actionLabel: 'Abrir módulo',
-                onActionTap: () => context.push('/solicitudes'),
-              ),
+          final kpiSection = _buildAnimatedSection(
+            index: 0,
+            child: Builder(
+              builder: (context) {
+                final recaudo = widget.data.recaudoMes;
+                final amountStr =
+                    '\$ ${NumberFormat.decimalPattern('es_CO').format(recaudo.toInt())}';
+                return KPICard.progress(
+                  title: 'Recaudo del Mes',
+                  amount: amountStr,
+                  percentage: widget.data.porcentaje,
+                  subtitle: 'Meta alcanzada',
+                  actionLabel: 'Abrir módulo',
+                  onTap: () => context.go('/estado'),
+                );
+              },
             ),
-            const SizedBox(height: AppSpacing.xl),
+          );
 
-            // 3. Cobros (Grid Layout)
-            _buildAnimatedSection(
-              index: 2,
-              child: ModuleSummaryCard(
-                title: 'Cobros',
-                isGrid: true,
-                items: [
-                  ModuleSummaryItem(
-                    label: 'Pagados',
-                    value: widget.data.cobrosPagados.toString(),
-                    color: AppColors.success,
-                  ),
-                  ModuleSummaryItem(
-                    label: 'Pendientes',
-                    value: widget.data.cobrosPendientes.toString(),
-                    color: AppColors.textPrimary,
-                  ),
-                  ModuleSummaryItem(
-                    label: 'En mora',
-                    value: widget.data.cobrosMora.toString(),
-                    color: AppColors.error,
-                  ),
-                ],
-                actionLabel: 'Abrir módulo',
-                onActionTap: () => context.go('/cartera'),
-                extraContent: widget.data.cobrosPorSemana.isNotEmpty
-                    ? Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Desglose semanal', style: AppTypography.small.copyWith(fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
-                          const SizedBox(height: AppSpacing.sm),
-                          ...widget.data.cobrosPorSemana.map((semana) {
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 4),
-                              child: Row(
-                                children: [
-                                  SizedBox(
-                                    width: 70,
-                                    child: Text('Semana ${semana.semana}', style: AppTypography.small.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w600)),
-                                  ),
-                                  Expanded(
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text('${semana.pagados} pagados', style: AppTypography.small.copyWith(color: AppColors.success)),
-                                        Text('${semana.pendientes} pend.', style: AppTypography.small.copyWith(color: AppColors.textSecondary)),
-                                        if (semana.mora > 0)
-                                          Text('${semana.mora} mora', style: AppTypography.small.copyWith(color: AppColors.error)),
-                                        if (semana.mora == 0)
-                                          const SizedBox(width: 30),
-                                      ],
+          final centroAtencionSection = _buildAnimatedSection(
+            index: 1,
+            child: ModuleSummaryCard(
+              title: '⚠ Centro de Atención',
+              highlightBorder: widget.data.solicitudesPendientes > 0 ||
+                  widget.data.residentesMora > 0 ||
+                  widget.data.pagosRevision > 0,
+              items: [
+                ModuleSummaryItem(
+                  label: 'Solicitudes pendientes',
+                  value: widget.data.solicitudesPendientes.toString(),
+                  color: AppColors.warning,
+                  onTap: () => context.push('/solicitudes'),
+                ),
+                ModuleSummaryItem(
+                  label: 'Residentes en mora',
+                  value: widget.data.residentesMora.toString(),
+                  color: AppColors.error,
+                  onTap: () => context.go('/cartera'),
+                ),
+                ModuleSummaryItem(
+                  label: 'Pagos requieren revisión',
+                  value: widget.data.pagosRevision.toString(),
+                  color: AppColors.info,
+                  onTap: () => context.push('/solicitudes'),
+                ),
+              ],
+              actionLabel: 'Abrir módulo',
+              onActionTap: () => context.push('/solicitudes'),
+            ),
+          );
+
+          final cobrosSection = _buildAnimatedSection(
+            index: 2,
+            child: ModuleSummaryCard(
+              title: 'Cobros',
+              isGrid: true,
+              items: [
+                ModuleSummaryItem(
+                  label: 'Pagados',
+                  value: widget.data.cobrosPagados.toString(),
+                  color: AppColors.success,
+                ),
+                ModuleSummaryItem(
+                  label: 'Pendientes',
+                  value: widget.data.cobrosPendientes.toString(),
+                  color: AppColors.textPrimary,
+                ),
+                ModuleSummaryItem(
+                  label: 'En mora',
+                  value: widget.data.cobrosMora.toString(),
+                  color: AppColors.error,
+                ),
+              ],
+              actionLabel: 'Abrir módulo',
+              onActionTap: () => context.go('/cartera'),
+              extraContent: widget.data.cobrosPorSemana.isNotEmpty
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Desglose semanal',
+                          style: AppTypography.small.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        ...widget.data.cobrosPorSemana.map((semana) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 4),
+                            child: Row(
+                              children: [
+                                SizedBox(
+                                  width: 70,
+                                  child: Text(
+                                    'Semana ${semana.semana}',
+                                    style: AppTypography.small.copyWith(
+                                      color: AppColors.textPrimary,
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
-                                ],
-                              ),
-                            );
-                          }),
-                        ],
-                      )
-                    : null,
+                                ),
+                                Expanded(
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        '${semana.pagados} pagados',
+                                        style: AppTypography.small.copyWith(
+                                          color: AppColors.success,
+                                        ),
+                                      ),
+                                      Text(
+                                        '${semana.pendientes} pend.',
+                                        style: AppTypography.small.copyWith(
+                                          color: AppColors.textSecondary,
+                                        ),
+                                      ),
+                                      if (semana.mora > 0)
+                                        Text(
+                                          '${semana.mora} mora',
+                                          style: AppTypography.small.copyWith(
+                                            color: AppColors.error,
+                                          ),
+                                        ),
+                                      if (semana.mora == 0)
+                                        const SizedBox(width: 30),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }),
+                      ],
+                    )
+                  : null,
+            ),
+          );
+
+          final actividadSection = _buildAnimatedSection(
+            index: 3,
+            child: ActividadSection(actividad: widget.data.actividadReciente),
+          );
+
+          final accionesRapidasSection = _buildAnimatedSection(
+            index: 4,
+            child: const AccionesRapidasSection(),
+          );
+
+          if (isWide) {
+            return SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.screenPadding,
+                vertical: AppSpacing.md,
               ),
-            ),
-            const SizedBox(height: AppSpacing.xl),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxWidth: AppBreakpoints.maxContentWidth,
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        flex: 6,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            monthSelector,
+                            const SizedBox(height: AppSpacing.lg),
+                            kpiSection,
+                            const SizedBox(height: AppSpacing.xl),
+                            centroAtencionSection,
+                            const SizedBox(height: AppSpacing.xl),
+                            cobrosSection,
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.xl),
+                      Expanded(
+                        flex: 4,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            accionesRapidasSection,
+                            const SizedBox(height: AppSpacing.xl),
+                            actividadSection,
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }
 
-            // 4. Actividad
-            _buildAnimatedSection(
-              index: 3,
-              child: ActividadSection(actividad: widget.data.actividadReciente),
+          return SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.screenPadding,
             ),
-            const SizedBox(height: AppSpacing.xl),
-
-            // 5. Acciones rápidas
-            _buildAnimatedSection(
-              index: 4,
-              child: const AccionesRapidasSection(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                monthSelector,
+                const SizedBox(height: AppSpacing.lg),
+                kpiSection,
+                const SizedBox(height: AppSpacing.xl),
+                centroAtencionSection,
+                const SizedBox(height: AppSpacing.xl),
+                cobrosSection,
+                const SizedBox(height: AppSpacing.xl),
+                actividadSection,
+                const SizedBox(height: AppSpacing.xl),
+                accionesRapidasSection,
+                const SizedBox(height: AppSpacing.xl),
+              ],
             ),
-            const SizedBox(height: AppSpacing.xl),
-          ],
-        ),
+          );
+        },
       ),
     );
   }

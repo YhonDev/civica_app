@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'auth_cubit.dart';
+import '../../core/theme/app_breakpoints.dart';
 import '../../core/security/biometric_auth_service.dart';
 import '../../core/network/api_client.dart';
 import '../../core/widgets/top_toast.dart';
@@ -101,8 +102,12 @@ class _LoginScreenState extends State<LoginScreen> {
           body: SafeArea(
             child: Center(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 32),
-                child: Form(
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxWidth: AppBreakpoints.maxFormWidth,
+                  ),
+                  child: Form(
                   key: _formKey,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -341,6 +346,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
             ),
+          ),
           ),
         );
       },
