@@ -113,14 +113,11 @@ export class ResidenteRepository extends BaseTenantRepository<Residente> {
     qb.leftJoinAndSelect('manzana.etapa', 'etapa');
     qb.leftJoinAndSelect('residente.cobros', 'cobros');
 
-    const subQuery = qb
-      .subQuery()
-      .select('c.id')
-      .from('casas', 'c')
-      .where('c.etapaId IN (:...etapaIds)')
-      .getQuery();
-
-    qb.andWhere(`tenencia.casaId IN ${subQuery}`, { etapaIds });
+    // La etapa se alcanza vía manzanas: casas → manzana_id → manzanas.etapa_id
+    qb.andWhere(
+      `tenencia.casaId IN (SELECT c.id FROM casas c WHERE c.manzana_id IN (SELECT m.id FROM manzanas m WHERE m.etapa_id IN (:...etapaIds)))`,
+      { etapaIds },
+    );
     qb.orderBy('residente.nombre', 'ASC');
 
     return qb.getMany();

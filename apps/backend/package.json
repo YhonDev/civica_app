@@ -17,8 +17,10 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json",
-    "seed": "ts-node database/scripts/seed-completo.ts"
+    "test:e2e": "jest --config ./test/jest-e2e.json --runInBand",
+    "validate": "npm run build && npm test && npm run test:e2e",
+    "seed": "ts-node database/scripts/seed-completo.ts",
+    "cobros:generar": "ts-node database/scripts/generar-cobros.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

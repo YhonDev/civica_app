@@ -11,51 +11,43 @@ import { hashSync as bcryptHashSync } from 'bcrypt';
 import { randomUUID } from 'node:crypto';
 
 import { AppModule } from '../src/app.module';
+import { limpiarTenant, purgarEmails } from './helpers/test-db';
 
 jest.setTimeout(30000);
 
 /**
- * Integration tests for Dashboard endpoints (Sprint 5).
+ * Integration tests for Dashboard endpoints.
  *
  * Covers:
- * - GET /dashboard/administrador (admin dashboard with KPIs, evolution, modalidades, etc.)
- * - GET /dashboard/cobrador (collector dashboard with assigned viviendas)
- * - GET /dashboard/propietario (property owner dashboard)
+ * - GET /dashboard/administrador (KPIs, evolución, modalidades, estados, etc.)
+ * - GET /dashboard/cobrador (viviendas asignadas)
+ * - GET /dashboard/residente (alias /dashboard/propietario)
  * - Auth validation (no JWT, wrong role)
- * - Edge cases (no data, empty tenant, cross-tenant isolation)
+ * - Edge cases (mes sin datos, aislamiento multi-tenant)
  */
-describe('Dashboard API Integration — Sprint 5 (Admin Dashboard)', () => {
+describe('Dashboard API Integration (Admin Dashboard)', () => {
   let app: INestApplication;
   let dataSource: DataSource;
 
   // ── Shared IDs ───────────────────────────────────────────
   let tenantA: string;
   let tenantB: string;
-  let conjuntoA: string;
   let etapaA: string;
-  let etapaB: string;
   let manzanaA: string;
   let manzanaB: string;
-  let casaA: string;
-  let casaB: string;
-  let propietarioAlDia: string;
-  let propietarioMora: string;
-  let propietarioSinCuenta: string;
-  let tenenciaAlDia: string;
-  let tenenciaMora: string;
+  let residenteAlDia: string;
+  let residenteMora: string;
   let adminUserId: string;
   let cobradorUserId: string;
-  let propietarioUserId: string;
-
-  // ── Quota IDs (referenced by pagos and solicitudes) ──────
-  let cuotaPendienteId: string;
-  let cuotaPagadaId: string;
-  let cuotaVencidaId: string;
+  let residenteUserId: string;
+  let cobroPagadaId: string;
+  let cobroPendienteId: string;
+  let cobroVencidaId: string;
 
   // ── Auth tokens ──────────────────────────────────────────
   let adminToken: string;
   let cobradorToken: string;
-  let propietarioToken: string;
+  let residenteToken: string;
 
   // ── Date helpers ─────────────────────────────────────────
   const now = new Date();
@@ -63,25 +55,12 @@ describe('Dashboard API Integration — Sprint 5 (Admin Dashboard)', () => {
   const currentYear = now.getFullYear();
   const thisMonthStart = `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`;
 
-  // Helper: date → YYYY-MM-DD string
-  const fmtYMD = (d: Date): string =>
-    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-
-  // Helper: add N days to a date string
   const addDaysStr = (dateStr: string, days: number): string => {
     const d = new Date(dateStr);
     d.setDate(d.getDate() + days);
-    return fmtYMD(d);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   };
 
-  // Helper: subtract N days from a Date
-  const subDaysDate = (d: Date, days: number): Date => {
-    const copy = new Date(d);
-    copy.setDate(copy.getDate() - days);
-    return copy;
-  };
-
-  // Helper: short month name in Spanish
   const mesNombre = (date: Date): string => {
     const nombres = [
       'Ene',
@@ -100,7 +79,6 @@ describe('Dashboard API Integration — Sprint 5 (Admin Dashboard)', () => {
     return nombres[date.getMonth()];
   };
 
-  // Last month (handles January → December wrapping)
   const lastMonth = currentMonth === 1 ? 12 : currentMonth - 1;
   const lastMonthYear = currentMonth === 1 ? currentYear - 1 : currentYear;
   const lastMonthStart = `${lastMonthYear}-${String(lastMonth).padStart(2, '0')}-01`;
@@ -125,48 +103,56 @@ describe('Dashboard API Integration — Sprint 5 (Admin Dashboard)', () => {
 
     dataSource = app.get(DataSource);
 
+    // ── Datos huérfanos de corridas previas ──────────────
+    await purgarEmails(dataSource, [
+      'admin-dash@test.com',
+      'cobrador-dash@test.com',
+      'prop-dash@test.com',
+      'admin-b@test.com',
+    ]);
+
     // ── Generate all IDs ─────────────────────────────────
     tenantA = randomUUID();
     tenantB = randomUUID();
-    conjuntoA = randomUUID();
-    const conjuntoB = randomUUID();
+    const proyectoA = randomUUID();
+    const proyectoB = randomUUID();
     etapaA = randomUUID();
-    etapaB = randomUUID();
+    const etapaB = randomUUID();
     manzanaA = randomUUID();
     manzanaB = randomUUID();
-    casaA = randomUUID();
-    casaB = randomUUID();
+    const casaA = randomUUID();
+    const casaB = randomUUID();
     const casaC = randomUUID();
-    propietarioAlDia = randomUUID();
-    propietarioMora = randomUUID();
-    propietarioSinCuenta = randomUUID();
-    tenenciaAlDia = randomUUID();
-    tenenciaMora = randomUUID();
+    residenteAlDia = randomUUID();
+    residenteMora = randomUUID();
+    const residenteSinCuenta = randomUUID();
+    const tenenciaAlDia = randomUUID();
+    const tenenciaMora = randomUUID();
     adminUserId = randomUUID();
     cobradorUserId = randomUUID();
-    propietarioUserId = randomUUID();
-    cuotaPendienteId = randomUUID();
-    cuotaPagadaId = randomUUID();
-    cuotaVencidaId = randomUUID();
+    residenteUserId = randomUUID();
+    cobroPagadaId = randomUUID();
+    cobroPendienteId = randomUUID();
+    cobroVencidaId = randomUUID();
 
-    // ════════════════════════════════════════════════════════════
-    // 1. Seed Community Data (Tenant A)
-    // ════════════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════
+    // 1. Estructura territorial (Tenant A)
+    // ════════════════════════════════════════════════════════
     await dataSource.query(
-      `INSERT INTO conjuntos (id, nombre, tenant_id) VALUES ($1, $2, $3)`,
-      [conjuntoA, 'Residencial Dashboard Test', tenantA],
+      `INSERT INTO proyectos (id, nombre, tenant_id) VALUES ($1, $2, $3)`,
+      [proyectoA, 'Proyecto Dashboard Test', tenantA],
     );
     await dataSource.query(
-      `INSERT INTO conjuntos (id, nombre, tenant_id) VALUES ($1, $2, $3)`,
-      [conjuntoB, 'Otro Conjunto', tenantA],
-    );
-    await dataSource.query(
-      `INSERT INTO etapas (id, nombre, proyecto_id) VALUES ($1, $2, $3)`,
-      [etapaA, 'Etapa Alfa', conjuntoA],
+      `INSERT INTO proyectos (id, nombre, tenant_id) VALUES ($1, $2, $3)`,
+      [proyectoB, 'Otro Proyecto', tenantA],
     );
     await dataSource.query(
       `INSERT INTO etapas (id, nombre, proyecto_id) VALUES ($1, $2, $3)`,
-      [etapaB, 'Etapa Beta', conjuntoB],
+      [etapaA, 'Etapa Alfa', proyectoA],
+    );
+    await dataSource.query(
+      `INSERT INTO etapas (id, nombre, proyecto_id) VALUES ($1, $2, $3)`,
+      [etapaB, 'Etapa Beta', proyectoB],
     );
     await dataSource.query(
       `INSERT INTO manzanas (id, nombre, etapa_id) VALUES ($1, $2, $3)`,
@@ -189,53 +175,43 @@ describe('Dashboard API Integration — Sprint 5 (Admin Dashboard)', () => {
       [casaC, 'Casa 201', manzanaB],
     );
 
-    // ── Propietarios ──────────────────────────────────────
+    // ── Residentes ────────────────────────────────────────
+    const hace2Dias = new Date(now);
+    hace2Dias.setDate(hace2Dias.getDate() - 2);
+    const hace30Dias = new Date(now);
+    hace30Dias.setDate(hace30Dias.getDate() - 30);
+
     await dataSource.query(
-      `INSERT INTO propietarios (id, nombre, telefono, tenant_id, created_at)
-       VALUES ($1, $2, $3, $4, $5)`,
-      [
-        propietarioAlDia,
-        'Juan Al Día',
-        '555-0101',
-        tenantA,
-        subDaysDate(now, 2),
-      ],
+      `INSERT INTO residentes (id, nombre, telefono, tenant_id, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $5)`,
+      [residenteAlDia, 'Juan Al Día', '555-0101', tenantA, hace2Dias],
     );
     await dataSource.query(
-      `INSERT INTO propietarios (id, nombre, telefono, tenant_id, created_at)
-       VALUES ($1, $2, $3, $4, $5)`,
-      [
-        propietarioMora,
-        'Pedro En Mora',
-        '555-0102',
-        tenantA,
-        subDaysDate(now, 30),
-      ],
+      `INSERT INTO residentes (id, nombre, telefono, tenant_id, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $5)`,
+      [residenteMora, 'Pedro En Mora', '555-0102', tenantA, hace30Dias],
     );
     await dataSource.query(
-      `INSERT INTO propietarios (id, nombre, telefono, tenant_id)
-       VALUES ($1, $2, $3, $4)`,
-      [propietarioSinCuenta, 'Sin Cuenta', '555-0103', tenantA],
+      `INSERT INTO residentes (id, nombre, telefono, tenant_id) VALUES ($1, $2, $3, $4)`,
+      [residenteSinCuenta, 'Sin Plan', '555-0103', tenantA],
     );
 
     // ── Tenencias ─────────────────────────────────────────
     await dataSource.query(
-      `INSERT INTO tenencias (id, residente_id, casa_id, fecha_inicio)
-       VALUES ($1, $2, $3, $4)`,
-      [tenenciaAlDia, propietarioAlDia, casaA, '2026-01-01'],
+      `INSERT INTO tenencias (id, residente_id, casa_id, fecha_inicio) VALUES ($1, $2, $3, $4)`,
+      [tenenciaAlDia, residenteAlDia, casaA, '2026-01-01'],
     );
     await dataSource.query(
-      `INSERT INTO tenencias (id, residente_id, casa_id, fecha_inicio)
-       VALUES ($1, $2, $3, $4)`,
-      [tenenciaMora, propietarioMora, casaB, '2026-01-01'],
+      `INSERT INTO tenencias (id, residente_id, casa_id, fecha_inicio) VALUES ($1, $2, $3, $4)`,
+      [tenenciaMora, residenteMora, casaB, '2026-01-01'],
     );
 
-    // ════════════════════════════════════════════════════════════
-    // 2. Seed IAM Data
-    // ════════════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════
+    // 2. IAM + asignación del cobrador
+    // ════════════════════════════════════════════════════════
     const adminHash = bcryptHashSync('admin123', 10);
     const cobradorHash = bcryptHashSync('cobrador123', 10);
-    const propHash = bcryptHashSync('prop123', 10);
+    const residenteHash = bcryptHashSync('prop123', 10);
 
     await dataSource.query(
       `INSERT INTO usuarios (id, email, password_hash, nombre, rol, residente_id, tenant_id, activo)
@@ -269,88 +245,57 @@ describe('Dashboard API Integration — Sprint 5 (Admin Dashboard)', () => {
       `INSERT INTO usuarios (id, email, password_hash, nombre, rol, residente_id, tenant_id, activo)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
       [
-        propietarioUserId,
+        residenteUserId,
         'prop-dash@test.com',
-        propHash,
-        'Prop Dashboard',
-        'PROPIETARIO',
-        propietarioAlDia,
+        residenteHash,
+        'Residente Dashboard',
+        'RESIDENTE',
+        residenteAlDia,
         tenantA,
         true,
       ],
     );
 
-    // ── Asignar etapa al cobrador ─────────────────────────
     await dataSource.query(
-      `INSERT INTO asignaciones_etapa (id, usuario_id, etapa_id, tenant_id)
-       VALUES ($1, $2, $3, $4)`,
+      `INSERT INTO asignaciones_etapa (id, usuario_id, etapa_id, tenant_id) VALUES ($1, $2, $3, $4)`,
       [randomUUID(), cobradorUserId, etapaA, tenantA],
     );
 
-    // ════════════════════════════════════════════════════════════
-    // 3. Seed Ledger Data (Tarifas, Cuentas Cartera, Cuotas)
-    // ════════════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════
+    // 3. Ledger: tarifa, planes de cobro, cobros, pago
+    // ════════════════════════════════════════════════════════
     const tarifaMensualId = randomUUID();
-    const tarifaQuincenalId = randomUUID();
 
-    // ── Tarifas ───────────────────────────────────────────
-    // Montos en centavos: 40000 COP = 4000000 centavos
     await dataSource.query(
-      `INSERT INTO tarifas (id, tenant_id, proyecto_id, frecuencia, monto, fecha_vigencia)
+      `INSERT INTO tarifas (id, tenant_id, proyecto_id, modalidad, monto, fecha_vigencia)
        VALUES ($1, $2, $3, $4, $5, $6)`,
-      [tarifaMensualId, tenantA, conjuntoA, 'MENSUAL', 4000000, '2026-01-01'],
-    );
-    await dataSource.query(
-      `INSERT INTO tarifas (id, tenant_id, proyecto_id, frecuencia, monto, fecha_vigencia)
-       VALUES ($1, $2, $3, $4, $5, $6)`,
-      [
-        tarifaQuincenalId,
-        tenantA,
-        conjuntoA,
-        'QUINCENAL',
-        2000000,
-        '2026-01-01',
-      ],
+      [tarifaMensualId, tenantA, proyectoA, 'MENSUAL', 4000000, '2026-01-01'],
     );
 
-    // ── Cuentas de Cartera ────────────────────────────────
-    await dataSource.query(
-      `INSERT INTO cuentas_cartera (id, residente_id, tenant_id, proyecto_id, frecuencia, fecha_activacion)
-       VALUES ($1, $2, $3, $4, $5, $6)`,
-      [
-        randomUUID(),
-        propietarioAlDia,
-        tenantA,
-        conjuntoA,
-        'MENSUAL',
-        '2026-01-01',
-      ],
-    );
-    await dataSource.query(
-      `INSERT INTO cuentas_cartera (id, residente_id, tenant_id, proyecto_id, frecuencia, fecha_activacion)
-       VALUES ($1, $2, $3, $4, $5, $6)`,
-      [
-        randomUUID(),
-        propietarioMora,
-        tenantA,
-        conjuntoA,
-        'MENSUAL',
-        '2026-01-01',
-      ],
-    );
+    for (const rid of [residenteAlDia, residenteMora]) {
+      await dataSource.query(
+        `INSERT INTO planes_de_cobro (id, residente_id, tenant_id, proyecto_id, modalidad, valor_mensual, fecha_activacion)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [
+          randomUUID(),
+          rid,
+          tenantA,
+          proyectoA,
+          'MENSUAL',
+          4000000,
+          '2026-01-01',
+        ],
+      );
+    }
 
-    // ── Cuotas ────────────────────────────────────────────
-    // Propietario Al Día: 1 cuota pagada (this month) + 1 cuota pendiente (next month)
-    // Propietario Mora: 1 cuota vencida (last month) + 1 cuota pendiente (this month)
-
-    // Cuota PAGADA (propietarioAlDia, current month)
+    // Cobro PAGADA (Al Día, mes actual)
     await dataSource.query(
-      `INSERT INTO cuotas (id, residente_id, tenant_id, tarifa_id, concepto,
+      `INSERT INTO cobros (id, residente_id, tenant_id, tarifa_id, concepto,
         monto, monto_pagado, periodo_inicio, periodo_fin, fecha_vencimiento, estado)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
       [
-        cuotaPagadaId,
-        propietarioAlDia,
+        cobroPagadaId,
+        residenteAlDia,
         tenantA,
         tarifaMensualId,
         `Cuota ${mesNombre(now)} ${currentYear}`,
@@ -363,14 +308,14 @@ describe('Dashboard API Integration — Sprint 5 (Admin Dashboard)', () => {
       ],
     );
 
-    // Cuota PENDIENTE (propietarioMora, current month)
+    // Cobro PENDIENTE (Mora, mes actual)
     await dataSource.query(
-      `INSERT INTO cuotas (id, residente_id, tenant_id, tarifa_id, concepto,
+      `INSERT INTO cobros (id, residente_id, tenant_id, tarifa_id, concepto,
         monto, monto_pagado, periodo_inicio, periodo_fin, fecha_vencimiento, estado)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
       [
-        cuotaPendienteId,
-        propietarioMora,
+        cobroPendienteId,
+        residenteMora,
         tenantA,
         tarifaMensualId,
         `Cuota ${mesNombre(now)} ${currentYear}`,
@@ -383,60 +328,55 @@ describe('Dashboard API Integration — Sprint 5 (Admin Dashboard)', () => {
       ],
     );
 
-    // Cuota VENCIDA (propietarioMora, last month)
-
+    // Cobro VENCIDA (Mora, mes anterior)
     await dataSource.query(
-      `INSERT INTO cuotas (id, residente_id, tenant_id, tarifa_id, concepto,
+      `INSERT INTO cobros (id, residente_id, tenant_id, tarifa_id, concepto,
         monto, monto_pagado, periodo_inicio, periodo_fin, fecha_vencimiento, estado)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
       [
-        cuotaVencidaId,
-        propietarioMora,
+        cobroVencidaId,
+        residenteMora,
         tenantA,
         tarifaMensualId,
         `Cuota ${mesNombre(new Date(lastMonthYear, lastMonth - 1))} ${lastMonthYear}`,
         4000000,
         0,
         lastMonthStart,
-        addDaysStr(lastMonthStart, 15), // periodo_fin dentro del mes anterior
+        addDaysStr(lastMonthStart, 15),
         `${lastMonthYear}-${String(lastMonth).padStart(2, '0')}-15`,
         'VENCIDA',
       ],
     );
 
-    // ════════════════════════════════════════════════════════════
-    // 4. Seed Pagos
-    // ════════════════════════════════════════════════════════════
-    // Pago for cuotaPagadaId (propietarioAlDia pagó complete)
-    const pagoDate = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    // ── Pago (para el cobro PAGADA de Al Día) ─────────────
     await dataSource.query(
-      `INSERT INTO pagos (id, client_payment_id, tenant_id, cuota_id, monto, fecha_pago, cobrador_id, residente_id)
+      `INSERT INTO pagos (id, client_payment_id, tenant_id, cobro_id, monto, fecha_pago, cobrador_id, residente_id)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
       [
         randomUUID(),
         `dash-pago-${randomUUID()}`,
         tenantA,
-        cuotaPagadaId,
+        cobroPagadaId,
         4000000,
-        pagoDate,
+        thisMonthStart,
         cobradorUserId,
-        propietarioAlDia,
+        residenteAlDia,
       ],
     );
 
-    // ════════════════════════════════════════════════════════════
-    // 5. Seed Actividad
-    // ════════════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════
+    // 4. Actividad + solicitudes
+    // ════════════════════════════════════════════════════════
     await dataSource.query(
       `INSERT INTO actividad (id, tenant_id, tipo, descripcion, usuario_nombre, usuario_id)
        VALUES ($1, $2, $3, $4, $5, $6)`,
       [
         randomUUID(),
-        conjuntoA,
+        tenantA,
         'pago_registrado',
         'Pagó la cuota mensual',
         'Juan Al Día',
-        propietarioUserId,
+        residenteUserId,
       ],
     );
     await dataSource.query(
@@ -444,25 +384,22 @@ describe('Dashboard API Integration — Sprint 5 (Admin Dashboard)', () => {
        VALUES ($1, $2, $3, $4, $5, $6)`,
       [
         randomUUID(),
-        conjuntoA,
-        'nuevo_propietario',
+        tenantA,
+        'nuevo_residente',
         'Se registró en la plataforma',
         'Juan Al Día',
-        propietarioUserId,
+        residenteUserId,
       ],
     );
 
-    // ════════════════════════════════════════════════════════════
-    // 6. Seed Solicitudes
-    // ════════════════════════════════════════════════════════════
     await dataSource.query(
-      `INSERT INTO solicitudes (id, tenant_id, usuario_id, cuota_id, nro_recibo, tipo, descripcion, estado)
+      `INSERT INTO solicitudes (id, tenant_id, usuario_id, cobro_id, nro_recibo, tipo, descripcion, estado)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
       [
         randomUUID(),
         tenantA,
-        propietarioUserId,
-        cuotaPendienteId,
+        residenteUserId,
+        cobroPendienteId,
         'REC-001',
         'REVISION_PAGO',
         'Solicito revisión de mi pago',
@@ -470,36 +407,35 @@ describe('Dashboard API Integration — Sprint 5 (Admin Dashboard)', () => {
       ],
     );
     await dataSource.query(
-      `INSERT INTO solicitudes (id, tenant_id, usuario_id, cuota_id, nro_recibo, tipo, descripcion, estado)
+      `INSERT INTO solicitudes (id, tenant_id, usuario_id, cobro_id, nro_recibo, tipo, descripcion, estado)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
       [
         randomUUID(),
         tenantA,
-        propietarioUserId,
-        cuotaVencidaId,
+        residenteUserId,
+        cobroVencidaId,
         'REC-002',
         'DESCUENTO',
-        ' Solicito descuento por pronto pago',
+        'Solicito descuento por pronto pago',
         'PENDIENTE',
       ],
     );
 
-    // ════════════════════════════════════════════════════════════
-    // 7. Seed Tenant B (for isolation test)
-    // ════════════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════
+    // 5. Tenant B (para el test de aislamiento)
+    // ════════════════════════════════════════════════════════
     await dataSource.query(
-      `INSERT INTO conjuntos (id, nombre, tenant_id) VALUES ($1, $2, $3)`,
-      [randomUUID(), 'Conjunto Tenant B', tenantB],
+      `INSERT INTO proyectos (id, nombre, tenant_id) VALUES ($1, $2, $3)`,
+      [randomUUID(), 'Proyecto Tenant B', tenantB],
     );
     const adminBId = randomUUID();
-    const adminBHash = bcryptHashSync('adminB123', 10);
     await dataSource.query(
       `INSERT INTO usuarios (id, email, password_hash, nombre, rol, residente_id, tenant_id, activo)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
       [
         adminBId,
         'admin-b@test.com',
-        adminBHash,
+        bcryptHashSync('adminB123', 10),
         'Admin Tenant B',
         'ADMIN',
         null,
@@ -508,87 +444,32 @@ describe('Dashboard API Integration — Sprint 5 (Admin Dashboard)', () => {
       ],
     );
 
-    // ════════════════════════════════════════════════════════════
-    // 8. Login — get admin token
-    // ════════════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════
+    // 6. Login — tokens
+    // ════════════════════════════════════════════════════════
     const adminLoginRes = await request(app.getHttpServer())
       .post('/auth/login')
-      .send({ email: 'admin-dash@test.com', password: 'admin123' })
+      .send({ username: 'admin-dash@test.com', password: 'admin123' })
       .expect(201);
     adminToken = adminLoginRes.body.accessToken;
 
     const cobradorLoginRes = await request(app.getHttpServer())
       .post('/auth/login')
-      .send({ email: 'cobrador-dash@test.com', password: 'cobrador123' })
+      .send({ username: 'cobrador-dash@test.com', password: 'cobrador123' })
       .expect(201);
     cobradorToken = cobradorLoginRes.body.accessToken;
 
     const propLoginRes = await request(app.getHttpServer())
       .post('/auth/login')
-      .send({ email: 'prop-dash@test.com', password: 'prop123' })
+      .send({ username: 'prop-dash@test.com', password: 'prop123' })
       .expect(201);
-    propietarioToken = propLoginRes.body.accessToken;
+    residenteToken = propLoginRes.body.accessToken;
   });
 
   afterAll(async () => {
-    // Clean up in FK-safe order
-    await dataSource.query(`DELETE FROM pagos WHERE tenant_id IN ($1, $2)`, [
-      tenantA,
-      tenantB,
-    ]);
-    await dataSource.query(
-      `DELETE FROM solicitudes WHERE tenant_id IN ($1, $2)`,
-      [tenantA, tenantB],
-    );
-    await dataSource.query(
-      `DELETE FROM actividad WHERE tenant_id IN ($1, $2)`,
-      [tenantA, tenantB],
-    );
-    await dataSource.query(`DELETE FROM cuotas WHERE tenant_id IN ($1, $2)`, [
-      tenantA,
-      tenantB,
-    ]);
-    await dataSource.query(
-      `DELETE FROM cuentas_cartera WHERE tenant_id IN ($1, $2)`,
-      [tenantA, tenantB],
-    );
-    await dataSource.query(`DELETE FROM tarifas WHERE tenant_id IN ($1, $2)`, [
-      tenantA,
-      tenantB,
-    ]);
-    await dataSource.query(
-      `DELETE FROM asignaciones_etapa WHERE tenant_id IN ($1, $2)`,
-      [tenantA, tenantB],
-    );
-    await dataSource.query(`DELETE FROM usuarios WHERE tenant_id IN ($1, $2)`, [
-      tenantA,
-      tenantB,
-    ]);
-    await dataSource.query(
-      `DELETE FROM tenencias WHERE residente_id IN ($1, $2, $3)`,
-      [propietarioAlDia, propietarioMora, propietarioSinCuenta],
-    );
-    await dataSource.query(
-      `DELETE FROM propietarios WHERE tenant_id IN ($1, $2)`,
-      [tenantA, tenantB],
-    );
-    await dataSource.query(`DELETE FROM casas WHERE manzana_id IN ($1, $2)`, [
-      manzanaA,
-      manzanaB,
-    ]);
-    await dataSource.query(`DELETE FROM manzanas WHERE etapa_id IN ($1, $2)`, [
-      etapaA,
-      etapaB,
-    ]);
-    await dataSource.query(
-      `DELETE FROM etapas WHERE proyecto_id IN (SELECT id FROM conjuntos WHERE tenant_id IN ($1, $2))`,
-      [tenantA, tenantB],
-    );
-    await dataSource.query(
-      `DELETE FROM conjuntos WHERE tenant_id IN ($1, $2)`,
-      [tenantA, tenantB],
-    );
-
+    if (!dataSource || !dataSource.isInitialized) return;
+    await limpiarTenant(dataSource, tenantA);
+    await limpiarTenant(dataSource, tenantB);
     await app.close();
   });
 
@@ -603,7 +484,6 @@ describe('Dashboard API Integration — Sprint 5 (Admin Dashboard)', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
-      // ── Top-level structure ───────────────────────────────
       expect(res.body).toHaveProperty('mes', currentMonth);
       expect(res.body).toHaveProperty('anio', currentYear);
       expect(res.body).toHaveProperty('resumen');
@@ -612,12 +492,14 @@ describe('Dashboard API Integration — Sprint 5 (Admin Dashboard)', () => {
       expect(res.body).toHaveProperty('estadoCobros');
       expect(res.body).toHaveProperty('actividad');
       expect(res.body).toHaveProperty('solicitudesPendientes');
-      expect(res.body).toHaveProperty('nuevosPropietariosSemana');
-      expect(res.body).toHaveProperty('propietariosMora');
+      expect(res.body).toHaveProperty('nuevosResidentesSemana');
+      expect(res.body).toHaveProperty('residentesMora');
       expect(res.body).toHaveProperty('acumuladoAnual');
       expect(res.body).toHaveProperty('metaAnual');
       expect(res.body).toHaveProperty('historialMeses');
       expect(res.body).toHaveProperty('cobrosPorSemana');
+      expect(res.body).toHaveProperty('cobrosResumen');
+      expect(res.body).toHaveProperty('totalResidentes');
     });
 
     it('1.2 Resumen debe reflejar los datos seedeados', async () => {
@@ -628,31 +510,26 @@ describe('Dashboard API Integration — Sprint 5 (Admin Dashboard)', () => {
 
       const { resumen } = res.body;
 
-      // recaudoTotal: 4000000 (pago del propietarioAlDia)
+      // recaudoTotal: 4000000 (pago del residente Al Día)
       expect(resumen.recaudoTotal).toBe(4000000);
 
-      // metaMensual: suma de cuotas del mes = 4000000 (cuotaPagada) + 4000000 (cuotaPendiente) = 8000000
-      // Wait — cuotaPagada and cuotaPendiente are both for this month
-      // cuotaPagada: 4000000, cuotaPendiente: 4000000 => metaMensual = 8000000
+      // metaMensual: cobros del mes = 4000000 (PAGADA) + 4000000 (PENDIENTE) = 8000000
       expect(resumen.metaMensual).toBe(8000000);
 
       // porcentajeMeta = round((4000000 / 8000000) * 10000) / 100 = 50
       expect(resumen.porcentajeMeta).toBe(50);
 
-      // pagaron: 1 (solo propietarioAlDia pagó)
+      // pagaron: 1 (solo residenteAlDia pagó)
       expect(resumen.pagaron).toBe(1);
 
-      // pendientes: 1 (propietarioMora tiene cuota pendiente este mes)
-      // countPendientesByMonth counts DISTINCT propietarioId with estado IN ('PENDIENTE','PARCIAL','VENCIDA')
+      // pendientes: al menos el cobro PENDIENTE de este mes
       expect(resumen.pendientes).toBeGreaterThanOrEqual(1);
 
-      // moraTotal: saldo de cuota VENCIDA = 4000000
-      // cuotaVencida monto=4000000, monto_pagado=0
-      // sumSaldoVencidasByTenant = SUM(monto - montoPagado) = 4000000
+      // moraTotal: saldo del cobro VENCIDA (mes anterior) = 4000000
       expect(resumen.moraTotal).toBe(4000000);
     });
 
-    it('1.3 Evolución diaria debe contener días con pagos', async () => {
+    it('1.3 Evolución diaria debe contener el día con el pago', async () => {
       const res = await request(app.getHttpServer())
         .get(`/dashboard/administrador?mes=${currentMonth}&anio=${currentYear}`)
         .set('Authorization', `Bearer ${adminToken}`)
@@ -661,16 +538,15 @@ describe('Dashboard API Integration — Sprint 5 (Admin Dashboard)', () => {
       const { evolucion } = res.body;
       expect(Array.isArray(evolucion)).toBe(true);
 
-      // El pago se registró hoy, por lo que debe aparecer en la evolución
-      const today = now.getDate();
+      // El pago se registró el día 1 del mes (thisMonthStart)
       const todayEntry = evolucion.find(
-        (e: { dia: number }) => e.dia === today,
+        (e: { dia: string | number }) => Number(e.dia) === 1,
       );
       expect(todayEntry).toBeDefined();
       expect(todayEntry.valor).toBe(4000000);
     });
 
-    it('1.4 Modalidades debe desglosar por frecuencia de tarifa', async () => {
+    it('1.4 Modalidades debe desglosar por modalidad de tarifa', async () => {
       const res = await request(app.getHttpServer())
         .get(`/dashboard/administrador?mes=${currentMonth}&anio=${currentYear}`)
         .set('Authorization', `Bearer ${adminToken}`)
@@ -679,9 +555,8 @@ describe('Dashboard API Integration — Sprint 5 (Admin Dashboard)', () => {
       const { modalidades } = res.body;
       expect(Array.isArray(modalidades)).toBe(true);
 
-      // Debemos ver al menos una modalidad (MENSUAL)
       const mensual = modalidades.find(
-        (m: { frecuencia: string }) => m.frecuencia === 'MENSUAL',
+        (m: { modalidad: string }) => m.modalidad === 'MENSUAL',
       );
       expect(mensual).toBeDefined();
       expect(mensual.totalCuotas).toBeGreaterThanOrEqual(2);
@@ -712,7 +587,6 @@ describe('Dashboard API Integration — Sprint 5 (Admin Dashboard)', () => {
       expect(Array.isArray(actividad)).toBe(true);
       expect(actividad.length).toBeGreaterThanOrEqual(2);
 
-      // Verificar estructura de cada item
       for (const item of actividad) {
         expect(item).toHaveProperty('id');
         expect(item).toHaveProperty('tipo');
@@ -729,28 +603,28 @@ describe('Dashboard API Integration — Sprint 5 (Admin Dashboard)', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
-      // Seed: 2 solicitudes PENDIENTES para propietarioAlDia
+      // Seed: 2 solicitudes PENDIENTES
       expect(res.body.solicitudesPendientes).toBe(2);
     });
 
-    it('1.8 Nuevos propietarios de la semana', async () => {
+    it('1.8 Nuevos residentes de la semana', async () => {
       const res = await request(app.getHttpServer())
         .get(`/dashboard/administrador?mes=${currentMonth}&anio=${currentYear}`)
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
-      // propietarioAlDia fue creado hace 2 días (within last week)
-      expect(res.body.nuevosPropietariosSemana).toBeGreaterThanOrEqual(1);
+      // residenteAlDia fue creado hace 2 días (within last week)
+      expect(res.body.nuevosResidentesSemana).toBeGreaterThanOrEqual(1);
     });
 
-    it('1.9 Propietarios en mora', async () => {
+    it('1.9 Residentes en mora', async () => {
       const res = await request(app.getHttpServer())
         .get(`/dashboard/administrador?mes=${currentMonth}&anio=${currentYear}`)
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
-      // Solo propietarioMora tiene cuota VENCIDA
-      expect(res.body.propietariosMora).toBe(1);
+      // Solo residenteMora tiene cobro VENCIDA
+      expect(res.body.residentesMora).toBe(1);
     });
 
     it('1.10 Historial mensual contiene 12 meses', async () => {
@@ -763,7 +637,6 @@ describe('Dashboard API Integration — Sprint 5 (Admin Dashboard)', () => {
       expect(Array.isArray(historialMeses)).toBe(true);
       expect(historialMeses.length).toBe(12);
 
-      // Cada mes debe tener la estructura correcta
       for (const mes of historialMeses) {
         expect(mes).toHaveProperty('mes');
         expect(mes).toHaveProperty('anio');
@@ -799,7 +672,7 @@ describe('Dashboard API Integration — Sprint 5 (Admin Dashboard)', () => {
       // Solo hay 1 pago de 4000000 este año
       expect(res.body.acumuladoAnual).toBeGreaterThanOrEqual(4000000);
 
-      // Meta anual: suma de montos de cuotas con periodoInicio este año
+      // Meta anual: suma de montos de cobros del año (3 × 4000000)
       expect(res.body.metaAnual).toBeGreaterThanOrEqual(8000000);
     });
   });
@@ -826,10 +699,10 @@ describe('Dashboard API Integration — Sprint 5 (Admin Dashboard)', () => {
       expect(res.body).toHaveProperty('message');
     });
 
-    it('2.3 Con rol PROPIETARIO → 403 en admin dashboard', async () => {
+    it('2.3 Con rol RESIDENTE → 403 en admin dashboard', async () => {
       const res = await request(app.getHttpServer())
         .get(`/dashboard/administrador?mes=${currentMonth}&anio=${currentYear}`)
-        .set('Authorization', `Bearer ${propietarioToken}`)
+        .set('Authorization', `Bearer ${residenteToken}`)
         .expect(403);
 
       expect(res.body).toHaveProperty('message');
@@ -865,10 +738,9 @@ describe('Dashboard API Integration — Sprint 5 (Admin Dashboard)', () => {
     });
 
     it('3.3 Multi-tenant isolation: tenant B no ve datos de tenant A', async () => {
-      // Login as admin of tenant B
       const loginB = await request(app.getHttpServer())
         .post('/auth/login')
-        .send({ email: 'admin-b@test.com', password: 'adminB123' })
+        .send({ username: 'admin-b@test.com', password: 'adminB123' })
         .expect(201);
       const tokenB = loginB.body.accessToken;
 
@@ -877,13 +749,14 @@ describe('Dashboard API Integration — Sprint 5 (Admin Dashboard)', () => {
         .set('Authorization', `Bearer ${tokenB}`)
         .expect(200);
 
-      // Tenant B has no data seeded — should be zeros
+      // Tenant B no tiene datos — todo en cero
       expect(res.body.resumen.recaudoTotal).toBe(0);
       expect(res.body.resumen.metaMensual).toBe(0);
       expect(res.body.resumen.pagaron).toBe(0);
       expect(res.body.solicitudesPendientes).toBe(0);
-      expect(res.body.nuevosPropietariosSemana).toBe(0);
-      expect(res.body.propietariosMora).toBe(0);
+      expect(res.body.nuevosResidentesSemana).toBe(0);
+      expect(res.body.residentesMora).toBe(0);
+      expect(res.body.totalResidentes).toBe(0);
     });
   });
 
@@ -920,9 +793,9 @@ describe('Dashboard API Integration — Sprint 5 (Admin Dashboard)', () => {
       expect(Array.isArray(viviendas)).toBe(true);
       expect(viviendas.length).toBeGreaterThanOrEqual(1);
 
-      // Debe incluir propietarioMora (tiene cuota pendiente en etapaA)
+      // Debe incluir residenteMora (tiene cobro pendiente en etapaA)
       const moraVivienda = viviendas.find(
-        (v: { propietarioId: string }) => v.propietarioId === propietarioMora,
+        (v: { residenteId: string }) => v.residenteId === residenteMora,
       );
       expect(moraVivienda).toBeDefined();
       expect(moraVivienda.etapaNombre).toBe('Etapa Alfa');
@@ -939,14 +812,14 @@ describe('Dashboard API Integration — Sprint 5 (Admin Dashboard)', () => {
   });
 
   // ═══════════════════════════════════════════════════════════════
-  // 5. GET /dashboard/propietario — Propietario Dashboard
+  // 5. GET /dashboard/residente — Residente Dashboard
   // ═══════════════════════════════════════════════════════════════
 
-  describe('GET /dashboard/propietario', () => {
-    it('5.1 Debe retornar dashboard del propietario autenticado', async () => {
+  describe('GET /dashboard/residente', () => {
+    it('5.1 Debe retornar dashboard del residente autenticado', async () => {
       const res = await request(app.getHttpServer())
-        .get('/dashboard/propietario')
-        .set('Authorization', `Bearer ${propietarioToken}`)
+        .get('/dashboard/residente')
+        .set('Authorization', `Bearer ${residenteToken}`)
         .expect(200);
 
       expect(res.body).toHaveProperty('saldo');
@@ -954,48 +827,44 @@ describe('Dashboard API Integration — Sprint 5 (Admin Dashboard)', () => {
       expect(res.body).toHaveProperty('proximoCobro');
       expect(res.body).toHaveProperty('ultimoPago');
       expect(res.body).toHaveProperty('movimientos');
+      expect(res.body).toHaveProperty('residenteInfo');
     });
 
-    it('5.2 Propietario al día debe tener status AL_DIA o PENDIENTE', async () => {
+    it('5.2 Residente al día debe tener saldo 0 y status AL_DIA', async () => {
       const res = await request(app.getHttpServer())
-        .get('/dashboard/propietario')
-        .set('Authorization', `Bearer ${propietarioToken}`)
+        .get('/dashboard/residente')
+        .set('Authorization', `Bearer ${residenteToken}`)
         .expect(200);
 
-      // propietarioAlDia tiene 1 cuota PAGADA this month
-      // y NO tiene cuotas VENCIDAS → status debería ser AL_DIA
-      // Wait — propietarioAlDia has one PAGADA cuota for this month
-      // So his saldo should be 0 because his only cuota is paid
+      // residenteAlDia tiene 1 cobro PAGADA este mes y NO tiene vencidas
       expect(res.body.saldo).toBe(0);
-      expect(['AL_DIA', 'PENDIENTE']).toContain(res.body.status);
-      // If no pending cuotas → AL_DIA
       expect(res.body.status).toBe('AL_DIA');
     });
 
-    it('5.3 ADMIN no puede acceder al dashboard del propietario', async () => {
+    it('5.3 ADMIN no puede acceder al dashboard del residente', async () => {
       const res = await request(app.getHttpServer())
-        .get('/dashboard/propietario')
+        .get('/dashboard/residente')
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(403);
 
       expect(res.body).toHaveProperty('message');
     });
 
-    it('5.4 Debe retornar propietarioInfo con nombre, casaDireccion y etapaNombre', async () => {
+    it('5.4 Debe retornar residenteInfo con nombre, casaDireccion y etapaNombre', async () => {
       const res = await request(app.getHttpServer())
-        .get('/dashboard/propietario')
-        .set('Authorization', `Bearer ${propietarioToken}`)
+        .get('/dashboard/residente')
+        .set('Authorization', `Bearer ${residenteToken}`)
         .expect(200);
 
-      expect(res.body).toHaveProperty('propietarioInfo');
-      expect(res.body.propietarioInfo).toHaveProperty('nombre');
-      expect(res.body.propietarioInfo).toHaveProperty('casaDireccion');
-      expect(res.body.propietarioInfo).toHaveProperty('etapaNombre');
+      expect(res.body).toHaveProperty('residenteInfo');
+      expect(res.body.residenteInfo).toHaveProperty('nombre');
+      expect(res.body.residenteInfo).toHaveProperty('casaDireccion');
+      expect(res.body.residenteInfo).toHaveProperty('etapaNombre');
 
-      // propietarioAlDia tiene tenencia → casaA → manzanaA → etapaA
-      expect(res.body.propietarioInfo.nombre).toBe('Juan Al Día');
-      expect(res.body.propietarioInfo.casaDireccion).toBeTruthy();
-      expect(res.body.propietarioInfo.etapaNombre).toBe('Etapa Alfa');
+      // residenteAlDia tiene tenencia → casaA → manzanaA → etapaA
+      expect(res.body.residenteInfo.nombre).toBe('Juan Al Día');
+      expect(res.body.residenteInfo.casaDireccion).toBeTruthy();
+      expect(res.body.residenteInfo.etapaNombre).toBe('Etapa Alfa');
     });
   });
 });

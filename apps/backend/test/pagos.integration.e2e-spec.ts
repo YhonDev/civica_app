@@ -15,6 +15,7 @@ import { Cobro } from '../src/ledger/domain/cobro.entity';
 import { PagoRepository } from '../src/ledger/infrastructure/persistence/pago.repository';
 import { MarcarVencidasUseCase } from '../src/ledger/application/use-cases/marcar-vencidas.use-case';
 import { Money } from '../src/shared/common/value-objects';
+import { limpiarTenant, purgarEmails } from './helpers/test-db';
 
 jest.setTimeout(30000);
 
@@ -75,32 +76,44 @@ describe('Pagos API Integration — Sprint 4 (FIFO)', () => {
     const cobradorUserId = randomUUID();
     const propietarioUserId = randomUUID();
 
+    // ── Datos huérfanos de corridas previas ─────────────
+    await purgarEmails(dataSource, [
+      'admin-pagos@test.com',
+      'cobrador-pagos@test.com',
+      'prop-pagos@test.com',
+    ]);
+
     // ── Seed community data ──────────────────────────────
+    const manzanaId = randomUUID();
     await dataSource.query(
-      `INSERT INTO conjuntos (id, nombre, tenant_id) VALUES ($1, $2, $3)`,
-      [proyectoId, 'Conjunto Pagos Test', tenantId],
+      `INSERT INTO proyectos (id, nombre, tenant_id) VALUES ($1, $2, $3)`,
+      [proyectoId, 'Proyecto Pagos Test', tenantId],
     );
     await dataSource.query(
       `INSERT INTO etapas (id, nombre, proyecto_id) VALUES ($1, $2, $3)`,
       [etapaId, 'Etapa Pagos Test', proyectoId],
     );
     await dataSource.query(
-      `INSERT INTO casas (id, direccion_interna, etapa_id) VALUES ($1, $2, $3)`,
-      [casaId, 'Casa 001 Pagos', etapaId],
+      `INSERT INTO manzanas (id, nombre, etapa_id) VALUES ($1, $2, $3)`,
+      [manzanaId, 'Manzana Pagos Test', etapaId],
     );
     await dataSource.query(
-      `INSERT INTO propietarios (id, nombre, telefono, tenant_id) VALUES ($1, $2, $3, $4)`,
-      [residenteId, 'Propietario Pagos Test', '555-1111', tenantId],
+      `INSERT INTO casas (id, direccion_interna, manzana_id) VALUES ($1, $2, $3)`,
+      [casaId, 'Casa 001 Pagos', manzanaId],
+    );
+    await dataSource.query(
+      `INSERT INTO residentes (id, nombre, telefono, tenant_id) VALUES ($1, $2, $3, $4)`,
+      [residenteId, 'Residente Pagos Test', '555-1111', tenantId],
     );
     await dataSource.query(
       `INSERT INTO tenencias (id, residente_id, casa_id, fecha_inicio) VALUES ($1, $2, $3, $4)`,
       [tenenciaId, residenteId, casaId, '2026-01-01'],
     );
 
-    // Second propietario (without CuentaDeCartera — for validation tests)
+    // Second residente (without PlanDeCobro — for validation tests)
     await dataSource.query(
-      `INSERT INTO propietarios (id, nombre, telefono, tenant_id) VALUES ($1, $2, $3, $4)`,
-      [propietarioSinCuentaId, 'Propietario Sin Cuenta', '555-2222', tenantId],
+      `INSERT INTO residentes (id, nombre, telefono, tenant_id) VALUES ($1, $2, $3, $4)`,
+      [propietarioSinCuentaId, 'Residente Sin Plan', '555-2222', tenantId],
     );
 
     // ── Seed users with hashed passwords ──────────────────
@@ -143,8 +156,8 @@ describe('Pagos API Integration — Sprint 4 (FIFO)', () => {
         propietarioUserId,
         'prop-pagos@test.com',
         propHash,
-        'Prop Pagos',
-        'PROPIETARIO',
+        'Residente Pagos',
+        'RESIDENTE',
         residenteId,
         tenantId,
         true,
@@ -154,72 +167,43 @@ describe('Pagos API Integration — Sprint 4 (FIFO)', () => {
     // ── Login to get admin token ──────────────────────────
     const adminLoginRes = await request(app.getHttpServer())
       .post('/auth/login')
-      .send({ email: 'admin-pagos@test.com', password: 'admin123' })
+      .send({ username: 'admin-pagos@test.com', password: 'admin123' })
       .expect(201);
     adminToken = adminLoginRes.body.accessToken;
 
     // ── Login to get cobrador token ───────────────────────
     const cobradorLoginRes = await request(app.getHttpServer())
       .post('/auth/login')
-      .send({ email: 'cobrador-pagos@test.com', password: 'cobrador123' })
+      .send({ username: 'cobrador-pagos@test.com', password: 'cobrador123' })
       .expect(201);
     cobradorToken = cobradorLoginRes.body.accessToken;
 
-    // ── Login to get propietario token ────────────────────
+    // ── Login to get residente token ────────────────────
     const propLoginRes = await request(app.getHttpServer())
       .post('/auth/login')
-      .send({ email: 'prop-pagos@test.com', password: 'prop123' })
+      .send({ username: 'prop-pagos@test.com', password: 'prop123' })
       .expect(201);
     propietarioToken = propLoginRes.body.accessToken;
 
-    // ── Create CuentaDeCartera for main propietario ───────
-    await request(app.getHttpServer())
-      .post('/cuentas-cartera')
-      .set('Authorization', `Bearer ${adminToken}`)
-      .send({
-        residenteId: residenteId,
-        proyectoId: proyectoId,
-        modalidad: 'MENSUAL',
-        fechaActivacion: '2026-01-01',
-      })
-      .expect(201);
+    // ── PlanDeCobro activo para el residente principal ────
+    await dataSource.query(
+      `INSERT INTO planes_de_cobro (id, residente_id, tenant_id, proyecto_id, modalidad, valor_mensual, fecha_activacion)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [
+        randomUUID(),
+        residenteId,
+        tenantId,
+        proyectoId,
+        'MENSUAL',
+        4000000,
+        '2026-01-01',
+      ],
+    );
   });
 
   afterAll(async () => {
-    // Clean up in FK-safe order
-    await dataSource.query(`DELETE FROM pagos WHERE tenant_id = $1`, [
-      tenantId,
-    ]);
-    await dataSource.query(`DELETE FROM cuotas WHERE tenant_id = $1`, [
-      tenantId,
-    ]);
-    await dataSource.query(`DELETE FROM cuentas_cartera WHERE tenant_id = $1`, [
-      tenantId,
-    ]);
-    await dataSource.query(`DELETE FROM tarifas WHERE tenant_id = $1`, [
-      tenantId,
-    ]);
-    await dataSource.query(
-      `DELETE FROM montos_predefinidos WHERE tenant_id = $1`,
-      [tenantId],
-    );
-    await dataSource.query(
-      `DELETE FROM asignaciones_etapa WHERE tenant_id = $1`,
-      [tenantId],
-    );
-    await dataSource.query(`DELETE FROM tenencias WHERE residente_id = $1`, [
-      residenteId,
-    ]);
-    await dataSource.query(`DELETE FROM usuarios WHERE tenant_id = $1`, [
-      tenantId,
-    ]);
-    await dataSource.query(`DELETE FROM propietarios WHERE tenant_id = $1`, [
-      tenantId,
-    ]);
-    await dataSource.query(`DELETE FROM casas WHERE id = $1`, [casaId]);
-    await dataSource.query(`DELETE FROM etapas WHERE id = $1`, [etapaId]);
-    await dataSource.query(`DELETE FROM conjuntos WHERE id = $1`, [proyectoId]);
-
+    if (!dataSource || !dataSource.isInitialized) return;
+    await limpiarTenant(dataSource, tenantId);
     await app.close();
   });
 
@@ -233,7 +217,7 @@ describe('Pagos API Integration — Sprint 4 (FIFO)', () => {
       await dataSource.query(`DELETE FROM pagos WHERE residente_id = $1`, [
         residenteId,
       ]);
-      await dataSource.query(`DELETE FROM cuotas WHERE residente_id = $1`, [
+      await dataSource.query(`DELETE FROM cobros WHERE residente_id = $1`, [
         residenteId,
       ]);
     });
@@ -278,7 +262,7 @@ describe('Pagos API Integration — Sprint 4 (FIFO)', () => {
       expect(res.body).toHaveProperty('pago');
       expect(res.body).toHaveProperty('cobrosAfectados');
       expect(res.body.pago.monto).toBe(10000);
-      expect(res.body.pago.cuotaId).toBe(saved1.id); // linked to first affected
+      expect(res.body.pago.cobroId).toBe(saved1.id); // linked to first affected
 
       const afectadas = res.body.cobrosAfectados;
       expect(afectadas.length).toBe(1);
@@ -497,7 +481,7 @@ describe('Pagos API Integration — Sprint 4 (FIFO)', () => {
       await dataSource.query(`DELETE FROM pagos WHERE residente_id = $1`, [
         residenteId,
       ]);
-      await dataSource.query(`DELETE FROM cuotas WHERE residente_id = $1`, [
+      await dataSource.query(`DELETE FROM cobros WHERE residente_id = $1`, [
         residenteId,
       ]);
     });
@@ -558,7 +542,7 @@ describe('Pagos API Integration — Sprint 4 (FIFO)', () => {
   // ═══════════════════════════════════════════════════════════════
 
   describe('Validation', () => {
-    it('Propietario sin CuentaDeCartera activa → 400', async () => {
+    it('Residente sin PlanDeCobro activo → 400', async () => {
       const res = await request(app.getHttpServer())
         .post('/pagos')
         .set('Authorization', `Bearer ${adminToken}`)
@@ -571,10 +555,10 @@ describe('Pagos API Integration — Sprint 4 (FIFO)', () => {
         .expect(400);
 
       expect(res.body).toHaveProperty('message');
-      expect(res.body.message).toMatch(/no tiene una CuentaDeCartera/i);
+      expect(res.body.message).toMatch(/no tiene un PlanDeCobro activo/i);
     });
 
-    it('Propietario sin cuotas pendientes → 400', async () => {
+    it('Residente sin cobros pendientes → 400', async () => {
       // Create a single cuota and pay it in full first
       const cuota = Cobro.crear(
         residenteId,
@@ -612,7 +596,7 @@ describe('Pagos API Integration — Sprint 4 (FIFO)', () => {
         .expect(400);
 
       expect(res.body).toHaveProperty('message');
-      expect(res.body.message).toMatch(/no hay cuotas pendientes/i);
+      expect(res.body.message).toMatch(/No hay cobros pendientes/i);
     });
 
     it('POST /pagos sin JWT → 401', async () => {
@@ -629,7 +613,7 @@ describe('Pagos API Integration — Sprint 4 (FIFO)', () => {
       expect(res.body).toHaveProperty('message');
     });
 
-    it('POST /pagos con rol PROPIETARIO → 403', async () => {
+    it('POST /pagos con rol RESIDENTE → 403', async () => {
       const res = await request(app.getHttpServer())
         .post('/pagos')
         .set('Authorization', `Bearer ${propietarioToken}`)
@@ -654,7 +638,7 @@ describe('Pagos API Integration — Sprint 4 (FIFO)', () => {
       await dataSource.query(`DELETE FROM pagos WHERE residente_id = $1`, [
         residenteId,
       ]);
-      await dataSource.query(`DELETE FROM cuotas WHERE residente_id = $1`, [
+      await dataSource.query(`DELETE FROM cobros WHERE residente_id = $1`, [
         residenteId,
       ]);
     });
@@ -719,7 +703,7 @@ describe('Pagos API Integration — Sprint 4 (FIFO)', () => {
       await dataSource.query(`DELETE FROM pagos WHERE residente_id = $1`, [
         residenteId,
       ]);
-      await dataSource.query(`DELETE FROM cuotas WHERE residente_id = $1`, [
+      await dataSource.query(`DELETE FROM cobros WHERE residente_id = $1`, [
         residenteId,
       ]);
 

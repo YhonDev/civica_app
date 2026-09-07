@@ -25,6 +25,7 @@ describe('Ledger API Integration (Sprint 3)', () => {
   let tenantId: string;
   let proyectoId: string;
   let etapaId: string;
+  let manzanaId: string;
   let casaId: string;
   let residenteId: string;
 
@@ -60,6 +61,7 @@ describe('Ledger API Integration (Sprint 3)', () => {
     tenantId = randomUUID();
     proyectoId = randomUUID();
     etapaId = randomUUID();
+    manzanaId = randomUUID();
     casaId = randomUUID();
     residenteId = randomUUID();
     const tenenciaId = randomUUID();
@@ -76,14 +78,16 @@ describe('Ledger API Integration (Sprint 3)', () => {
       [etapaId, 'Etapa Ledger Test', proyectoId],
     );
     await dataSource.query(
-      `INSERT INTO casas (id, direccion_interna, manzana_id)
-       VALUES ($1, $2, (SELECT id FROM manzanas LIMIT 1))`,
-      [casaId, 'Casa 001 Ledger'],
+      `INSERT INTO manzanas (id, nombre, etapa_id) VALUES ($1, $2, $3)`,
+      [manzanaId, 'Manzana Ledger Test', etapaId],
     );
-    // Update direct etapa reference for test simplicity
     await dataSource.query(
-      `UPDATE casas SET manzana_id = (SELECT id FROM manzanas WHERE etapa_id = $1 LIMIT 1) WHERE id = $2`,
-      [etapaId, casaId],
+      `INSERT INTO casas (id, direccion_interna, manzana_id) VALUES ($1, $2, $3)`,
+      [casaId, 'Casa 001 Ledger', manzanaId],
+    );
+    await dataSource.query(
+      `INSERT INTO residentes (id, nombre, telefono, tenant_id) VALUES ($1, $2, $3, $4)`,
+      [residenteId, 'Residente Ledger Test', '555-3333', tenantId],
     );
 
     // ── Seed users with hashed passwords ──────────────────
@@ -120,19 +124,23 @@ describe('Ledger API Integration (Sprint 3)', () => {
     // ── Login to get admin token ──────────────────────────
     const adminLoginRes = await request(app.getHttpServer())
       .post('/auth/login')
-      .send({ email: 'admin-ledger@test.com', password: 'admin123' })
+      .send({ username: 'admin-ledger@test.com', password: 'admin123' })
       .expect(201);
     adminToken = adminLoginRes.body.accessToken;
 
     // ── Login to get cobrador token ───────────────────────
     const cobradorLoginRes = await request(app.getHttpServer())
       .post('/auth/login')
-      .send({ email: 'cobrador-ledger@test.com', password: 'cobrador123' })
+      .send({ username: 'cobrador-ledger@test.com', password: 'cobrador123' })
       .expect(201);
     cobradorToken = cobradorLoginRes.body.accessToken;
   });
 
   afterAll(async () => {
+    await dataSource.query(
+      `DELETE FROM pago_cobros WHERE pago_id IN (SELECT id FROM pagos WHERE tenant_id = $1)`,
+      [tenantId],
+    );
     await dataSource.query(`DELETE FROM cobros WHERE tenant_id = $1`, [
       tenantId,
     ]);
@@ -153,7 +161,11 @@ describe('Ledger API Integration (Sprint 3)', () => {
     await dataSource.query(`DELETE FROM usuarios WHERE tenant_id = $1`, [
       tenantId,
     ]);
+    await dataSource.query(`DELETE FROM residentes WHERE id = $1`, [
+      residenteId,
+    ]);
     await dataSource.query(`DELETE FROM casas WHERE id = $1`, [casaId]);
+    await dataSource.query(`DELETE FROM manzanas WHERE id = $1`, [manzanaId]);
     await dataSource.query(`DELETE FROM etapas WHERE id = $1`, [etapaId]);
     await dataSource.query(`DELETE FROM proyectos WHERE id = $1`, [proyectoId]);
     await app.close();

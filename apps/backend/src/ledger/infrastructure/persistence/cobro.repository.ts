@@ -177,7 +177,7 @@ export class CobroRepository extends BaseTenantRepository<Cobro> {
       .createQueryBuilder('cobro')
       .select([
         'tarifa.modalidad AS modalidad',
-        'COUNT(cobro.id) AS totalCuotas',
+        'COUNT(cobro.id) AS "totalCuotas"',
         "COALESCE(SUM(CASE WHEN cobro.estado IN ('PAGADA', 'PARCIAL') THEN 1 ELSE 0 END), 0) AS pagadas",
       ])
       .leftJoin('tarifas', 'tarifa', 'tarifa.id = cobro.tarifaId')

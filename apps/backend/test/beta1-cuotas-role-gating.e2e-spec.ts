@@ -11,6 +11,7 @@ import { hashSync as bcryptHashSync } from 'bcrypt';
 import { randomUUID } from 'node:crypto';
 
 import { AppModule } from '../src/app.module';
+import { limpiarTenant, purgarEmails } from './helpers/test-db';
 
 jest.setTimeout(30000);
 
@@ -18,33 +19,27 @@ jest.setTimeout(30000);
  * Integration tests for Beta1 cuotas role gating.
  *
  * Covers:
- * - GET /cuotas: 200 for COBRADOR, 403 for PROPIETARIO
- * - GET /cuotas/propietario/:id: 200 for PROPIETARIO (own data), 403 for cross-propietario
+ * - GET /cobros: 200 for ADMIN and COBRADOR, 403 for RESIDENTE
+ * - GET /cobros/residente/:id: 200 for RESIDENTE (own data), 401 for cross-residente
  */
-describe('Beta1 Cuotas Role Gating', () => {
+describe('Beta1 Cobros Role Gating', () => {
   let app: INestApplication;
   let dataSource: DataSource;
 
   // Shared IDs
   let tenantId: string;
-  let proyectoId: string;
-  let etapaId: string;
-  let manzanaId: string;
-  let casaAId: string;
-  let casaBId: string;
-  let propietarioAId: string;
-  let propietarioBId: string;
+  let residenteAId: string;
+  let residenteBId: string;
   let adminUserId: string;
   let cobradorUserId: string;
-  let propietarioAUserId: string;
-  let propietarioBUserId: string;
-  let tarifaId: string;
+  let residenteAUserId: string;
+  let residenteBUserId: string;
 
   // Auth tokens
   let adminToken: string;
   let cobradorToken: string;
-  let propietarioAToken: string;
-  let propietarioBToken: string;
+  let residenteAToken: string;
+  let residenteBToken: string;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -65,26 +60,28 @@ describe('Beta1 Cuotas Role Gating', () => {
     await app.init();
 
     dataSource = app.get(DataSource);
-
-    // Generate IDs
     tenantId = randomUUID();
-    proyectoId = randomUUID();
-    etapaId = randomUUID();
-    manzanaId = randomUUID();
-    casaAId = randomUUID();
-    casaBId = randomUUID();
-    propietarioAId = randomUUID();
-    propietarioBId = randomUUID();
-    adminUserId = randomUUID();
-    cobradorUserId = randomUUID();
-    propietarioAUserId = randomUUID();
-    propietarioBUserId = randomUUID();
-    tarifaId = randomUUID();
+
+    // Datos huérfanos de corridas previas (su afterAll pudo fallar)
+    await purgarEmails(dataSource, [
+      'admin-role@test.com',
+      'cobrador-role@test.com',
+      'propA-role@test.com',
+      'propB-role@test.com',
+    ]);
 
     // Seed community
+    const proyectoId = randomUUID();
+    const etapaId = randomUUID();
+    const manzanaId = randomUUID();
+    const casaAId = randomUUID();
+    const casaBId = randomUUID();
+    residenteAId = randomUUID();
+    residenteBId = randomUUID();
+
     await dataSource.query(
-      `INSERT INTO conjuntos (id, nombre, tenant_id) VALUES ($1, $2, $3)`,
-      [proyectoId, 'Conjunto Role Test', tenantId],
+      `INSERT INTO proyectos (id, nombre, tenant_id) VALUES ($1, $2, $3)`,
+      [proyectoId, 'Proyecto Role Test', tenantId],
     );
     await dataSource.query(
       `INSERT INTO etapas (id, nombre, proyecto_id) VALUES ($1, $2, $3)`,
@@ -103,27 +100,30 @@ describe('Beta1 Cuotas Role Gating', () => {
       [casaBId, 'Casa 202', manzanaId],
     );
 
-    // Propietarios
+    // Residentes + tenencias
     await dataSource.query(
-      `INSERT INTO propietarios (id, nombre, telefono, tenant_id) VALUES ($1, $2, $3, $4)`,
-      [propietarioAId, 'Propietario A', '555-0001', tenantId],
+      `INSERT INTO residentes (id, nombre, telefono, tenant_id) VALUES ($1, $2, $3, $4)`,
+      [residenteAId, 'Residente A', '555-0001', tenantId],
     );
     await dataSource.query(
-      `INSERT INTO propietarios (id, nombre, telefono, tenant_id) VALUES ($1, $2, $3, $4)`,
-      [propietarioBId, 'Propietario B', '555-0002', tenantId],
-    );
-
-    // Tenencias
-    await dataSource.query(
-      `INSERT INTO tenencias (id, residente_id, casa_id, fecha_inicio) VALUES ($1, $2, $3, $4)`,
-      [randomUUID(), propietarioAId, casaAId, '2026-01-01'],
+      `INSERT INTO residentes (id, nombre, telefono, tenant_id) VALUES ($1, $2, $3, $4)`,
+      [residenteBId, 'Residente B', '555-0002', tenantId],
     );
     await dataSource.query(
       `INSERT INTO tenencias (id, residente_id, casa_id, fecha_inicio) VALUES ($1, $2, $3, $4)`,
-      [randomUUID(), propietarioBId, casaBId, '2026-01-01'],
+      [randomUUID(), residenteAId, casaAId, '2026-01-01'],
+    );
+    await dataSource.query(
+      `INSERT INTO tenencias (id, residente_id, casa_id, fecha_inicio) VALUES ($1, $2, $3, $4)`,
+      [randomUUID(), residenteBId, casaBId, '2026-01-01'],
     );
 
     // Users
+    adminUserId = randomUUID();
+    cobradorUserId = randomUUID();
+    residenteAUserId = randomUUID();
+    residenteBUserId = randomUUID();
+
     const adminHash = bcryptHashSync('admin123', 10);
     const cobradorHash = bcryptHashSync('cobrador123', 10);
     const propAHash = bcryptHashSync('propA123', 10);
@@ -161,12 +161,12 @@ describe('Beta1 Cuotas Role Gating', () => {
       `INSERT INTO usuarios (id, email, password_hash, nombre, rol, residente_id, tenant_id, activo)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
       [
-        propietarioAUserId,
+        residenteAUserId,
         'propA-role@test.com',
         propAHash,
-        'Prop A Role',
-        'PROPIETARIO',
-        propietarioAId,
+        'Residente A Role',
+        'RESIDENTE',
+        residenteAId,
         tenantId,
         true,
       ],
@@ -175,12 +175,12 @@ describe('Beta1 Cuotas Role Gating', () => {
       `INSERT INTO usuarios (id, email, password_hash, nombre, rol, residente_id, tenant_id, activo)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
       [
-        propietarioBUserId,
+        residenteBUserId,
         'propB-role@test.com',
         propBHash,
-        'Prop B Role',
-        'PROPIETARIO',
-        propietarioBId,
+        'Residente B Role',
+        'RESIDENTE',
+        residenteBId,
         tenantId,
         true,
       ],
@@ -192,161 +192,121 @@ describe('Beta1 Cuotas Role Gating', () => {
       [randomUUID(), cobradorUserId, etapaId, tenantId],
     );
 
-    // Tarifa + cuenta cartera
+    // Tarifa + planes de cobro (los cobros se crean vía dominio para cada test)
     await dataSource.query(
-      `INSERT INTO tarifas (id, tenant_id, proyecto_id, frecuencia, monto, fecha_vigencia) VALUES ($1, $2, $3, $4, $5, $6)`,
-      [tarifaId, tenantId, proyectoId, 'MENSUAL', 4000000, '2026-01-01'],
+      `INSERT INTO tarifas (id, tenant_id, proyecto_id, modalidad, monto, fecha_vigencia) VALUES ($1, $2, $3, $4, $5, $6)`,
+      [randomUUID(), tenantId, proyectoId, 'MENSUAL', 4000000, '2026-01-01'],
     );
     await dataSource.query(
-      `INSERT INTO cuentas_cartera (id, residente_id, tenant_id, proyecto_id, frecuencia, fecha_activacion) VALUES ($1, $2, $3, $4, $5, $6)`,
+      `INSERT INTO planes_de_cobro (id, residente_id, tenant_id, proyecto_id, modalidad, valor_mensual, fecha_activacion)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
       [
         randomUUID(),
-        propietarioAId,
+        residenteAId,
         tenantId,
         proyectoId,
         'MENSUAL',
+        4000000,
         '2026-01-01',
       ],
     );
     await dataSource.query(
-      `INSERT INTO cuentas_cartera (id, residente_id, tenant_id, proyecto_id, frecuencia, fecha_activacion) VALUES ($1, $2, $3, $4, $5, $6)`,
+      `INSERT INTO planes_de_cobro (id, residente_id, tenant_id, proyecto_id, modalidad, valor_mensual, fecha_activacion)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
       [
         randomUUID(),
-        propietarioBId,
+        residenteBId,
         tenantId,
         proyectoId,
         'MENSUAL',
+        4000000,
         '2026-01-01',
       ],
     );
 
-    // Cuotas for both propietarios
+    // Cobro pendiente para cada residente (mismo monto)
     const now = new Date();
     const thisMonthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
     const nextMonthDate = new Date(now.getFullYear(), now.getMonth() + 1, 15);
     const nextMonthStr = `${nextMonthDate.getFullYear()}-${String(nextMonthDate.getMonth() + 1).padStart(2, '0')}-15`;
 
-    await dataSource.query(
-      `INSERT INTO cuotas (id, residente_id, tenant_id, tarifa_id, concepto, monto, monto_pagado, periodo_inicio, periodo_fin, fecha_vencimiento, estado)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
-      [
-        randomUUID(),
-        propietarioAId,
-        tenantId,
-        tarifaId,
-        'Cuota Test A',
-        4000000,
-        0,
-        thisMonthStart,
-        nextMonthStr,
-        nextMonthStr,
-        'PENDIENTE',
-      ],
-    );
-    await dataSource.query(
-      `INSERT INTO cuotas (id, residente_id, tenant_id, tarifa_id, concepto, monto, monto_pagado, periodo_inicio, periodo_fin, fecha_vencimiento, estado)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
-      [
-        randomUUID(),
-        propietarioBId,
-        tenantId,
-        tarifaId,
-        'Cuota Test B',
-        4000000,
-        0,
-        thisMonthStart,
-        nextMonthStr,
-        nextMonthStr,
-        'PENDIENTE',
-      ],
-    );
+    for (const [residenteId, concepto] of [
+      [residenteAId, 'Cobro Test A'],
+      [residenteBId, 'Cobro Test B'],
+    ] as const) {
+      await dataSource.query(
+        `INSERT INTO cobros (id, residente_id, tenant_id, concepto, monto, monto_pagado, periodo_inicio, periodo_fin, fecha_vencimiento, estado)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+        [
+          randomUUID(),
+          residenteId,
+          tenantId,
+          concepto,
+          4000000,
+          0,
+          thisMonthStart,
+          nextMonthStr,
+          nextMonthStr,
+          'PENDIENTE',
+        ],
+      );
+    }
 
     // Login all users
     const adminRes = await request(app.getHttpServer())
       .post('/auth/login')
-      .send({ email: 'admin-role@test.com', password: 'admin123' })
+      .send({ username: 'admin-role@test.com', password: 'admin123' })
       .expect(201);
     adminToken = adminRes.body.accessToken;
 
     const cobradorRes = await request(app.getHttpServer())
       .post('/auth/login')
-      .send({ email: 'cobrador-role@test.com', password: 'cobrador123' })
+      .send({ username: 'cobrador-role@test.com', password: 'cobrador123' })
       .expect(201);
     cobradorToken = cobradorRes.body.accessToken;
 
     const propARes = await request(app.getHttpServer())
       .post('/auth/login')
-      .send({ email: 'propA-role@test.com', password: 'propA123' })
+      .send({ username: 'propA-role@test.com', password: 'propA123' })
       .expect(201);
-    propietarioAToken = propARes.body.accessToken;
+    residenteAToken = propARes.body.accessToken;
 
     const propBRes = await request(app.getHttpServer())
       .post('/auth/login')
-      .send({ email: 'propB-role@test.com', password: 'propB123' })
+      .send({ username: 'propB-role@test.com', password: 'propB123' })
       .expect(201);
-    propietarioBToken = propBRes.body.accessToken;
+    residenteBToken = propBRes.body.accessToken;
   });
 
   afterAll(async () => {
-    await dataSource.query(`DELETE FROM pagos WHERE tenant_id = $1`, [
-      tenantId,
-    ]);
-    await dataSource.query(`DELETE FROM cuotas WHERE tenant_id = $1`, [
-      tenantId,
-    ]);
-    await dataSource.query(`DELETE FROM cuentas_cartera WHERE tenant_id = $1`, [
-      tenantId,
-    ]);
-    await dataSource.query(`DELETE FROM tarifas WHERE tenant_id = $1`, [
-      tenantId,
-    ]);
-    await dataSource.query(
-      `DELETE FROM asignaciones_etapa WHERE tenant_id = $1`,
-      [tenantId],
-    );
-    await dataSource.query(`DELETE FROM usuarios WHERE tenant_id = $1`, [
-      tenantId,
-    ]);
-    await dataSource.query(
-      `DELETE FROM tenencias WHERE residente_id IN ($1, $2)`,
-      [propietarioAId, propietarioBId],
-    );
-    await dataSource.query(`DELETE FROM propietarios WHERE tenant_id = $1`, [
-      tenantId,
-    ]);
-    await dataSource.query(`DELETE FROM casas WHERE id IN ($1, $2)`, [
-      casaAId,
-      casaBId,
-    ]);
-    await dataSource.query(`DELETE FROM manzanas WHERE id = $1`, [manzanaId]);
-    await dataSource.query(`DELETE FROM etapas WHERE id = $1`, [etapaId]);
-    await dataSource.query(`DELETE FROM conjuntos WHERE id = $1`, [proyectoId]);
+    if (!dataSource || !dataSource.isInitialized) return;
+    await limpiarTenant(dataSource, tenantId);
     await app.close();
   });
 
   // ═══════════════════════════════════════════════════════════
-  // GET /cuotas — Role gating
+  // GET /cobros — Role gating
   // ═══════════════════════════════════════════════════════════
 
-  describe('GET /cuotas role gating', () => {
-    it('ADMIN can access GET /cuotas → 200', async () => {
+  describe('GET /cobros role gating', () => {
+    it('ADMIN can access GET /cobros → 200', async () => {
       await request(app.getHttpServer())
-        .get('/cuotas')
+        .get('/cobros')
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
     });
 
-    it('COBRADOR can access GET /cuotas → 200', async () => {
+    it('COBRADOR can access GET /cobros → 200', async () => {
       await request(app.getHttpServer())
-        .get('/cuotas')
+        .get('/cobros')
         .set('Authorization', `Bearer ${cobradorToken}`)
         .expect(200);
     });
 
-    it('PROPIETARIO cannot access GET /cuotas → 403', async () => {
+    it('RESIDENTE cannot access GET /cobros → 403', async () => {
       const res = await request(app.getHttpServer())
-        .get('/cuotas')
-        .set('Authorization', `Bearer ${propietarioAToken}`)
+        .get('/cobros')
+        .set('Authorization', `Bearer ${residenteAToken}`)
         .expect(403);
 
       expect(res.body).toHaveProperty('message');
@@ -354,32 +314,32 @@ describe('Beta1 Cuotas Role Gating', () => {
   });
 
   // ═══════════════════════════════════════════════════════════
-  // GET /cuotas/propietario/:id — Self-access guard
+  // GET /cobros/residente/:id — Self-access guard
   // ═══════════════════════════════════════════════════════════
 
-  describe('GET /cuotas/propietario/:id self-access guard', () => {
-    it('PROPIETARIO can access own cuotas → 200', async () => {
+  describe('GET /cobros/residente/:id self-access guard', () => {
+    it('RESIDENTE can access own cobros → 200', async () => {
       const res = await request(app.getHttpServer())
-        .get(`/cuotas/propietario/${propietarioAId}`)
-        .set('Authorization', `Bearer ${propietarioAToken}`)
+        .get(`/cobros/residente/${residenteAId}`)
+        .set('Authorization', `Bearer ${residenteAToken}`)
         .expect(200);
 
       expect(Array.isArray(res.body)).toBe(true);
       expect(res.body.length).toBeGreaterThanOrEqual(1);
     });
 
-    it('PROPIETARIO cannot access another propietario cuotas → 403', async () => {
+    it('RESIDENTE cannot access another residente cobros → 401', async () => {
       const res = await request(app.getHttpServer())
-        .get(`/cuotas/propietario/${propietarioBId}`)
-        .set('Authorization', `Bearer ${propietarioAToken}`)
-        .expect(403);
+        .get(`/cobros/residente/${residenteBId}`)
+        .set('Authorization', `Bearer ${residenteAToken}`)
+        .expect(401);
 
       expect(res.body).toHaveProperty('message');
     });
 
-    it('ADMIN can access any propietario cuotas → 200', async () => {
+    it('ADMIN can access any residente cobros → 200', async () => {
       await request(app.getHttpServer())
-        .get(`/cuotas/propietario/${propietarioAId}`)
+        .get(`/cobros/residente/${residenteAId}`)
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
     });
