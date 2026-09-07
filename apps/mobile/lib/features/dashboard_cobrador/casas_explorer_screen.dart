@@ -6,6 +6,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_feedback.dart';
+import '../../core/theme/app_breakpoints.dart';
 import '../../core/widgets/lifecycle_observer_mixin.dart';
 import '../cartera/models/cartera_models.dart';
 import '../cartera/widgets/registrar_pago_bottom_sheet.dart';
@@ -46,26 +47,6 @@ class CasasExplorerScreen extends StatelessWidget {
       );
     }
   }
-}
-
-sealed class _TerritorioItem {}
-
-class _EtapaItem extends _TerritorioItem {
-  final String nombre;
-  _EtapaItem(this.nombre);
-}
-
-class _ManzanaItem extends _TerritorioItem {
-  final String nombre;
-  final int count;
-  _ManzanaItem(this.nombre, this.count);
-}
-
-class _CasaItem extends _TerritorioItem {
-  final CasaExplorer casa;
-  final String etapaNombre;
-  final String manzanaNombre;
-  _CasaItem(this.casa, this.etapaNombre, this.manzanaNombre);
 }
 
 class _CasasExplorerView extends StatefulWidget {
@@ -154,7 +135,6 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
         _recorridoSeleccionadoDe(recorridosVisibles, recorridoActualNumero);
     final fechaCorte = recorridoSeleccionado?.fecha;
     final processedEtapas = _procesarRutaCaminata(etapas, fechaCorte);
-    final territorioItems = _flattenTerritorioItems(processedEtapas);
 
     return RefreshIndicator(
       color: AppColors.primary,
@@ -218,30 +198,8 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
             ),
           ),
 
-          // Lista Lineal Continua de Caminata Virtualizada
-          if (territorioItems.isEmpty)
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
-              sliver: SliverToBoxAdapter(
-                child: _buildEmptyTerritorioState(),
-              ),
-            )
-          else
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
-              sliver: SliverList.builder(
-                itemCount: territorioItems.length,
-                itemBuilder: (context, index) {
-                  final item = territorioItems[index];
-                  return switch (item) {
-                    _EtapaItem(:final nombre) => _buildEtapaHeader(nombre),
-                    _ManzanaItem(:final nombre, :final count) => _buildManzanaHeader(nombre, count),
-                    _CasaItem(:final casa, :final etapaNombre, :final manzanaNombre) =>
-                      _buildCasaItem(casa, etapaNombre, manzanaNombre),
-                  };
-                },
-              ),
-            ),
+          // Lista o Cuadrícula Responsiva por Territorio
+          ..._buildTerritorioSlivers(context, processedEtapas, context.isWideScreen),
 
           const SliverToBoxAdapter(
             child: SizedBox(height: AppSpacing.xl),
@@ -413,23 +371,51 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
 
           if (count > 0) ...[
             const SizedBox(height: AppSpacing.md),
-            // Muestra máximo 2 solicitudes compactas en orden FIFO
-            ...solicitudes.take(2).map((solicitud) {
-              final id = solicitud['id'] as String? ?? '';
-              return CobradorSolicitudCard(
-                solicitud: solicitud,
-                compact: true,
-                onMarcarEnCamino: () {
-                  AppFeedback.medium();
-                  context.read<CasasCubit>().cambiarEstadoSolicitud(id, 'EN_CAMINO');
-                  try {
-                    context.read<DashboardCobradorCubit>().cambiarEstadoSolicitud(id, 'EN_CAMINO');
-                  } catch (_) {}
+            if (context.isWideScreen)
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: count > 4 ? 4 : count,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: context.gridColumns,
+                  mainAxisExtent: 82,
+                  crossAxisSpacing: 10,
+                  mainAxisSpacing: 10,
+                ),
+                itemBuilder: (context, idx) {
+                  final solicitud = solicitudes[idx];
+                  final id = solicitud['id'] as String? ?? '';
+                  return CobradorSolicitudCard(
+                    solicitud: solicitud,
+                    compact: true,
+                    onMarcarEnCamino: () {
+                      AppFeedback.medium();
+                      context.read<CasasCubit>().cambiarEstadoSolicitud(id, 'EN_CAMINO');
+                      try {
+                        context.read<DashboardCobradorCubit>().cambiarEstadoSolicitud(id, 'EN_CAMINO');
+                      } catch (_) {}
+                    },
+                    onCobrar: () => _abrirCobroDesdeCasas(context, solicitud),
+                  );
                 },
-                onCobrar: () => _abrirCobroDesdeCasas(context, solicitud),
-              );
-            }),
-            if (count > 2) ...[
+              )
+            else
+              ...solicitudes.take(2).map((solicitud) {
+                final id = solicitud['id'] as String? ?? '';
+                return CobradorSolicitudCard(
+                  solicitud: solicitud,
+                  compact: true,
+                  onMarcarEnCamino: () {
+                    AppFeedback.medium();
+                    context.read<CasasCubit>().cambiarEstadoSolicitud(id, 'EN_CAMINO');
+                    try {
+                      context.read<DashboardCobradorCubit>().cambiarEstadoSolicitud(id, 'EN_CAMINO');
+                    } catch (_) {}
+                  },
+                  onCobrar: () => _abrirCobroDesdeCasas(context, solicitud),
+                );
+              }),
+            if (count > (context.isWideScreen ? 4 : 2)) ...[
               const SizedBox(height: 2),
               InkWell(
                 onTap: () => context.push('/cobrador-solicitudes'),
@@ -1103,18 +1089,85 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
 
   // ── Flattening y Headers de Ruta Virtualizada ─────────────────────
 
-  List<_TerritorioItem> _flattenTerritorioItems(List<EtapaExplorer> etapas) {
-    final List<_TerritorioItem> items = [];
+  List<Widget> _buildTerritorioSlivers(
+    BuildContext context,
+    List<EtapaExplorer> etapas,
+    bool isWide,
+  ) {
+    if (etapas.isEmpty) {
+      return [
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
+          sliver: SliverToBoxAdapter(
+            child: _buildEmptyTerritorioState(),
+          ),
+        ),
+      ];
+    }
+
+    final List<Widget> slivers = [];
+    final cols = context.gridColumns;
+
     for (final etapa in etapas) {
-      items.add(_EtapaItem(etapa.nombre));
+      slivers.add(
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
+          sliver: SliverToBoxAdapter(
+            child: _buildEtapaHeader(etapa.nombre),
+          ),
+        ),
+      );
+
       for (final manzana in etapa.manzanas) {
-        items.add(_ManzanaItem(manzana.nombre, manzana.casas.length));
-        for (final casa in manzana.casas) {
-          items.add(_CasaItem(casa, etapa.nombre, manzana.nombre));
+        slivers.add(
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
+            sliver: SliverToBoxAdapter(
+              child: _buildManzanaHeader(manzana.nombre, manzana.casas.length),
+            ),
+          ),
+        );
+
+        if (isWide) {
+          slivers.add(
+            SliverPadding(
+              padding: const EdgeInsets.only(
+                left: AppSpacing.screenPadding,
+                right: AppSpacing.screenPadding,
+                top: AppSpacing.xs,
+                bottom: AppSpacing.sm,
+              ),
+              sliver: SliverGrid(
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: cols,
+                  mainAxisExtent: 135,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                ),
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) =>
+                      _buildCasaItem(manzana.casas[index], etapa.nombre, manzana.nombre),
+                  childCount: manzana.casas.length,
+                ),
+              ),
+            ),
+          );
+        } else {
+          slivers.add(
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
+              sliver: SliverList.builder(
+                itemCount: manzana.casas.length,
+                itemBuilder: (context, index) =>
+                    _buildCasaItem(manzana.casas[index], etapa.nombre, manzana.nombre),
+              ),
+            ),
+          );
         }
       }
     }
-    return items;
+
+    return slivers;
   }
 
   Widget _buildEtapaHeader(String nombre) {

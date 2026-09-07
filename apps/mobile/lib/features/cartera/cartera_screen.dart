@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/theme/app_breakpoints.dart';
 import '../../features/auth/auth_cubit.dart';
 import 'cartera_repository.dart';
 import 'models/cartera_models.dart';
@@ -382,10 +383,11 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
             }
 
             if (isWide) {
+              final cols = context.gridColumns;
               return SliverGrid(
-                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                  maxCrossAxisExtent: 440,
-                  mainAxisExtent: 260,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: cols,
+                  mainAxisExtent: 170,
                   crossAxisSpacing: 14,
                   mainAxisSpacing: 14,
                 ),

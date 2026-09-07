@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/theme/app_breakpoints.dart';
 import '../../shared/widgets/empty_state.dart';
 import '../cartera/models/cartera_models.dart';
 import '../cartera/widgets/registrar_pago_bottom_sheet.dart';
@@ -215,6 +216,34 @@ class _CobradorSolicitudesScreenState extends State<CobradorSolicitudesScreen> {
                         ? 'No hay solicitudes de residentes pendientes por cobro en tu ruta.'
                         : 'No encontramos solicitudes para el filtro seleccionado.',
                     icon: Icons.mark_email_read_rounded,
+                  ),
+                ] else if (context.isWideScreen) ...[
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: filtered.length,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: context.gridColumns,
+                      mainAxisExtent: 190,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                    ),
+                    itemBuilder: (context, index) {
+                      final solicitud = filtered[index];
+                      final id = solicitud['id'] as String? ?? '';
+                      return CobradorSolicitudCard(
+                        solicitud: solicitud,
+                        compact: false,
+                        ordenFifo: index + 1,
+                        onMarcarEnCamino: () {
+                          context.read<CasasCubit>().cambiarEstadoSolicitud(id, 'EN_CAMINO');
+                          try {
+                            context.read<DashboardCobradorCubit>().cambiarEstadoSolicitud(id, 'EN_CAMINO');
+                          } catch (_) {}
+                        },
+                        onCobrar: () => _abrirCobroBottomSheet(context, solicitud),
+                      );
+                    },
                   ),
                 ] else ...[
                   ...filtered.asMap().entries.map((entry) {

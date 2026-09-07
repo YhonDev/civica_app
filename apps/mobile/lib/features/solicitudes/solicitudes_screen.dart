@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_breakpoints.dart';
 import '../../shared/widgets/solicitud_card.dart';
 import '../../shared/widgets/solicitud_bottom_sheet.dart';
 import '../../shared/widgets/mini_stat_card.dart';
@@ -286,6 +287,30 @@ class _SolicitudesScreenState extends State<SolicitudesScreen>
                               description:
                                   'No se encontraron solicitudes con este filtro.',
                             ),
+                          ),
+                        ),
+                      )
+                    else if (context.isWideScreen)
+                      SliverPadding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.screenPadding,
+                        ),
+                        sliver: SliverGrid(
+                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: context.gridColumns,
+                            mainAxisExtent: 115,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                          ),
+                          delegate: SliverChildBuilderDelegate(
+                            (context, index) {
+                              final solicitud = listado[index];
+                              return SolicitudCard(
+                                solicitud: solicitud,
+                                onTap: () => _mostrarDetalle(solicitud),
+                              );
+                            },
+                            childCount: listado.length,
                           ),
                         ),
                       )

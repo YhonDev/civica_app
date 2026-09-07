@@ -118,188 +118,215 @@ class CobroCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
           onTap: onTap,
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppSpacing.cardPadding),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Contenedor de ícono
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: _color.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Icon(
-                                _icon,
-                                color: _color,
-                                size: 22,
-                              ),
-                            ),
-                            const SizedBox(width: AppSpacing.md),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // TÍTULO: Casa / Dirección
-                                  Text(
-                                    mainTitle,
-                                    style: AppTypography.bodyMedium.copyWith(
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 15,
-                                      color: isDark ? Colors.white : const Color(0xFF0F172A),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 3),
-                                  // DESCRIPCIÓN: Cuota + Vencimiento + Días
-                                  if (cuotaSubtitle != null && cuotaSubtitle.isNotEmpty)
-                                    Text(
-                                      cuotaSubtitle,
-                                      style: AppTypography.caption.copyWith(
-                                        color: AppColors.primary,
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  if (_fechaDetalle.isNotEmpty) ...[
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      _fechaDetalle,
-                                      style: AppTypography.caption.copyWith(
-                                        color: (cobro.estado == 'Mora' || cobro.estado == 'VENCIDA')
-                                            ? AppColors.error
-                                            : AppColors.textSecondary,
-                                        fontWeight: (cobro.estado == 'Mora' || cobro.estado == 'VENCIDA')
-                                            ? FontWeight.w700
-                                            : FontWeight.w500,
-                                        fontSize: 11.5,
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            // Badge de estado
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 5,
-                              ),
-                              decoration: BoxDecoration(
-                                color: _color.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                  color: _color.withValues(alpha: 0.5),
-                                  width: 1,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(_icon, color: _color, size: 12),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    cobro.isMora ? 'En Mora' : (cobro.isPaid ? 'Pagada' : 'Pendiente'),
-                                    style: AppTypography.small.copyWith(
-                                      color: _color,
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 11,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: AppSpacing.md),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    cobro.isPaid ? 'Monto Pagado' : 'Saldo Pendiente',
-                                    style: AppTypography.caption.copyWith(
-                                      color: AppColors.textSecondary,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    montoFormatted,
-                                    style: AppTypography.title.copyWith(
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 19,
-                                      color: cobro.isMora
-                                          ? AppColors.error
-                                          : (isDark ? Colors.white : const Color(0xFF0F172A)),
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            if (cobro.isPaid)
-                              Row(
-                                children: [
-                                  Text(
-                                    'Ver ticket',
-                                    style: AppTypography.caption.copyWith(
-                                      color: AppColors.primary,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Icon(
-                                    Icons.chevron_right_rounded,
-                                    color: AppColors.primary,
-                                    size: 18,
-                                  ),
-                                ],
-                              )
-                            else if (onRegistrarPago != null)
-                              FilledButton.icon(
-                                onPressed: onRegistrarPago,
-                                icon: const Icon(Icons.payments_rounded, size: 16),
-                                style: FilledButton.styleFrom(
-                                  backgroundColor: AppColors.success,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 14,
-                                    vertical: 8,
-                                  ),
-                                ),
-                                label: const Text('Registrar Cobro'),
-                              )
-                            else if (onSolicitarCobro != null)
-                              FilledButton.icon(
-                                onPressed: onSolicitarCobro,
-                                icon: const Icon(Icons.notifications_active_rounded, size: 16),
-                                style: FilledButton.styleFrom(
-                                  backgroundColor: AppColors.primary,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 14,
-                                    vertical: 8,
-                                  ),
-                                ),
-                                label: const Text('Solicitar Cobro'),
-                               ),
-                          ],
-                        ),
-                      ],
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.cardInnerPadding),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Contenedor de ícono
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: _color.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        _icon,
+                        color: _color,
+                        size: 18,
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // TÍTULO: Casa / Dirección
+                          Text(
+                            mainTitle,
+                            style: AppTypography.bodyMedium.copyWith(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14,
+                              color: isDark ? Colors.white : const Color(0xFF0F172A),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          // DESCRIPCIÓN: Cuota + Vencimiento + Días
+                          if (cuotaSubtitle != null && cuotaSubtitle.isNotEmpty)
+                            Text(
+                              cuotaSubtitle,
+                              style: AppTypography.caption.copyWith(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 11.5,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          if (_fechaDetalle.isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              _fechaDetalle,
+                              style: AppTypography.caption.copyWith(
+                                color: (cobro.estado == 'Mora' || cobro.estado == 'VENCIDA')
+                                    ? AppColors.error
+                                    : AppColors.textSecondary,
+                                fontWeight: (cobro.estado == 'Mora' || cobro.estado == 'VENCIDA')
+                                    ? FontWeight.w700
+                                    : FontWeight.w500,
+                                fontSize: 11,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    // Badge de estado
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3.5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _color.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: _color.withValues(alpha: 0.5),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(_icon, color: _color, size: 11),
+                          const SizedBox(width: 3),
+                          Text(
+                            cobro.isMora ? 'En Mora' : (cobro.isPaid ? 'Pagada' : 'Pendiente'),
+                            style: AppTypography.small.copyWith(
+                              color: _color,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
+                const SizedBox(height: AppSpacing.sm),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            cobro.isPaid ? 'Monto Pagado' : 'Saldo Pendiente',
+                            style: AppTypography.caption.copyWith(
+                              color: AppColors.textSecondary,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 11,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 1),
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              montoFormatted,
+                              style: AppTypography.title.copyWith(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 18,
+                                color: cobro.isMora
+                                    ? AppColors.error
+                                    : (isDark ? Colors.white : const Color(0xFF0F172A)),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    if (cobro.isPaid)
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Ver ticket',
+                            style: AppTypography.caption.copyWith(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 11,
+                            ),
+                          ),
+                          const SizedBox(width: 3),
+                          Icon(
+                            Icons.chevron_right_rounded,
+                            color: AppColors.primary,
+                            size: 16,
+                          ),
+                        ],
+                      )
+                    else if (onRegistrarPago != null)
+                      FilledButton.icon(
+                        onPressed: onRegistrarPago,
+                        icon: const Icon(Icons.payments_rounded, size: 14),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.success,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          visualDensity: VisualDensity.compact,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        label: const Text(
+                          'Cobrar',
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                        ),
+                      )
+                    else if (onSolicitarCobro != null)
+                      FilledButton.icon(
+                        onPressed: onSolicitarCobro,
+                        icon: const Icon(Icons.notifications_active_rounded, size: 14),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          visualDensity: VisualDensity.compact,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        label: const Text(
+                          'Solicitar',
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

@@ -201,11 +201,15 @@ class SolicitudCard extends StatelessWidget {
                         children: [
                           Icon(_statusIcon, color: _statusColor, size: 12),
                           const SizedBox(width: 4),
-                          Text(
-                            _statusLabel,
-                            style: AppTypography.small.copyWith(
-                              color: _statusColor,
-                              fontWeight: FontWeight.w600,
+                          Flexible(
+                            child: Text(
+                              _statusLabel,
+                              style: AppTypography.small.copyWith(
+                                color: _statusColor,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           if (solicitud.nroRecibo.isNotEmpty) ...[
@@ -218,11 +222,15 @@ class SolicitudCard extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(width: 6),
-                            Text(
-                              solicitud.nroRecibo,
-                              style: AppTypography.small.copyWith(
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.w600,
+                            Flexible(
+                              child: Text(
+                                solicitud.nroRecibo,
+                                style: AppTypography.small.copyWith(
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
@@ -233,11 +241,15 @@ class SolicitudCard extends StatelessWidget {
                         children: [
                           Icon(Icons.access_time_rounded, size: 12, color: AppColors.textSecondary),
                           const SizedBox(width: 4),
-                          Text(
-                            DateFormat("dd/MM/yyyy · hh:mm a", 'es').format(solicitud.fecha),
-                            style: AppTypography.caption.copyWith(
-                              color: AppColors.textSecondary,
-                              fontSize: 11,
+                          Expanded(
+                            child: Text(
+                              DateFormat("dd/MM/yyyy · hh:mm a", 'es').format(solicitud.fecha),
+                              style: AppTypography.caption.copyWith(
+                                color: AppColors.textSecondary,
+                                fontSize: 11,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],

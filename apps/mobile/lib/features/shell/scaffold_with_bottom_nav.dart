@@ -3,11 +3,13 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../core/theme/app_breakpoints.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_typography.dart';
 import '../../features/auth/auth_cubit.dart';
 import '../../shared/widgets/connectivity_banner.dart';
 
 /// Shell route widget that wraps all navigation screens with responsive navigation.
-/// Uses BottomNavigationBar on mobile (<600px) and NavigationRail on wide screens.
+/// Uses BottomNavigationBar on mobile (<600px) and DesktopSidebar on wide screens.
 class ScaffoldWithBottomNav extends StatelessWidget {
   final Widget child;
 
@@ -68,54 +70,14 @@ class ScaffoldWithBottomNav extends StatelessWidget {
               );
             }
 
-            final theme = Theme.of(context);
             return Scaffold(
               body: Row(
                 children: [
-                  NavigationRail(
-                    selectedIndex: currentIndex,
-                    extended: isExpanded,
-                    minExtendedWidth: 190,
-                    backgroundColor: theme.colorScheme.surface,
-                    leading: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 16.0,
-                        horizontal: 12.0,
-                      ),
-                      child: isExpanded
-                          ? Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.payments_rounded,
-                                  color: theme.colorScheme.primary,
-                                  size: 26,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Cívica Pago',
-                                  style: theme.textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: theme.colorScheme.primary,
-                                  ),
-                                ),
-                              ],
-                            )
-                          : Icon(
-                              Icons.payments_rounded,
-                              color: theme.colorScheme.primary,
-                              size: 26,
-                            ),
-                    ),
-                    onDestinationSelected: (index) =>
-                        _onTabTap(context, tabs[index]),
-                    destinations: tabs.map((t) {
-                      return NavigationRailDestination(
-                        icon: t.icon,
-                        selectedIcon: t.iconActive,
-                        label: Text(t.label),
-                      );
-                    }).toList(),
+                  DesktopSidebar(
+                    tabs: tabs,
+                    currentIndex: currentIndex,
+                    isExpanded: isExpanded,
+                    onTabTap: (tab) => _onTabTap(context, tab),
                   ),
                   const VerticalDivider(thickness: 1, width: 1),
                   Expanded(child: mainContent),
@@ -130,7 +92,7 @@ class ScaffoldWithBottomNav extends StatelessWidget {
 
   Widget _buildBottomNav(
     BuildContext context,
-    List<_TabItem> tabs,
+    List<NavTabItem> tabs,
     int currentIndex,
   ) {
     if (currentIndex < 0) return const SizedBox.shrink();
@@ -151,7 +113,7 @@ class ScaffoldWithBottomNav extends StatelessWidget {
     );
   }
 
-  void _onTabTap(BuildContext context, _TabItem tab) {
+  void _onTabTap(BuildContext context, NavTabItem tab) {
     if (tab.route == '/') {
       // Replace top of stack with dashboard to avoid stacking / → /
       context.go('/');
@@ -160,35 +122,35 @@ class ScaffoldWithBottomNav extends StatelessWidget {
     }
   }
 
-  List<_TabItem> _tabsForRol(String rol) {
+  List<NavTabItem> _tabsForRol(String rol) {
     switch (rol) {
       case 'COBRADOR':
         return [
-          _TabItem(
+          NavTabItem(
             label: 'Inicio',
             icon: const Icon(Icons.home_outlined),
             iconActive: const Icon(Icons.home_rounded),
             route: '/',
           ),
-          _TabItem(
+          NavTabItem(
             label: 'Cobros',
             icon: const Icon(Icons.payments_outlined),
             iconActive: const Icon(Icons.payments_rounded),
             route: '/cartera',
           ),
-          _TabItem(
+          NavTabItem(
             label: 'Rutas',
             icon: const Icon(Icons.alt_route_outlined),
             iconActive: const Icon(Icons.alt_route_rounded),
             route: '/casas',
           ),
-          _TabItem(
+          NavTabItem(
             label: 'Actividad',
             icon: const Icon(Icons.history_outlined),
             iconActive: const Icon(Icons.history_rounded),
             route: '/historial',
           ),
-          _TabItem(
+          NavTabItem(
             label: 'Config',
             icon: const Icon(Icons.settings_outlined),
             iconActive: const Icon(Icons.settings_rounded),
@@ -198,25 +160,25 @@ class ScaffoldWithBottomNav extends StatelessWidget {
       case 'PROPIETARIO':
       case 'RESIDENTE':
         return [
-          _TabItem(
+          NavTabItem(
             label: 'Inicio',
             icon: const Icon(Icons.home_outlined),
             iconActive: const Icon(Icons.home_rounded),
             route: '/',
           ),
-          _TabItem(
+          NavTabItem(
             label: 'Pagos',
             icon: const Icon(Icons.payments_outlined),
             iconActive: const Icon(Icons.payments_rounded),
             route: '/cartera',
           ),
-          _TabItem(
+          NavTabItem(
             label: 'Mi Casa',
             icon: const Icon(Icons.home_work_outlined),
             iconActive: const Icon(Icons.home_work_rounded),
             route: '/mi-casa',
           ),
-          _TabItem(
+          NavTabItem(
             label: 'Config',
             icon: const Icon(Icons.settings_outlined),
             iconActive: const Icon(Icons.settings_rounded),
@@ -225,31 +187,31 @@ class ScaffoldWithBottomNav extends StatelessWidget {
         ];
       default: // ADMIN
         return [
-          _TabItem(
+          NavTabItem(
             label: 'Inicio',
             icon: const Icon(Icons.home_outlined),
             iconActive: const Icon(Icons.home_rounded),
             route: '/',
           ),
-          _TabItem(
+          NavTabItem(
             label: 'Cobros',
             icon: const Icon(Icons.account_balance_outlined),
             iconActive: const Icon(Icons.account_balance_rounded),
             route: '/cartera',
           ),
-          _TabItem(
+          NavTabItem(
             label: 'Comunidad',
             icon: const Icon(Icons.people_outlined),
             iconActive: const Icon(Icons.people_rounded),
             route: '/comunidad',
           ),
-          _TabItem(
+          NavTabItem(
             label: 'Reportes',
             icon: const Icon(Icons.analytics_outlined),
             iconActive: const Icon(Icons.analytics_rounded),
             route: '/reportes',
           ),
-          _TabItem(
+          NavTabItem(
             label: 'Config',
             icon: const Icon(Icons.settings_outlined),
             iconActive: const Icon(Icons.settings_rounded),
@@ -261,16 +223,189 @@ class ScaffoldWithBottomNav extends StatelessWidget {
 }
 
 /// Internal tab item definition.
-class _TabItem {
+class NavTabItem {
   final String label;
   final Widget icon;
   final Widget iconActive;
   final String route;
 
-  const _TabItem({
+  const NavTabItem({
     required this.label,
     required this.icon,
     required this.iconActive,
     required this.route,
   });
 }
+
+/// Enterprise unified sidebar for desktop and tablet screens.
+/// Encloses icon and label in a single active pill when expanded.
+class DesktopSidebar extends StatelessWidget {
+  final List<NavTabItem> tabs;
+  final int currentIndex;
+  final bool isExpanded;
+  final ValueChanged<NavTabItem> onTabTap;
+
+  const DesktopSidebar({
+    super.key,
+    required this.tabs,
+    required this.currentIndex,
+    required this.isExpanded,
+    required this.onTabTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final sidebarWidth = isExpanded ? 220.0 : 76.0;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeInOut,
+      width: sidebarWidth,
+      color: theme.colorScheme.surface,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Institutional Header
+          Padding(
+            padding: EdgeInsets.symmetric(
+              vertical: 20.0,
+              horizontal: isExpanded ? 16.0 : 14.0,
+            ),
+            child: isExpanded
+                ? Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(7),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.payments_rounded,
+                          color: AppColors.primary,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Cívica Pago',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.primary,
+                            letterSpacing: -0.3,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  )
+                : Center(
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.payments_rounded,
+                        color: AppColors.primary,
+                        size: 24,
+                      ),
+                    ),
+                  ),
+          ),
+          const SizedBox(height: 8),
+
+          // Navigation Items
+          Expanded(
+            child: ListView.separated(
+              padding: EdgeInsets.symmetric(horizontal: isExpanded ? 12.0 : 8.0),
+              itemCount: tabs.length,
+              separatorBuilder: (_, _) => const SizedBox(height: 6),
+              itemBuilder: (context, index) {
+                final tab = tabs[index];
+                final isSelected = index == currentIndex;
+
+                final itemContent = Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isExpanded ? 14.0 : 0.0,
+                    vertical: 10.0,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? AppColors.primary.withValues(alpha: 0.12)
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isSelected
+                          ? AppColors.primary.withValues(alpha: 0.30)
+                          : Colors.transparent,
+                      width: 1.2,
+                    ),
+                  ),
+                  child: isExpanded
+                      ? Row(
+                          children: [
+                            IconTheme(
+                              data: IconThemeData(
+                                color: isSelected
+                                    ? AppColors.primary
+                                    : (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
+                                size: 22,
+                              ),
+                              child: isSelected ? tab.iconActive : tab.icon,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                tab.label,
+                                style: AppTypography.body.copyWith(
+                                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                                  color: isSelected
+                                      ? AppColors.primary
+                                      : (isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary),
+                                  fontSize: 14,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        )
+                      : Center(
+                          child: IconTheme(
+                            data: IconThemeData(
+                              color: isSelected
+                                  ? AppColors.primary
+                                  : (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
+                              size: 22,
+                            ),
+                            child: isSelected ? tab.iconActive : tab.icon,
+                          ),
+                        ),
+                );
+
+                return Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    hoverColor: AppColors.primary.withValues(alpha: 0.05),
+                    onTap: () => onTabTap(tab),
+                    child: isExpanded
+                        ? itemContent
+                        : Tooltip(message: tab.label, child: itemContent),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+

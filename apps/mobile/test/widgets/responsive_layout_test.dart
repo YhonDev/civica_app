@@ -12,6 +12,7 @@ import 'package:civica_pago_mobile/features/auth/auth_cubit.dart';
 import 'package:civica_pago_mobile/features/auth/login_screen.dart';
 import 'package:civica_pago_mobile/features/cartera/cartera_screen.dart';
 import 'package:civica_pago_mobile/features/shell/scaffold_with_bottom_nav.dart';
+import 'package:civica_pago_mobile/shared/widgets/system_settings_section.dart';
 import 'fake_repositories.dart';
 
 void main() {
@@ -132,11 +133,11 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(BottomNavigationBar), findsOneWidget);
-      expect(find.byType(NavigationRail), findsNothing);
+      expect(find.byType(DesktopSidebar), findsNothing);
       expect(find.text('HOME_PAGE'), findsOneWidget);
     });
 
-    testWidgets('Renders NavigationRail on wide width (>=600px)', (tester) async {
+    testWidgets('Renders DesktopSidebar on wide width (>=600px)', (tester) async {
       tester.view.physicalSize = const Size(1200, 800);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -144,7 +145,7 @@ void main() {
       await tester.pumpWidget(createShellApp(size: const Size(1200, 800)));
       await tester.pumpAndSettle();
 
-      expect(find.byType(NavigationRail), findsOneWidget);
+      expect(find.byType(DesktopSidebar), findsOneWidget);
       expect(find.byType(BottomNavigationBar), findsNothing);
       expect(find.text('Cívica Pago'), findsOneWidget);
       expect(find.text('HOME_PAGE'), findsOneWidget);
@@ -199,7 +200,7 @@ void main() {
   });
 
   group('CarteraScreen Responsive Grid Tests', () {
-    testWidgets('Renders SliverGrid on wide screens (>= 900px)', (tester) async {
+    testWidgets('Renders SliverGrid with 4 columns on desktop width (>= 1200px)', (tester) async {
       tester.view.physicalSize = const Size(1280, 800);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -227,6 +228,36 @@ void main() {
       await tester.pump(const Duration(milliseconds: 200));
 
       expect(find.byType(SliverGrid), findsOneWidget);
+      final grid = tester.widget<SliverGrid>(find.byType(SliverGrid));
+      final delegate = grid.gridDelegate as SliverGridDelegateWithFixedCrossAxisCount;
+      expect(delegate.crossAxisCount, equals(4));
+    });
+  });
+
+  group('SystemSettingsSection Biometrics Gating Tests', () {
+    testWidgets('Completely hides biometrics option on non-supported platforms', (tester) async {
+      final authCubit = AuthCubit();
+      authCubit.emit(AuthState.authenticated({
+        'nombre': 'User Test',
+        'rol': 'COBRADOR',
+        'id': 'u1',
+      }));
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: BlocProvider<AuthCubit>.value(
+            value: authCubit,
+            child: const Scaffold(
+              body: SystemSettingsSection(),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Acceso biométrico'), findsNothing);
+      expect(find.byIcon(Icons.fingerprint_rounded), findsNothing);
+      expect(find.text('No disponible en este dispositivo'), findsNothing);
     });
   });
 }

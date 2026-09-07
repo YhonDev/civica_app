@@ -2,7 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:civica_pago_mobile/core/database/app_database.dart';
 import 'package:civica_pago_mobile/core/network/api_client.dart';
-import 'package:civica_pago_mobile/core/sync/connectivity_detector.dart';
 import 'package:civica_pago_mobile/features/cartera/cartera_repository.dart';
 import 'package:drift/native.dart';
 import 'mock_http_adapter.dart';

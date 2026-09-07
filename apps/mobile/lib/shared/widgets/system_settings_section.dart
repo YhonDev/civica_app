@@ -164,8 +164,11 @@ class _SystemSettingsSectionState extends State<SystemSettingsSection> {
                   ),
                 ],
               ),
-              child: Column(
-                children: [
+              child: Material(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(14),
+                child: Column(
+                  children: [
                   ListTile(
                     leading: Container(
                       padding: const EdgeInsets.all(8),
@@ -201,43 +204,41 @@ class _SystemSettingsSectionState extends State<SystemSettingsSection> {
                     indent: 56,
                     color: (isDark ? AppColors.darkBorder : AppColors.lightBorder).withValues(alpha: 0.5),
                   ),
-                  ListTile(
-                    leading: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.10),
-                        borderRadius: BorderRadius.circular(10),
+                  if (_isBiometricsSupported) ...[
+                    ListTile(
+                      leading: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.10),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.fingerprint_rounded, color: AppColors.primary, size: 20),
                       ),
-                      child: const Icon(Icons.fingerprint_rounded, color: AppColors.primary, size: 20),
-                    ),
-                    title: Text(
-                      'Acceso biométrico',
-                      style: AppTypography.body.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                      title: Text(
+                        'Acceso biométrico',
+                        style: AppTypography.body.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                        ),
+                      ),
+                      subtitle: Text(
+                        _isBiometricsEnabled ? 'Protege tu sesión con huella dactilar' : 'Deshabilitado',
+                        style: AppTypography.caption.copyWith(
+                          color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                        ),
+                      ),
+                      trailing: Switch(
+                        value: _isBiometricsEnabled,
+                        onChanged: _toggleBiometria,
+                        activeThumbColor: AppColors.primary,
                       ),
                     ),
-                    subtitle: Text(
-                      _isBiometricsSupported
-                          ? (_isBiometricsEnabled ? 'Protege tu sesión con huella dactilar' : 'Deshabilitado')
-                          : 'No disponible en este dispositivo',
-                      style: AppTypography.caption.copyWith(
-                        color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
-                      ),
+                    Divider(
+                      height: 1,
+                      indent: 56,
+                      color: (isDark ? AppColors.darkBorder : AppColors.lightBorder).withValues(alpha: 0.5),
                     ),
-                    trailing: _isBiometricsSupported
-                        ? Switch(
-                            value: _isBiometricsEnabled,
-                            onChanged: _toggleBiometria,
-                            activeThumbColor: AppColors.primary,
-                          )
-                        : null,
-                  ),
-                  Divider(
-                    height: 1,
-                    indent: 56,
-                    color: (isDark ? AppColors.darkBorder : AppColors.lightBorder).withValues(alpha: 0.5),
-                  ),
+                  ],
                   ListTile(
                     leading: Container(
                       padding: const EdgeInsets.all(8),
@@ -269,7 +270,8 @@ class _SystemSettingsSectionState extends State<SystemSettingsSection> {
                 ],
               ),
             ),
-          ],
+          ),
+        ],
         );
       },
     );

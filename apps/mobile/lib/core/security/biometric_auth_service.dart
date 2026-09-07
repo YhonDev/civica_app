@@ -21,12 +21,19 @@ class BiometricAuthService {
 
   /// Checks if device supports biometric hardware authentication
   Future<bool> isHardwareSupported() async {
+    if (kIsWeb) return false;
+    final isMobile = defaultTargetPlatform == TargetPlatform.android ||
+        defaultTargetPlatform == TargetPlatform.iOS;
+    if (!isMobile) return false;
+
     try {
       final canCheck = await _auth.canCheckBiometrics;
       final isSupported = await _auth.isDeviceSupported();
       return canCheck || isSupported;
     } on PlatformException catch (e) {
       debugPrint('BiometricAuthService isHardwareSupported error: $e');
+      return false;
+    } catch (_) {
       return false;
     }
   }
