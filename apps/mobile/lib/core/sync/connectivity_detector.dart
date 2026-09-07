@@ -46,6 +46,10 @@ class ConnectivityDetector {
     return _instance!;
   }
 
+  /// Retorna el estado de conectividad actual de forma segura.
+  /// Si el detector no ha sido inicializado (ej: tests o web), asume online.
+  static bool get isCurrentOnline => _instance?.isOnline ?? true;
+
   Future<void> _init() async {
     try {
       // Verificar estado inicial

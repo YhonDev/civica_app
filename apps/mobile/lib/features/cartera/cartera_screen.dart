@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../core/theme/app_breakpoints.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
@@ -386,7 +385,7 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
               return SliverGrid(
                 gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
                   maxCrossAxisExtent: 440,
-                  mainAxisExtent: 230,
+                  mainAxisExtent: 260,
                   crossAxisSpacing: 14,
                   mainAxisSpacing: 14,
                 ),

@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart' show kReleaseMode;
+import 'package:flutter/foundation.dart' show kReleaseMode, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -19,7 +19,9 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await initializeDateFormatting('es', null);
-  await AppDatabase.init();
+  if (!kIsWeb) {
+    await AppDatabase.init();
+  }
 
   try {
     await dotenv.load(fileName: ".env");
@@ -33,7 +35,9 @@ void main() async {
   );
 
   final detector = ConnectivityDetector.init();
-  SyncService.init(detector: detector);
+  if (!kIsWeb) {
+    SyncService.init(detector: detector);
+  }
 
   // Cargar preferencia persistente de tema (Dark / Light Mode)
   await DarkThemeNotifier.init();

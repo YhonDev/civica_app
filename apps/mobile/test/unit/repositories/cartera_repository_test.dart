@@ -1,7 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:civica_pago_mobile/core/database/app_database.dart';
 import 'package:civica_pago_mobile/core/network/api_client.dart';
+import 'package:civica_pago_mobile/core/sync/connectivity_detector.dart';
 import 'package:civica_pago_mobile/features/cartera/cartera_repository.dart';
+import 'package:drift/native.dart';
 import 'mock_http_adapter.dart';
 
 /// Mock cuotas con diferentes estados, montos y propietarios anidados.
@@ -171,6 +174,43 @@ void main() {
 
       expect(mockAdapter.calls('POST', '/pagos'), 1);
       expect(result['id'], 'PAG_NEW');
+    });
+
+    test('salvaguarda en SQLite local cuando cobrador está en fallback de red', () async {
+      final db = AppDatabase.forTesting(NativeDatabase.memory());
+      AppDatabase.setTestingInstance(db);
+
+      mockAdapter.onPost('/pagos', {'error': 'Network timeout'}, statusCode: 500);
+
+      final result = await repository.registrarPago(
+        residenteId: 'PRO_OFFLINE',
+        montoCentavos: 3000000,
+        isCobrador: true,
+      );
+
+      expect(result['offline'], true);
+      expect(result['status'], 'OFFLINE_FALLBACK');
+
+      final pendientes = await db.pagoDao.getPendientesSync();
+      expect(pendientes.length, 1);
+      expect(pendientes.first.residenteId, 'PRO_OFFLINE');
+      expect(pendientes.first.monto, 3000000);
+      expect(pendientes.first.syncStatus, 'PENDIENTE_SYNC');
+
+      await db.close();
+    });
+
+    test('admin con fallo de red lanza excepción y no toca SQLite', () async {
+      mockAdapter.onPost('/pagos', {'error': 'Server down'}, statusCode: 500);
+
+      expect(
+        () => repository.registrarPago(
+          residenteId: 'PRO_ADMIN',
+          montoCentavos: 2000000,
+          isCobrador: false,
+        ),
+        throwsA(isA<Exception>()),
+      );
     });
   });
 

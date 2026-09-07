@@ -26,6 +26,10 @@ class FakeCarteraRepository extends CarteraRepository {
   Future<Map<String, dynamic>> registrarPago({
     required String residenteId,
     required int montoCentavos,
+    String? cobroId,
+    String? cobradorId,
+    String? tenantId,
+    bool isCobrador = false,
   }) async => {'id': 'mock-pago'};
 }
 

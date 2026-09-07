@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/top_toast.dart';
+import '../../auth/auth_cubit.dart';
 import '../models/cartera_models.dart';
 import '../cartera_repository.dart';
 
@@ -179,12 +181,22 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
     setState(() => _enviando = true);
 
     try {
-      await _repo.registrarPago(
+      final user = context.read<AuthCubit>().state.usuario;
+      final rol = (user?['rol'] as String?)?.toUpperCase() ?? '';
+      final isCobrador = rol == 'COBRADOR';
+      final cobradorId = (user?['id'] as String?) ?? '';
+      final tenantId = (user?['tenantId'] as String?) ?? '';
+
+      final res = await _repo.registrarPago(
         residenteId: widget.cobro.residenteId,
         montoCentavos: monto * 100, // Convert to centavos
+        cobroId: widget.cobro.id,
+        cobradorId: cobradorId,
+        tenantId: tenantId,
+        isCobrador: isCobrador,
       );
 
-      // Latencia visual suave para confirmar procesamiento completo en backend
+      // Latencia visual suave para confirmar procesamiento completo
       await Future.delayed(const Duration(milliseconds: 600));
 
       if (mounted) {
@@ -194,13 +206,16 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
         // 1. Ejecutar inmediatamente el callback de actualización en el padre
         widget.onSuccess();
 
-        // 2. Mostrar la notificación flotante estilo Isla Dinámica en la parte superior
+        // 2. Mostrar la notificación según el resultado (online vs offline)
+        final isOffline = res['offline'] == true;
         TopToast.show(
           context,
-          title: '¡Recaudo registrado con éxito!',
-          message: 'Pago de \$${NumberFormat.decimalPattern('es_CO').format(monto)} procesado. Cartera actualizada.',
-          icon: Icons.check_circle_rounded,
-          accentColor: AppColors.success,
+          title: isOffline ? 'Recaudo guardado en cola local' : '¡Recaudo registrado con éxito!',
+          message: isOffline
+              ? (res['message'] as String? ?? 'Pago guardado de forma segura en cola local.')
+              : 'Pago de \$${NumberFormat.decimalPattern('es_CO').format(monto)} procesado. Cartera actualizada.',
+          icon: isOffline ? Icons.cloud_off_rounded : Icons.check_circle_rounded,
+          accentColor: isOffline ? AppColors.warning : AppColors.success,
         );
       }
     } catch (e) {

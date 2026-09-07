@@ -1,10 +1,7 @@
-import 'dart:io';
-
 import 'package:drift/drift.dart';
-import 'package:drift/native.dart';
 import 'package:flutter/foundation.dart' show visibleForTesting;
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
+
+import 'connection/connection.dart' as conn;
 
 import 'daos/residente_dao.dart';
 import 'daos/cobro_dao.dart';
@@ -322,7 +319,7 @@ class Actividades extends Table {
   ],
 )
 class AppDatabase extends _$AppDatabase {
-  AppDatabase() : super(_openConnection());
+  AppDatabase() : super(conn.openConnection());
 
   // DAOs
   ResidenteDao get residenteDao => ResidenteDao(this);
@@ -384,10 +381,3 @@ class AppDatabase extends _$AppDatabase {
       );
 }
 
-LazyDatabase _openConnection() {
-  return LazyDatabase(() async {
-    final dir = await getApplicationDocumentsDirectory();
-    final file = File(p.join(dir.path, 'civica_pago.db'));
-    return NativeDatabase(file);
-  });
-}
