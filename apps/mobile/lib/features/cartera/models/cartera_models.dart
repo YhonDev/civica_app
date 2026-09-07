@@ -1,5 +1,4 @@
 import 'package:equatable/equatable.dart';
-import 'package:intl/intl.dart';
 
 /// Resumen general de la cartera (totales).
 class CarteraResumen extends Equatable {
@@ -89,6 +88,11 @@ class CobroItem extends Equatable {
 
   bool get isPendiente => !isPaid && !isMora;
 
+  static const _meses = [
+    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+  ];
+
   /// Retorna exclusivamente el nombre del mes (ej. "Septiembre")
   String get mesNombre {
     DateTime? date;
@@ -96,18 +100,43 @@ class CobroItem extends Equatable {
       date = DateTime.tryParse(periodoInicio);
     }
     date ??= DateTime.tryParse(fechaVencimiento);
-    if (date != null) {
-      final monthName = DateFormat('MMMM', 'es').format(date);
-      return monthName[0].toUpperCase() + monthName.substring(1);
+    if (date != null && date.month >= 1 && date.month <= 12) {
+      return _meses[date.month - 1];
     }
     return 'Mes Actual';
   }
 
-  /// Retorna exclusivamente la cuota (ej. "Cuota 1" o concepto personalizado)
+  /// Retorna exclusivamente la cuota (ej. "Cuota 1" o "Cuota 3"), sin redundancia del mes
   String get cuotaNombre {
-    if (concepto.isNotEmpty && concepto != 'Cuota de Vigilancia') {
+    // 1. Si el concepto contiene un patrón como "Cuota X", extraer únicamente "Cuota X"
+    final cuotaMatch = RegExp(r'Cuota\s*\d+', caseSensitive: false).firstMatch(concepto);
+    if (cuotaMatch != null) {
+      final matchStr = cuotaMatch.group(0)!;
+      final numStr = matchStr.replaceAll(RegExp(r'\D'), '');
+      return 'Cuota $numStr';
+    }
+
+    // 2. Si el concepto tiene un separador "—" o "-" (ej. "Septiembre — Cuota 3")
+    if (concepto.contains('—')) {
+      final parts = concepto.split('—');
+      if (parts.length > 1 && parts[1].trim().isNotEmpty) {
+        return parts[1].trim();
+      }
+    } else if (concepto.contains('-')) {
+      final parts = concepto.split('-');
+      if (parts.length > 1 && parts[1].trim().isNotEmpty) {
+        return parts[1].trim();
+      }
+    }
+
+    // 3. Si hay un concepto personalizado diferente a la vigilancia genérica
+    if (concepto.isNotEmpty &&
+        concepto != 'Cuota de Vigilancia' &&
+        !concepto.toLowerCase().startsWith('cuota')) {
       return concepto;
     }
+
+    // 4. Fallback calculado según el día de vencimiento
     if (fechaVencimiento.isNotEmpty) {
       final date = DateTime.tryParse(fechaVencimiento);
       if (date != null) {
@@ -126,20 +155,20 @@ class CobroItem extends Equatable {
     return 'Cuota 1';
   }
 
-  /// Retorna exclusivamente la ubicación formateada (ej. "Mz B · Casa 4")
+  /// Retorna exclusivamente la ubicación formateada (ej. "Manzana B · Casa 4")
   String get ubicacionNombre {
     final parts = <String>[];
     if (manzana.isNotEmpty && manzana != 'Manzana') {
       final mz = manzana.startsWith('Manzana') || manzana.startsWith('Mz')
           ? manzana
-          : 'Mz $manzana';
+          : 'Manzana $manzana';
       parts.add(mz);
     }
     if (casa.isNotEmpty && casa != 'Inmueble') {
       final c = casa.startsWith('Casa') ? casa : 'Casa $casa';
       parts.add(c);
     }
-    if (etapa.isNotEmpty && etapa != 'Etapa') {
+    if (parts.isEmpty && etapa.isNotEmpty && etapa != 'Etapa') {
       final et = etapa.startsWith('Etapa') ? etapa : 'Etapa $etapa';
       parts.add(et);
     }
@@ -147,10 +176,8 @@ class CobroItem extends Equatable {
     return parts.join(' · ');
   }
 
+  /// Retorna el título consolidado periodo-cuota (ej. "Septiembre — Cuota 1")
   String get tituloCuota {
-    if (concepto.isNotEmpty && concepto != 'Cuota de Vigilancia') {
-      return concepto;
-    }
     return '$mesNombre — $cuotaNombre';
   }
 

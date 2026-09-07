@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../auth/auth_cubit.dart';
 import '../models/cartera_models.dart';
 
 class CobroCard extends StatelessWidget {
@@ -10,6 +12,7 @@ class CobroCard extends StatelessWidget {
   final VoidCallback? onRegistrarPago;
   final VoidCallback? onSolicitarCobro;
   final VoidCallback? onTap;
+  final bool? isCobradorView;
 
   const CobroCard({
     super.key,
@@ -17,6 +20,7 @@ class CobroCard extends StatelessWidget {
     this.onRegistrarPago,
     this.onSolicitarCobro,
     this.onTap,
+    this.isCobradorView,
   });
 
   Color get _color {
@@ -65,11 +69,13 @@ class CobroCard extends StatelessWidget {
         .round();
     final montoFormatted = r'$ ' + NumberFormat('#,##0', 'es_CO').format(montoRaw);
 
-    // Extracción atómica de 3 dimensiones: Mes, Cuota y Ubicación (+ Residente si aplica)
-    final mes = cobro.mesNombre;
-    final cuota = cobro.cuotaNombre;
     final ubicacion = cobro.ubicacionNombre;
     final bool tieneResidente = cobro.nombre.isNotEmpty && cobro.nombre != 'Residente';
+    final bool isCobrador = isCobradorView ?? () {
+      final user = context.read<AuthCubit>().state.usuario;
+      final rol = user?['rol'] as String?;
+      return rol != 'RESIDENTE' && rol != 'PROPIETARIO';
+    }();
 
     final isOverdue = cobro.isMora;
     final cardBorderColor = isOverdue
@@ -124,116 +130,182 @@ class CobroCard extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // 1. CELDA SUPERIOR: MES (ej. "Septiembre")
-                          Text(
-                            mes,
-                            style: AppTypography.bodyMedium.copyWith(
-                              fontWeight: FontWeight.w800,
-                              fontSize: 14,
-                              color: isDark ? Colors.white : const Color(0xFF0F172A),
-                              letterSpacing: -0.2,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 3),
-
-                          // 2. CELDA INTERMEDIA: CUOTA (ej. "Cuota 1")
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 7,
-                                  vertical: 1.5,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primary.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  cuota,
-                                  style: AppTypography.caption.copyWith(
-                                    color: AppColors.primary,
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 11,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 3),
-
-                          // 3. CELDA INFERIOR: UBICACIÓN / DIRECCIÓN (ej. "Manzana B · Casa 4")
-                          if (ubicacion.isNotEmpty) ...[
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.home_outlined,
-                                  size: 13,
-                                  color: AppColors.textSecondary,
-                                ),
-                                const SizedBox(width: 4),
-                                Expanded(
-                                  child: Text(
-                                    ubicacion,
-                                    style: AppTypography.caption.copyWith(
-                                      color: AppColors.textSecondary,
-                                      fontWeight: FontWeight.w500,
-                                      fontSize: 11,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-
-                          // RESIDENTE (si está disponible y no es genérico)
-                          if (tieneResidente) ...[
-                            const SizedBox(height: 2),
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.person_outline_rounded,
-                                  size: 13,
-                                  color: AppColors.textSecondary,
-                                ),
-                                const SizedBox(width: 4),
-                                Expanded(
-                                  child: Text(
-                                    cobro.nombre,
-                                    style: AppTypography.caption.copyWith(
-                                      color: isDark ? Colors.white70 : const Color(0xFF334155),
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 11,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-
-                          // 4. DETALLE DE FECHA (Vence / Pagado)
-                          if (_fechaDetalle.isNotEmpty) ...[
-                            const SizedBox(height: 3),
+                          if (isCobrador) ...[
+                            // ══════════════════════════════════════════════
+                            // VISTA COBRADOR / ADMIN (Foco: Dirección de visita)
+                            // ══════════════════════════════════════════════
+                            // 1. CELDA SUPERIOR: DIRECCIÓN / INMUEBLE (ej. "Manzana B · Casa 4")
                             Text(
-                              _fechaDetalle,
-                              style: AppTypography.caption.copyWith(
-                                color: (cobro.estado == 'Mora' || cobro.estado == 'VENCIDA')
-                                    ? AppColors.error
-                                    : AppColors.textSecondary.withValues(alpha: 0.8),
-                                fontWeight: (cobro.estado == 'Mora' || cobro.estado == 'VENCIDA')
-                                    ? FontWeight.w700
-                                    : FontWeight.w500,
-                                fontSize: 10.5,
+                              ubicacion.isNotEmpty ? ubicacion : cobro.tituloCuota,
+                              style: AppTypography.bodyMedium.copyWith(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 14,
+                                color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                letterSpacing: -0.2,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
+                            const SizedBox(height: 3),
+
+                            // 2. CELDA INTERMEDIA: CUOTA / CONCEPTO (ej. "Septiembre — Cuota 1")
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Flexible(
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 7,
+                                      vertical: 1.5,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      cobro.tituloCuota,
+                                      style: AppTypography.caption.copyWith(
+                                        color: AppColors.primary,
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 11,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 3),
+
+                            // 3. CELDA INFERIOR: RESIDENTE (ej. "Camilo Silva")
+                            if (tieneResidente) ...[
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.person_outline_rounded,
+                                    size: 13,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: Text(
+                                      cobro.nombre,
+                                      style: AppTypography.caption.copyWith(
+                                        color: isDark ? Colors.white70 : const Color(0xFF334155),
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 11,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 2),
+                            ],
+
+                            // 4. DETALLE DE FECHA (Vence / Pagado)
+                            if (_fechaDetalle.isNotEmpty) ...[
+                              Text(
+                                _fechaDetalle,
+                                style: AppTypography.caption.copyWith(
+                                  color: (cobro.estado == 'Mora' || cobro.estado == 'VENCIDA')
+                                      ? AppColors.error
+                                      : AppColors.textSecondary.withValues(alpha: 0.8),
+                                  fontWeight: (cobro.estado == 'Mora' || cobro.estado == 'VENCIDA')
+                                      ? FontWeight.w700
+                                      : FontWeight.w500,
+                                  fontSize: 10.5,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ] else ...[
+                            // ══════════════════════════════════════════════
+                            // VISTA RESIDENTE (Foco: Periodo / Cuota a pagar)
+                            // ══════════════════════════════════════════════
+                            // 1. CELDA SUPERIOR: CUOTA Y PERIODO (ej. "Septiembre — Cuota 1")
+                            Text(
+                              cobro.tituloCuota,
+                              style: AppTypography.bodyMedium.copyWith(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 14,
+                                color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                letterSpacing: -0.2,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 3),
+
+                            // 2. CELDA INTERMEDIA: UBICACIÓN / DIRECCIÓN (ej. "Manzana B · Casa 4")
+                            if (ubicacion.isNotEmpty) ...[
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.home_outlined,
+                                    size: 13,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: Text(
+                                      ubicacion,
+                                      style: AppTypography.caption.copyWith(
+                                        color: AppColors.textSecondary,
+                                        fontWeight: FontWeight.w500,
+                                        fontSize: 11,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 3),
+                            ],
+
+                            // 3. DETALLE DE FECHA (Vence / Pagado) EN BADGE DESTACADO
+                            if (_fechaDetalle.isNotEmpty) ...[
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Flexible(
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 7,
+                                        vertical: 1.5,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: (cobro.isMora
+                                                ? AppColors.error
+                                                : (cobro.isPaid
+                                                    ? AppColors.success
+                                                    : AppColors.primary))
+                                            .withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        _fechaDetalle,
+                                        style: AppTypography.caption.copyWith(
+                                          color: cobro.isMora
+                                              ? AppColors.error
+                                              : (cobro.isPaid
+                                                  ? AppColors.success
+                                                  : AppColors.primary),
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 10.5,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ],
                         ],
                       ),

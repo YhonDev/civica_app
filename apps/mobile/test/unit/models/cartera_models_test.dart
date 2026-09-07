@@ -143,5 +143,93 @@ void main() {
       expect(a, equals(b));
       expect(a, isNot(equals(c)));
     });
+
+    test('mesNombre extrae el mes correctamente', () {
+      const itemConPeriodo = CobroItem(
+        id: 'C-3',
+        residenteId: 'P-1',
+        nombre: 'Juan Pérez',
+        casa: 'Casa 14',
+        manzana: 'Manzana A',
+        etapa: 'Etapa 1',
+        periodoInicio: '2026-09-01T00:00:00.000Z',
+        monto: 120000,
+        montoPagado: 0,
+        saldo: 120000,
+        estado: 'Pendiente',
+        modalidad: 'Mensual',
+      );
+      expect(itemConPeriodo.mesNombre, 'Septiembre');
+    });
+
+    test('cuotaNombre extrae cuota sin redundancia', () {
+      const itemCuotaRegex = CobroItem(
+        id: 'C-4',
+        residenteId: 'P-1',
+        nombre: 'Juan Pérez',
+        casa: 'Casa 14',
+        manzana: 'Manzana A',
+        etapa: 'Etapa 1',
+        concepto: 'Septiembre — Cuota 3',
+        monto: 120000,
+        montoPagado: 0,
+        saldo: 120000,
+        estado: 'Pendiente',
+        modalidad: 'Mensual',
+      );
+      expect(itemCuotaRegex.cuotaNombre, 'Cuota 3');
+
+      const itemConceptoCustom = CobroItem(
+        id: 'C-5',
+        residenteId: 'P-1',
+        nombre: 'Juan Pérez',
+        casa: 'Casa 14',
+        manzana: 'Manzana A',
+        etapa: 'Etapa 1',
+        concepto: 'Arreglo de Puerta',
+        monto: 50000,
+        montoPagado: 0,
+        saldo: 50000,
+        estado: 'Pendiente',
+        modalidad: 'Mensual',
+      );
+      expect(itemConceptoCustom.cuotaNombre, 'Arreglo de Puerta');
+    });
+
+    test('ubicacionNombre formatea manzana y casa sin redundancia', () {
+      const itemUbicacion = CobroItem(
+        id: 'C-6',
+        residenteId: 'P-1',
+        nombre: 'Juan Pérez',
+        manzana: 'B',
+        casa: '4',
+        etapa: '',
+        monto: 120000,
+        montoPagado: 0,
+        saldo: 120000,
+        estado: 'Pendiente',
+        modalidad: 'Mensual',
+      );
+      expect(itemUbicacion.ubicacionNombre, 'Manzana B · Casa 4');
+    });
+
+    test('tituloCuota combina mes y cuota limpiamente', () {
+      const itemTitulo = CobroItem(
+        id: 'C-7',
+        residenteId: 'P-1',
+        nombre: 'Juan Pérez',
+        periodoInicio: '2026-09-01T00:00:00.000Z',
+        concepto: 'Cuota 1',
+        casa: 'Casa 4',
+        manzana: 'Manzana A',
+        etapa: 'Etapa 1',
+        monto: 120000,
+        montoPagado: 0,
+        saldo: 120000,
+        estado: 'Pendiente',
+        modalidad: 'Mensual',
+      );
+      expect(itemTitulo.tituloCuota, 'Septiembre — Cuota 1');
+    });
   });
 }
