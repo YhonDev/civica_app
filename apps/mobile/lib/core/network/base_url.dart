@@ -1,31 +1,32 @@
-import 'package:flutter/foundation.dart'
-    show kReleaseMode, kIsWeb;
+import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 
-/// Detects the API base URL from compile-time environment or platform defaults.
+/// URL de la API en builds **debug**: backend local.
+const _debugDefaultUrl = 'http://127.0.0.1:3000/api';
+
+/// URL de la API en builds **release**: despliegue de producción en Render.
+/// HTTPS, por lo que no aplica la restricción de texto plano de Android.
+const _releaseDefaultUrl = 'https://cuentiva.onrender.com/api';
+
+/// Detects the API base URL by build flavor.
 ///
 /// Priority:
-/// 1. `API_BASE_URL` from `--dart-define`
-/// 2. Web / Android: `http://127.0.0.1:3000/api`
+/// 1. `API_BASE_URL` from `--dart-define` (override explícito para cualquier
+///    entorno: staging, emulador, producción, etc.)
+/// 2. Debug → backend local (`127.0.0.1:3000/api`, requiere `adb reverse`
+///    en dispositivo físico).
+/// 3. Release → Render (`https://cuentiva.onrender.com/api`).
 ///
-/// En builds release sin `API_BASE_URL` explícito se lanza un error de
-/// compilación/arranque: nunca debe desplegarse una app apuntando a
-/// localhost HTTP en texto plano.
+/// `flutter run` (debug) apunta al local sin flags; `flutter run --release`
+/// (o el APK de tienda) apunta a Render sin flags.
 String detectBaseUrl() {
   const envUrl = String.fromEnvironment('API_BASE_URL');
   if (envUrl.isNotEmpty) return envUrl;
 
-  if (kReleaseMode && !kIsWeb) {
-    throw StateError(
-      'API_BASE_URL no configurada para build release. '
-      'Compila con --dart-define=API_BASE_URL=https://tu-dominio/api',
-    );
-  }
+  // Web en debug apunta al local: el navegador corre en el PC, donde el
+  // backend de desarrollo es alcanzable directamente.
+  if (kDebugMode || kIsWeb) return _debugDefaultUrl;
 
-  // 127.0.0.1 explícito en todas las plataformas. "localhost" puede
-  // resolverse a ::1 (IPv6) en el navegador; si el backend no escucha
-  // dual-stack la petición falla con DioException [unknown] / OperationError
-  // antes de recibir respuesta.
-  return 'http://127.0.0.1:3000/api';
+  return _releaseDefaultUrl;
 }
 
 /// Detects the WebSocket server URL (same host, no /api suffix).

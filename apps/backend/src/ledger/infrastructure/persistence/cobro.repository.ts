@@ -76,7 +76,7 @@ export class CobroRepository extends BaseTenantRepository<Cobro> {
       .select('COALESCE(SUM(cobro.monto - cobro.montoPagado), 0)', 'total')
       .where('cobro.tenantId = :tenantId', { tenantId })
       .andWhere(
-        "cobro.estado IN ('VENCIDA') OR (cobro.estado IN ('PENDIENTE', 'PARCIAL') AND cobro.fechaVencimiento < CURRENT_DATE)",
+        "(cobro.estado IN ('VENCIDA') OR (cobro.estado IN ('PENDIENTE', 'PARCIAL') AND cobro.fechaVencimiento < CURRENT_DATE))",
       )
       .getRawOne();
     return Number(result?.total ?? 0);
@@ -96,7 +96,7 @@ export class CobroRepository extends BaseTenantRepository<Cobro> {
         periodoInicio: periodoInicioStr,
       })
       .andWhere(
-        "cobro.estado IN ('VENCIDA') OR (cobro.estado IN ('PENDIENTE', 'PARCIAL') AND cobro.fechaVencimiento < CURRENT_DATE)",
+        "(cobro.estado IN ('VENCIDA') OR (cobro.estado IN ('PENDIENTE', 'PARCIAL') AND cobro.fechaVencimiento < CURRENT_DATE))",
       )
       .getRawOne();
     return Number(result?.total ?? 0);
@@ -136,7 +136,7 @@ export class CobroRepository extends BaseTenantRepository<Cobro> {
       .select('COUNT(DISTINCT cobro.residenteId)', 'count')
       .where('cobro.tenantId = :tenantId', { tenantId })
       .andWhere(
-        "cobro.estado IN ('VENCIDA') OR (cobro.estado IN ('PENDIENTE', 'PARCIAL') AND cobro.fechaVencimiento < CURRENT_DATE)",
+        "(cobro.estado IN ('VENCIDA') OR (cobro.estado IN ('PENDIENTE', 'PARCIAL') AND cobro.fechaVencimiento < CURRENT_DATE))",
       )
       .getRawOne();
     return Number(result?.count ?? 0);

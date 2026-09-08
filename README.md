@@ -108,6 +108,21 @@ El entorno actual no versiona las dependencias instaladas ni los archivos `.env`
 
 Nunca copies credenciales reales en el repositorio, README, issues, logs o capturas de pantalla.
 
+### Escaneo de secretos en commits (gitleaks)
+
+El repositorio incluye un hook `pre-commit` que bloquea cualquier commit que contenga secretos detectados (claves de API, tokens, contraseñas, connection strings). Para activarlo en tu clon local:
+
+```bash
+git config core.hooksPath .githooks
+mise install   # instala gitleaks junto con el resto de herramientas de mise.toml
+```
+
+Sin gitleaks instalado el hook **falla cerrado** (rechaza el commit) para no permitir saltos de seguridad accidentales. Las reglas viven en `.gitleaks.toml`; los falsos positivos verificados se listan ahí como excepciones acotadas por ruta — nunca agregues secretos reales a esa lista. Para auditar toda la historia:
+
+```bash
+gitleaks detect --source . -c .gitleaks.toml
+```
+
 ### Backend
 
 ```bash

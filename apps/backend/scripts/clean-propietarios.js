@@ -1,7 +1,14 @@
 const { Client } = require('pg');
+require('dotenv').config();
 
 async function main() {
-  const connectionString = 'postgres://postgres.fpgukukujxfrlvynpyha:*REMOVED*@aws-1-us-east-2.pooler.supabase.com:5432/postgres';
+  const connectionString =
+    process.env.DATABASE_URL ||
+    `postgres://${process.env.DATABASE_USER}:${process.env.DATABASE_PASSWORD}@${process.env.DATABASE_HOST}:${process.env.DATABASE_PORT || 5432}/${process.env.DATABASE_NAME}`;
+  if (!connectionString || connectionString.includes('undefined')) {
+    console.error('ERROR: configura DATABASE_URL o las variables DATABASE_* en el entorno/.env');
+    process.exit(1);
+  }
   
   const client = new Client({ 
     connectionString,

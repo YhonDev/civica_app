@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Pre-commit: bloquea commits que contengan secretos (gitleaks).
+# Instalación: git config core.hooksPath .githooks
+# Requiere gitleaks en PATH (gestionado con mise: `mise install`).
+
+set -euo pipefail
+ROOT="$(git rev-parse --show-toplevel)"
+CONFIG="$ROOT/.gitleaks.toml"
+
+run_scan() {
+  gitleaks protect --staged --verbose --redact -c "$CONFIG"
+}
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+  if command -v mise >/dev/null 2>&1; then
+    exec mise exec -- gitleaks protect --staged --verbose --redact -c "$CONFIG"
+  fi
+  # Fail-closed: sin gitleaks no se puede garantizar que el commit esté limpio.
+  echo "✋ gitleaks no está instalado y el commit no puede verificarse." >&2
+  echo "   Instálalo con: mise install gitleaks   (o desactiva este hook con: git config core.hooksPath '' )" >&2
+  exit 1
+fi
+
+run_scan
