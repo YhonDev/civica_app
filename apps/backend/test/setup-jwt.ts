@@ -6,3 +6,5 @@
  * correct secret is available to ALL consumers (JwtModule + JwtStrategy).
  */
 process.env.JWT_SECRET = 'civica-pago-dev-jwt-secret-2026';
+// Secret dedicado para refresh tokens (diferente al de access tokens)
+process.env.JWT_REFRESH_SECRET = 'civica-pago-dev-jwt-refresh-secret-2026';

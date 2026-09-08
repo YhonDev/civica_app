@@ -10,6 +10,10 @@ import { TokenRevocationService } from './token-revocation.service';
 import { Usuario, RolUsuario } from '../../iam/domain/usuario.entity';
 import { AuthSession } from '../../iam/domain/auth-session.entity';
 
+// Los unit tests no cargan .env: proveer secretos para firma/verificación de tokens
+process.env.JWT_SECRET = process.env.JWT_SECRET ?? 'test-jwt-secret';
+process.env.JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET ?? 'test-jwt-refresh-secret';
+
 jest.mock('bcrypt');
 
 describe('AuthService', () => {
@@ -210,7 +214,11 @@ describe('AuthService', () => {
         refreshToken: 'new-refresh-token',
         usuario: mockUsuario,
       });
-      expect(jwtService.verify).toHaveBeenCalledWith('valid-refresh-token');
+      // El refresh token se verifica con el secret dedicado (segundo argumento)
+      expect(jwtService.verify).toHaveBeenCalledWith(
+        'valid-refresh-token',
+        expect.objectContaining({}),
+      );
       expect(sessionRepo.save).toHaveBeenCalled();
     });
 

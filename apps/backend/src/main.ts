@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe, ClassSerializerInterceptor } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import helmet from 'helmet';
@@ -7,7 +8,15 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  // Necesario para app.set('trust proxy') con tipado correcto
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // ─── Reverse Proxy (Render, etc.) ────────────────────
+  // Detrás del proxy de Render todas las conexiones llegan desde la IP del
+  // proxy: sin esto, el rate limiter por IP agruparía a todos los clientes
+  // en un solo bucket y las IPs reales no serían visibles en los logs.
+  // Confía en el último salto (el proxy propio de la plataforma).
+  app.set('trust proxy', 1);
 
   // ─── Global Prefix ───────────────────────────────────
   app.setGlobalPrefix('api');

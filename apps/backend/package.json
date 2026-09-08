@@ -19,6 +19,7 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json --runInBand",
     "test:smoke": "node scripts/smoke-test.mjs",
+    "test:docker": "node scripts/docker-smoke.mjs",
     "validate": "npm run build && npm test && npm run test:e2e",
     "seed": "ts-node database/scripts/seed-completo.ts",
     "cobros:generar": "ts-node database/scripts/generar-cobros.ts"

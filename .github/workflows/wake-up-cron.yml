@@ -1,0 +1,32 @@
+name: Despertador Render Free (Cron Keep-Alive)
+
+on:
+  schedule:
+    # 05:00 UTC corresponde a las 00:00 (Medianoche) en Colombia (America/Bogota, UTC-5)
+    - cron: '0 5 * * *'
+  workflow_dispatch:
+
+jobs:
+  wake-up:
+    name: Despertar Instancia Backend Render
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enviar Ping de Calentamiento a Cuentiva API
+        run: |
+          echo "⏰ Iniciando ping de calentamiento para Render Cloud..."
+          echo "Hora UTC: $(date -u)"
+          
+          # Render Free puede tardar entre 20-30s en despertar desde modo hibernación.
+          # Usamos --retry para asegurar que la instancia esté 100% activa.
+          RESPONSE=$(curl -s --connect-timeout 60 --max-time 120 --retry 3 --retry-delay 10 https://cuentiva.onrender.com/api/health)
+          echo "Respuesta del Health Check:"
+          echo "$RESPONSE"
+          
+          STATUS=$(echo "$RESPONSE" | grep -o '"status":"ok"' || true)
+          if [ -n "$STATUS" ]; then
+            echo "✅ Backend Cuentiva despierto y operativo para ejecutar cron jobs (00:05 / 00:10)."
+          else
+            echo "⚠️ Advertencia: No se recibió status ok inmediato, verificando código HTTP..."
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" https://cuentiva.onrender.com/api/health)
+            echo "Código HTTP recibido: $HTTP_CODE"
+          fi

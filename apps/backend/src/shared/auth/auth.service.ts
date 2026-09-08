@@ -36,6 +36,20 @@ export class AuthService {
     return crypto.createHash('sha256').update(token).digest('hex');
   }
 
+  /**
+   * C5-hardening: los refresh tokens se firman con un secreto distinto al de
+   * los access tokens (JWT_REFRESH_SECRET). Si JWT_SECRET se ve comprometido,
+   * NO permite falsificar sesiones de 30 días, y viceversa.
+   * En desarrollo cae al mismo JWT_SECRET para no romper entornos locales.
+   */
+  private get refreshSecret(): string {
+    const secret = process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET;
+    if (!secret) {
+      throw new Error('JWT_REFRESH_SECRET o JWT_SECRET deben estar configurados');
+    }
+    return secret;
+  }
+
   async validateUser(username: string, password: string): Promise<Usuario> {
     const user = await this.usuarioRepository.findOne({
       where: { email: username },
@@ -75,7 +89,7 @@ export class AuthService {
         type: 'refresh',
         jti: crypto.randomUUID(),
       },
-      { expiresIn: '30d' },
+      { expiresIn: '30d', secret: this.refreshSecret },
     );
 
     const session = new AuthSession();
@@ -102,7 +116,7 @@ export class AuthService {
       const payload = this.jwtService.verify<{
         sub: string;
         type: string;
-      }>(token);
+      }>(token, { secret: this.refreshSecret });
 
       if (payload.type !== 'refresh' || !payload.sub) {
         throw new UnauthorizedException('Token de refresco inválido');
@@ -164,7 +178,7 @@ export class AuthService {
         });
         const newRefreshToken = this.jwtService.sign(
           { sub: user.id, type: 'refresh', jti: crypto.randomUUID() },
-          { expiresIn: '30d' },
+          { expiresIn: '30d', secret: this.refreshSecret },
         );
 
         session.previousRefreshTokenHash = session.refreshTokenHash;

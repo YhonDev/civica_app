@@ -35,9 +35,13 @@ export function databaseConfig(): TypeOrmModuleOptions {
       process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
     ...(sslMode && {
       ssl: {
-        // Permite conexión segura SSL a poolers de Supabase (por defecto no rechaza CA intermedio si no está explícito)
+        // Cifrado AUTENTICADO: verifica la identidad del servidor (previene MITM).
+        // Default seguro: true. Solo usar false en desarrollo puntual con poolers
+        // que no publican la CA de Supabase (exigiría DATABASE_SSL_REJECT_UNAUTHORIZED=false explícito).
         rejectUnauthorized:
-          process.env.DATABASE_SSL_REJECT_UNAUTHORIZED === 'true',
+          process.env.DATABASE_SSL_REJECT_UNAUTHORIZED === 'false'
+            ? false
+            : true,
       },
     }),
   };

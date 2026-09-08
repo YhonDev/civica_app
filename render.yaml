@@ -33,8 +33,10 @@ services:
         value: postgres
       - key: DATABASE_SSL
         value: require
+      # SSL autenticado: verifica la CA del servidor Postgres (previene MITM).
+      # Si Supabase sirve un certificado no reconocido, bajar temporalmente a 'false'.
       - key: DATABASE_SSL_REJECT_UNAUTHORIZED
-        value: 'false'
+        value: 'true'
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_REFRESH_SECRET

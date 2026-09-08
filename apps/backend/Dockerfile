@@ -35,5 +35,5 @@ USER node
 
 EXPOSE 3000
 
-# nest build genera dist/src/main.js (ver start:prod en package.json)
-CMD ["node", "dist/src/main.js"]
+# nest build (outDir ./dist, raíz plana) genera dist/main.js — igual que start:prod
+CMD ["node", "dist/main.js"]
