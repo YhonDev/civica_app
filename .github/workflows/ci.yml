@@ -163,4 +163,4 @@ jobs:
         run: flutter analyze
 
       - name: Run widget & unit tests
-        run: flutter test --no-coverage
+        run: flutter test
