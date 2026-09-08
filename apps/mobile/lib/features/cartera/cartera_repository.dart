@@ -1,6 +1,6 @@
-import 'dart:math' show min;
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:uuid/uuid.dart';
 import '../../core/database/app_database.dart';
 import '../../core/network/api_client.dart';
 import '../../core/network/api_exceptions.dart';
@@ -70,10 +70,19 @@ class CarteraRepository {
   }
 
   /// Fetches the raw list of cuotas from the server and parses them into [CobroItem].
+  /// Compatible con ambos formatos: lista plana (legacy) y { data: [...], total } (paginado).
   Future<List<CobroItem>> getCobros() async {
     try {
       final response = await _api.get(_cuotasEndpoint);
-      final cuotas = response.data as List<dynamic>;
+      final dynamic raw = response.data;
+      final List<dynamic> cuotas;
+      if (raw is List<dynamic>) {
+        cuotas = raw;
+      } else if (raw is Map<String, dynamic> && raw['data'] is List<dynamic>) {
+        cuotas = raw['data'] as List<dynamic>;
+      } else {
+        cuotas = const [];
+      }
 
       return cuotas.map((c) => CobroItem.fromJson(c as Map<String, dynamic>)).toList();
     } catch (e) {
@@ -99,7 +108,9 @@ class CarteraRepository {
     String? tenantId,
     bool isCobrador = false,
   }) async {
-    final clientPaymentId = 'pay-${DateTime.now().millisecondsSinceEpoch}-${residenteId.substring(0, min(6, residenteId.length))}';
+    // UUID: garantiza unicidad incluso para dos pagos del mismo residente
+    // en el mismo milisegundo (el timestamp + prefijo podía colisionar).
+    final clientPaymentId = 'pay-${const Uuid().v4()}';
     final isOnline = ConnectivityDetector.isCurrentOnline;
 
     // Caso 1: Cobrador en Móvil sin conexión -> Encolar de inmediato en SQLite local
@@ -121,8 +132,8 @@ class CarteraRepository {
         'residenteId': residenteId,
         'monto': montoCentavos,
         'fechaPago': DateTime.now().toIso8601String(),
-        'cobroId': ?cobroId,
-        'cobradorId': ?cobradorId,
+        if (cobroId != null && cobroId.isNotEmpty) 'cobroId': cobroId,
+        if (cobradorId != null && cobradorId.isNotEmpty) 'cobradorId': cobradorId,
       });
 
       _invalidarCaches();

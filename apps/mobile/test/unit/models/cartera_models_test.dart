@@ -46,6 +46,53 @@ void main() {
       expect(a, equals(b));
       expect(a, isNot(equals(c)));
     });
+
+    test('fromCobros computes dynamic totals and counts correctly', () {
+      final cobros = [
+        const CobroItem(
+          id: '1', residenteId: 'R1', nombre: 'Ana', casa: 'C1',
+          manzana: 'A', etapa: '1', monto: 50000, montoPagado: 0,
+          saldo: 50000, estado: 'Pendiente', modalidad: 'Mensual',
+        ),
+        const CobroItem(
+          id: '2', residenteId: 'R2', nombre: 'Carlos', casa: 'C2',
+          manzana: 'A', etapa: '1', monto: 60000, montoPagado: 0,
+          saldo: 60000, estado: 'Mora', modalidad: 'Mensual',
+        ),
+        const CobroItem(
+          id: '3', residenteId: 'R3', nombre: 'Diana', casa: 'C3',
+          manzana: 'A', etapa: '1', monto: 70000, montoPagado: 70000,
+          saldo: 0, estado: 'Pagado', modalidad: 'Mensual',
+        ),
+        const CobroItem(
+          id: '4', residenteId: 'R4', nombre: 'Elena', casa: 'C4',
+          manzana: 'A', etapa: '1', monto: 80000, montoPagado: 20000,
+          saldo: 60000, estado: 'Abonado', modalidad: 'Mensual',
+        ),
+      ];
+
+      final dynamicResumen = CarteraResumen.fromCobros(cobros);
+
+      // Pendiente: 50000 (Pendiente) + 60000 (Abonado) = 110000
+      expect(dynamicResumen.totalPendiente, 110000);
+      expect(dynamicResumen.cantidadPendientes, 2); // 'Pendiente' + 'Abonado'
+      // Mora: 60000
+      expect(dynamicResumen.totalMora, 60000);
+      expect(dynamicResumen.cantidadMora, 1);
+      // Pagado: 70000 (Pagado) + 20000 (Abonado paid part)
+      expect(dynamicResumen.totalPagado, 90000);
+      expect(dynamicResumen.cantidadPagados, 1);
+    });
+
+    test('fromCobros with empty list returns zeroes', () {
+      final dynamicResumen = CarteraResumen.fromCobros(const []);
+      expect(dynamicResumen.totalPendiente, 0);
+      expect(dynamicResumen.totalMora, 0);
+      expect(dynamicResumen.totalPagado, 0);
+      expect(dynamicResumen.cantidadPendientes, 0);
+      expect(dynamicResumen.cantidadMora, 0);
+      expect(dynamicResumen.cantidadPagados, 0);
+    });
   });
 
   group('CobroItem', () {
@@ -230,6 +277,84 @@ void main() {
         modalidad: 'Mensual',
       );
       expect(itemTitulo.tituloCuota, 'Septiembre — Cuota 1');
+    });
+
+    test('comparePorVisitaYCobro ordena por fecha, manzana A-Z, casa numérico y cuota', () {
+      const cobro1 = CobroItem(
+        id: '1',
+        residenteId: 'R-1',
+        nombre: 'Carmen',
+        casa: 'Casa 1',
+        manzana: 'Manzana B',
+        etapa: 'Etapa 1',
+        fechaVencimiento: '2026-09-12T00:00:00.000Z',
+        concepto: 'Septiembre — Cuota 1',
+        monto: 100000,
+        montoPagado: 0,
+        saldo: 100000,
+        estado: 'Pendiente',
+        modalidad: 'Mensual',
+      );
+
+      const cobro2 = CobroItem(
+        id: '2',
+        residenteId: 'R-2',
+        nombre: 'Camilo',
+        casa: 'Casa 1',
+        manzana: 'Manzana A',
+        etapa: 'Etapa 1',
+        fechaVencimiento: '2026-09-12T00:00:00.000Z',
+        concepto: 'Septiembre — Cuota 2',
+        monto: 100000,
+        montoPagado: 0,
+        saldo: 100000,
+        estado: 'Pendiente',
+        modalidad: 'Mensual',
+      );
+
+      const cobro3 = CobroItem(
+        id: '3',
+        residenteId: 'R-2',
+        nombre: 'Camilo',
+        casa: 'Casa 1',
+        manzana: 'Manzana A',
+        etapa: 'Etapa 1',
+        fechaVencimiento: '2026-09-19T00:00:00.000Z',
+        concepto: 'Septiembre — Cuota 3',
+        monto: 100000,
+        montoPagado: 0,
+        saldo: 100000,
+        estado: 'Pendiente',
+        modalidad: 'Mensual',
+      );
+
+      const cobro4 = CobroItem(
+        id: '4',
+        residenteId: 'R-3',
+        nombre: 'David',
+        casa: 'Casa 10',
+        manzana: 'Manzana A',
+        etapa: 'Etapa 1',
+        fechaVencimiento: '2026-09-12T00:00:00.000Z',
+        concepto: 'Septiembre — Cuota 1',
+        monto: 100000,
+        montoPagado: 0,
+        saldo: 100000,
+        estado: 'Pendiente',
+        modalidad: 'Mensual',
+      );
+
+      final list = [cobro1, cobro3, cobro4, cobro2]
+        ..sort(CobroItem.comparePorVisitaYCobro);
+
+      // Fecha 12, MzA, Casa 1
+      expect(list[0].id, '2');
+      // Fecha 12, MzA, Casa 10
+      expect(list[1].id, '4');
+      // Fecha 12, MzB, Casa 1
+      expect(list[2].id, '1');
+      // Fecha 19, MzA, Casa 1
+      expect(list[3].id, '3');
     });
   });
 }

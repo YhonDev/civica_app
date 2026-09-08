@@ -5,6 +5,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'core/database/app_database.dart';
 import 'core/network/api_client.dart';
+import 'core/network/api_health_service.dart';
 import 'core/network/base_url.dart';
 import 'core/sync/connectivity_detector.dart';
 import 'core/sync/sync_service.dart';
@@ -14,6 +15,7 @@ import 'core/security/biometric_lifecycle_lock.dart';
 import 'core/security/session_lifecycle_manager.dart';
 import 'core/router/app_router.dart';
 import 'features/auth/auth_cubit.dart';
+import 'features/setup/api_unavailable_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -48,14 +50,84 @@ void main() async {
   runApp(const CivicaPagoApp());
 }
 
-class CivicaPagoApp extends StatelessWidget {
+class CivicaPagoApp extends StatefulWidget {
   const CivicaPagoApp({super.key});
 
   @override
+  State<CivicaPagoApp> createState() => _CivicaPagoAppState();
+}
+
+class _CivicaPagoAppState extends State<CivicaPagoApp> {
+  /// Solo en debug: verificar que la API responde antes de entrar a la app.
+  /// En release el gate se salta (modo offline tolerante, no bloquea arranque).
+  Future<bool>? _apiCheck;
+
+  @override
+  void initState() {
+    super.initState();
+    if (!kReleaseMode) {
+      _apiCheck = ApiHealthService(baseUrl: detectBaseUrl()).isApiReachable();
+    }
+  }
+
+  void _reverificar() {
+    setState(() {
+      _apiCheck = ApiHealthService(baseUrl: detectBaseUrl()).isApiReachable();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => AuthCubit()..checkSession(),
-      child: const _AppRoot(),
+    return FutureBuilder<bool>(
+      future: _apiCheck,
+      builder: (context, snapshot) {
+        // Release (o check ya pasado): flujo normal.
+        final apiOk = kReleaseMode || (snapshot.data == true);
+
+        if (!apiOk) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return MaterialApp(
+              title: 'Cívica Pago',
+              debugShowCheckedModeBanner: false,
+              theme: buildLightTheme(),
+              darkTheme: buildDarkTheme(),
+              themeMode: darkThemeNotifier.value ? ThemeMode.dark : ThemeMode.light,
+              themeAnimationDuration: Duration.zero,
+              home: Scaffold(
+                body: Center(
+                  child: SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }
+
+          // Check terminó y la API NO responde → pantalla de bloqueo clara.
+          return MaterialApp(
+            title: 'Cívica Pago',
+            debugShowCheckedModeBanner: false,
+            theme: buildLightTheme(),
+            darkTheme: buildDarkTheme(),
+            themeMode: darkThemeNotifier.value ? ThemeMode.dark : ThemeMode.light,
+            themeAnimationDuration: Duration.zero,
+            home: ApiUnavailableScreen(
+              healthService: ApiHealthService(baseUrl: detectBaseUrl()),
+              onAvailable: _reverificar,
+            ),
+          );
+        }
+
+        return BlocProvider(
+          create: (_) => AuthCubit()..checkSession(),
+          child: const _AppRoot(),
+        );
+      },
     );
   }
 }
@@ -78,8 +150,7 @@ class _AppRoot extends StatelessWidget {
                 theme: buildLightTheme(),
                 darkTheme: buildDarkTheme(),
                 themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
-                themeAnimationDuration: const Duration(milliseconds: 300),
-                themeAnimationCurve: Curves.easeInOut,
+                themeAnimationDuration: Duration.zero,
                 home: Scaffold(
                   body: Center(
                     child: SizedBox(
@@ -109,8 +180,7 @@ class _AppRoot extends StatelessWidget {
                 theme: buildLightTheme(),
                 darkTheme: buildDarkTheme(),
                 themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
-                themeAnimationDuration: const Duration(milliseconds: 300),
-                themeAnimationCurve: Curves.easeInOut,
+                themeAnimationDuration: Duration.zero,
                 routerConfig: appRouter,
                 builder: (context, child) => BiometricLifecycleLock(
                   child: child ?? const SizedBox.shrink(),

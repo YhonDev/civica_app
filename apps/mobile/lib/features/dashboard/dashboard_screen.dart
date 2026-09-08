@@ -456,36 +456,49 @@ class _DashboardContentState extends State<_DashboardContent>
                   constraints: const BoxConstraints(
                     maxWidth: AppBreakpoints.maxContentWidth,
                   ),
-                  child: Row(
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        flex: 6,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            monthSelector,
-                            const SizedBox(height: AppSpacing.lg),
-                            kpiSection,
-                            const SizedBox(height: AppSpacing.xl),
-                            centroAtencionSection,
-                            const SizedBox(height: AppSpacing.xl),
-                            cobrosSection,
-                          ],
-                        ),
+                      monthSelector,
+                      const SizedBox(height: AppSpacing.lg),
+
+                      // Fila Superior: Métricas y Resumen Operativo (Simetría 50% / 50%)
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                kpiSection,
+                                const SizedBox(height: AppSpacing.md),
+                                centroAtencionSection,
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.lg),
+                          Expanded(
+                            child: cobrosSection,
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: AppSpacing.xl),
-                      Expanded(
-                        flex: 4,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            accionesRapidasSection,
-                            const SizedBox(height: AppSpacing.xl),
-                            actividadSection,
-                          ],
-                        ),
+
+                      const SizedBox(height: AppSpacing.xl),
+
+                      // Fila Inferior: Operativa Diaria (Simetría 50% / 50%)
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: accionesRapidasSection,
+                          ),
+                          const SizedBox(width: AppSpacing.lg),
+                          Expanded(
+                            child: actividadSection,
+                          ),
+                        ],
                       ),
+                      const SizedBox(height: AppSpacing.xl),
                     ],
                   ),
                 ),

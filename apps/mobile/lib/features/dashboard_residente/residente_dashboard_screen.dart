@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../features/auth/auth_cubit.dart';
+import '../../core/theme/app_breakpoints.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
@@ -264,6 +265,70 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
 
     final saldoFormatted = NumberFormat.decimalPattern('es_CO').format(_saldo);
     final saldoLabelText = _saldo > 0 ? 'Deuda total: \$$saldoFormatted' : 'Deuda total: \$0';
+    final isWide = context.isWideScreen;
+
+    final leftColumnWidgets = <Widget>[
+      // ── Section 1: Estado Cuenta Card (protagonista) ───────
+      _buildAnimatedSection(
+        key: const ValueKey('residente-sec-1-estado'),
+        index: 1,
+        child: EstadoCuentaCard(
+          status: _status,
+          saldoLabel: saldoLabelText,
+          proximoCobro: _formatFecha(_proximoCobro),
+          tarifaActual: _tarifaActual,
+        ),
+      ),
+
+      const SizedBox(height: AppSpacing.md),
+
+      // ── Section 1.5: Recaudo Timeline Widget ───────────────
+      _buildAnimatedSection(
+        key: const ValueKey('residente-sec-1.5-recaudo'),
+        index: 1,
+        child: RecaudoTimelineWidget(
+          cuotasPagadas: _movimientos.where((m) => m.tipo == 'pago').length,
+          totalCuotas: (_proximoPago?['pagosEsperados'] as int?) ??
+              (_tarifaActual?['modalidad'] == 'QUINCENAL' ? 2 : (_tarifaActual?['modalidad'] == 'MENSUAL' ? 1 : 4)),
+          montoPagado: _movimientos
+              .where((m) => m.tipo == 'pago')
+              .fold(0.0, (sum, m) => sum + (m.monto ?? 0)),
+          saldoPendiente: _saldo.toDouble(),
+          modalidad: (_tarifaActual?['modalidad'] as String?) ?? 'MENSUAL',
+          onAccionTap: () => context.go('/cartera'),
+        ),
+      ),
+
+      // ── Próximo pago (si hay cuota pendiente) ─────────────
+      if (_proximoPago != null) ...[
+        const SizedBox(height: AppSpacing.md),
+        _buildAnimatedSection(
+          key: const ValueKey('residente-sec-1-proximo'),
+          index: 1,
+          child: _buildProximoPago(_proximoPago!),
+        ),
+      ],
+    ];
+
+    final rightColumnWidgets = <Widget>[
+      // ── Section 2: Timeline (últimos 2 movimientos) ────────
+      if (_movimientos.isNotEmpty)
+        _buildAnimatedSection(
+          key: const ValueKey('residente-sec-2-movimientos'),
+          index: 2,
+          child: _buildMovimientos(),
+        ),
+
+      // ── Section 3: Solicitudes (solo si hay pendientes) ────
+      if (_solicitudesPendientes.isNotEmpty) ...[
+        if (_movimientos.isNotEmpty) const SizedBox(height: AppSpacing.lg),
+        _buildAnimatedSection(
+          key: const ValueKey('residente-sec-3-solicitudes'),
+          index: 3,
+          child: _buildSolicitudes(),
+        ),
+      ],
+    ];
 
     return Scaffold(
       body: SafeArea(
@@ -274,90 +339,61 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.screenPadding,
             ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: AppSpacing.lg),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: AppBreakpoints.maxContentWidth,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: AppSpacing.lg),
 
-              // ── Section 0: Header ──────────────────────────────────
-              _buildAnimatedSection(
-                key: const ValueKey('residente-sec-0-header'),
-                index: 0,
-                child: _buildHeader(displayName, user),
-              ),
+                    // ── Section 0: Header ──────────────────────────────────
+                    _buildAnimatedSection(
+                      key: const ValueKey('residente-sec-0-header'),
+                      index: 0,
+                      child: _buildHeader(displayName, user),
+                    ),
 
-              const SizedBox(height: AppSpacing.lg),
+                    const SizedBox(height: AppSpacing.lg),
 
-              // ── Section 1: Estado Cuenta Card (protagonista) ───────
-              _buildAnimatedSection(
-                key: const ValueKey('residente-sec-1-estado'),
-                index: 1,
-                child: EstadoCuentaCard(
-                  status: _status,
-                  saldoLabel: saldoLabelText,
-                  proximoCobro: _formatFecha(_proximoCobro),
-                  tarifaActual: _tarifaActual,
+                    if (isWide) ...[
+                      // ── Fila Simétrica Desktop (50% / 50%) ──────────────
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: leftColumnWidgets,
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.lg),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: rightColumnWidgets,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ] else ...[
+                      // ── Flujo Móvil Vertical ────────────────────────────
+                      ...leftColumnWidgets,
+                      const SizedBox(height: AppSpacing.lg),
+                      ...rightColumnWidgets,
+                    ],
+
+                    const SizedBox(height: AppSpacing.xl),
+                  ],
                 ),
               ),
-
-              const SizedBox(height: AppSpacing.md),
-
-              // ── Section 1.5: Recaudo Timeline Widget ───────────────
-              _buildAnimatedSection(
-                key: const ValueKey('residente-sec-1.5-recaudo'),
-                index: 1,
-                child: RecaudoTimelineWidget(
-                  cuotasPagadas: _movimientos.where((m) => m.tipo == 'pago').length,
-                  totalCuotas: (_proximoPago?['pagosEsperados'] as int?) ??
-                      (_tarifaActual?['modalidad'] == 'QUINCENAL' ? 2 : (_tarifaActual?['modalidad'] == 'MENSUAL' ? 1 : 4)),
-                  montoPagado: _movimientos
-                      .where((m) => m.tipo == 'pago')
-                      .fold(0.0, (sum, m) => sum + (m.monto ?? 0)),
-                  saldoPendiente: _saldo.toDouble(),
-                  modalidad: (_tarifaActual?['modalidad'] as String?) ?? 'MENSUAL',
-                  onAccionTap: () => context.go('/cartera'),
-                ),
-              ),
-
-              // ── Próximo pago (si hay cuota pendiente) ─────────────
-              if (_proximoPago != null) ...[
-                const SizedBox(height: AppSpacing.md),
-                _buildAnimatedSection(
-                  key: const ValueKey('residente-sec-1-proximo'),
-                  index: 1,
-                  child: _buildProximoPago(_proximoPago!),
-                ),
-              ],
-
-              const SizedBox(height: AppSpacing.lg),
-
-              // ── Section 2: Timeline (últimos 2 movimientos) ────────
-              if (_movimientos.isNotEmpty) ...[
-                const SizedBox(height: AppSpacing.lg),
-                _buildAnimatedSection(
-                  key: const ValueKey('residente-sec-2-movimientos'),
-                  index: 2,
-                  child: _buildMovimientos(),
-                ),
-              ],
-
-              // ── Section 3: Solicitudes (solo si hay pendientes) ────
-              if (_solicitudesPendientes.isNotEmpty) ...[
-                const SizedBox(height: AppSpacing.lg),
-                _buildAnimatedSection(
-                  key: const ValueKey('residente-sec-3-solicitudes'),
-                  index: 3,
-                  child: _buildSolicitudes(),
-                ),
-              ],
-
-              const SizedBox(height: AppSpacing.xl),
-            ],
+            ),
           ),
         ),
       ),
-    ),
-  );
+    );
   }
 
 

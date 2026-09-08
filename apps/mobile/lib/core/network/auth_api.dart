@@ -38,30 +38,37 @@ class AuthApi {
     String? deviceId,
     String? deviceName,
   }) async {
-    final response = await _client.post<Map<String, dynamic>>(
-      '/auth/login',
-      data: {
-        'username': username,
-        'password': password,
-        'deviceId': ?deviceId,
-        'deviceName': ?deviceName,
-      },
-    );
+    try {
+      final response = await _client.post<Map<String, dynamic>>(
+        '/auth/login',
+        data: {
+          'username': username,
+          'password': password,
+          'deviceId': deviceId,
+          'deviceName': deviceName,
+        },
+      );
 
-    final data = response.data;
-    if (data == null) {
-      throw const ApiException(message: 'Respuesta de login vacía');
+      final data = response.data;
+      if (data == null) {
+        throw const ApiException(message: 'Respuesta de login vacía');
+      }
+
+      final result = LoginResult.fromJson(data);
+
+      await _client.tokenStorage.saveTokens(
+        result.accessToken,
+        result.refreshToken,
+      );
+      await _client.tokenStorage.saveUser(result.usuario);
+
+      return result;
+    } on DioException catch (e) {
+      throw mapDioError(e);
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException(message: 'Error inesperado durante la autenticación: $e');
     }
-
-    final result = LoginResult.fromJson(data);
-
-    await _client.tokenStorage.saveTokens(
-      result.accessToken,
-      result.refreshToken,
-    );
-    await _client.tokenStorage.saveUser(result.usuario);
-
-    return result;
   }
 
   /// Registra un nuevo usuario (solo ADMIN).
@@ -73,19 +80,23 @@ class AuthApi {
     required String tenantId,
     String? residenteId,
   }) async {
-    final response = await _client.post<Map<String, dynamic>>(
-      '/auth/register',
-      data: {
-        'username': username,
-        'password': password,
-        'nombre': nombre,
-        'rol': rol,
-        'tenantId': tenantId,
-        'residenteId': residenteId,
-      },
-    );
+    try {
+      final response = await _client.post<Map<String, dynamic>>(
+        '/auth/register',
+        data: {
+          'username': username,
+          'password': password,
+          'nombre': nombre,
+          'rol': rol,
+          'tenantId': tenantId,
+          'residenteId': residenteId,
+        },
+      );
 
-    return response.data ?? {};
+      return response.data ?? {};
+    } on DioException catch (e) {
+      throw mapDioError(e);
+    }
   }
 
   /// Cierra sesión y limpia tokens.

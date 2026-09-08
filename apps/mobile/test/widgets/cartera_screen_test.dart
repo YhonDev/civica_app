@@ -62,7 +62,9 @@ void main() {
       expect(find.textContaining('Pendientes'), findsAtLeastNWidgets(1));
       expect(find.textContaining('Mora'), findsAtLeastNWidgets(1));
       expect(find.textContaining('Pagadas'), findsOneWidget);
-      expect(find.textContaining('Todas'), findsOneWidget);
+      // "Todas" aparece en 3 chips: "Todas (N)", "Todas las etapas" y
+      // "Todas las manzanas" — se verifica el chip de estado por su Key.
+      expect(find.byKey(const Key('filter_chip_TODOS')), findsOneWidget);
     });
 
     testWidgets('Pendiente filter', (tester) async {

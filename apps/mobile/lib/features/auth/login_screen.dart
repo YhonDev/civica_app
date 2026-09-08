@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart'
-    show defaultTargetPlatform, kDebugMode, kIsWeb, TargetPlatform;
+    show defaultTargetPlatform, kIsWeb, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -294,66 +294,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                       ],
-                      const SizedBox(height: 24),
-                      if (kDebugMode) ...[
-                        const Divider(),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Autocompletado de prueba',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.outline,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          alignment: WrapAlignment.center,
-                          children: [
-                            ActionChip(
-                              avatar: const Icon(Icons.admin_panel_settings_outlined, size: 16),
-                              label: const Text('Admin'),
-                              onPressed: () => setState(() {
-                                _emailCtrl.text = 'admin';
-                                _passwordCtrl.text = 'Admin2026!';
-                              }),
-                            ),
-                            ActionChip(
-                              avatar: const Icon(Icons.badge_outlined, size: 16),
-                              label: const Text('Cobrador'),
-                              onPressed: () => setState(() {
-                                _emailCtrl.text = 'ricardoarrietacobrador';
-                                _passwordCtrl.text = 'ricardoArrieta2026.';
-                              }),
-                            ),
-                            ActionChip(
-                              avatar: const Icon(Icons.home_outlined, size: 16),
-                              label: const Text('Residente A'),
-                              onPressed: () => setState(() {
-                                _emailCtrl.text = 'manzana_a_casa_1_residente';
-                                _passwordCtrl.text = 'Casa1ManzanaA..';
-                              }),
-                            ),
-                            ActionChip(
-                              avatar: const Icon(Icons.home_outlined, size: 16),
-                              label: const Text('Residente B'),
-                              onPressed: () => setState(() {
-                                _emailCtrl.text = 'manzana_b_casa_1_residente';
-                                _passwordCtrl.text = 'Casa1ManzanaB';
-                              }),
-                            ),
-                            ActionChip(
-                              avatar: const Icon(Icons.home_outlined, size: 16),
-                              label: const Text('Residente C'),
-                              onPressed: () => setState(() {
-                                _emailCtrl.text = 'manzana_c_casa_1_residente';
-                                _passwordCtrl.text = 'Casa1ManzanaC';
-                              }),
-                            ),
-                          ],
-                        ),
-                      ],
                     ],
                   ),
                 ),
@@ -378,8 +318,15 @@ class _LoginScreenState extends State<LoginScreen> {
       username: username,
     );
 
-    // Guardar credenciales cifradas en Keystore para permitir acceso biométrico
-    await BiometricAuthService.instance.saveBiometricCredentials(username, password);
+    // Guardar credenciales cifradas en Keystore SOLO si la biometría está
+    // activada: nunca almacenar la contraseña (aunque cifrada) sin el
+    // consentimiento explícito del flujo de activación de huella.
+    final biometricsEnabled =
+        await BiometricAuthService.instance.isBiometricsEnabled();
+    if (biometricsEnabled) {
+      await BiometricAuthService.instance
+          .saveBiometricCredentials(username, password);
+    }
 
     if (!context.mounted) return;
     context.read<AuthCubit>().login(

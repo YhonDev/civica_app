@@ -27,7 +27,7 @@ class RegistrarPagoBottomSheet extends StatefulWidget {
     super.key,
     required this.cobro,
     this.cuotas,
-    this.initialQuickMode = false,
+    this.initialQuickMode = true,
     required this.onSuccess,
   });
 
@@ -35,7 +35,7 @@ class RegistrarPagoBottomSheet extends StatefulWidget {
     BuildContext context, {
     required CobroItem cobro,
     List<dynamic>? cuotas,
-    bool initialQuickMode = false,
+    bool initialQuickMode = true,
     required VoidCallback onSuccess,
   }) {
     return showModalBottomSheet(
@@ -91,13 +91,26 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
       final double valPorCuota = widget.cobro.saldo / count;
 
       _cuotasList = List.generate(count, (i) => {
-        'periodo': 'Cuota ${i + 1}',
+        'id': widget.cobro.id,
+        'periodo': widget.cobro.concepto.isNotEmpty ? widget.cobro.concepto : 'Cuota ${i + 1}',
         'monto': valPorCuota,
         'estado': i == 0 ? (widget.cobro.estado == 'MORA' || widget.cobro.estado == 'VENCIDA' ? 'VENCIDA' : 'PENDIENTE') : 'PENDIENTE',
       });
     } else {
       _cuotasList = [];
     }
+
+    // Seleccionar por defecto la cuota cliqueada si coincide con alguna de la lista
+    int initialIdx = 0;
+    for (int i = 0; i < _cuotasList.length; i++) {
+      final item = _cuotasList[i];
+      if (item is Map && item['id'] == widget.cobro.id) {
+        initialIdx = i;
+        break;
+      }
+    }
+    _selectedIndices.clear();
+    _selectedIndices.add(initialIdx);
 
     _recalcularMonto();
   }
@@ -119,13 +132,16 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
 
   String _formatCuotaTitle(Map<String, dynamic> cuota, int idx) {
     if (cuota['tituloCuota'] != null && (cuota['tituloCuota'] as String).isNotEmpty) {
-      return cuota['tituloCuota'] as String;
+      final t = cuota['tituloCuota'] as String;
+      if (!t.contains('Cuota 1 — Cuota 1')) {
+        return t;
+      }
     }
     final periodo = cuota['periodo'] as String? ?? '';
     final concepto = cuota['concepto'] as String? ?? '';
     final fechaVenc = cuota['fechaVencimiento'] as String? ?? periodo;
 
-    // Extraer mes y año
+    // Extraer mes y año si fechaVenc contiene formato de fecha
     String mesNombre = '';
     final dateMatch = RegExp(r'(\d{4})-(\d{2})').firstMatch(fechaVenc);
     if (dateMatch != null) {
@@ -138,23 +154,55 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
       mesNombre = '${meses[month - 1]} $year';
     }
 
+    // Fallback: extraer mes de fechaVencimiento o periodoInicio del cobro principal
     if (mesNombre.isEmpty) {
-      mesNombre = concepto.isNotEmpty ? concepto : (periodo.isNotEmpty ? periodo : 'Cuota ${idx + 1}');
+      final cobroDateMatch = RegExp(r'(\d{4})-(\d{2})').firstMatch(widget.cobro.fechaVencimiento);
+      if (cobroDateMatch != null) {
+        final year = cobroDateMatch.group(1);
+        final month = int.tryParse(cobroDateMatch.group(2) ?? '1') ?? 1;
+        final meses = [
+          'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+          'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+        ];
+        mesNombre = '${meses[month - 1]} $year';
+      }
     }
 
-    final modalidad = widget.cobro.modalidad.toLowerCase();
+    // Extraer número de cuota si viene en concepto (ej. "Septiembre — Cuota 2")
     String tipoPago = 'Cuota ${idx + 1}';
-    if (modalidad.contains('mensual')) {
-      tipoPago = 'Cuota Única';
-    } else if (modalidad.contains('quincenal')) {
-      final qNum = (idx % 2) + 1;
-      tipoPago = 'Cuota $qNum';
-    } else if (modalidad.contains('semanal')) {
-      final sNum = (idx % 4) + 1;
-      tipoPago = 'Cuota $sNum';
+    final cuotaNumMatch = RegExp(r'Cuota\s*(\d+)', caseSensitive: false).firstMatch(concepto.isNotEmpty ? concepto : periodo);
+    if (cuotaNumMatch != null) {
+      tipoPago = 'Cuota ${cuotaNumMatch.group(1)}';
+    } else {
+      final modalidad = widget.cobro.modalidad.toLowerCase();
+      if (modalidad.contains('mensual')) {
+        tipoPago = 'Cuota Única';
+      } else if (modalidad.contains('quincenal')) {
+        final qNum = (idx % 2) + 1;
+        tipoPago = 'Cuota $qNum';
+      } else if (modalidad.contains('semanal')) {
+        final sNum = (idx % 4) + 1;
+        tipoPago = 'Cuota $sNum';
+      }
     }
 
-    return '$mesNombre — $tipoPago';
+    // Evitar redundancias como "Septiembre — Cuota 1 — Cuota 1"
+    if (concepto.isNotEmpty && concepto.contains('—')) {
+      final parts = concepto.split('—');
+      if (parts.length >= 2) {
+        return '${parts[0].trim()} — ${parts[1].trim()}';
+      }
+    }
+
+    if (mesNombre.isNotEmpty) {
+      return '$mesNombre — $tipoPago';
+    }
+
+    if (concepto.isNotEmpty && !concepto.toLowerCase().startsWith('cuota')) {
+      return '$concepto — $tipoPago';
+    }
+
+    return tipoPago;
   }
 
   @override
@@ -225,13 +273,30 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
           'Error al registrar recaudo: ${e.toString().replaceAll('Exception: ', '')}',
         );
       }
+    } finally {
+      if (mounted) {
+        setState(() => _enviando = false);
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    double totalAdeudado = 0;
+    if (_cuotasList.isNotEmpty) {
+      for (final c in _cuotasList) {
+        if (c is Map) {
+          final m = (c['monto'] as num?)?.toDouble() ?? 0.0;
+          totalAdeudado += m;
+        }
+      }
+    }
+    if (totalAdeudado <= 0) {
+      totalAdeudado = widget.cobro.saldo > 0 ? widget.cobro.saldo : widget.cobro.monto;
+    }
+
     final saldoStr =
-        '\$ ${NumberFormat.decimalPattern('es_CO').format(widget.cobro.saldo.toInt())}';
+        '\$ ${NumberFormat.decimalPattern('es_CO').format(totalAdeudado.toInt())}';
 
     return Padding(
       padding: EdgeInsets.only(
@@ -295,6 +360,12 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
                     ),
                   ],
                 ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close_rounded, size: 22),
+                color: AppColors.textSecondary,
+                tooltip: 'Cerrar',
+                onPressed: () => Navigator.of(context).pop(),
               ),
             ],
           ),

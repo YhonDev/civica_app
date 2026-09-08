@@ -40,6 +40,24 @@ class AppColors {
   static Color get card => _isDark ? darkCard : lightCard;
   static Color get surface => _isDark ? darkSurface : lightSurface;
 
+  /// Campo de búsqueda / contenedor de chips sobre el fondo de pantalla.
+  /// Reemplaza los literales 0xFF1E293B (dark) / 0xFFF1F5F9 (light).
+  static Color get searchField => _isDark ? darkSurface : lightBackground;
+
+  /// Fondo de tarjeta elevada sobre el fondo de pantalla.
+  /// Reemplaza los literales 0xFF1E293B (dark) / Colors.white (light).
+  static Color get elevatedCard => _isDark ? darkCard : lightCard;
+
+  /// Texto de énfasis sobre tarjeta elevada.
+  static Color get elevatedCardText => _isDark ? darkTextPrimary : lightTextPrimary;
+
+  /// Borde de tarjeta elevada.
+  static Color get elevatedCardBorder => _isDark ? darkBorder : lightBorder;
+
+  /// Texto secundario sobre tarjeta elevada.
+  static Color get elevatedCardTextSecondary =>
+      _isDark ? darkTextSecondary : Color(0xFF475569);
+
   // ── Dynamic Text (Current Mode) ────────────────────
   static Color get textPrimary => _isDark ? darkTextPrimary : lightTextPrimary;
   static Color get textSecondary => _isDark ? darkTextSecondary : lightTextSecondary;

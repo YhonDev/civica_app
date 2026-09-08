@@ -171,7 +171,17 @@ void main() {
 
       await cubit.login(username: 'a@b.com', password: 'p');
       expect(cubit.state.status, AuthStatus.error);
-      expect(cubit.state.errorMessage, contains('Algo falló'));
+      expect(cubit.state.errorMessage, 'Algo falló');
+    });
+
+    test('error técnico DioException se sanitiza a mensaje seguro de red', () async {
+      final api = FakeAuthApi(loginError: Exception('DioException [bad response]: 500'));
+      final cubit = AuthCubit(authApi: api);
+      addTearDown(() => cubit.close());
+
+      await cubit.login(username: 'a@b.com', password: 'p');
+      expect(cubit.state.status, AuthStatus.error);
+      expect(cubit.state.errorMessage, 'No se pudo conectar con el servidor. Verifica tu conexión a internet.');
     });
   });
 

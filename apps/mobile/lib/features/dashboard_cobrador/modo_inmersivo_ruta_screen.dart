@@ -198,7 +198,6 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
 
         for (final casa in casasOrdenadas) {
           final double saldoReal = casa.saldo.toDouble();
-          final String estadoReal = casa.estado;
 
           // Filtro de ruta con fecha de corte del recorrido seleccionado
           // (misma lógica que el explorer, compartida desde casas_cubit).
@@ -206,10 +205,18 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
                 casa,
                 widget.selectedEstadoFiltro,
                 widget.selectedRecorridoFecha,
-              ) !=
-              CasaFiltroVeredicto.excluir;
+              ) ==
+              CasaFiltroVeredicto.incluir;
 
           if (incluir) {
+            final cuotaInfo = obtenerCuotaParaRecorrido(
+              casa,
+              widget.selectedEstadoFiltro,
+              widget.selectedRecorridoFecha,
+            );
+            final estadoEfectivo = widget.selectedEstadoFiltro == 'MORA'
+                ? 'VENCIDA'
+                : cuotaInfo.estado;
             final solKey = '${manzana.nombre}_${casa.direccion}';
             resultado.add(
               ModoInmersivoItem(
@@ -221,13 +228,13 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
                 residenteNombre: casa.residenteNombre.isNotEmpty ? casa.residenteNombre : 'Sin residente',
                 residenteTelefono: casa.residenteTelefono,
                 modalidad: casa.modalidad,
-                estado: estadoReal,
+                estado: estadoEfectivo,
                 saldo: saldoReal,
                 tieneSolicitud: casasConSolicitud.contains(solKey),
                 solicitudNota: notasSolicitud[solKey],
-                proximaCuotaNombre: casa.proximaCuotaNombre,
-                proximaCuotaMonto: casa.proximaCuotaMonto,
-                proximaCuotaId: casa.proximaCuotaId,
+                proximaCuotaNombre: cuotaInfo.nombre ?? casa.proximaCuotaNombre,
+                proximaCuotaMonto: cuotaInfo.monto > 0 ? cuotaInfo.monto : casa.proximaCuotaMonto,
+                proximaCuotaId: cuotaInfo.id ?? casa.proximaCuotaId,
                 cuotas: casa.cuotas,
               ),
             );

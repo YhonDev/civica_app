@@ -200,7 +200,7 @@ void main() {
   });
 
   group('CarteraScreen Responsive Grid Tests', () {
-    testWidgets('Renders SliverGrid with 4 columns on desktop width (>= 1200px)', (tester) async {
+    testWidgets('Renders SliverGrid with 3 columns on desktop width (>= 1024px)', (tester) async {
       tester.view.physicalSize = const Size(1280, 800);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -230,7 +230,40 @@ void main() {
       expect(find.byType(SliverGrid), findsOneWidget);
       final grid = tester.widget<SliverGrid>(find.byType(SliverGrid));
       final delegate = grid.gridDelegate as SliverGridDelegateWithFixedCrossAxisCount;
-      expect(delegate.crossAxisCount, equals(4));
+      expect(delegate.crossAxisCount, equals(3));
+    });
+
+    testWidgets('Renders SliverGrid with 2 columns on tablet width (600px - 1023px)', (tester) async {
+      tester.view.physicalSize = const Size(800, 1000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      final authCubit = AuthCubit();
+      authCubit.emit(AuthState.authenticated({
+        'nombre': 'Admin Test',
+        'rol': 'ADMIN',
+        'email': 'admin@test.com',
+        'tenantId': 't1',
+      }));
+
+      final repo = FakeCarteraData.conTresCuotas();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: BlocProvider<AuthCubit>.value(
+            value: authCubit,
+            child: CarteraScreen(repository: repo),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      expect(find.byType(SliverGrid), findsOneWidget);
+      final grid = tester.widget<SliverGrid>(find.byType(SliverGrid));
+      final delegate = grid.gridDelegate as SliverGridDelegateWithFixedCrossAxisCount;
+      expect(delegate.crossAxisCount, equals(2));
     });
   });
 

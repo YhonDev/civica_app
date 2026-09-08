@@ -311,7 +311,7 @@ class CarteraConsolidadaScreen extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        color: isDark ? AppColors.elevatedCard : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: cardBorderColor,

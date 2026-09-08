@@ -199,7 +199,12 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
           ),
 
           // Lista o Cuadrícula Responsiva por Territorio
-          ..._buildTerritorioSlivers(context, processedEtapas, context.isWideScreen),
+          ..._buildTerritorioSlivers(
+            context,
+            processedEtapas,
+            context.isWideScreen,
+            fechaCorte: fechaCorte,
+          ),
 
           const SliverToBoxAdapter(
             child: SizedBox(height: AppSpacing.xl),
@@ -1014,8 +1019,8 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
     for (final e in etapas) {
       for (final m in e.manzanas) {
         for (final c in m.casas) {
-          if (evaluarCasaParaRecorrido(c, _filtroEstado, fechaCorte) !=
-              CasaFiltroVeredicto.excluir) {
+          if (evaluarCasaParaRecorrido(c, _filtroEstado, fechaCorte) ==
+              CasaFiltroVeredicto.incluir) {
             total++;
           }
         }
@@ -1044,24 +1049,16 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
 
       List<ManzanaExplorer> resultManzanas = manzanasOrdenadas.map((manzana) {
         List<CasaExplorer> resultCasas = manzana.casas.where((casa) {
-          return evaluarCasaParaRecorrido(casa, _filtroEstado, fechaCorte) !=
-              CasaFiltroVeredicto.excluir;
+          return evaluarCasaParaRecorrido(casa, _filtroEstado, fechaCorte) ==
+              CasaFiltroVeredicto.incluir;
         }).toList();
 
-        // Casas solo en mora se ordenan al final de la manzana; el resto
-        // respeta el orden secuencial de caminata. En MORA el orden es por
-        // deuda más antigua (fechaVencimiento más vieja primero).
+        // En MORA el orden es por deuda más antigua (fechaVencimiento más vieja primero).
+        // En PENDIENTES se respeta el orden secuencial de caminata de la manzana.
         resultCasas.sort((a, b) {
           if (_filtroEstado == 'MORA') {
             return compararCasasPorMoraAntigua(a, b);
           }
-          final aMora = _filtroEstado == 'PENDIENTES' && fechaCorte != null &&
-              evaluarCasaParaRecorrido(a, _filtroEstado, fechaCorte) ==
-                  CasaFiltroVeredicto.mora;
-          final bMora = _filtroEstado == 'PENDIENTES' && fechaCorte != null &&
-              evaluarCasaParaRecorrido(b, _filtroEstado, fechaCorte) ==
-                  CasaFiltroVeredicto.mora;
-          if (aMora != bMora) return aMora ? 1 : -1;
           final comp = a.direccion.compareTo(b.direccion);
           return _sentidoInverso ? -comp : comp;
         });
@@ -1092,8 +1089,9 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
   List<Widget> _buildTerritorioSlivers(
     BuildContext context,
     List<EtapaExplorer> etapas,
-    bool isWide,
-  ) {
+    bool isWide, {
+    String? fechaCorte,
+  }) {
     if (etapas.isEmpty) {
       return [
         SliverPadding(
@@ -1146,7 +1144,7 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                 ),
                 delegate: SliverChildBuilderDelegate(
                   (context, index) =>
-                      _buildCasaItem(manzana.casas[index], etapa.nombre, manzana.nombre),
+                      _buildCasaItem(manzana.casas[index], etapa.nombre, manzana.nombre, fechaCorte: fechaCorte),
                   childCount: manzana.casas.length,
                 ),
               ),
@@ -1159,7 +1157,7 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
               sliver: SliverList.builder(
                 itemCount: manzana.casas.length,
                 itemBuilder: (context, index) =>
-                    _buildCasaItem(manzana.casas[index], etapa.nombre, manzana.nombre),
+                    _buildCasaItem(manzana.casas[index], etapa.nombre, manzana.nombre, fechaCorte: fechaCorte),
               ),
             ),
           );
@@ -1239,8 +1237,16 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
 
   // ── Casa Item — con semáforo 🟢🟠🔴🔵 ───────────────────────────
 
-  Widget _buildCasaItem(CasaExplorer casa, String etapaNombre, String manzanaNombre) {
-    final (Color color, String label, String emoji) = switch (casa.estado) {
+  Widget _buildCasaItem(
+    CasaExplorer casa,
+    String etapaNombre,
+    String manzanaNombre, {
+    String? fechaCorte,
+  }) {
+    final cuotaInfo = obtenerCuotaParaRecorrido(casa, _filtroEstado, fechaCorte);
+    final estadoEfectivo = _filtroEstado == 'MORA' ? 'VENCIDA' : cuotaInfo.estado;
+
+    final (Color color, String label, String emoji) = switch (estadoEfectivo) {
       'VENCIDA' => (AppColors.error, 'En mora', '🔴'),
       'PARCIAL' => (AppColors.info, 'Parcial', '🔵'),
       'PENDIENTE' => (AppColors.warning, 'Pendiente', '🟠'),
@@ -1266,19 +1272,21 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
           borderRadius: BorderRadius.circular(12),
           onTap: () {
             AppFeedback.light();
-            final defaultMonto = casa.proximaCuotaMonto > 0
-                ? casa.proximaCuotaMonto.toDouble()
+            final defaultMonto = cuotaInfo.monto > 0
+                ? cuotaInfo.monto.toDouble()
                 : (casa.saldo > 0 ? (casa.saldo > 50000 ? 10000.0 : casa.saldo.toDouble()) : 20000.0);
 
             final cobroItem = CobroItem(
-              id: casa.proximaCuotaId ?? casa.id,
-              concepto: casa.proximaCuotaNombre != null
-                  ? '${casa.proximaCuotaNombre} — $direccionCompleta'
-                  : 'Cuota de Recaudo — $direccionCompleta',
+              id: cuotaInfo.id ?? casa.proximaCuotaId ?? casa.id,
+              concepto: cuotaInfo.nombre != null && cuotaInfo.nombre!.isNotEmpty
+                  ? '${cuotaInfo.nombre} — $direccionCompleta'
+                  : (casa.proximaCuotaNombre != null
+                      ? '${casa.proximaCuotaNombre} — $direccionCompleta'
+                      : 'Cuota de Recaudo — $direccionCompleta'),
               monto: defaultMonto,
               montoPagado: 0,
               saldo: casa.saldo.toDouble(),
-              estado: casa.estado,
+              estado: estadoEfectivo,
               modalidad: casa.modalidad,
               casa: casa.direccion,
               manzana: manzanaNombre,
@@ -1322,10 +1330,34 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Fila 1: Manzana — Casa
-                      Text(
-                        direccionCompleta,
-                        style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w700),
+                      // Fila 1: Etapa badge + Manzana — Casa
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            margin: const EdgeInsets.only(right: 6),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              etapaNombre,
+                              style: AppTypography.caption.copyWith(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: Text(
+                              direccionCompleta,
+                              style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w700),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 2),
                       // Fila 2: Residente
@@ -1338,11 +1370,11 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      // Fila 3: Cuota
-                      if (casa.proximaCuotaNombre != null && casa.proximaCuotaNombre!.isNotEmpty) ...[
+                      // Fila 3: Cuota (según el sábado seleccionado o mora)
+                      if (cuotaInfo.nombre != null && cuotaInfo.nombre!.isNotEmpty) ...[
                         const SizedBox(height: 3),
                         Text(
-                          casa.proximaCuotaNombre!,
+                          cuotaInfo.nombre!,
                           style: AppTypography.small.copyWith(
                             color: AppColors.primary,
                             fontWeight: FontWeight.w700,
@@ -1351,9 +1383,9 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                           overflow: TextOverflow.ellipsis,
                         ),
                       ],
-                      // Fila 4: Fecha de vencimiento
-                      if (casa.proximaCuotaFechaVencimiento != null &&
-                          casa.proximaCuotaFechaVencimiento!.isNotEmpty) ...[
+                      // Fila 4: Fecha de vencimiento (según el sábado seleccionado o mora)
+                      if (cuotaInfo.fechaVencimiento != null &&
+                          cuotaInfo.fechaVencimiento!.isNotEmpty) ...[
                         const SizedBox(height: 2),
                         Row(
                           mainAxisSize: MainAxisSize.min,
@@ -1361,7 +1393,7 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                             Icon(Icons.event_rounded, size: 12, color: AppColors.textSecondary),
                             const SizedBox(width: 3),
                             Text(
-                              'Vence: ${_formatFechaCorta(casa.proximaCuotaFechaVencimiento)}',
+                              'Vence: ${_formatFechaCorta(cuotaInfo.fechaVencimiento)}',
                               style: AppTypography.small.copyWith(
                                 color: AppColors.textSecondary,
                                 fontWeight: FontWeight.w600,

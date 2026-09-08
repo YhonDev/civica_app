@@ -39,14 +39,12 @@ extension ResponsiveContext on BuildContext {
   bool get isWideScreen => screenWidth >= AppBreakpoints.compact;
 
   /// Number of responsive columns for enterprise card grids:
-  /// - >= 1200px (Desktop / Widescreen): 4 columns
-  /// - 900px to 1199px (Tablet Landscape / Medium Desktop): 3 columns
-  /// - 600px to 899px (Tablet Portrait): 2 columns
+  /// - >= 1024px (Desktop / Widescreen): 3 columns
+  /// - 600px to 1023px (Tablet): 2 columns
   /// - < 600px (Mobile): 1 column
   int get gridColumns {
-    if (screenWidth >= 1200) return 4;
-    if (screenWidth >= 900) return 3;
-    if (screenWidth >= 600) return 2;
+    if (screenWidth >= AppBreakpoints.medium) return 3;
+    if (screenWidth >= AppBreakpoints.compact) return 2;
     return 1;
   }
 }

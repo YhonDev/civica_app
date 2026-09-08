@@ -171,10 +171,24 @@ class AuthCubit extends Cubit<AuthState> {
     } on NetworkException {
       emit(const AuthState.error('Sin conexión a internet'));
     } on ApiException catch (e) {
-      emit(AuthState.error(e.message));
-    } catch (e) {
-      emit(AuthState.error('Error al iniciar sesión: $e'));
+      emit(AuthState.error(_sanitizeErrorMessage(e.message)));
+    } catch (e, stack) {
+      debugPrint('[AuthCubit] Error inesperado en login: $e\n$stack');
+      emit(AuthState.error(_sanitizeErrorMessage(e.toString())));
     }
+  }
+
+  String _sanitizeErrorMessage(String message) {
+    final clean = message.replaceFirst(RegExp(r'^(Exception|Error):\s*', caseSensitive: false), '');
+    final lower = clean.toLowerCase();
+    if (lower.contains('dioexception') ||
+        lower.contains('socketexception') ||
+        lower.contains('httpexception') ||
+        lower.contains('handshakeexception') ||
+        lower.contains('clientexception')) {
+      return 'No se pudo conectar con el servidor. Verifica tu conexión a internet.';
+    }
+    return clean;
   }
 
   /// Cierra sesión.

@@ -80,12 +80,12 @@ class CobroCard extends StatelessWidget {
     final isOverdue = cobro.isMora;
     final cardBorderColor = isOverdue
         ? AppColors.error.withValues(alpha: 0.4)
-        : (isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0));
+        : AppColors.elevatedCardBorder;
 
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        color: AppColors.elevatedCard,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: cardBorderColor,
@@ -139,7 +139,7 @@ class CobroCard extends StatelessWidget {
                               ubicacion.isNotEmpty ? ubicacion : cobro.tituloCuota,
                               style: AppTypography.bodyMedium.copyWith(
                                 fontWeight: FontWeight.w800,
-                                fontSize: 14,
+                                fontSize: 15.5,
                                 color: isDark ? Colors.white : const Color(0xFF0F172A),
                                 letterSpacing: -0.2,
                               ),
@@ -155,8 +155,8 @@ class CobroCard extends StatelessWidget {
                                 Flexible(
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(
-                                      horizontal: 7,
-                                      vertical: 1.5,
+                                      horizontal: 8,
+                                      vertical: 2,
                                     ),
                                     decoration: BoxDecoration(
                                       color: AppColors.primary.withValues(alpha: 0.1),
@@ -167,7 +167,7 @@ class CobroCard extends StatelessWidget {
                                       style: AppTypography.caption.copyWith(
                                         color: AppColors.primary,
                                         fontWeight: FontWeight.w700,
-                                        fontSize: 11,
+                                        fontSize: 12,
                                       ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
@@ -184,17 +184,17 @@ class CobroCard extends StatelessWidget {
                                 children: [
                                   Icon(
                                     Icons.person_outline_rounded,
-                                    size: 13,
-                                    color: AppColors.textSecondary,
+                                    size: 14.5,
+                                    color: isDark ? Colors.white70 : const Color(0xFF475569),
                                   ),
-                                  const SizedBox(width: 4),
+                                  const SizedBox(width: 4.5),
                                   Expanded(
                                     child: Text(
                                       cobro.nombre,
                                       style: AppTypography.caption.copyWith(
-                                        color: isDark ? Colors.white70 : const Color(0xFF334155),
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 11,
+                                        color: isDark ? Colors.white : AppColors.elevatedCardText,
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 12.5,
                                       ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
@@ -212,11 +212,11 @@ class CobroCard extends StatelessWidget {
                                 style: AppTypography.caption.copyWith(
                                   color: (cobro.estado == 'Mora' || cobro.estado == 'VENCIDA')
                                       ? AppColors.error
-                                      : AppColors.textSecondary.withValues(alpha: 0.8),
+                                      : AppColors.textSecondary.withValues(alpha: 0.9),
                                   fontWeight: (cobro.estado == 'Mora' || cobro.estado == 'VENCIDA')
                                       ? FontWeight.w700
                                       : FontWeight.w500,
-                                  fontSize: 10.5,
+                                  fontSize: 11,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -231,7 +231,7 @@ class CobroCard extends StatelessWidget {
                               cobro.tituloCuota,
                               style: AppTypography.bodyMedium.copyWith(
                                 fontWeight: FontWeight.w800,
-                                fontSize: 14,
+                                fontSize: 15.5,
                                 color: isDark ? Colors.white : const Color(0xFF0F172A),
                                 letterSpacing: -0.2,
                               ),
@@ -246,17 +246,17 @@ class CobroCard extends StatelessWidget {
                                 children: [
                                   Icon(
                                     Icons.home_outlined,
-                                    size: 13,
+                                    size: 14.5,
                                     color: AppColors.textSecondary,
                                   ),
-                                  const SizedBox(width: 4),
+                                  const SizedBox(width: 4.5),
                                   Expanded(
                                     child: Text(
                                       ubicacion,
                                       style: AppTypography.caption.copyWith(
                                         color: AppColors.textSecondary,
-                                        fontWeight: FontWeight.w500,
-                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 12,
                                       ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
@@ -275,8 +275,8 @@ class CobroCard extends StatelessWidget {
                                   Flexible(
                                     child: Container(
                                       padding: const EdgeInsets.symmetric(
-                                        horizontal: 7,
-                                        vertical: 1.5,
+                                        horizontal: 7.5,
+                                        vertical: 2,
                                       ),
                                       decoration: BoxDecoration(
                                         color: (cobro.isMora
@@ -296,7 +296,7 @@ class CobroCard extends StatelessWidget {
                                                   ? AppColors.success
                                                   : AppColors.primary),
                                           fontWeight: FontWeight.w700,
-                                          fontSize: 10.5,
+                                          fontSize: 11,
                                         ),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,

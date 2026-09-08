@@ -4,6 +4,7 @@ import 'dart:math' show min;
 import 'package:flutter/foundation.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'local_cache_repository.dart';
+import 'api_client.dart';
 
 /// Enterprise Real-Time WebSockets Service for Flutter.
 ///
@@ -88,10 +89,7 @@ class RealtimeSocketService {
       final optionsBuilder = io.OptionBuilder()
           .setTransports(['websocket'])
           .disableAutoConnect()
-          .enableReconnection()
-          .setReconnectionDelay(1000)
-          .setReconnectionDelayMax(30000)
-          .setReconnectionAttempts(_maxReconnectAttempt);
+          .disableReconnection(); // Evita bucle rápido de reconexión nativa con tokens expirados
 
       if (_token != null && _token!.isNotEmpty) {
         optionsBuilder.setAuth({'token': _token});
@@ -170,6 +168,12 @@ class RealtimeSocketService {
     _socket?.onError((error) {
       debugPrint('[RealtimeSocket] Socket error: $error');
     });
+
+    _socket?.on('auth_error', (data) {
+      debugPrint('[RealtimeSocket] Auth error from gateway: $data');
+      _disposeSocket();
+      _scheduleReconnect();
+    });
   }
 
   void _joinRooms() {
@@ -208,8 +212,14 @@ class RealtimeSocketService {
     debugPrint('[RealtimeSocket] Reconnecting in ${delay.inSeconds}s (attempt ${_reconnectAttempt + 1}/$_maxReconnectAttempt)...');
 
     _reconnectTimer?.cancel();
-    _reconnectTimer = Timer(delay, () {
+    _reconnectTimer = Timer(delay, () async {
       _reconnectAttempt++;
+      try {
+        final freshToken = await ApiClient.instance.tokenStorage.getAccessToken();
+        if (freshToken != null && freshToken.isNotEmpty) {
+          _token = freshToken;
+        }
+      } catch (_) {}
       _connect();
     });
   }

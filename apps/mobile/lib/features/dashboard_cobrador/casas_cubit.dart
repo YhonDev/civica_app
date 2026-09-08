@@ -130,10 +130,19 @@ CasaFiltroVeredicto evaluarCasaParaRecorrido(
   switch (filtro) {
     case 'PENDIENTES':
       if (fechaCorte == null) {
-        return (casa.estado == 'PENDIENTE' ||
-                casa.estado == 'PARCIAL' ||
-                casa.estado == 'VENCIDA') &&
-              casa.saldo > 0
+        if (casa.estado == 'VENCIDA') return CasaFiltroVeredicto.mora;
+        return (casa.estado == 'PENDIENTE' || casa.estado == 'PARCIAL') &&
+                casa.saldo > 0
+            ? CasaFiltroVeredicto.incluir
+            : CasaFiltroVeredicto.excluir;
+      }
+      if (casa.cuotas.isEmpty) {
+        if (casa.estado == 'VENCIDA') return CasaFiltroVeredicto.mora;
+        final fv = casa.proximaCuotaFechaVencimiento;
+        final coincide = fv == null || _coincideFecha(fv, fechaCorte);
+        return (casa.estado == 'PENDIENTE' || casa.estado == 'PARCIAL') &&
+                casa.saldo > 0 &&
+                coincide
             ? CasaFiltroVeredicto.incluir
             : CasaFiltroVeredicto.excluir;
       }
@@ -146,12 +155,10 @@ CasaFiltroVeredicto evaluarCasaParaRecorrido(
         if (estado == 'VENCIDA') {
           tieneVencida = true;
         } else if (kEstadosCuotaPorCobrar.contains(estado) &&
-            _venceEnOAntesDe(cuota['fechaVencimiento'] as String?, fechaCorte)) {
+            _coincideFecha(cuota['fechaVencimiento'] as String?, fechaCorte)) {
           tieneVigente = true;
         }
       }
-      // La casa entra al recorrido si tiene cuota por cobrar esta semana
-      // (allí también se cobra la mora); si solo debe mora, se reporta como mora.
       if (tieneVigente) return CasaFiltroVeredicto.incluir;
       if (tieneVencida) return CasaFiltroVeredicto.mora;
       return CasaFiltroVeredicto.excluir;
@@ -175,6 +182,99 @@ CasaFiltroVeredicto evaluarCasaParaRecorrido(
       // Solo existen los filtros PENDIENTES y MORA.
       return CasaFiltroVeredicto.excluir;
   }
+}
+
+/// Información contextual de cuota para una casa según el recorrido o mora activa.
+class CuotaItemInfo extends Equatable {
+  final String? id;
+  final String? nombre;
+  final int monto;
+  final String? fechaVencimiento;
+  final String estado;
+
+  const CuotaItemInfo({
+    this.id,
+    this.nombre,
+    this.monto = 0,
+    this.fechaVencimiento,
+    this.estado = 'PENDIENTE',
+  });
+
+  @override
+  List<Object?> get props => [id, nombre, monto, fechaVencimiento, estado];
+}
+
+/// Extrae la cuota específica relevante para [casa] según [filtro] y [fechaCorte].
+///
+/// Si [filtro] es 'MORA', busca la cuota vencida más antigua con saldo.
+/// Si [filtro] es 'PENDIENTES' y hay [fechaCorte], busca la cuota que vence ese sábado.
+/// De lo contrario, devuelve la próxima cuota por defecto de la casa.
+CuotaItemInfo obtenerCuotaParaRecorrido(
+  CasaExplorer casa,
+  String filtro,
+  String? fechaCorte,
+) {
+  if (filtro == 'MORA') {
+    Map<String, dynamic>? cuotaVencidaMasAntigua;
+    String fechaMasAntigua = '';
+    for (final cuota in casa.cuotas) {
+      final estado = cuota['estado'] as String? ?? '';
+      final saldo = (cuota['saldo'] as num?)?.toInt() ?? 0;
+      if (saldo <= 0 || estado != 'VENCIDA') continue;
+      final fv = cuota['fechaVencimiento'] as String? ?? '';
+      final dia = fv.length >= 10 ? fv.substring(0, 10) : fv;
+      if (fechaMasAntigua.isEmpty || (dia.isNotEmpty && dia.compareTo(fechaMasAntigua) < 0)) {
+        fechaMasAntigua = dia;
+        cuotaVencidaMasAntigua = cuota;
+      }
+    }
+    if (cuotaVencidaMasAntigua != null) {
+      return CuotaItemInfo(
+        id: cuotaVencidaMasAntigua['id'] as String?,
+        nombre: cuotaVencidaMasAntigua['tituloCuota'] as String? ??
+            cuotaVencidaMasAntigua['concepto'] as String? ??
+            casa.proximaCuotaNombre,
+        monto: (cuotaVencidaMasAntigua['saldo'] as num?)?.toInt() ??
+            (cuotaVencidaMasAntigua['monto'] as num?)?.toInt() ??
+            casa.saldo,
+        fechaVencimiento: cuotaVencidaMasAntigua['fechaVencimiento'] as String? ??
+            casa.proximaCuotaFechaVencimiento,
+        estado: 'VENCIDA',
+      );
+    }
+  } else if (fechaCorte != null && fechaCorte.isNotEmpty) {
+    for (final cuota in casa.cuotas) {
+      final estado = cuota['estado'] as String? ?? '';
+      final saldo = (cuota['saldo'] as num?)?.toInt() ?? 0;
+      if (saldo <= 0) continue;
+      final fv = cuota['fechaVencimiento'] as String? ?? '';
+      final dia = fv.length >= 10 ? fv.substring(0, 10) : fv;
+      if (dia == fechaCorte && kEstadosCuotaPorCobrar.contains(estado)) {
+        return CuotaItemInfo(
+          id: cuota['id'] as String?,
+          nombre: cuota['tituloCuota'] as String? ??
+              cuota['concepto'] as String? ??
+              casa.proximaCuotaNombre,
+          monto: (cuota['saldo'] as num?)?.toInt() ??
+              (cuota['monto'] as num?)?.toInt() ??
+              casa.proximaCuotaMonto,
+          fechaVencimiento: cuota['fechaVencimiento'] as String? ??
+              casa.proximaCuotaFechaVencimiento,
+          estado: estado,
+        );
+      }
+    }
+  }
+
+  return CuotaItemInfo(
+    id: casa.proximaCuotaId,
+    nombre: casa.proximaCuotaNombre,
+    monto: casa.proximaCuotaMonto > 0
+        ? casa.proximaCuotaMonto
+        : (casa.saldo > 0 ? (casa.saldo > 50000 ? 10000 : casa.saldo) : 20000),
+    fechaVencimiento: casa.proximaCuotaFechaVencimiento,
+    estado: casa.estado,
+  );
 }
 
 /// Fecha de vencimiento (YYYY-MM-DD) más antigua con saldo pendiente dentro
@@ -208,12 +308,12 @@ int compararCasasPorMoraAntigua(CasaExplorer a, CasaExplorer b) {
   return fa.compareTo(fb);
 }
 
-bool _venceEnOAntesDe(String? fechaVencimiento, String fechaCorte) {
-  if (fechaVencimiento == null || fechaVencimiento.isEmpty) return true;
+bool _coincideFecha(String? fechaVencimiento, String fechaCorte) {
+  if (fechaVencimiento == null || fechaVencimiento.isEmpty) return false;
   final dia = fechaVencimiento.length >= 10
       ? fechaVencimiento.substring(0, 10)
       : fechaVencimiento;
-  return dia.compareTo(fechaCorte) <= 0;
+  return dia == fechaCorte;
 }
 
 class ManzanaExplorer extends Equatable {

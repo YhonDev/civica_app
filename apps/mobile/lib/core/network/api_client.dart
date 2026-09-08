@@ -478,7 +478,9 @@ ApiException mapDioError(DioException error) {
     case DioExceptionType.sendTimeout:
     case DioExceptionType.receiveTimeout:
     case DioExceptionType.connectionError:
-      return NetworkException(message: 'Error de conexión: ${error.message}');
+      return const NetworkException(
+        message: 'No se pudo conectar con el servidor. Verifica tu conexión a internet.',
+      );
 
     case DioExceptionType.cancel:
       return const NetworkException(message: 'Petición cancelada');
@@ -506,33 +508,40 @@ ApiException mapDioError(DioException error) {
       }
       if (status == 422) {
         return ValidationException(
-          message: _extractMessage(data) ?? 'Error de validación',
+          message: _extractMessage(data) ?? 'Error de validación en los datos enviados',
           errors: _extractErrors(data),
         );
       }
+      if (status == 429) {
+        return ApiException(
+          message: _extractMessage(data) ?? 'Demasiados intentos. Por favor espera un momento.',
+          statusCode: 429,
+          data: data,
+        );
+      }
       if (status != null && status >= 500) {
-        return ServerException(
-          message: _extractMessage(data) ?? 'Error interno del servidor',
+        return const ServerException(
+          message: 'Error interno del servidor. Por favor intenta más tarde.',
         );
       }
       return ApiException(
-        message: _extractMessage(data) ?? 'Error ${status ?? "desconocido"}',
+        message: _extractMessage(data) ?? 'Ocurrió un error inesperado al procesar la solicitud',
         statusCode: status,
         data: data,
       );
 
     case DioExceptionType.badCertificate:
-      return const NetworkException(message: 'Error de certificado SSL');
+      return const NetworkException(message: 'Error de certificado de seguridad SSL');
 
     case DioExceptionType.transformTimeout:
-      return const NetworkException(message: 'Tiempo de transformación agotado');
+      return const NetworkException(message: 'Tiempo de espera agotado al procesar la respuesta');
 
     case DioExceptionType.unknown:
       if (error.error is ApiException) {
         return error.error as ApiException;
       }
-      return NetworkException(
-        message: 'Error inesperado: ${error.message}',
+      return const NetworkException(
+        message: 'No se pudo establecer comunicación con el servidor',
       );
   }
 }

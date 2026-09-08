@@ -19,6 +19,40 @@ class CarteraResumen extends Equatable {
     required this.cantidadPagados,
   });
 
+  /// Genera un resumen dinámico a partir de una lista filtrada de [CobroItem].
+  factory CarteraResumen.fromCobros(List<CobroItem> cobros) {
+    double totalPendiente = 0;
+    double totalMora = 0;
+    double totalPagado = 0;
+    int cantidadPendientes = 0;
+    int cantidadMora = 0;
+    int cantidadPagados = 0;
+
+    for (final c in cobros) {
+      if (c.isPaid) {
+        cantidadPagados++;
+        totalPagado += (c.montoPagado > 0 ? c.montoPagado : c.monto);
+      } else if (c.isMora) {
+        cantidadMora++;
+        totalMora += (c.saldo > 0 ? c.saldo : c.monto);
+        totalPagado += c.montoPagado;
+      } else {
+        cantidadPendientes++;
+        totalPendiente += (c.saldo > 0 ? c.saldo : c.monto);
+        totalPagado += c.montoPagado;
+      }
+    }
+
+    return CarteraResumen(
+      totalPendiente: totalPendiente,
+      totalMora: totalMora,
+      totalPagado: totalPagado,
+      cantidadPendientes: cantidadPendientes,
+      cantidadMora: cantidadMora,
+      cantidadPagados: cantidadPagados,
+    );
+  }
+
   @override
   List<Object?> get props => [
         totalPendiente,
@@ -179,6 +213,58 @@ class CobroItem extends Equatable {
   /// Retorna el título consolidado periodo-cuota (ej. "Septiembre — Cuota 1")
   String get tituloCuota {
     return '$mesNombre — $cuotaNombre';
+  }
+
+  /// Comparador para ordenar cobros para visitas y cobranza:
+  /// 1. Fecha de vencimiento (ascendente, vencimiento más próximo primero)
+  /// 2. Manzana (alfabético A -> Z)
+  /// 3. Casa (numérico natural 1 -> 2 -> 10)
+  /// 4. Cuota / Concepto
+  static int comparePorVisitaYCobro(CobroItem a, CobroItem b) {
+    // 1. Fecha de vencimiento (ascendente)
+    DateTime? dateA;
+    DateTime? dateB;
+    if (a.fechaVencimiento.isNotEmpty) {
+      dateA = DateTime.tryParse(a.fechaVencimiento);
+    }
+    if (b.fechaVencimiento.isNotEmpty) {
+      dateB = DateTime.tryParse(b.fechaVencimiento);
+    }
+
+    if (dateA != null && dateB != null) {
+      final cmpDate = dateA.compareTo(dateB);
+      if (cmpDate != 0) return cmpDate;
+    } else if (dateA != null) {
+      return -1;
+    } else if (dateB != null) {
+      return 1;
+    }
+
+    // 2. Manzana alfabético (normalizado sin prefijo "Manzana" o "Mz")
+    final mzA = a.manzana
+        .replaceAll(RegExp(r'^(manzana|mz)\s*', caseSensitive: false), '')
+        .trim()
+        .toLowerCase();
+    final mzB = b.manzana
+        .replaceAll(RegExp(r'^(manzana|mz)\s*', caseSensitive: false), '')
+        .trim()
+        .toLowerCase();
+    final cmpMz = mzA.compareTo(mzB);
+    if (cmpMz != 0) return cmpMz;
+
+    // 3. Casa (orden natural numérico si aplica)
+    final numA = int.tryParse(a.casa.replaceAll(RegExp(r'\D'), ''));
+    final numB = int.tryParse(b.casa.replaceAll(RegExp(r'\D'), ''));
+    if (numA != null && numB != null) {
+      final cmpCasa = numA.compareTo(numB);
+      if (cmpCasa != 0) return cmpCasa;
+    } else {
+      final cmpCasa = a.casa.toLowerCase().compareTo(b.casa.toLowerCase());
+      if (cmpCasa != 0) return cmpCasa;
+    }
+
+    // 4. Cuota / concepto
+    return a.tituloCuota.compareTo(b.tituloCuota);
   }
 
   factory CobroItem.fromJson(Map<String, dynamic> json) {
