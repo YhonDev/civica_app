@@ -422,26 +422,34 @@ ALTER TABLE solicitudes            ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tarifas                ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tenencias              ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tickets                ENABLE ROW LEVEL SECURITY;
-ALTER TABLE usuarios               ENABLE ROW LEVEL SECURITY;
-
--- Policies service_role (backend)
-CREATE POLICY service_role_all_actividad             ON actividad             FOR ALL TO service_role USING (true);
-CREATE POLICY service_role_all_asignaciones_etapa    ON asignaciones_etapa    FOR ALL TO service_role USING (true);
-CREATE POLICY service_role_all_auth_sessions         ON auth_sessions         FOR ALL TO service_role USING (true);
-CREATE POLICY service_role_all_casas                 ON casas                 FOR ALL TO service_role USING (true);
-CREATE POLICY service_role_all_cobros                ON cobros                FOR ALL TO service_role USING (true);
-CREATE POLICY service_role_all_etapas                ON etapas                FOR ALL TO service_role USING (true);
-CREATE POLICY service_role_all_manzanas              ON manzanas              FOR ALL TO service_role USING (true);
-CREATE POLICY service_role_all_montos_predefinidos   ON montos_predefinidos   FOR ALL TO service_role USING (true);
-CREATE POLICY service_role_all_notificaciones        ON notificaciones        FOR ALL TO service_role USING (true);
-CREATE POLICY service_role_all_pago_cobros           ON pago_cobros           FOR ALL TO service_role USING (true);
-CREATE POLICY service_role_all_pagos                 ON pagos                 FOR ALL TO service_role USING (true);
-CREATE POLICY service_role_all_periodos_cobro        ON periodos_cobro        FOR ALL TO service_role USING (true);
-CREATE POLICY service_role_all_planes_de_cobro       ON planes_de_cobro       FOR ALL TO service_role USING (true);
-CREATE POLICY service_role_all_proyectos             ON proyectos             FOR ALL TO service_role USING (true);
-CREATE POLICY service_role_all_residentes            ON residentes            FOR ALL TO service_role USING (true);
-CREATE POLICY service_role_all_solicitudes           ON solicitudes           FOR ALL TO service_role USING (true);
-CREATE POLICY service_role_all_tarifas               ON tarifas               FOR ALL TO service_role USING (true);
-CREATE POLICY service_role_all_tenencias             ON tenencias             FOR ALL TO service_role USING (true);
-CREATE POLICY service_role_all_tickets                ON tickets               FOR ALL TO service_role USING (true);
-CREATE POLICY service_role_all_usuarios              ON usuarios              FOR ALL TO service_role USING (true);
+ALTER TABLE usuarios               ENABLE ROW LEVEL SECURITY;-- Policies service_role (backend)
+-- Solo aplican en Supabase: en Postgres plano (CI, local sin Supabase) el rol
+-- service_role no existe y el script fallaria. Se crean condicionalmente.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'service_role') THEN
+    CREATE POLICY service_role_all_actividad             ON actividad             FOR ALL TO service_role USING (true);
+    CREATE POLICY service_role_all_asignaciones_etapa    ON asignaciones_etapa    FOR ALL TO service_role USING (true);
+    CREATE POLICY service_role_all_auth_sessions         ON auth_sessions         FOR ALL TO service_role USING (true);
+    CREATE POLICY service_role_all_casas                 ON casas                 FOR ALL TO service_role USING (true);
+    CREATE POLICY service_role_all_cobros                ON cobros                FOR ALL TO service_role USING (true);
+    CREATE POLICY service_role_all_etapas                ON etapas                FOR ALL TO service_role USING (true);
+    CREATE POLICY service_role_all_manzanas              ON manzanas              FOR ALL TO service_role USING (true);
+    CREATE POLICY service_role_all_montos_predefinidos   ON montos_predefinidos   FOR ALL TO service_role USING (true);
+    CREATE POLICY service_role_all_notificaciones        ON notificaciones        FOR ALL TO service_role USING (true);
+    CREATE POLICY service_role_all_pago_cobros           ON pago_cobros           FOR ALL TO service_role USING (true);
+    CREATE POLICY service_role_all_pagos                 ON pagos                 FOR ALL TO service_role USING (true);
+    CREATE POLICY service_role_all_periodos_cobro        ON periodos_cobro        FOR ALL TO service_role USING (true);
+    CREATE POLICY service_role_all_planes_de_cobro       ON planes_de_cobro       FOR ALL TO service_role USING (true);
+    CREATE POLICY service_role_all_proyectos             ON proyectos             FOR ALL TO service_role USING (true);
+    CREATE POLICY service_role_all_residentes            ON residentes            FOR ALL TO service_role USING (true);
+    CREATE POLICY service_role_all_solicitudes           ON solicitudes           FOR ALL TO service_role USING (true);
+    CREATE POLICY service_role_all_tarifas               ON tarifas               FOR ALL TO service_role USING (true);
+    CREATE POLICY service_role_all_tenencias             ON tenencias             FOR ALL TO service_role USING (true);
+    CREATE POLICY service_role_all_tickets               ON tickets               FOR ALL TO service_role USING (true);
+    CREATE POLICY service_role_all_usuarios              ON usuarios              FOR ALL TO service_role USING (true);
+  ELSE
+    RAISE NOTICE 'Rol service_role no existe: se omiten las politicas RLS de Supabase (entorno no-Supabase)';
+  END IF;
+END
+$$;

@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <defs>
+    <!-- Gradiente azul de la C -->
+    <linearGradient id="cuentivaBlue" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0055FF" />
+      <stop offset="50%" stop-color="#0099FF" />
+      <stop offset="100%" stop-color="#00D4FF" />
+    </linearGradient>
+    
+    <!-- Gradiente verde/menta del Check -->
+    <linearGradient id="cuentivaGreen" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00C882" />
+      <stop offset="100%" stop-color="#2EE6A8" />
+    </linearGradient>
+  </defs>
+
+  <!-- Anillo exterior 'C' -->
+  <path d="M 380 120 
+           A 180 180 0 1 0 395 380 
+           L 330 315 
+           A 100 100 0 1 1 315 185 
+           Z" 
+        fill="url(#cuentivaBlue)" />
+
+  <!-- Checkmark interior -->
+  <path d="M 220 250 
+           L 290 320 
+           L 420 190 
+           A 25 25 0 0 1 455 225 
+           L 290 390 
+           L 185 285 
+           A 25 25 0 0 1 220 250 Z" 
+        fill="url(#cuentivaGreen)" />
+</svg>
