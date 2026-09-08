@@ -416,4 +416,47 @@ describe('CobroRepository', () => {
       expect(andWhereArgs).toContainEqual('manzana.etapaId = :etapaId');
     });
   });
+
+  // ─── Regresión C1: aislamiento multi-tenant en SQL de mora ────────────
+  // El OR sin agrupar anulaba el filtro de tenant:
+  //   WHERE tenantId = X AND A OR B  =>  (tenantId = X AND A) OR B
+  // haciendo que cobros vencidos de OTROS tenants se contaran en la mora.
+  describe('[regresion C1] aislamiento tenant en consultas de mora', () => {
+    // La condición de mora debe ir SIEMPRE entre paréntesis para que el
+    // AND del tenant aplique a ambas ramas del OR.
+    const CONDICION_MORA_AGRUPADA =
+      '(cobro.estado IN (\'VENCIDA\') OR (cobro.estado IN (\'PENDIENTE\', \'PARCIAL\') AND cobro.fechaVencimiento < CURRENT_DATE))';
+
+    function condicionMoraEnAndWhere(): string | undefined {
+      const calls = mockQueryBuilder.andWhere.mock.calls as string[][];
+      return calls.map((c) => c[0]).find((sql) => sql?.includes('VENCIDA'));
+    }
+
+    it('sumSaldoVencidasByTenant agrupa el OR para no anular el filtro de tenant', async () => {
+      mockQueryBuilder.getRawOne.mockResolvedValue({ total: 0 });
+      await repo.sumSaldoVencidasByTenant(TENANT_ID);
+      expect(condicionMoraEnAndWhere()).toBe(CONDICION_MORA_AGRUPADA);
+    });
+
+    it('sumSaldoVencidasByMonth agrupa el OR para no anular el filtro de tenant', async () => {
+      mockQueryBuilder.getRawOne.mockResolvedValue({ total: 0 });
+      await repo.sumSaldoVencidasByMonth(TENANT_ID, 2026, 9);
+      expect(condicionMoraEnAndWhere()).toBe(CONDICION_MORA_AGRUPADA);
+    });
+
+    it('countPropietariosInMora agrupa el OR para no anular el filtro de tenant', async () => {
+      mockQueryBuilder.getRawOne.mockResolvedValue({ count: 0 });
+      await repo.countPropietariosInMora(TENANT_ID);
+      expect(condicionMoraEnAndWhere()).toBe(CONDICION_MORA_AGRUPADA);
+    });
+
+    it('la condición de mora siempre se compone vía andWhere (AND), nunca vía where directo', async () => {
+      mockQueryBuilder.getRawOne.mockResolvedValue({ total: 0 });
+      await repo.sumSaldoVencidasByTenant(TENANT_ID);
+      const viaWhereDirecto = (mockQueryBuilder.where.mock.calls as string[][])
+        .map((c) => c[0])
+        .some((sql) => sql?.includes('VENCIDA'));
+      expect(viaWhereDirecto).toBe(false);
+    });
+  });
 });
