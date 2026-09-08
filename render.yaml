@@ -1,0 +1,51 @@
+# ────────────────────────────────────────────────────────
+# Render.com — Infraestructura como código (Blueprint)
+# Docs: https://render.com/docs/blueprint-spec
+#
+# Despliegue: en Render Dashboard → New → Blueprint →
+# selecciona este repo. O crea el servicio Web manualmente con:
+#   Build Command:  cd apps/backend && npm ci && npm run build
+#   Start Command:  npm run start:prod
+# ────────────────────────────────────────────────────────
+
+services:
+  - type: web
+    name: civica-pago-api
+    runtime: node
+    plan: free
+    rootDir: apps/backend
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start:prod
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_HOST
+        sync: false
+      - key: DATABASE_PORT
+        value: '5432'
+      - key: DATABASE_USER
+        sync: false
+      - key: DATABASE_PASSWORD
+        sync: false
+      - key: DATABASE_NAME
+        value: postgres
+      - key: DATABASE_SSL
+        value: require
+      - key: DATABASE_SSL_REJECT_UNAUTHORIZED
+        value: 'false'
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      # Al crear el servicio, pon aquí la URL pública de ESTE servicio
+      # (ej. https://civica-pago-api.onrender.com) o los orígenes permitidos
+      # separados por coma. Usa '*' solo si tu app móvil necesita acceso
+      # abierto durante pruebas.
+      - key: CORS_ORIGIN
+        sync: false
+      - key: REDIS_ENABLED
+        value: 'false'
+      - key: THROTTLE_LIMIT
+        value: '60'

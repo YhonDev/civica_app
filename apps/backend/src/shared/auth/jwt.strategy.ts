@@ -47,6 +47,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('Token inválido o usuario inactivo');
     }
 
+    // El tenant del token debe coincidir con el actual del usuario: si fue
+    // movido de tenant, los access tokens emitidos antes quedan inválidos
+    // de inmediato (ventana máxima: TTL del access token, 15 min).
+    if (payload.tenantId && user.tenantId !== payload.tenantId) {
+      throw new UnauthorizedException('Token emitido para otro tenant');
+    }
+
     return user;
   }
 }

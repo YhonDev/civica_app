@@ -11,13 +11,14 @@
     "start": "node ensure-db.js && node ensure-port.js && nest start",
     "start:dev": "node ensure-db.js && node ensure-port.js && nest start --watch",
     "start:debug": "node ensure-db.js && node ensure-port.js && nest start --debug --watch",
-    "start:prod": "node ensure-db.js && node ensure-port.js && node dist/main",
+    "start:prod": "node dist/src/main.js",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json --runInBand",
+    "test:smoke": "node scripts/smoke-test.mjs",
     "validate": "npm run build && npm test && npm run test:e2e",
     "seed": "ts-node database/scripts/seed-completo.ts",
     "cobros:generar": "ts-node database/scripts/generar-cobros.ts"
@@ -94,5 +95,8 @@
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"
+  },
+  "engines": {
+    "node": ">=22 <23"
   }
 }

@@ -2,18 +2,45 @@ name: CI
 
 on:
   push:
-    branches: [master, main]
+    branches: [master, main, dev]
   pull_request:
-    branches: [master, main]
+    branches: [master, main, dev]
 
 jobs:
-  # ── Backend: NestJS unit + integration tests ──────────
+  # ── Backend: build + unit + e2e + smoke ───────────────
   backend:
     name: Backend Tests
     runs-on: ubuntu-latest
+
     defaults:
       run:
         working-directory: apps/backend
+
+    # Postgres real para e2e y smoke test (TypeORM synchronize:false →
+    # el schema.sql se carga explícitamente en el paso prepare-db).
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 54322:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_HOST: 127.0.0.1
+      DATABASE_PORT: '54322'
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: postgres
+      JWT_SECRET: civica-pago-ci-jwt-secret
+      REDIS_ENABLED: 'false'
 
     steps:
       - uses: actions/checkout@v4
@@ -32,6 +59,76 @@ jobs:
 
       - name: Run unit tests
         run: npm test
+
+      - name: Prepare database (schema + migraciones)
+        run: |
+          psql -h 127.0.0.1 -p 54322 -U postgres -d postgres \
+            -v ON_ERROR_STOP=1 \
+            -f database/schema.sql
+          # Migraciones incrementales (idempotentes si aplican)
+          for f in database/migrations/*.sql; do
+            echo "-- Aplicando $f"
+            psql -h 127.0.0.1 -p 54322 -U postgres -d postgres \
+              -v ON_ERROR_STOP=1 -f "$f" || echo "::warning::migración $f falló"
+          done
+        env:
+          PGPASSWORD: postgres
+
+      - name: Run e2e integration tests
+        run: npm run test:e2e
+
+      - name: Build
+        run: npm run build
+
+      - name: Start server (background)
+        run: |
+          node dist/src/main.js > /tmp/server.log 2>&1 &
+          echo $! > /tmp/server.pid
+          # Esperar a que /health responda (máx 60s)
+          for i in $(seq 1 30); do
+            if curl -sf -m 2 http://127.0.0.1:3000/api/health > /dev/null; then
+              echo "Servidor listo tras ${i}x2s"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::El servidor no respondió /health a tiempo"
+          tail -50 /tmp/server.log
+          exit 1
+
+      - name: Seed admin para smoke test
+        run: |
+          node -e "
+            const { Client } = require('pg');
+            const bcrypt = require('bcrypt');
+            const c = new Client({ host:'127.0.0.1', port:54322, user:'postgres', password:'postgres', database:'postgres' });
+            c.connect().then(async () => {
+              const hash = bcrypt.hashSync('Smoke2026!', 10);
+              await c.query(
+                \`INSERT INTO usuarios (email, password_hash, nombre, rol, residente_id, tenant_id, activo)
+                 VALUES ('smoke@admin.local', \$1, 'Smoke Admin', 'ADMIN', NULL, gen_random_uuid(), true)
+                 ON CONFLICT (email) DO NOTHING\`,
+                [hash]
+              );
+              await c.end();
+              console.log('Admin smoke creado');
+            }).catch(e => { console.error(e); process.exit(1); });
+          "
+
+      - name: Run smoke test (contra servidor vivo)
+        run: npm run test:smoke
+        env:
+          SMOKE_BASE_URL: http://127.0.0.1:3000/api
+          SMOKE_USER: smoke@admin.local
+          SMOKE_PASS: Smoke2026!
+
+      - name: Upload server logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-logs
+          path: /tmp/server.log
+          retention-days: 7
 
       - name: Run coverage
         run: npm run test:cov

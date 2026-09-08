@@ -92,5 +92,22 @@ describe('JwtStrategy', () => {
       ).rejects.toThrow(UnauthorizedException);
       expect(usuarioRepo.findOne).not.toHaveBeenCalled();
     });
+
+    it('should reject a token whose tenantId does not match the current user tenant', async () => {
+      usuarioRepo.findOne.mockResolvedValue(mockUsuario);
+
+      await expect(
+        strategy.validate({ ...mockPayload, tenantId: 'tenant-otro' }),
+      ).rejects.toThrow('Token emitido para otro tenant');
+    });
+
+    it('should accept a token without tenantId (legacy payloads) when user exists', async () => {
+      usuarioRepo.findOne.mockResolvedValue(mockUsuario);
+
+      const { tenantId, ...payloadSinTenant } = mockPayload;
+      const result = await strategy.validate(payloadSinTenant as any);
+
+      expect(result).toEqual(mockUsuario);
+    });
   });
 });

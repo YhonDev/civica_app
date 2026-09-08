@@ -75,7 +75,8 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
         this.logger.warn(
           `Conexión WS rechazada para socket ${client.id}: token ausente.`,
         );
-        client.disconnect();
+        client.emit?.('auth_error', { message: 'token_ausente' });
+        client.disconnect(true);
         return;
       }
 
@@ -85,7 +86,8 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
         type?: string;
       }>(token);
       if (payload.type === 'refresh' || !payload.sub || !payload.tenantId) {
-        client.disconnect();
+        client.emit?.('auth_error', { message: 'token_invalido' });
+        client.disconnect(true);
         return;
       }
 
@@ -93,7 +95,8 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
         where: { id: payload.sub, tenantId: payload.tenantId },
       });
       if (!user || !user.activo) {
-        client.disconnect();
+        client.emit?.('auth_error', { message: 'usuario_inactivo' });
+        client.disconnect(true);
         return;
       }
 
@@ -102,9 +105,10 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.logger.log(`Cliente autenticado en WebSockets: ${client.id}`);
     } catch (err: any) {
       this.logger.warn(
-        `Conexión WS rechazada para socket ${client.id}: token inválido.`,
+        `Conexión WS rechazada para socket ${client.id}: token inválido (${err.message || 'error'}).`,
       );
-      client.disconnect();
+      client.emit?.('auth_error', { message: 'token_invalido' });
+      client.disconnect(true);
     }
   }
 

@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, ClassSerializerInterceptor } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
@@ -73,6 +74,7 @@ async function bootstrap() {
   const corsOrigins = process.env.CORS_ORIGIN?.split(',').map((s) => s.trim()) ?? [
     'http://localhost:3000',
   ];
+  const allowAllOrigins = corsOrigins.includes('*');
   app.enableCors({
     origin: (
       origin: string | undefined,
@@ -82,13 +84,25 @@ async function bootstrap() {
       if (isDev && /^https?:\/\/(localhost|127\.0\.0\.1)(:[0-9]+)?$/.test(origin)) {
         return callback(null, true);
       }
+      if (allowAllOrigins) {
+        // CORS_ORIGIN=* : permitir cualquier origen (útil con apps móviles / web
+        // en dominio desconocido). credentials:true + wildcard no es válido
+        // según la spec, así que en este modo se desactiva credentials.
+        return callback(null, true);
+      }
       if (corsOrigins.includes(origin)) {
         return callback(null, true);
       }
-      return callback(new Error(`CORS bloqueado para origen: ${origin}`), false);
+      // Rechazo limpio de CORS (sin header ACAO → el navegador bloquea la
+      // petición). Lanzar Error aquí producía un 500 en el preflight,
+      // indistinguible de un fallo real del servidor.
+      console.warn(
+        `[CORS] Origen no permitido: ${origin}. Configúralo en CORS_ORIGIN (separado por comas) o usa CORS_ORIGIN=* para permitir todo.`,
+      );
+      return callback(null, false);
     },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-    credentials: true,
+    credentials: !allowAllOrigins,
   });
 
   // ─── Validation ─────────────────────────────────────
@@ -139,7 +153,11 @@ async function bootstrap() {
   });
 
   const port = process.env.PORT ?? 3000;
+  // Sin host explícito: Node escucha en :: (dual-stack), aceptando conexiones
+  // IPv6 (::1) e IPv4. Fijar '0.0.0.0' dejaba fuera a los navegadores que
+  // resuelven "localhost" a ::1 primero (ECONNREFUSED → OperationError en
+  // Flutter web).
   await app.listen(port);
-  console.log(`Servidor iniciado en puerto ${port}`);
+  console.log(`Servidor iniciado en puerto ${port} (dual-stack IPv4+IPv6)`);
 }
 void bootstrap();

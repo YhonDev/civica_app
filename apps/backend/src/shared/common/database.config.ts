@@ -35,8 +35,9 @@ export function databaseConfig(): TypeOrmModuleOptions {
       process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
     ...(sslMode && {
       ssl: {
-        // In development allow self-signed certs; in production always verify
-        rejectUnauthorized: process.env.NODE_ENV === 'production',
+        // Permite conexión segura SSL a poolers de Supabase (por defecto no rechaza CA intermedio si no está explícito)
+        rejectUnauthorized:
+          process.env.DATABASE_SSL_REJECT_UNAUTHORIZED === 'true',
       },
     }),
   };
