@@ -186,9 +186,13 @@ export class PagosController {
     @CurrentUser() user: Usuario,
     @CurrentTenant() tenantId: string,
   ) {
+    // C5: un RESIDENTE solo puede ver SUS pagos. Se usa siempre el
+    // residenteId del token (JWT), sin fallback al query string: si la
+    // cuenta residente no tiene residenteId vinculado, se devuelve vacio
+    // en vez de permitir consultar pagos de terceros (IDOR).
     const targetId =
       user.rol === RolUsuario.RESIDENTE
-        ? (user.residenteId ?? residenteId)
+        ? user.residenteId
         : (residenteId ?? user.residenteId);
 
     if (!targetId) return [];
