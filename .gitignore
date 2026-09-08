@@ -1,7 +1,7 @@
 # ─── Secrets ───────────────────────────────────────────
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
 *.pem
 **/signing_keys.json
 
@@ -46,11 +46,14 @@ npm-debug.log*
 yarn-debug.log*
 lerna-debug.log*
 
-# ─── OS ────────────────────────────────────────────────
+# ─── OS & Agent Tooling ────────────────────────────────
 .DS_Store
 Thumbs.db
 *.swp
 .freebuff/
+**/.atl/
+**/.agents/
+**/.agent/
 
 # ─── Database Local Seeds & Test Scripts (local-only) ──
 apps/backend/database/seed.sql
