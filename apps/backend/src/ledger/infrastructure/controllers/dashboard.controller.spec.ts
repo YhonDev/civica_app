@@ -478,6 +478,92 @@ describe('DashboardController — Cobrador Logic', () => {
   });
 
   describe('getDashboardResidente()', () => {
+    it('should pass tenantId to every repository call (no cross-tenant reads)', async () => {
+      const generarCobrosUC = { execute: jest.fn() };
+      const marcarVencidasUC = { execute: jest.fn() };
+      const controllerWithLegacyDependencies = new (DashboardController as any)(
+        mockDashboardQuery,
+        mockCobroRepo,
+        mockPagoRepo,
+        mockPlanDeCobroRepo,
+        mockSolicitudRepo,
+        mockTarifaRepo,
+        mockResidenteRepo,
+        mockDataSource,
+        generarCobrosUC,
+        marcarVencidasUC,
+      ) as DashboardController;
+      const user = crearUser({ residenteId: 'residente-1' });
+
+      mockCobroRepo.findByResidente.mockResolvedValue([]);
+      mockPagoRepo.findByPropietario.mockResolvedValue([]);
+      mockPlanDeCobroRepo.findByResidente.mockResolvedValue(null);
+      mockResidenteRepo.findByIdWithRelations.mockResolvedValue({
+        id: 'residente-1',
+        nombre: 'Residente Test',
+        modalidadPago: 'MENSUAL',
+        tenencias: [],
+      });
+      mockSolicitudRepo.findByUsuario.mockResolvedValue([]);
+
+      await controllerWithLegacyDependencies.getDashboardResidente(
+        user,
+        TENANT_ID,
+      );
+
+      expect(mockCobroRepo.findByResidente).toHaveBeenCalledWith(
+        'residente-1',
+        TENANT_ID,
+      );
+      expect(mockPagoRepo.findByPropietario).toHaveBeenCalledWith(
+        'residente-1',
+        TENANT_ID,
+      );
+      expect(mockPlanDeCobroRepo.findByResidente).toHaveBeenCalledWith(
+        'residente-1',
+        TENANT_ID,
+      );
+      expect(mockResidenteRepo.findByIdWithRelations).toHaveBeenCalledWith(
+        'residente-1',
+        TENANT_ID,
+      );
+      expect(mockSolicitudRepo.findByUsuario).toHaveBeenCalledWith(
+        'user-1',
+        TENANT_ID,
+      );
+    });
+
+    it('should never resolve solicitudes without tenant filter in resident dashboard', async () => {
+      const controllerWithLegacyDependencies = new (DashboardController as any)(
+        mockDashboardQuery,
+        mockCobroRepo,
+        mockPagoRepo,
+        mockPlanDeCobroRepo,
+        mockSolicitudRepo,
+        mockTarifaRepo,
+        mockResidenteRepo,
+        mockDataSource,
+        { execute: jest.fn() },
+        { execute: jest.fn() },
+      ) as DashboardController;
+      const user = crearUser({ residenteId: 'residente-1' });
+
+      mockCobroRepo.findByResidente.mockResolvedValue([]);
+      mockPagoRepo.findByPropietario.mockResolvedValue([]);
+      mockPlanDeCobroRepo.findByResidente.mockResolvedValue(null);
+      mockResidenteRepo.findByIdWithRelations.mockResolvedValue(null);
+      mockSolicitudRepo.findByUsuario.mockResolvedValue([]);
+
+      await controllerWithLegacyDependencies.getDashboardResidente(
+        user,
+        'tenant-otro',
+      );
+
+      const call = mockSolicitudRepo.findByUsuario.mock.calls[0];
+      // findByUsuario(usuarioId, tenantId, ...) — tenant must be present
+      expect(call[1]).toBe('tenant-otro');
+    });
+
     it('should read dashboard data without generating cobros or marking vencidas', async () => {
       const generarCobrosUC = { execute: jest.fn() };
       const marcarVencidasUC = { execute: jest.fn() };

@@ -353,4 +353,67 @@ describe('CobroRepository', () => {
       expect(result[0].modalidad).toBe('MENSUAL');
     });
   });
+
+  describe('findAllWithFilters() — aislamiento multi-tenant', () => {
+    const fullQb = () => ({
+      leftJoinAndSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
+      skip: jest.fn().mockReturnThis(),
+      getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
+    });
+
+    it('should always filter by tenantId as the first condition', async () => {
+      const qb = fullQb();
+      mockRepo.createQueryBuilder.mockReturnValue(qb as any);
+
+      await repo.findAllWithFilters('tenant-A', { status: 'PENDIENTE' });
+
+      expect(qb.where).toHaveBeenCalledWith('cobro.tenantId = :tenantId', {
+        tenantId: 'tenant-A',
+      });
+      // Every extra filter must be andWhere, never overwrite the tenant where
+      expect(qb.andWhere).toHaveBeenCalledWith('cobro.estado = :status', {
+        status: 'PENDIENTE',
+      });
+    });
+
+    it('should scope COBRADOR to allowedEtapaIds (defense in depth with tenant)', async () => {
+      const qb = fullQb();
+      mockRepo.createQueryBuilder.mockReturnValue(qb as any);
+
+      await repo.findAllWithFilters(
+        TENANT_ID,
+        {},
+        ['etapa-1', 'etapa-2'],
+      );
+
+      expect(qb.where).toHaveBeenCalledWith('cobro.tenantId = :tenantId', {
+        tenantId: TENANT_ID,
+      });
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        'manzana.etapaId IN (:...allowedEtapaIds)',
+        { allowedEtapaIds: ['etapa-1', 'etapa-2'] },
+      );
+    });
+
+    it('should not leak rows when a etapa filter and allowed list are combined', async () => {
+      const qb = fullQb();
+      mockRepo.createQueryBuilder.mockReturnValue(qb as any);
+
+      await repo.findAllWithFilters(
+        TENANT_ID,
+        { etapaId: 'etapa-9' },
+        ['etapa-1'],
+      );
+
+      const andWhereArgs = qb.andWhere.mock.calls.map((c: any[]) => c[0]);
+      expect(andWhereArgs).toContainEqual(
+        'manzana.etapaId IN (:...allowedEtapaIds)',
+      );
+      expect(andWhereArgs).toContainEqual('manzana.etapaId = :etapaId');
+    });
+  });
 });

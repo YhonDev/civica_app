@@ -207,6 +207,24 @@ describe('AuthController', () => {
       });
     });
 
+    it('should require currentPassword when ADMIN changes their OWN password', async () => {
+      const adminUser = Object.assign(new Usuario(), {
+        id: 'user-admin',
+        rol: RolUsuario.ADMIN,
+        tenantId: 'tenant-1',
+      });
+
+      await expect(
+        controller.updateCredentials(
+          { newPassword: 'NewPassword123!' },
+          'tenant-1',
+          adminUser,
+        ),
+      ).rejects.toThrow(
+        'Se requiere currentPassword para actualizar credenciales',
+      );
+    });
+
     it('should allow admin to update credentials without currentPassword', async () => {
       const adminUser = Object.assign(new Usuario(), {
         id: 'user-admin',

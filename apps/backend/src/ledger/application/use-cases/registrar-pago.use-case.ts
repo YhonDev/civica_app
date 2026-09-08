@@ -123,30 +123,25 @@ export class RegistrarPagoUseCase {
     }
 
     // 3. FIFO Distribution Loop — dentro de transacción con pessimistic locking
-    const { pago, cobrosAfectados } = await this.dataSource.transaction(
+    const { pago, cobrosAfectados, ticket } = await this.dataSource.transaction(
       async (entityManager) => {
         let remaining = input.monto;
         const cobrosAfectados: Cobro[] = [];
         const vinculos: PagoCobro[] = [];
 
-        while (remaining > 0) {
-          // Usar PESSIMISTIC_WRITE para evitar race conditions
-          // entre pagos concurrentes al mismo residente
-          const cobro = await this.cobroRepo.findMasAntiguoConSaldoLocked(
-            entityManager,
-            input.residenteId,
-            input.tenantId,
-          );
+        // FIFO batch: una sola query con PESSIMISTIC_WRITE trae TODOS los
+        // cobros pendientes del residente (más antiguos primero); la
+        // distribución se hace en memoria. Reemplaza el loop N round-trips
+        // (un SELECT ... FOR UPDATE por cobro) y mantiene la protección
+        // contra race conditions entre pagos concurrentes.
+        const pendientes = await this.cobroRepo.findPendientesConSaldoLockedBatch(
+          entityManager,
+          input.residenteId,
+          input.tenantId,
+        );
 
-          if (!cobro) {
-            if (remaining > 0) {
-              this.logger.warn(
-                `Pago ${input.clientPaymentId}: excedente de ${remaining} centavos no aplicado — sin cobros pendientes.`,
-              );
-            }
-            break;
-          }
-
+        for (const cobro of pendientes) {
+          if (remaining <= 0) break;
           const aplicado = Math.min(remaining, cobro.monto - cobro.montoPagado);
           const excess = cobro.aplicarPago(Money.ofCOP(remaining));
           await entityManager.save(cobro);
@@ -156,6 +151,12 @@ export class RegistrarPagoUseCase {
             PagoCobro.crear('', cobro.id, aplicado, input.tenantId),
           );
           remaining = excess.amount;
+        }
+
+        if (remaining > 0) {
+          this.logger.warn(
+            `Pago ${input.clientPaymentId}: excedente de ${remaining} centavos no aplicado — sin cobros pendientes.`,
+          );
         }
 
         if (cobrosAfectados.length === 0) {
@@ -231,7 +232,19 @@ export class RegistrarPagoUseCase {
           this.logger.warn(`Could not auto-resolve solicitudes: ${e}`);
         }
 
-        return { pago, cobrosAfectados };
+        // 5c. Generar y persistir el ticket DENTRO de la misma transacción,
+        //     con lock de numeración, para que el pago y su ticket se
+        //     confirmen (o reviertan) juntos y no haya carreras en el número.
+        const ticket = await this.generarTicketUC.execute(
+          {
+            pago,
+            cobrosAfectados,
+            cobradorNombre: input.cobradorNombre ?? 'Cobrador',
+          },
+          entityManager,
+        );
+
+        return { pago, cobrosAfectados, ticket };
       },
     );
 
@@ -244,13 +257,6 @@ export class RegistrarPagoUseCase {
       cobrosAfectados.map((c) => c.id),
       new Date(),
     );
-
-    // 7. Generate and persist ticket
-    const ticket = await this.generarTicketUC.execute({
-      pago,
-      cobrosAfectados,
-      cobradorNombre: input.cobradorNombre ?? 'Cobrador',
-    });
 
     this.logger.log(
       `Pago registrado: ${pago.id} | ${input.monto} centavos → ${cobrosAfectados.length} cobro(s) afectado(s) | Ticket: ${ticket.numero}`,

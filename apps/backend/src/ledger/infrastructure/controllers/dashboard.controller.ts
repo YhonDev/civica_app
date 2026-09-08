@@ -728,7 +728,7 @@ export class DashboardController {
           user.residenteId,
           tenantId,
         ),
-        this.solicitudRepository.findByUsuario(user.id),
+        this.solicitudRepository.findByUsuario(user.id, tenantId),
       ]);
 
     // Build residenteInfo from relations
@@ -1177,7 +1177,7 @@ export class DashboardController {
 
     const [pagos, solicitudes] = await Promise.all([
       this.pagoRepository.findByPropietario(user.residenteId, tenantId),
-      this.solicitudRepository.findByUsuario(user.id),
+      this.solicitudRepository.findByUsuario(user.id, tenantId),
     ]);
 
     const items: TimelineItemDto[] = [

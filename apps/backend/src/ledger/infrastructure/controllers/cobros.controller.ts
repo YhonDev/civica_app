@@ -19,6 +19,7 @@ import { CurrentUser } from '../../../shared/tenant/current-user.decorator';
 import { Usuario, RolUsuario } from '../../../iam/domain/usuario.entity';
 import { CobroRepository } from '../../infrastructure/persistence/cobro.repository';
 import { EliminarCobroUseCase } from '../../application/use-cases/eliminar-cobro.use-case';
+import { GenerarCobrosUseCase } from '../../application/use-cases/generar-cobros.use-case';
 import { CarteraViviendaResumenQuery } from '../../application/queries/cartera-vivienda-resumen.query';
 
 @ApiTags('Cobros')
@@ -29,9 +30,28 @@ export class CobrosController {
   constructor(
     private readonly cobroRepository: CobroRepository,
     private readonly eliminarCobroUseCase: EliminarCobroUseCase,
+    private readonly generarCobrosUseCase: GenerarCobrosUseCase,
     private readonly carteraViviendaResumenQuery: CarteraViviendaResumenQuery,
     private readonly dataSource: DataSource,
   ) {}
+
+  @Post('generar')
+  @UseGuards(RolesGuard)
+  @Roles(RolUsuario.ADMIN)
+  @ApiOperation({
+    summary: 'Generar cobros para todos los planes activos del tenant (ADMIN)',
+  })
+  async generarCobros(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: Usuario,
+  ) {
+    const result = await this.generarCobrosUseCase.execute(tenantId);
+    return {
+      message: 'Generación de cobros completada exitosamente',
+      cobrosGenerados: result.generados,
+      timestamp: new Date().toISOString(),
+    };
+  }
 
   @Get()
   @UseGuards(RolesGuard)
@@ -43,6 +63,8 @@ export class CobrosController {
     @Query('etapaId') etapaId?: string,
     @Query('manzanaId') manzanaId?: string,
     @Query('status') status?: string,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
   ) {
     if (!tenantId) return [];
 
@@ -60,15 +82,24 @@ export class CobrosController {
       allowedEtapaIds = stageIds;
     }
 
-    const cobros = await this.cobroRepository.findAllWithFilters(
+    const { items, total } = await this.cobroRepository.findAllWithFilters(
       tenantId,
       { etapaId, manzanaId, status },
       allowedEtapaIds,
+      {
+        limit: limit ? Number(limit) : undefined,
+        offset: offset ? Number(offset) : undefined,
+      },
     );
-    const ticketsMap = await this.loadTicketsForCobros(cobros.map((c) => c.id));
-    return cobros.map((cobro) =>
-      this.mapCobroItem(cobro, ticketsMap.get(cobro.id)),
-    );
+    const ticketsMap = await this.loadTicketsForCobros(items.map((c) => c.id));
+    return {
+      data: items.map((cobro) =>
+        this.mapCobroItem(cobro, ticketsMap.get(cobro.id)),
+      ),
+      total,
+      limit: limit ? Number(limit) : 500,
+      offset: offset ? Number(offset) : 0,
+    };
   }
 
   @Get('residente/:residenteId')

@@ -213,4 +213,34 @@ describe('DashboardController — Residente Timeline', () => {
       });
     });
   });
+
+  describe('Aislamiento multi-tenant', () => {
+    it('should pass tenantId to both repository calls', async () => {
+      mockPagoRepo.findByPropietario.mockResolvedValue([]);
+      mockSolicitudRepo.findByUsuario.mockResolvedValue([]);
+
+      await controller.getResidenteTimeline(mockUser(), 'tenant-A', 0, 20);
+
+      expect(mockPagoRepo.findByPropietario).toHaveBeenCalledWith(
+        'prop-1',
+        'tenant-A',
+      );
+      expect(mockSolicitudRepo.findByUsuario).toHaveBeenCalledWith(
+        'user-1',
+        'tenant-A',
+      );
+    });
+
+    it('should never fetch pagos or solicitudes without the tenant scope', async () => {
+      mockPagoRepo.findByPropietario.mockResolvedValue([]);
+      mockSolicitudRepo.findByUsuario.mockResolvedValue([]);
+
+      await controller.getResidenteTimeline(mockUser(), 'tenant-B', 0, 20);
+
+      // findByPropietario(residenteId, tenantId): tenant is argument 2
+      expect(mockPagoRepo.findByPropietario.mock.calls[0][1]).toBe('tenant-B');
+      // findByUsuario(usuarioId, tenantId): tenant is argument 2
+      expect(mockSolicitudRepo.findByUsuario.mock.calls[0][1]).toBe('tenant-B');
+    });
+  });
 });

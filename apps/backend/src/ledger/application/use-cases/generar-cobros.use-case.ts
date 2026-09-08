@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { DataSource } from 'typeorm';
 import { CobroRepository } from '../../infrastructure/persistence/cobro.repository';
 import { PlanDeCobroRepository } from '../../infrastructure/persistence/plan-de-cobro.repository';
 import { PeriodoCobroRepository } from '../../infrastructure/persistence/periodo-cobro.repository';
@@ -11,26 +12,34 @@ import {
 import type { ModalidadRecaudo } from '../../../shared/common/value-objects';
 import { Cobro } from '../../domain/cobro.entity';
 import { PeriodoCobro } from '../../domain/periodo-cobro.entity';
+import { PlanDeCobro } from '../../domain/plan-de-cobro.entity';
 
 @Injectable()
 export class GenerarCobrosUseCase {
   private readonly logger = new Logger(GenerarCobrosUseCase.name);
 
   constructor(
+    private readonly dataSource: DataSource,
     private readonly cobroRepository: CobroRepository,
     private readonly planDeCobroRepository: PlanDeCobroRepository,
     private readonly periodoCobroRepository: PeriodoCobroRepository,
     private readonly tarifaRepository: TarifaRepository,
   ) {}
 
-  async execute(): Promise<{ generados: number }> {
-    this.logger.log('Generando cobros para planes activos...');
+  async execute(tenantId?: string): Promise<{ generados: number }> {
+    this.logger.log(
+      tenantId
+        ? `Generando cobros para planes activos del tenant: ${tenantId}...`
+        : 'Generando cobros para planes activos...',
+    );
 
     const hoy = new Date();
     const currentMes = hoy.getMonth() + 1; // 1-indexed
     const currentAnio = hoy.getFullYear();
 
-    const planes = await this.planDeCobroRepository.findAllActivos();
+    const planes = tenantId
+      ? await this.planDeCobroRepository.findActivosByTenant(tenantId)
+      : await this.planDeCobroRepository.findAllActivos();
     this.logger.log(`${planes.length} plan(es) activo(s) encontrado(s)`);
 
     let generados = 0;
@@ -90,20 +99,32 @@ export class GenerarCobrosUseCase {
   }
 
   async generarCobrosParaPlan(
-    plan: import('../../domain/plan-de-cobro.entity').PlanDeCobro,
+    plan: PlanDeCobro,
     mes: number,
     anio: number,
     hoy: Date,
   ): Promise<number> {
-    // 1. Idempotencia: si ya existe PeriodoCobro para este mes, saltar
-    const periodoExistente =
-      await this.periodoCobroRepository.findByPlanAndMonth(plan.id, mes, anio);
-    if (periodoExistente) {
-      this.logger.debug(
-        `PeriodoCobro ya existe para plan ${plan.id} — ${anio}-${mes}`,
+    // Todo el chequeo + inserción ocurre en UNA transacción: dos ejecuciones
+    // concurrentes ya no pueden generar el mismo periodo dos veces, y el
+    // unique index uq_periodos_plan_mes_anio (migración 20260907) actúa como
+    // red de seguridad final a nivel de base de datos.
+    return this.dataSource.transaction(async (manager) => {
+      // 1. Idempotencia con lock: serializa generadores concurrentes del
+      //    mismo plan. Advisory lock por transacción, liberado al confirmar.
+      await manager.query(
+        'SELECT pg_advisory_xact_lock(hashtextextended($1, 0))',
+        [`generar-cobros:${plan.id}:${anio}-${mes}`],
       );
-      return 0;
-    }
+
+      const periodoExistente = await manager.findOne(PeriodoCobro, {
+        where: { planId: plan.id, mes, anio },
+      });
+      if (periodoExistente) {
+        this.logger.debug(
+          `PeriodoCobro ya existe para plan ${plan.id} — ${anio}-${mes}`,
+        );
+        return 0;
+      }
 
     // 2. Obtener fechas de cobro según la modalidad (antes de la tarifa,
     //    porque la tarifa debe evaluarse en la fecha real del cobro).
@@ -132,6 +153,7 @@ export class GenerarCobrosUseCase {
       modalidad,
       fechaRefTarifa,
       plan.tenantId,
+      manager,
     );
 
     // 3. Calcular valor total del mes
@@ -162,7 +184,9 @@ export class GenerarCobrosUseCase {
       fechaFin,
       plan.tenantId,
     );
-    const periodoGuardado = await this.periodoCobroRepository.save(periodo);
+    // Si otro generador ganó la carrera pese al lock (o el índice único
+    // detecta el duplicado), la transacción completa se revierte: cero cobros huérfanos.
+    const periodoGuardado = await manager.save(PeriodoCobro, periodo);
 
     // 6. Obtener fechas de cobro según la modalidad
     const totalPagos = pagosPorMes(modalidad);
@@ -218,14 +242,15 @@ export class GenerarCobrosUseCase {
       return cobro;
     });
 
-    // 8. Persistir cobros
+    // 8. Persistir cobros dentro de la misma transacción
     if (cobrosAGuardar.length > 0) {
-      await this.cobroRepository.saveMany(cobrosAGuardar);
+      await manager.save(Cobro, cobrosAGuardar);
       this.logger.log(
         `Plan ${plan.id}: ${cobrosAGuardar.length} cobro(s) generado(s) para ${anio}-${mes} (${modalidad})`,
       );
     }
 
     return cobrosAGuardar.length;
+    });
   }
 }

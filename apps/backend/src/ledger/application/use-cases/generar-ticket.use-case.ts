@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { EntityManager } from 'typeorm';
 import { TicketCobro } from '../../domain/ticket-cobro.entity';
 import { TicketRepository } from '../../infrastructure/persistence/ticket.repository';
 import { ResidenteRepository } from '../../../community/infrastructure/residente.repository';
@@ -30,7 +31,10 @@ export class GenerarTicketUseCase {
     private readonly residenteRepo: ResidenteRepository,
   ) {}
 
-  async execute(input: GenerarTicketCobroInput): Promise<TicketCobro> {
+  async execute(
+    input: GenerarTicketCobroInput,
+    entityManager?: EntityManager,
+  ): Promise<TicketCobro> {
     // 1. Load residente with full location chain for snapshot
     const residente = await this.residenteRepo.findByIdWithRelations(
       input.pago.residenteId,
@@ -58,7 +62,14 @@ export class GenerarTicketUseCase {
     const manzanaNombre = manzana?.nombre ?? 'Sin manzana';
 
     // 3. Generate sequential number
-    const numero = await this.ticketRepo.nextNumero(input.pago.tenantId);
+    //    Dentro de una transacción usamos el lock de numeración para evitar
+    //    duplicados bajo pagos concurrentes; fuera de ella, la variante simple.
+    const numero = entityManager
+      ? await this.ticketRepo.nextNumeroLocked(
+          entityManager,
+          input.pago.tenantId,
+        )
+      : await this.ticketRepo.nextNumero(input.pago.tenantId);
 
     // 4. Build concepto from first affected cobro
     const primerCobro = input.cobrosAfectados[0];
@@ -82,7 +93,11 @@ export class GenerarTicketUseCase {
       concepto,
     });
 
-    const saved = await this.ticketRepo.save(ticket);
+    // Persistir dentro de la misma transacción si se provee el manager,
+    // de modo que el pago y su ticket se confirmen (o reviertan) juntos.
+    const saved = entityManager
+      ? await entityManager.save(TicketCobro, ticket)
+      : await this.ticketRepo.save(ticket);
 
     this.logger.log(
       `Ticket generado: ${saved.numero} | Pago: ${input.pago.id} | Monto: ${input.pago.monto} centavos`,

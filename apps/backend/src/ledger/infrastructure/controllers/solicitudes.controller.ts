@@ -110,10 +110,11 @@ export class SolicitudesController {
   @ApiOperation({ summary: 'Listar mis solicitudes' })
   async listar(
     @CurrentUser() user: Usuario,
+    @CurrentTenant() tenantId: string,
     @Query('limit') limit?: number,
     @Query('offset') offset?: number,
   ) {
-    return this.solicitudRepo.findByUsuario(user.id, limit, offset);
+    return this.solicitudRepo.findByUsuario(user.id, tenantId, limit, offset);
   }
 
   @Get('pendientes')

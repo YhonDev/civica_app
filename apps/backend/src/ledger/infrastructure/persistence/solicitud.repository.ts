@@ -15,11 +15,14 @@ export class SolicitudRepository extends BaseTenantRepository<Solicitud> {
 
   async findByUsuario(
     usuarioId: string,
+    tenantId: string,
     limit?: number,
     offset?: number,
   ): Promise<Solicitud[]> {
+    // tenantId obligatorio: sin él, un usuarioId que colisionara entre
+    // tenants filtraría solicitudes de otro tenant (fuga multi-tenant).
     return this.repo.find({
-      where: { usuarioId },
+      where: { usuarioId, tenantId },
       relations: { usuario: true, cobro: true },
       order: { fecha: 'DESC' },
       take: limit ? Math.min(Number(limit), 100) : undefined,

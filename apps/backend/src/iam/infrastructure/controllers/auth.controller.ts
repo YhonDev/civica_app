@@ -214,7 +214,11 @@ export class AuthController {
     const targetId =
       user.rol === RolUsuario.ADMIN ? (dto.usuarioId ?? user.id) : user.id;
 
-    if (user.rol !== RolUsuario.ADMIN && !dto.currentPassword) {
+    // Cambiar la propia contraseña siempre exige verificar la actual,
+    // incluso para ADMIN (evita que un token robado la rote sin conocerla).
+    // Un ADMIN que cambia la contraseña de OTRO usuario no la necesita.
+    const isSelfChange = targetId === user.id;
+    if (isSelfChange && !dto.currentPassword) {
       throw new BadRequestException(
         'Se requiere currentPassword para actualizar credenciales',
       );

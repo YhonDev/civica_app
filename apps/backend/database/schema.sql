@@ -143,6 +143,8 @@ CREATE TABLE periodos_cobro (
 );
 CREATE INDEX idx_periodos_plan   ON periodos_cobro (plan_id);
 CREATE INDEX idx_periodos_tenant ON periodos_cobro (tenant_id);
+-- Garantiza idempotencia de generación de cobros: impide duplicados concurrentes
+CREATE UNIQUE INDEX uq_periodos_plan_mes_anio ON periodos_cobro (plan_id, mes, anio);
 -- NOTA: La FK a planes_de_cobro se maneja desde la aplicación
 -- (la entidad PeriodoCobro usa @ManyToOne con FK implícita)
 

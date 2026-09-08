@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, LessThanOrEqual } from 'typeorm';
+import { EntityManager, Repository, LessThanOrEqual } from 'typeorm';
 import { Tarifa } from '../../domain/tarifa.entity';
 import { ModalidadRecaudo } from '../../../shared/common/value-objects';
 
@@ -31,9 +31,11 @@ export class TarifaRepository {
     modalidad: ModalidadRecaudo,
     fecha: Date,
     tenantId: string,
+    manager?: EntityManager,
   ): Promise<Tarifa | null> {
     const dateStr = fecha.toISOString().split('T')[0];
-    const result = await this.repo
+    const repo = manager ? manager.getRepository(Tarifa) : this.repo;
+    const result = await repo
       .createQueryBuilder('tarifa')
       .where('tarifa.proyectoId = :proyectoId', { proyectoId })
       .andWhere('tarifa.tenantId = :tenantId', { tenantId })

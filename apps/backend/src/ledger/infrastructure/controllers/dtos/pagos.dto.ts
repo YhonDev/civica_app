@@ -44,4 +44,18 @@ export class RegistrarPagoDto {
   @IsOptional()
   @IsString()
   solicitudId?: string;
+
+  @ApiPropertyOptional({
+    description: 'UUID del cobro específico que originó el pago (opcional)',
+  })
+  @IsOptional()
+  @IsString()
+  cobroId?: string;
+
+  @ApiPropertyOptional({
+    description: 'UUID del cobrador o usuario recaudador (opcional)',
+  })
+  @IsOptional()
+  @IsString()
+  cobradorId?: string;
 }

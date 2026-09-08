@@ -93,14 +93,15 @@ describe('SolicitudesController', () => {
   });
 
   describe('listar', () => {
-    it('should call findByUsuario with user id and optional limit/offset', async () => {
+    it('should call findByUsuario with user id, tenant and optional limit/offset', async () => {
       const mockResult = [{ id: 'sol-1' }];
       mockSolicitudRepo.findByUsuario.mockResolvedValue(mockResult);
 
-      const result = await controller.listar(mockUser, 20, 10);
+      const result = await controller.listar(mockUser, 'tenant-123', 20, 10);
 
       expect(mockSolicitudRepo.findByUsuario).toHaveBeenCalledWith(
         'usr-1',
+        'tenant-123',
         20,
         10,
       );
@@ -110,14 +111,52 @@ describe('SolicitudesController', () => {
     it('should work without pagination parameters', async () => {
       mockSolicitudRepo.findByUsuario.mockResolvedValue([]);
 
-      const result = await controller.listar(mockUser);
+      const result = await controller.listar(mockUser, 'tenant-123');
 
       expect(mockSolicitudRepo.findByUsuario).toHaveBeenCalledWith(
         'usr-1',
+        'tenant-123',
         undefined,
         undefined,
       );
       expect(result).toEqual([]);
+    });
+  });
+
+  describe('crear (cross-tenant)', () => {
+    it('should reject creating a solicitud whose cobro belongs to another tenant', async () => {
+      // The repo lookup is tenant-scoped: a cobro from tenant-B must not be
+      // resolvable with tenant-A's token, so creation is blocked.
+      mockCobroRepo.findById.mockResolvedValue(null);
+
+      await expect(
+        controller.crear(
+          { cobroId: 'cobro-de-tenant-B', tipo: 'COBRO_PRESENCIAL', descripcion: 'Test' },
+          mockUser,
+          'tenant-123',
+        ),
+      ).rejects.toThrow(/no existe un cobro válido/i);
+
+      // The lookup itself must have been tenant-scoped
+      expect(mockCobroRepo.findById).toHaveBeenCalledWith(
+        'cobro-de-tenant-B',
+        'tenant-123',
+      );
+      expect(mockSolicitudRepo.save).not.toHaveBeenCalled();
+    });
+
+    it('should stamp the solicitud with the token tenant, not a client-provided one', async () => {
+      mockCobroRepo.findById.mockResolvedValue({ id: 'cobro-1' });
+
+      await controller.crear(
+        { cobroId: 'cobro-1', tipo: 'COBRO_PRESENCIAL', descripcion: 'Test' },
+        mockUser,
+        'tenant-123',
+      );
+
+      const saved = mockSolicitudRepo.save.mock.calls[0][0];
+      expect(saved.tenantId).toBe('tenant-123');
+      expect(saved.usuarioId).toBe('usr-1');
     });
   });
 

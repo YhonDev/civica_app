@@ -66,6 +66,7 @@ describe('RegistrarPagoUseCase', () => {
 
   const mockCobroRepo = {
     findMasAntiguoConSaldoLocked: jest.fn(),
+    findPendientesConSaldoLockedBatch: jest.fn().mockResolvedValue([]),
     findMasAntiguoConSaldo: jest.fn(),
     findByResidente: jest.fn(),
     save: jest.fn(),
@@ -252,7 +253,9 @@ describe('RegistrarPagoUseCase', () => {
 
     it('should apply partial payment to oldest cobro', async () => {
       const cobro1 = crearCobro(40000);
-      mockCobroRepo.findMasAntiguoConSaldoLocked.mockResolvedValue(cobro1);
+      mockCobroRepo.findPendientesConSaldoLockedBatch.mockResolvedValue([
+        cobro1,
+      ]);
 
       const result = await useCase.execute(crearInput({ monto: 10000 }));
 
@@ -264,7 +267,9 @@ describe('RegistrarPagoUseCase', () => {
 
     it('should apply full payment to oldest cobro (PAGADA)', async () => {
       const cobro1 = crearCobro(40000);
-      mockCobroRepo.findMasAntiguoConSaldoLocked.mockResolvedValue(cobro1);
+      mockCobroRepo.findPendientesConSaldoLockedBatch.mockResolvedValue([
+        cobro1,
+      ]);
 
       const result = await useCase.execute(crearInput({ monto: 40000 }));
 
@@ -276,9 +281,10 @@ describe('RegistrarPagoUseCase', () => {
     it('should cross into next cobro when payment exceeds first', async () => {
       const cobro1 = crearCobro(40000, { id: 'cobro-1' });
       const cobro2 = crearCobro(40000, { id: 'cobro-2' });
-      mockCobroRepo.findMasAntiguoConSaldoLocked
-        .mockResolvedValueOnce(cobro1) // first call: oldest
-        .mockResolvedValueOnce(cobro2); // second call: next oldest (after partial)
+      mockCobroRepo.findPendientesConSaldoLockedBatch.mockResolvedValue([
+        cobro1,
+        cobro2,
+      ]);
 
       const result = await useCase.execute(crearInput({ monto: 60000 }));
 
@@ -296,9 +302,9 @@ describe('RegistrarPagoUseCase', () => {
     it('should log excess when payment exceeds all pending cobros', async () => {
       jest.spyOn(console, 'log').mockImplementation();
       const cobro1 = crearCobro(40000);
-      mockCobroRepo.findMasAntiguoConSaldoLocked
-        .mockResolvedValueOnce(cobro1)
-        .mockResolvedValueOnce(null); // no more cobros
+      mockCobroRepo.findPendientesConSaldoLockedBatch.mockResolvedValue([
+        cobro1,
+      ]); // no more cobros after the first
 
       const result = await useCase.execute(crearInput({ monto: 50000 }));
 
@@ -332,7 +338,9 @@ describe('RegistrarPagoUseCase', () => {
         respuesta: null,
         fechaRespuesta: null,
       };
-      mockCobroRepo.findMasAntiguoConSaldoLocked.mockResolvedValue(cobro);
+      mockCobroRepo.findPendientesConSaldoLockedBatch.mockResolvedValue([
+        cobro,
+      ]);
       mockSolicitudRepo.findById.mockResolvedValue(mockSolicitud);
       mockSolicitudRepo.save.mockResolvedValue(mockSolicitud);
 
@@ -350,7 +358,9 @@ describe('RegistrarPagoUseCase', () => {
 
     it('should not fail if solicitudId is invalid', async () => {
       const cobro = crearCobro(40000);
-      mockCobroRepo.findMasAntiguoConSaldoLocked.mockResolvedValue(cobro);
+      mockCobroRepo.findPendientesConSaldoLockedBatch.mockResolvedValue([
+        cobro,
+      ]);
       mockSolicitudRepo.findById.mockResolvedValue(null);
 
       const result = await useCase.execute(
@@ -371,7 +381,9 @@ describe('RegistrarPagoUseCase', () => {
       mockPagoRepo.findByIdempotentKey.mockResolvedValue(null);
       mockPlanRepo.findByResidente.mockResolvedValue(crearPlan());
       const cobro = crearCobro(40000);
-      mockCobroRepo.findMasAntiguoConSaldoLocked.mockResolvedValue(cobro);
+      mockCobroRepo.findPendientesConSaldoLockedBatch.mockResolvedValue([
+        cobro,
+      ]);
       mockPagoRepo.save.mockImplementation(async (p: Pago) => p);
 
       const result = await useCase.execute(crearInput({ monto: 40000 }));

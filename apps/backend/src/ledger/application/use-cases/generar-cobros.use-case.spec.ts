@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { DataSource } from 'typeorm';
 import { GenerarCobrosUseCase } from './generar-cobros.use-case';
 import { CobroRepository } from '../../infrastructure/persistence/cobro.repository';
 import { PlanDeCobroRepository } from '../../infrastructure/persistence/plan-de-cobro.repository';
@@ -27,6 +28,31 @@ describe('GenerarCobrosUseCase', () => {
 
   const mockTarifaRepo = {
     findVigente: jest.fn(),
+  };
+
+  // Manager transaccional: delega en los mismos mocks del use-case.
+  const mockManager = {
+    query: jest.fn().mockResolvedValue([]), // advisory lock (no-op)
+    findOne: jest.fn().mockImplementation(async (_entity: any, options: any) => {
+      const where = options?.where ?? {};
+      return mockPeriodoRepo.findByPlanAndMonth(
+        where.planId,
+        where.mes,
+        where.anio,
+      );
+    }),
+    save: jest.fn().mockImplementation(async (target: any, entity?: any) => {
+      const value = entity ?? target;
+      if (Array.isArray(value)) return mockCobroRepo.saveMany(value);
+      if (value instanceof PeriodoCobro) return mockPeriodoRepo.save(value);
+      return value;
+    }),
+  };
+
+  const mockDataSource = {
+    transaction: jest.fn(async (cb: (em: typeof mockManager) => Promise<any>) =>
+      cb(mockManager),
+    ),
   };
 
   const TENANT_ID = 'tenant-1';
@@ -72,6 +98,7 @@ describe('GenerarCobrosUseCase', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         GenerarCobrosUseCase,
+        { provide: DataSource, useValue: mockDataSource },
         { provide: CobroRepository, useValue: mockCobroRepo },
         { provide: PlanDeCobroRepository, useValue: mockPlanRepo },
         { provide: PeriodoCobroRepository, useValue: mockPeriodoRepo },

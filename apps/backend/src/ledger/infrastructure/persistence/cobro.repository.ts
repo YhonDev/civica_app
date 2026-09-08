@@ -276,6 +276,32 @@ export class CobroRepository extends BaseTenantRepository<Cobro> {
       .getOne();
   }
 
+  /**
+   * Fetches ALL cobros with pending balance for a residente in one query,
+   * locking them with PESSIMISTIC_WRITE (oldest first).
+   *
+   * Replaces the N-round-trip FIFO loop (one SELECT ... FOR UPDATE per cobro)
+   * with a single query + in-memory distribution. Must be called within an
+   * active database transaction.
+   */
+  async findPendientesConSaldoLockedBatch(
+    entityManager: EntityManager,
+    residenteId: string,
+    tenantId: string,
+  ): Promise<Cobro[]> {
+    return entityManager
+      .createQueryBuilder(Cobro, 'cobro')
+      .where('cobro.residenteId = :residenteId', { residenteId })
+      .andWhere('cobro.tenantId = :tenantId', { tenantId })
+      .andWhere('cobro.estado IN (:...estados)', {
+        estados: ['VENCIDA', 'PARCIAL', 'PENDIENTE'],
+      })
+      .andWhere('cobro.monto > cobro.montoPagado')
+      .orderBy('cobro.fechaVencimiento', 'ASC')
+      .setLock('pessimistic_write', undefined, ['cobro'])
+      .getMany();
+  }
+
   async saveMany(cobros: Cobro[]): Promise<Cobro[]> {
     return this.repo.save(cobros);
   }
@@ -314,7 +340,17 @@ export class CobroRepository extends BaseTenantRepository<Cobro> {
     tenantId: string,
     filters: { etapaId?: string; manzanaId?: string; status?: string },
     allowedEtapaIds?: string[],
-  ): Promise<Cobro[]> {
+    pagination?: { limit?: number; offset?: number },
+  ): Promise<{ items: Cobro[]; total: number }> {
+    // Límite duro: evita respuestas gigantes que degradan la API y el cliente.
+    const MAX_LIMIT = 1000;
+    const DEFAULT_LIMIT = 500;
+    const limit = Math.min(
+      Math.max(1, pagination?.limit ?? DEFAULT_LIMIT),
+      MAX_LIMIT,
+    );
+    const offset = Math.max(0, pagination?.offset ?? 0);
+
     const qb = this.repo
       .createQueryBuilder('cobro')
       .leftJoinAndSelect('cobro.residente', 'residente')
@@ -356,7 +392,9 @@ export class CobroRepository extends BaseTenantRepository<Cobro> {
       }
     }
 
-    qb.orderBy('cobro.fechaVencimiento', 'ASC');
-    return qb.getMany();
+    qb.orderBy('cobro.fechaVencimiento', 'ASC').take(limit).skip(offset);
+
+    const [items, total] = await qb.getManyAndCount();
+    return { items, total };
   }
 }
