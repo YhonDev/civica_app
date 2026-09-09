@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
 
+import '../../../core/format/app_currency.dart';
+import '../../../core/theme/app_breakpoints.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/responsive_builder.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/top_toast.dart';
@@ -261,7 +263,7 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
           title: isOffline ? 'Recaudo guardado en cola local' : '¡Recaudo registrado con éxito!',
           message: isOffline
               ? (res['message'] as String? ?? 'Pago guardado de forma segura en cola local.')
-              : 'Pago de \$${NumberFormat.decimalPattern('es_CO').format(monto)} procesado. Cartera actualizada.',
+              : 'Pago de ${AppCurrency.format(monto)} procesado. Cartera actualizada.',
           icon: isOffline ? Icons.cloud_off_rounded : Icons.check_circle_rounded,
           accentColor: isOffline ? AppColors.warning : AppColors.success,
         );
@@ -295,8 +297,7 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
       totalAdeudado = widget.cobro.saldo > 0 ? widget.cobro.saldo : widget.cobro.monto;
     }
 
-    final saldoStr =
-        '\$ ${NumberFormat.decimalPattern('es_CO').format(totalAdeudado.toInt())}';
+    final saldoStr = AppCurrency.format(totalAdeudado.toInt());
 
     return Padding(
       padding: EdgeInsets.only(
@@ -305,7 +306,10 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
         bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.xl,
         top: AppSpacing.sm,
       ),
-      child: Column(
+      // En tablet/desktop el sheet no debe estirarse a todo el ancho.
+      child: ContentConstrainedBox(
+        maxWidth: AppBreakpoints.maxFormWidth,
+        child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -506,7 +510,7 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
                 ),
                 Text(
                   _isQuickMode && _cuotasList.isNotEmpty
-                      ? '\$ ${NumberFormat.decimalPattern('es_CO').format((_cuotasList.first['monto'] as num? ?? 20000).toInt())}'
+                      ? AppCurrency.format((_cuotasList.first['monto'] as num? ?? 20000).toInt())
                       : saldoStr,
                   style: AppTypography.subtitle.copyWith(
                     fontWeight: FontWeight.w700,
@@ -552,7 +556,7 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
                     dense: true,
                     value: isSelected,
                     title: Text(
-                      '$titleStr — \$${NumberFormat.decimalPattern('es_CO').format(montoCuota)}',
+                      '$titleStr — ${AppCurrency.format(montoCuota)}',
                       style: AppTypography.bodyMedium.copyWith(
                         fontWeight: FontWeight.w600,
                         color: isSelected ? AppColors.primary : AppColors.textPrimary,
@@ -627,8 +631,8 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
                           padding: const EdgeInsets.only(right: 6),
                           child: ChoiceChip(
                             label: Text(
-                              '$n ${n == 1 ? 'Cuota' : 'Cuotas'} (\$${NumberFormat.decimalPattern('es_CO').format((widget.cobro.monto * n).toInt())})',
-                              style: AppTypography.small.copyWith(fontSize: 11),
+                              '$n ${n == 1 ? 'Cuota' : 'Cuotas'} (${AppCurrency.format((widget.cobro.monto * n).toInt())})',
+                              style: AppTypography.small,
                             ),
                             selected: _montoController.text == (widget.cobro.monto * n).toInt().toString(),
                             onSelected: (_) {
@@ -642,8 +646,8 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
                   ],
                   ChoiceChip(
                     label: Text(
-                      'Total (\$${NumberFormat.decimalPattern('es_CO').format(widget.cobro.saldo.toInt())})',
-                      style: AppTypography.small.copyWith(fontSize: 11),
+                      'Total (${AppCurrency.format(widget.cobro.saldo.toInt())})',
+                      style: AppTypography.small,
                     ),
                     selected: _montoController.text == widget.cobro.saldo.toInt().toString(),
                     onSelected: (_) {
@@ -670,7 +674,6 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
                       : 'El dinero ingresado se aplicará primero a la cuota más antigua en mora para sanearla.',
                   style: AppTypography.small.copyWith(
                     color: AppColors.textSecondary,
-                    fontSize: 11,
                   ),
                 ),
               ),
@@ -699,6 +702,7 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
             ),
           ),
         ],
+        ),
       ),
     );
   }

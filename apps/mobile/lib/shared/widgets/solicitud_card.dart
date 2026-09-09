@@ -216,9 +216,8 @@ class SolicitudCard extends StatelessWidget {
                             const SizedBox(width: 6),
                             Text(
                               '·',
-                              style: TextStyle(
+                              style: AppTypography.label.copyWith(
                                 color: AppColors.textDisabled,
-                                fontSize: 12,
                               ),
                             ),
                             const SizedBox(width: 6),
@@ -244,9 +243,8 @@ class SolicitudCard extends StatelessWidget {
                           Expanded(
                             child: Text(
                               DateFormat("dd/MM/yyyy · hh:mm a", 'es').format(solicitud.fecha),
-                              style: AppTypography.caption.copyWith(
+                              style: AppTypography.small.copyWith(
                                 color: AppColors.textSecondary,
-                                fontSize: 11,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,

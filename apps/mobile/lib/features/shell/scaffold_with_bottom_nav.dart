@@ -375,12 +375,11 @@ class DesktopSidebar extends StatelessWidget {
                             Expanded(
                               child: Text(
                                 tab.label,
-                                style: AppTypography.body.copyWith(
+                                style: AppTypography.bodySmall.copyWith(
                                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                                   color: isSelected
                                       ? AppColors.primary
                                       : (isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary),
-                                  fontSize: 14,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,

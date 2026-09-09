@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/format/app_currency.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/network/api_client.dart';
@@ -133,9 +134,8 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
     final estado = cuota['estado'] as String? ?? 'PENDIENTE';
     final monto = cuota['monto'] as int? ?? 0;
     final amount = (monto / 100).round();
-    final formattedAmount = NumberFormat('#,##0', 'es_CO').format(amount);
     final estadoStr = estado == 'PAGADA' ? 'Pagada' : 'Pendiente';
-    return '$conceptoClean ($estadoStr · \$$formattedAmount)';
+    return '$conceptoClean ($estadoStr · ${AppCurrency.format(amount)})';
   }
 
   void _enviarSolicitud() async {

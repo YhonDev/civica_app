@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import '../../../core/format/app_currency.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -83,9 +83,8 @@ class CobradorSolicitudCard extends StatelessWidget {
                       Flexible(
                         child: Text(
                           nombreResidente,
-                          style: AppTypography.body.copyWith(
+                          style: AppTypography.caption.copyWith(
                             fontWeight: FontWeight.w600,
-                            fontSize: 13,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -102,10 +101,8 @@ class CobradorSolicitudCard extends StatelessWidget {
                         ),
                         child: Text(
                           enCamino ? 'En camino' : 'En espera',
-                          style: AppTypography.caption.copyWith(
+                          style: AppTypography.displayMicro.copyWith(
                             color: enCamino ? AppColors.info : AppColors.warning,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 9.5,
                           ),
                         ),
                       ),
@@ -114,9 +111,8 @@ class CobradorSolicitudCard extends StatelessWidget {
                   const SizedBox(height: 1),
                   Text(
                     casaInfo,
-                    style: AppTypography.caption.copyWith(
+                    style: AppTypography.small.copyWith(
                       color: AppColors.textSecondary,
-                      fontSize: 11,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -125,10 +121,9 @@ class CobradorSolicitudCard extends StatelessWidget {
                     const SizedBox(height: 1),
                     Text(
                       '"$nota"',
-                      style: AppTypography.caption.copyWith(
+                      style: AppTypography.small.copyWith(
                         fontStyle: FontStyle.italic,
                         color: AppColors.textSecondary,
-                        fontSize: 10.5,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -143,7 +138,7 @@ class CobradorSolicitudCard extends StatelessWidget {
               OutlinedButton.icon(
                 onPressed: onMarcarEnCamino,
                 icon: const Icon(Icons.near_me_rounded, size: 12),
-                label: const Text('En camino', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+                label: const Text('En camino', style: AppTypography.smallBold),
                 style: OutlinedButton.styleFrom(
                   visualDensity: VisualDensity.compact,
                   foregroundColor: AppColors.info,
@@ -156,7 +151,7 @@ class CobradorSolicitudCard extends StatelessWidget {
               ElevatedButton.icon(
                 onPressed: onCobrar,
                 icon: const Icon(Icons.flash_on_rounded, size: 13),
-                label: const Text('Cobrar', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                label: const Text('Cobrar', style: AppTypography.smallBold),
                 style: ElevatedButton.styleFrom(
                   visualDensity: VisualDensity.compact,
                   backgroundColor: AppColors.success,
@@ -209,10 +204,9 @@ class CobradorSolicitudCard extends StatelessWidget {
                         ),
                         child: Text(
                           '#$ordenFifo',
-                          style: AppTypography.caption.copyWith(
+                          style: AppTypography.micro.copyWith(
                             color: AppColors.primary,
                             fontWeight: FontWeight.w800,
-                            fontSize: 10,
                           ),
                         ),
                       ),
@@ -220,9 +214,8 @@ class CobradorSolicitudCard extends StatelessWidget {
                     Flexible(
                       child: Text(
                         nombreResidente,
-                        style: AppTypography.subtitle.copyWith(
+                        style: AppTypography.bodySmall.copyWith(
                           fontWeight: FontWeight.w700,
-                          fontSize: 14,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -242,10 +235,8 @@ class CobradorSolicitudCard extends StatelessWidget {
                 ),
                 child: Text(
                   enCamino ? '🚀 En camino' : '⏳ En espera',
-                  style: AppTypography.caption.copyWith(
+                  style: AppTypography.smallBold.copyWith(
                     color: enCamino ? AppColors.info : AppColors.warning,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 11,
                   ),
                 ),
               ),
@@ -276,9 +267,8 @@ class CobradorSolicitudCard extends StatelessWidget {
                 const SizedBox(width: 3),
                 Text(
                   telefono,
-                  style: AppTypography.caption.copyWith(
+                  style: AppTypography.small.copyWith(
                     color: AppColors.textSecondary,
-                    fontSize: 11,
                   ),
                 ),
               ],
@@ -297,10 +287,9 @@ class CobradorSolicitudCard extends StatelessWidget {
               ),
               child: Text(
                 '"$nota"',
-                style: AppTypography.caption.copyWith(
+                style: AppTypography.small.copyWith(
                   fontStyle: FontStyle.italic,
                   color: AppColors.textPrimary,
-                  fontSize: 11.5,
                 ),
               ),
             ),
@@ -319,7 +308,7 @@ class CobradorSolicitudCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  '\$${NumberFormat('#,###', 'es_CO').format(saldo.toInt())} COP',
+                  AppCurrency.formatCOP(saldo.toInt()),
                   style: AppTypography.caption.copyWith(
                     fontWeight: FontWeight.w700,
                     color: AppColors.primary,

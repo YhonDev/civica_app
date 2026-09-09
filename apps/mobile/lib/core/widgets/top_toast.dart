@@ -214,20 +214,18 @@ class _TopToastWidgetState extends State<_TopToastWidget>
                           if (widget.title != null) ...[
                             Text(
                               widget.title!,
-                              style: AppTypography.body.copyWith(
+                              style: AppTypography.caption.copyWith(
                                 color: titleTextColor,
                                 fontWeight: FontWeight.bold,
-                                fontSize: 13,
                               ),
                             ),
                             const SizedBox(height: 2),
                           ],
                           Text(
                             widget.message,
-                            style: AppTypography.caption.copyWith(
+                            style: AppTypography.label.copyWith(
                               color: bodyTextColor,
                               fontWeight: FontWeight.w500,
-                              fontSize: 12,
                             ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,

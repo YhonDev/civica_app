@@ -94,7 +94,6 @@ class CredentialsDialog extends StatelessWidget {
                   style: AppTypography.body.copyWith(
                     fontWeight: FontWeight.bold,
                     fontFamily: 'monospace',
-                    fontSize: 16,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.md),
@@ -111,7 +110,6 @@ class CredentialsDialog extends StatelessWidget {
                   style: AppTypography.body.copyWith(
                     fontWeight: FontWeight.bold,
                     fontFamily: 'monospace',
-                    fontSize: 16,
                   ),
                 ),
               ],

@@ -886,9 +886,9 @@ class _GeneradorEstructuraSheetState extends State<_GeneradorEstructuraSheet> {
                     child: FilledButton.icon(
                       onPressed: _totalCasas == 0 ? null : _ejecutarGeneracion,
                       icon: const Icon(Icons.bolt_rounded, size: 20),
-                      label: const Text(
+                      label: Text(
                         'Generar Estructura',
-                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                        style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w700),
                       ),
                       style: FilledButton.styleFrom(
                         shape: RoundedRectangleBorder(

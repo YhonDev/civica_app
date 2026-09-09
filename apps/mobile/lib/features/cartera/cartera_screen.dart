@@ -139,10 +139,8 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                   _selectedManzana = null;
                 }),
                 selectedColor: AppColors.primary,
-                labelStyle: AppTypography.caption.copyWith(
+                labelStyle: AppTypography.smallBold.copyWith(
                   color: _selectedEtapa == null ? Colors.white : AppColors.textSecondary,
-                  fontWeight: _selectedEtapa == null ? FontWeight.w700 : FontWeight.w500,
-                  fontSize: 11.5,
                 ),
                 backgroundColor: AppColors.surface,
                 shape: RoundedRectangleBorder(
@@ -165,10 +163,8 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                     _selectedManzana = null; // Reinicia manzana al alternar etapa
                   }),
                   selectedColor: AppColors.primary,
-                  labelStyle: AppTypography.caption.copyWith(
+                  labelStyle: AppTypography.smallBold.copyWith(
                     color: isSelected ? Colors.white : AppColors.textSecondary,
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                    fontSize: 11.5,
                   ),
                   backgroundColor: AppColors.surface,
                   shape: RoundedRectangleBorder(
@@ -203,10 +199,8 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                 selected: _selectedManzana == null,
                 onSelected: (_) => setState(() => _selectedManzana = null),
                 selectedColor: AppColors.accentTeal,
-                labelStyle: AppTypography.caption.copyWith(
+                labelStyle: AppTypography.smallBold.copyWith(
                   color: _selectedManzana == null ? Colors.white : AppColors.textSecondary,
-                  fontWeight: _selectedManzana == null ? FontWeight.w700 : FontWeight.w500,
-                  fontSize: 11,
                 ),
                 backgroundColor: AppColors.surface,
                 shape: RoundedRectangleBorder(
@@ -226,10 +220,8 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                   selected: isSelected,
                   onSelected: (_) => setState(() => _selectedManzana = manzana),
                   selectedColor: AppColors.accentTeal,
-                  labelStyle: AppTypography.caption.copyWith(
+                  labelStyle: AppTypography.smallBold.copyWith(
                     color: isSelected ? Colors.white : AppColors.textSecondary,
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                    fontSize: 11,
                   ),
                   backgroundColor: AppColors.surface,
                   shape: RoundedRectangleBorder(
@@ -260,10 +252,9 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
           fit: BoxFit.scaleDown,
           child: Text(
             label,
-            style: AppTypography.caption.copyWith(
+            style: AppTypography.smallBold.copyWith(
               color: isSelected ? Colors.white : AppColors.textPrimary,
               fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-              fontSize: 11.5,
             ),
           ),
         ),

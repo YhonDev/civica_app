@@ -257,8 +257,6 @@ class _EditarResidenteScreenState extends State<EditarResidenteScreen> {
                               'Inmueble asignado',
                               style: AppTypography.caption.copyWith(
                                 color: AppColors.success,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
                               ),
                             ),
                             const SizedBox(height: 2),

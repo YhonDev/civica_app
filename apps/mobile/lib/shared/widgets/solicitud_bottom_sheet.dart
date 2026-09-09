@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../core/format/app_currency.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/network/local_cache_repository.dart';
@@ -269,7 +270,7 @@ class _SolicitudBottomSheetState extends State<SolicitudBottomSheet> {
           Navigator.pop(context);
           TopToast.showSuccess(
             context,
-            'Pago corregido a \$${NumberFormat('#,##0', 'es_CO').format(nuevoMontoPesos)} COP exitosamente.',
+            'Pago corregido a ${AppCurrency.formatCOP(nuevoMontoPesos)} exitosamente.',
           );
           widget.onActionCompleted?.call();
         }
@@ -308,7 +309,7 @@ class _SolicitudBottomSheetState extends State<SolicitudBottomSheet> {
               'Esta acción anulará el pago registrado y su recibo digital.\n\n'
               'La cuota volverá al estado Pendiente o Vencida para permitir su cobro correcto, '
               'manteniendo intacta la obligación en el motor de recaudo.',
-              style: AppTypography.body.copyWith(fontSize: 14),
+              style: AppTypography.bodySmall,
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
@@ -491,7 +492,7 @@ class _SolicitudBottomSheetState extends State<SolicitudBottomSheet> {
         : null;
 
     final String montoFormateado = montoPagoPesos != null
-        ? r'$ ' + NumberFormat('#,##0', 'es_CO').format(montoPagoPesos)
+        ? AppCurrency.format(montoPagoPesos)
         : (widget.montoStr ?? '—');
 
     final String nroTicket = ticketData?['numero'] as String? ??

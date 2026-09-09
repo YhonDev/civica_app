@@ -165,10 +165,8 @@ class _MiCasaScreenState extends State<MiCasaScreen> with LifecycleObserverMixin
                             if (_casaDireccion.isNotEmpty) _casaDireccion,
                             if (_etapaNombre.isNotEmpty) _etapaNombre,
                           ].join(' — '),
-                          style: AppTypography.title.copyWith(
+                          style: AppTypography.cardValue.copyWith(
                             color: AppColors.textPrimary,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
                           ),
                         ),
                       ],

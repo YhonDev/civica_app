@@ -390,7 +390,7 @@ class _SecuritySectionState extends State<SecuritySection> {
               obscureText: _obscureNew,
               decoration: InputDecoration(
                 hintText: 'Nueva contraseña (mín. 8 chars, 1 Mayús, 1 Núm, 1 Símbolo)',
-                hintStyle: AppTypography.body.copyWith(color: AppColors.textDisabled, fontSize: 12),
+                hintStyle: AppTypography.label.copyWith(color: AppColors.textDisabled, fontWeight: FontWeight.w400),
                 isDense: true,
                 suffixIcon: IconButton(
                   icon: Icon(
@@ -419,7 +419,7 @@ class _SecuritySectionState extends State<SecuritySection> {
               obscureText: _obscureConfirm,
               decoration: InputDecoration(
                 hintText: 'Confirmar nueva contraseña',
-                hintStyle: AppTypography.body.copyWith(color: AppColors.textDisabled, fontSize: 12),
+                hintStyle: AppTypography.label.copyWith(color: AppColors.textDisabled, fontWeight: FontWeight.w400),
                 isDense: true,
                 suffixIcon: IconButton(
                   icon: Icon(

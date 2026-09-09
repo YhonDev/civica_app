@@ -48,11 +48,17 @@ class AppColors {
   /// Reemplaza los literales 0xFF1E293B (dark) / Colors.white (light).
   static Color get elevatedCard => _isDark ? darkCard : lightCard;
 
+  /// Texto de énfasis sobre tarjeta elevada (alias de elevatedCardText).
+  static Color get ink => elevatedCardText;
+
   /// Texto de énfasis sobre tarjeta elevada.
   static Color get elevatedCardText => _isDark ? darkTextPrimary : lightTextPrimary;
 
   /// Borde de tarjeta elevada.
   static Color get elevatedCardBorder => _isDark ? darkBorder : lightBorder;
+
+  /// Texto secundario sobre tarjeta elevada (alias de elevatedCardTextSecondary).
+  static Color get inkSecondary => elevatedCardTextSecondary;
 
   /// Texto secundario sobre tarjeta elevada.
   static Color get elevatedCardTextSecondary =>

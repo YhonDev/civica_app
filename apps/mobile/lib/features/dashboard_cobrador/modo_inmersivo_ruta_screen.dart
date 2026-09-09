@@ -378,8 +378,7 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
                   Text(
                     '¿Cancelar Ruta en Curso?',
                     textAlign: TextAlign.center,
-                    style: AppTypography.title.copyWith(
-                      fontSize: 20,
+                    style: AppTypography.subtitle.copyWith(
                       fontWeight: FontWeight.w900,
                       color: isDark ? Colors.white : AppColors.textPrimary,
                     ),
@@ -390,8 +389,7 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
                   Text(
                     'Tené en cuenta que al salir de la caminata, el progreso actual se consolidará y deberás reanudar la ruta desde el dashboard.',
                     textAlign: TextAlign.center,
-                    style: AppTypography.body.copyWith(
-                      fontSize: 13,
+                    style: AppTypography.caption.copyWith(
                       height: 1.4,
                       color: isDark ? Colors.white70 : AppColors.textSecondary,
                     ),
@@ -413,9 +411,9 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
                       ),
                       onPressed: () => Navigator.of(dialogContext).pop(false),
                       icon: const Icon(Icons.directions_walk_rounded, size: 22),
-                      label: const Text(
+                      label: Text(
                         'CONTINUAR RUTA DE RECAUDO',
-                        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, letterSpacing: 0.5),
+                        style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w900, letterSpacing: 0.5),
                       ),
                     ),
                   ),
@@ -438,7 +436,7 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
                         icon: const Icon(Icons.exit_to_app_rounded, size: 15),
                         label: const Text(
                           'Cancelar ruta y salir',
-                          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+                          style: AppTypography.label,
                         ),
                       ),
                     ),
@@ -570,9 +568,8 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
             children: [
               Text(
                 'Ruta Iniciada',
-                style: AppTypography.title.copyWith(
+                style: AppTypography.subtitle.copyWith(
                   fontWeight: FontWeight.w800,
-                  fontSize: 20,
                   color: isDark ? Colors.white : AppColors.textPrimary,
                 ),
               ),
@@ -767,10 +764,9 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
                     ),
                     child: Text(
                       item.etapaNombre.toUpperCase(),
-                      style: AppTypography.caption.copyWith(
+                      style: AppTypography.bodySmall.copyWith(
                         color: AppColors.primary,
                         fontWeight: FontWeight.w900,
-                        fontSize: 14,
                         letterSpacing: 0.8,
                       ),
                     ),
@@ -819,7 +815,6 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
               Text(
                 '${item.manzanaNombre} • ${item.casaNombre}',
                 style: AppTypography.title.copyWith(
-                  fontSize: 28,
                   fontWeight: FontWeight.w900,
                   color: isDark ? Colors.white : AppColors.textPrimary,
                 ),
@@ -852,9 +847,8 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
                         const SizedBox(height: 2),
                         Text(
                           item.residenteNombre,
-                          style: AppTypography.title.copyWith(
+                          style: AppTypography.stat.copyWith(
                             fontWeight: FontWeight.w900,
-                            fontSize: 22,
                             color: isDark ? Colors.white : AppColors.textPrimary,
                           ),
                         ),
@@ -896,9 +890,8 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
                       const SizedBox(height: 2),
                       Text(
                         '"${item.solicitudNota}"',
-                        style: AppTypography.body.copyWith(
+                        style: AppTypography.caption.copyWith(
                           fontStyle: FontStyle.italic,
-                          fontSize: 13,
                           color: isDark ? Colors.white70 : AppColors.textPrimary,
                         ),
                       ),
@@ -974,10 +967,9 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
                         const SizedBox(height: 4),
                         Text(
                           isPagado ? '\$0' : '\$${item.saldo.toInt()}',
-                          style: AppTypography.title.copyWith(
+                          style: AppTypography.stat.copyWith(
                             color: isPagado ? AppColors.success : AppColors.primary,
                             fontWeight: FontWeight.w900,
-                            fontSize: 22,
                           ),
                         ),
                       ],
@@ -1017,7 +1009,7 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
                   ),
                   label: Text(
                     isMora ? 'Restablecer a Pendiente' : 'Marcar en Mora',
-                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+                    style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w800),
                   ),
                 ),
               ),
@@ -1117,9 +1109,9 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
                   ),
                   onPressed: () => _abrirCobroRapido(item),
                   icon: const Icon(Icons.payments_rounded, size: 22),
-                  label: const Text(
+                  label: Text(
                     'REGISTRAR COBRO',
-                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, letterSpacing: 0.5),
+                    style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w900, letterSpacing: 0.5),
                   ),
                 ),
               ),

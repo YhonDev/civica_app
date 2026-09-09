@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import '../../core/format/app_currency.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
@@ -249,9 +250,8 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                 ),
                 Text(
                   '$startStr — $endStr',
-                  style: AppTypography.body.copyWith(
+                  style: AppTypography.caption.copyWith(
                     fontWeight: FontWeight.w600,
-                    fontSize: 13,
                   ),
                 ),
               ],
@@ -265,10 +265,8 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
             ),
             child: Text(
               'Ruta activa',
-              style: AppTypography.caption.copyWith(
+              style: AppTypography.smallBold.copyWith(
                 color: AppColors.primary,
-                fontWeight: FontWeight.w700,
-                fontSize: 11,
               ),
             ),
           ),
@@ -355,10 +353,8 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                     children: [
                       Text(
                         '$count activas',
-                        style: AppTypography.caption.copyWith(
+                        style: AppTypography.smallBold.copyWith(
                           color: count > 0 ? AppColors.warning : AppColors.textSecondary,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 11,
                         ),
                       ),
                       const SizedBox(width: 4),
@@ -512,9 +508,8 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
             children: [
               Text(
                 'Ruta a Cobrar',
-                style: AppTypography.title.copyWith(
+                style: AppTypography.bodyMedium.copyWith(
                   fontWeight: FontWeight.w700,
-                  fontSize: 16,
                 ),
               ),
               Text(
@@ -566,7 +561,7 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
           icon: const Icon(Icons.play_arrow_rounded, size: 18),
           label: const Text(
             'Iniciar Recorrido',
-            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+            style: AppTypography.label,
           ),
         ),
       ],
@@ -669,10 +664,9 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                 }
               },
               selectedColor: AppColors.primary,
-              labelStyle: AppTypography.caption.copyWith(
+              labelStyle: AppTypography.label.copyWith(
                 color: isSelected ? Colors.white : AppColors.textSecondary,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                fontSize: 12,
               ),
               backgroundColor: AppColors.surface,
               shape: RoundedRectangleBorder(
@@ -723,10 +717,9 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                 }
               },
               selectedColor: AppColors.primary,
-              labelStyle: AppTypography.caption.copyWith(
+              labelStyle: AppTypography.label.copyWith(
                 color: _selectedEtapaId == 'TODAS' ? Colors.white : AppColors.textSecondary,
                 fontWeight: _selectedEtapaId == 'TODAS' ? FontWeight.w700 : FontWeight.w500,
-                fontSize: 12,
               ),
               backgroundColor: AppColors.surface,
               shape: RoundedRectangleBorder(
@@ -755,10 +748,9 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                   }
                 },
                 selectedColor: AppColors.primary,
-                labelStyle: AppTypography.caption.copyWith(
+                labelStyle: AppTypography.label.copyWith(
                   color: isSelected ? Colors.white : AppColors.textSecondary,
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                  fontSize: 12,
                 ),
                 backgroundColor: AppColors.surface,
                 shape: RoundedRectangleBorder(
@@ -883,10 +875,8 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                     Flexible(
                       child: Text(
                         labelDirecto,
-                        style: AppTypography.caption.copyWith(
+                        style: AppTypography.smallBold.copyWith(
                           color: !_sentidoInverso ? Colors.white : AppColors.textSecondary,
-                          fontWeight: !_sentidoInverso ? FontWeight.w700 : FontWeight.w500,
-                          fontSize: 11,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -924,10 +914,8 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                     Flexible(
                       child: Text(
                         labelInverso,
-                        style: AppTypography.caption.copyWith(
+                        style: AppTypography.smallBold.copyWith(
                           color: _sentidoInverso ? Colors.white : AppColors.textSecondary,
-                          fontWeight: _sentidoInverso ? FontWeight.w700 : FontWeight.w500,
-                          fontSize: 11,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -965,10 +953,9 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                 }
               },
               selectedColor: AppColors.primary,
-              labelStyle: AppTypography.caption.copyWith(
+              labelStyle: AppTypography.label.copyWith(
                 color: isSelected ? Colors.white : AppColors.textSecondary,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                fontSize: 12,
               ),
               backgroundColor: AppColors.surface,
               shape: RoundedRectangleBorder(
@@ -1216,10 +1203,9 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
           const SizedBox(width: 6),
           Text(
             nombre,
-            style: AppTypography.body.copyWith(
+            style: AppTypography.bodySmall.copyWith(
               fontWeight: FontWeight.w900,
               color: AppColors.textPrimary,
-              fontSize: 14,
             ),
           ),
           const SizedBox(width: 6),
@@ -1342,10 +1328,9 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                             ),
                             child: Text(
                               etapaNombre,
-                              style: AppTypography.caption.copyWith(
+                              style: AppTypography.micro.copyWith(
                                 color: AppColors.primary,
                                 fontWeight: FontWeight.w800,
-                                fontSize: 10,
                               ),
                             ),
                           ),
@@ -1476,8 +1461,4 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
 
 // ── Helpers ─────────────────────────────────────────────────────────
 
-String _formatPesos(int pesos) {
-  if (pesos >= 1000000) return '\$${(pesos / 1000000).toStringAsFixed(1)}M';
-  if (pesos >= 1000) return '\$${(pesos / 1000).toStringAsFixed(0)}K';
-  return '\$$pesos';
-}
+String _formatPesos(int pesos) => AppCurrency.formatCompact(pesos);

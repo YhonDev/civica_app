@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import '../../core/format/app_currency.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
@@ -275,7 +275,7 @@ class _TarifasScreenState extends State<TarifasScreen> {
                           ),
                           const SizedBox(height: AppSpacing.sm),
                           Text(
-                            '\$ ${NumberFormat.decimalPattern('es_CO').format(montoMensual)} / mes',
+                            '${AppCurrency.format(montoMensual)} / mes',
                             style: AppTypography.title.copyWith(
                               color: AppColors.primary,
                               fontWeight: FontWeight.w800,
@@ -291,9 +291,9 @@ class _TarifasScreenState extends State<TarifasScreen> {
                             ),
                           ),
                           const SizedBox(height: AppSpacing.xs),
-                          _buildDesgloseRow('Modalidad Semanal (4 cuotas):', '\$ ${NumberFormat.decimalPattern('es_CO').format(montoSemanalCalculado)} / cuota'),
-                          _buildDesgloseRow('Modalidad Quincenal (2 cuotas):', '\$ ${NumberFormat.decimalPattern('es_CO').format(montoQuincenalCalculado)} / cuota'),
-                          _buildDesgloseRow('Modalidad Mensual (1 cuota):', '\$ ${NumberFormat.decimalPattern('es_CO').format(montoMensual)} / cuota'),
+                          _buildDesgloseRow('Modalidad Semanal (4 cuotas):', '${AppCurrency.format(montoSemanalCalculado)} / cuota'),
+                          _buildDesgloseRow('Modalidad Quincenal (2 cuotas):', '${AppCurrency.format(montoQuincenalCalculado)} / cuota'),
+                          _buildDesgloseRow('Modalidad Mensual (1 cuota):', '${AppCurrency.format(montoMensual)} / cuota'),
                         ],
                       ),
                     ),

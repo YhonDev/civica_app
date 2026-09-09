@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import '../../core/format/app_currency.dart';
 
 import '../../features/auth/auth_cubit.dart';
 import '../../core/theme/app_breakpoints.dart';
@@ -263,8 +264,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
       );
     }
 
-    final saldoFormatted = NumberFormat.decimalPattern('es_CO').format(_saldo);
-    final saldoLabelText = _saldo > 0 ? 'Deuda total: \$$saldoFormatted' : 'Deuda total: \$0';
+    final saldoLabelText = _saldo > 0 ? 'Deuda total: ${AppCurrency.format(_saldo)}' : 'Deuda total: \$ 0';
     final isWide = context.isWideScreen;
 
     final leftColumnWidgets = <Widget>[
@@ -460,8 +460,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
     final fallbackMonth = toBeginningOfSentenceCase(DateFormat('MMMM', 'es').format(dateObj));
     final monthName = item['mes'] ?? fallbackMonth;
 
-    final montoValue = NumberFormat.decimalPattern('es_CO').format(item['monto'] as int);
-    final montoStr = '\$ $montoValue';
+    final montoStr = AppCurrency.format(item['monto'] as int);
     final numeroCuota = item['numeroPago'] ?? '${index + 1}';
 
     final bool isProgramada = item['cobroId'] == null;
@@ -491,9 +490,8 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
         ),
         child: Text(
           'Programada',
-          style: AppTypography.small.copyWith(
+          style: AppTypography.micro.copyWith(
             color: AppColors.textSecondary,
-            fontSize: 10.5,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -518,10 +516,8 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
             const SizedBox(width: 4),
             Text(
               badgeLabel,
-              style: AppTypography.small.copyWith(
+              style: AppTypography.micro.copyWith(
                 color: badgeColor,
-                fontSize: 10.5,
-                fontWeight: FontWeight.bold,
               ),
             ),
           ],
@@ -535,7 +531,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
         icon: Icon(Icons.front_hand_outlined, size: 14, color: AppColors.success),
         label: Text(
           'Solicitar Cobro',
-          style: TextStyle(color: AppColors.success, fontSize: 11.5, fontWeight: FontWeight.bold),
+          style: AppTypography.smallBold.copyWith(color: AppColors.success),
         ),
         style: OutlinedButton.styleFrom(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -560,9 +556,8 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
               children: [
                 Text(
                   '$monthName — Cuota $numeroCuota',
-                  style: AppTypography.bodyMedium.copyWith(
+                  style: AppTypography.bodySmall.copyWith(
                     fontWeight: FontWeight.bold,
-                    fontSize: 14,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -570,9 +565,8 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
                 const SizedBox(height: 2),
                 Text(
                   '$montoStr · Vence $fecha',
-                  style: AppTypography.caption.copyWith(
+                  style: AppTypography.small.copyWith(
                     color: AppColors.textSecondary,
-                    fontSize: 11.5,
                   ),
                 ),
               ],
@@ -872,7 +866,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    NumberFormat.currency(locale: 'es_CO', symbol: r'$', decimalDigits: 0).format(item.monto ?? 0),
+                    AppCurrency.format(item.monto ?? 0),
                     style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 2),
@@ -991,11 +985,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
   // ── Open detailed view for pending requests ────────────────────────
   void _mostrarDetalleSolicitud(SolicitudData solicitud) {
     final montoStr = _proximoPago != null
-        ? NumberFormat.currency(
-            locale: 'es_CO',
-            symbol: r'$',
-            decimalDigits: 0,
-          ).format(_proximoPago!['monto'] as int)
+        ? AppCurrency.format(_proximoPago!['monto'] as int)
         : '—';
 
     SolicitudBottomSheet.show(

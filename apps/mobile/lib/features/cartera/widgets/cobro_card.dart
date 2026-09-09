@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import '../../../core/format/app_currency.dart';
+import '../../../core/theme/app_card_styles.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
@@ -62,12 +64,11 @@ class CobroCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final montoRaw = (cobro.isPaid
             ? (cobro.montoPagado > 0 ? cobro.montoPagado : cobro.monto)
             : cobro.saldo)
         .round();
-    final montoFormatted = r'$ ' + NumberFormat('#,##0', 'es_CO').format(montoRaw);
+    final montoFormatted = AppCurrency.format(montoRaw);
 
     final ubicacion = cobro.ubicacionNombre;
     final bool tieneResidente = cobro.nombre.isNotEmpty && cobro.nombre != 'Residente';
@@ -84,23 +85,12 @@ class CobroCard extends StatelessWidget {
 
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-      decoration: BoxDecoration(
-        color: AppColors.elevatedCard,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: cardBorderColor,
-          width: 1.2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+      decoration: AppCardStyles.elevatedCard(
+        context,
+        borderColor: cardBorderColor,
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
         child: InkWell(
           onTap: onTap,
           child: Padding(
@@ -137,12 +127,7 @@ class CobroCard extends StatelessWidget {
                             // 1. CELDA SUPERIOR: DIRECCIÓN / INMUEBLE (ej. "Manzana B · Casa 4")
                             Text(
                               ubicacion.isNotEmpty ? ubicacion : cobro.tituloCuota,
-                              style: AppTypography.bodyMedium.copyWith(
-                                fontWeight: FontWeight.w800,
-                                fontSize: 15.5,
-                                color: isDark ? Colors.white : const Color(0xFF0F172A),
-                                letterSpacing: -0.2,
-                              ),
+                              style: AppCardStyles.cobroTitle,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -164,10 +149,9 @@ class CobroCard extends StatelessWidget {
                                     ),
                                     child: Text(
                                       cobro.tituloCuota,
-                                      style: AppTypography.caption.copyWith(
+                                      style: AppTypography.label.copyWith(
                                         color: AppColors.primary,
                                         fontWeight: FontWeight.w700,
-                                        fontSize: 12,
                                       ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
@@ -185,16 +169,15 @@ class CobroCard extends StatelessWidget {
                                   Icon(
                                     Icons.person_outline_rounded,
                                     size: 14.5,
-                                    color: isDark ? Colors.white70 : const Color(0xFF475569),
+                                    color: AppColors.elevatedCardTextSecondary,
                                   ),
                                   const SizedBox(width: 4.5),
                                   Expanded(
                                     child: Text(
                                       cobro.nombre,
-                                      style: AppTypography.caption.copyWith(
-                                        color: isDark ? Colors.white : AppColors.elevatedCardText,
+                                      style: AppTypography.label.copyWith(
+                                        color: AppColors.ink,
                                         fontWeight: FontWeight.w700,
-                                        fontSize: 12.5,
                                       ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
@@ -209,14 +192,13 @@ class CobroCard extends StatelessWidget {
                             if (_fechaDetalle.isNotEmpty) ...[
                               Text(
                                 _fechaDetalle,
-                                style: AppTypography.caption.copyWith(
+                                style: AppTypography.smallBold.copyWith(
                                   color: (cobro.estado == 'Mora' || cobro.estado == 'VENCIDA')
                                       ? AppColors.error
                                       : AppColors.textSecondary.withValues(alpha: 0.9),
                                   fontWeight: (cobro.estado == 'Mora' || cobro.estado == 'VENCIDA')
                                       ? FontWeight.w700
                                       : FontWeight.w500,
-                                  fontSize: 11,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -229,12 +211,7 @@ class CobroCard extends StatelessWidget {
                             // 1. CELDA SUPERIOR: CUOTA Y PERIODO (ej. "Septiembre — Cuota 1")
                             Text(
                               cobro.tituloCuota,
-                              style: AppTypography.bodyMedium.copyWith(
-                                fontWeight: FontWeight.w800,
-                                fontSize: 15.5,
-                                color: isDark ? Colors.white : const Color(0xFF0F172A),
-                                letterSpacing: -0.2,
-                              ),
+                              style: AppCardStyles.cobroTitle,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -247,16 +224,14 @@ class CobroCard extends StatelessWidget {
                                   Icon(
                                     Icons.home_outlined,
                                     size: 14.5,
-                                    color: AppColors.textSecondary,
+                                    color: AppColors.elevatedCardTextSecondary,
                                   ),
                                   const SizedBox(width: 4.5),
                                   Expanded(
                                     child: Text(
                                       ubicacion,
-                                      style: AppTypography.caption.copyWith(
-                                        color: AppColors.textSecondary,
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 12,
+                                      style: AppTypography.label.copyWith(
+                                        color: AppColors.elevatedCardTextSecondary,
                                       ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
@@ -289,14 +264,12 @@ class CobroCard extends StatelessWidget {
                                       ),
                                       child: Text(
                                         _fechaDetalle,
-                                        style: AppTypography.caption.copyWith(
+                                        style: AppTypography.smallBold.copyWith(
                                           color: cobro.isMora
                                               ? AppColors.error
                                               : (cobro.isPaid
                                                   ? AppColors.success
                                                   : AppColors.primary),
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: 11,
                                         ),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
@@ -332,11 +305,7 @@ class CobroCard extends StatelessWidget {
                           const SizedBox(width: 3),
                           Text(
                             cobro.isMora ? 'En Mora' : (cobro.isPaid ? 'Pagada' : 'Pendiente'),
-                            style: AppTypography.small.copyWith(
-                              color: _color,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 10,
-                            ),
+                            style: AppTypography.micro.copyWith(color: _color),
                           ),
                         ],
                       ),
@@ -355,10 +324,8 @@ class CobroCard extends StatelessWidget {
                         children: [
                           Text(
                             cobro.isPaid ? 'Monto Pagado' : 'Saldo Pendiente',
-                            style: AppTypography.caption.copyWith(
+                            style: AppTypography.smallBold.copyWith(
                               color: AppColors.textSecondary,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 11,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -369,12 +336,8 @@ class CobroCard extends StatelessWidget {
                             alignment: Alignment.centerLeft,
                             child: Text(
                               montoFormatted,
-                              style: AppTypography.title.copyWith(
-                                fontWeight: FontWeight.w800,
-                                fontSize: 18,
-                                color: cobro.isMora
-                                    ? AppColors.error
-                                    : (isDark ? Colors.white : const Color(0xFF0F172A)),
+                              style: AppCardStyles.cobroValue(
+                                color: cobro.isMora ? AppColors.error : AppColors.ink,
                               ),
                             ),
                           ),
@@ -388,10 +351,8 @@ class CobroCard extends StatelessWidget {
                         children: [
                           Text(
                             'Ver ticket',
-                            style: AppTypography.caption.copyWith(
+                            style: AppTypography.smallBold.copyWith(
                               color: AppColors.primary,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 11,
                             ),
                           ),
                           const SizedBox(width: 3),
@@ -419,7 +380,7 @@ class CobroCard extends StatelessWidget {
                         ),
                         label: const Text(
                           'Cobrar',
-                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                          style: AppTypography.smallBold,
                         ),
                       )
                     else if (onSolicitarCobro != null)
@@ -439,7 +400,7 @@ class CobroCard extends StatelessWidget {
                         ),
                         label: const Text(
                           'Solicitar',
-                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                          style: AppTypography.smallBold,
                         ),
                       ),
                   ],

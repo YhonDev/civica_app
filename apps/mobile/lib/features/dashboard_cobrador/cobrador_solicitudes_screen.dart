@@ -197,10 +197,9 @@ class _CobradorSolicitudesScreenState extends State<CobradorSolicitudesScreen> {
                     ),
                     Text(
                       'La más antigua arriba',
-                      style: AppTypography.caption.copyWith(
+                      style: AppTypography.small.copyWith(
                         color: AppColors.primary,
                         fontStyle: FontStyle.italic,
-                        fontSize: 11,
                       ),
                     ),
                   ],

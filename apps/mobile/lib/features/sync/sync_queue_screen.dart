@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import '../../core/format/app_currency.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
@@ -92,8 +92,6 @@ class _SyncQueueScreenState extends State<SyncQueueScreen> {
       if (mounted) setState(() => _syncing = false);
     }
   }
-
-  final currencyFormat = NumberFormat.currency(symbol: '\$', decimalDigits: 0, locale: 'es_CO');
 
   @override
   Widget build(BuildContext context) {
@@ -208,7 +206,7 @@ class _SyncQueueScreenState extends State<SyncQueueScreen> {
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
                                             Text(
-                                              currencyFormat.format(montoCop),
+                                              AppCurrency.format(montoCop),
                                               style: AppTypography.subtitle.copyWith(fontWeight: FontWeight.bold),
                                             ),
                                             const SizedBox(height: 2),
@@ -234,10 +232,8 @@ class _SyncQueueScreenState extends State<SyncQueueScreen> {
                                             ),
                                             child: Text(
                                               statusLabel,
-                                              style: AppTypography.caption.copyWith(
+                                              style: AppTypography.smallBold.copyWith(
                                                 color: statusColor,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 11,
                                               ),
                                             ),
                                           ),
@@ -255,12 +251,12 @@ class _SyncQueueScreenState extends State<SyncQueueScreen> {
                                                 ),
                                                 child: Row(
                                                   mainAxisSize: MainAxisSize.min,
-                                                  children: const [
+                                                  children: [
                                                     Icon(Icons.refresh_rounded, size: 12, color: Colors.red),
                                                     SizedBox(width: 4),
                                                     Text(
                                                       'Reintentar',
-                                                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.red),
+                                                      style: AppTypography.smallBold.copyWith(color: Colors.red),
                                                     ),
                                                   ],
                                                 ),

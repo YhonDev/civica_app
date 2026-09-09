@@ -161,12 +161,9 @@ class _EtapasScreenState extends State<EtapasScreen> {
                         FilledButton.tonalIcon(
                           onPressed: _crearEtapaAutomatica,
                           icon: const Icon(Icons.add_rounded, size: 18),
-                          label: const Text(
+                          label: Text(
                             'Nueva Etapa',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 13,
-                            ),
+                            style: AppTypography.smallBold,
                           ),
                           style: FilledButton.styleFrom(
                             visualDensity: VisualDensity.compact,
@@ -184,12 +181,9 @@ class _EtapasScreenState extends State<EtapasScreen> {
                         OutlinedButton.icon(
                           onPressed: _mostrarDialogoCreacionMultiple,
                           icon: const Icon(Icons.library_add_rounded, size: 16),
-                          label: const Text(
+                          label: Text(
                             'Agregar Varias',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 13,
-                            ),
+                            style: AppTypography.smallBold,
                           ),
                           style: OutlinedButton.styleFrom(
                             visualDensity: VisualDensity.compact,

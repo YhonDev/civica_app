@@ -279,8 +279,6 @@ class _NuevoResidenteScreenState extends State<NuevoResidenteScreen> {
                               'Inmueble seleccionado',
                               style: AppTypography.caption.copyWith(
                                 color: AppColors.info,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
                               ),
                             ),
                             const SizedBox(height: 2),

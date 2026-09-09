@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/format/app_currency.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
@@ -170,12 +171,12 @@ class _ResidenteFinanzasScreenState extends State<ResidenteFinanzasScreen> {
                 children: [
                   const SizedBox(height: 4),
                   Text(
-                    'Valor: \$${monto.toStringAsFixed(2)}',
+                    'Valor: ${AppCurrency.format(monto)}',
                     style: AppTypography.caption,
                   ),
                   if (saldo > 0 && saldo < monto)
                     Text(
-                      'Saldo: \$${saldo.toStringAsFixed(2)}',
+                      'Saldo: ${AppCurrency.format(saldo)}',
                       style: AppTypography.caption.copyWith(color: AppColors.error, fontWeight: FontWeight.w600),
                     ),
                   const SizedBox(height: 8),

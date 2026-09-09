@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/format/app_currency.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
@@ -128,7 +129,7 @@ class RecaudoTimelineWidget extends StatelessWidget {
             children: [
               _buildStatItem(
                 label: 'Abonado este mes',
-                val: '\$${montoPagado.toStringAsFixed(0)}',
+                val: AppCurrency.format(montoPagado),
                 color: AppColors.success,
               ),
               Container(
@@ -138,7 +139,7 @@ class RecaudoTimelineWidget extends StatelessWidget {
               ),
               _buildStatItem(
                 label: 'Saldo pendiente',
-                val: '\$${saldoPendiente.toStringAsFixed(0)}',
+                val: AppCurrency.format(saldoPendiente),
                 color: saldoPendiente > 0 ? AppColors.error : AppColors.textSecondary,
               ),
             ],

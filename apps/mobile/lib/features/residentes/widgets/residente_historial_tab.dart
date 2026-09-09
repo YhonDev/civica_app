@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/format/app_currency.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
@@ -185,7 +186,7 @@ class _ResidenteHistorialScreenState extends State<ResidenteHistorialScreen> {
                 child: Icon(Icons.receipt_long_rounded, color: AppColors.success),
               ),
               title: Text(
-                'Pago por \$${monto.toStringAsFixed(2)}',
+                'Pago por ${AppCurrency.format(monto)}',
                 style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w700),
               ),
               subtitle: Column(

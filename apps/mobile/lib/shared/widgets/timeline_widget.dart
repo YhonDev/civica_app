@@ -208,11 +208,9 @@ class _TimelineRow extends StatelessWidget {
                             // Context (Manzana/Casa) or fallback to User
                             Text(
                               item.contexto ?? item.usuario,
-                              style: TextStyle(
-                                fontSize: 14,
+                              style: AppTypography.bodySmall.copyWith(
                                 color: AppColors.textPrimary,
                                 fontWeight: FontWeight.w600,
-                                height: 1.4,
                               ),
                             ),
                             
@@ -220,10 +218,8 @@ class _TimelineRow extends StatelessWidget {
                             if (item.descripcion.isNotEmpty)
                               Text(
                                 item.descripcion.replaceAll(': undefined', '').replaceAll(': null', ''),
-                                style: TextStyle(
-                                  fontSize: 14,
+                                style: AppTypography.bodySmall.copyWith(
                                   color: AppColors.textPrimary,
-                                  height: 1.4,
                                 ),
                               ),
                             const SizedBox(height: 2),

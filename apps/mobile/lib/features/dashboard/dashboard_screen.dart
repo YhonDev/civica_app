@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
+import '../../core/format/app_currency.dart';
 import '../../features/auth/auth_cubit.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_breakpoints.dart';
@@ -143,9 +143,8 @@ class _DashboardHeader extends StatelessWidget {
                   children: [
                     Text(
                       nombre,
-                      style: AppTypography.title.copyWith(
+                      style: AppTypography.stat.copyWith(
                         fontWeight: FontWeight.w900,
-                        fontSize: 22,
                       ),
                     ),
                     Text(
@@ -298,8 +297,7 @@ class _DashboardContentState extends State<_DashboardContent>
             child: Builder(
               builder: (context) {
                 final recaudo = widget.data.recaudoMes;
-                final amountStr =
-                    '\$ ${NumberFormat.decimalPattern('es_CO').format(recaudo.toInt())}';
+                final amountStr = AppCurrency.format(recaudo.toInt());
                 return KPICard.progress(
                   title: 'Recaudo del Mes',
                   amount: amountStr,

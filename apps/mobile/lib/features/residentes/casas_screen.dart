@@ -402,10 +402,8 @@ class _CasasScreenState extends State<CasasScreen> {
                         }
                       },
                       selectedColor: AppColors.primary,
-                      labelStyle: AppTypography.caption.copyWith(
+                      labelStyle: AppTypography.smallBold.copyWith(
                         color: isSelected ? Colors.white : AppColors.textSecondary,
-                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                        fontSize: 11,
                       ),
                       backgroundColor: AppColors.surface,
                       shape: RoundedRectangleBorder(
@@ -483,10 +481,8 @@ class _CasasScreenState extends State<CasasScreen> {
                           }
                         },
                         selectedColor: AppColors.accentTeal,
-                        labelStyle: AppTypography.caption.copyWith(
+                        labelStyle: AppTypography.smallBold.copyWith(
                           color: isSelected ? Colors.white : AppColors.textSecondary,
-                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                          fontSize: 11,
                         ),
                         backgroundColor: AppColors.surface,
                         shape: RoundedRectangleBorder(
@@ -515,9 +511,9 @@ class _CasasScreenState extends State<CasasScreen> {
                         activeCasas,
                       ),
                       icon: const Icon(Icons.add_rounded, size: 18),
-                      label: const Text(
+                      label: Text(
                         'Nueva Casa',
-                        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                        style: AppTypography.smallBold,
                       ),
                       style: FilledButton.styleFrom(
                         visualDensity: VisualDensity.compact,
@@ -534,9 +530,9 @@ class _CasasScreenState extends State<CasasScreen> {
                         activeCasas,
                       ),
                       icon: const Icon(Icons.library_add_rounded, size: 16),
-                      label: const Text(
+                      label: Text(
                         'Agregar Varias',
-                        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                        style: AppTypography.smallBold,
                       ),
                       style: OutlinedButton.styleFrom(
                         visualDensity: VisualDensity.compact,
@@ -683,8 +679,7 @@ class _CasasScreenState extends State<CasasScreen> {
                                         ),
                                         child: Text(
                                           isOcupada ? 'Ocupada' : 'Disponible',
-                                          style: TextStyle(
-                                            fontSize: 10,
+                                          style: AppTypography.micro.copyWith(
                                             fontWeight: isOcupada ? FontWeight.w700 : FontWeight.w500,
                                             color: isOcupada ? AppColors.success : AppColors.textSecondary,
                                           ),

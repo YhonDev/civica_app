@@ -104,10 +104,8 @@ class KPICard extends StatelessWidget {
                 alignment: Alignment.centerLeft,
                 child: Text(
                   value,
-                  style: AppTypography.title.copyWith(
-                    fontWeight: FontWeight.w800,
+                  style: AppTypography.cardValue.copyWith(
                     color: AppColors.textPrimary,
-                    fontSize: 18,
                   ),
                   maxLines: 1,
                 ),
@@ -142,12 +140,10 @@ class KPICard extends StatelessWidget {
                       const SizedBox(width: 4),
                       Text(
                         trendText!,
-                        style: AppTypography.caption.copyWith(
+                        style: AppTypography.smallBold.copyWith(
                           color: (trendPositive ?? true)
                               ? AppColors.success
                               : AppColors.error,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 11,
                         ),
                       ),
                       const SizedBox(width: 6),
@@ -156,9 +152,8 @@ class KPICard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           subtitle!,
-                          style: AppTypography.caption.copyWith(
+                          style: AppTypography.small.copyWith(
                             color: AppColors.textSecondary,
-                            fontSize: 11,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -167,10 +162,8 @@ class KPICard extends StatelessWidget {
                     if (actionLabel != null)
                       Text(
                         actionLabel!,
-                        style: AppTypography.caption.copyWith(
+                        style: AppTypography.smallBold.copyWith(
                           color: themeColor,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 11,
                         ),
                       ),
                   ],

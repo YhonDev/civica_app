@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/format/app_currency.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
@@ -253,7 +254,7 @@ class _ActividadAdminScreenState extends State<ActividadAdminScreen> {
                     children: [
                       Text(
                         isJornada ? 'Resumen de Jornada de Cobro' : 'Solicitud de Revisión',
-                        style: AppTypography.title.copyWith(fontSize: 16, fontWeight: FontWeight.bold),
+                        style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.bold),
                       ),
                       Text(
                         'Cobrador / Usuario: ${item.usuario}',
@@ -272,7 +273,7 @@ class _ActividadAdminScreenState extends State<ActividadAdminScreen> {
                 builder: (context) {
                   final meta = orig.metadata;
                   final rec = meta['totalRecaudado'] as num?;
-                  final recStr = rec != null ? '\$ ${(rec / 100).toStringAsFixed(0)}' : 'Recaudo de Jornada';
+                  final recStr = rec != null ? AppCurrency.format((rec / 100).round()) : 'Recaudo de Jornada';
                   final hInicio = meta['horaInicio'] as String?;
                   final hFin = meta['horaFin'] as String?;
                   final horarioStr = (hInicio != null && hFin != null) ? '$hInicio - $hFin' : item.hace;
@@ -304,10 +305,9 @@ class _ActividadAdminScreenState extends State<ActividadAdminScreen> {
                             const SizedBox(height: 4),
                             Text(
                               recStr,
-                              style: AppTypography.title.copyWith(
+                              style: AppTypography.stat.copyWith(
                                 color: AppColors.success,
                                 fontWeight: FontWeight.w900,
-                                fontSize: 22,
                               ),
                             ),
                           ],
@@ -384,7 +384,7 @@ class _ActividadAdminScreenState extends State<ActividadAdminScreen> {
               Expanded(
                 child: Text(
                   label,
-                  style: AppTypography.caption.copyWith(color: AppColors.textSecondary, fontSize: 11),
+                  style: AppTypography.small.copyWith(color: AppColors.textSecondary),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),

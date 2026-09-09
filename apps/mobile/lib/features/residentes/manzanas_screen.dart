@@ -198,10 +198,8 @@ class _ManzanasScreenState extends State<ManzanasScreen> {
                         }
                       },
                       selectedColor: AppColors.primary,
-                      labelStyle: AppTypography.caption.copyWith(
+                      labelStyle: AppTypography.smallBold.copyWith(
                         color: isSelected ? Colors.white : AppColors.textSecondary,
-                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                        fontSize: 11,
                       ),
                       backgroundColor: AppColors.surface,
                       shape: RoundedRectangleBorder(
@@ -224,9 +222,9 @@ class _ManzanasScreenState extends State<ManzanasScreen> {
                 child: FilledButton.tonalIcon(
                   onPressed: () => _crearManzanaAutomatica(_selectedEtapaId, activeManzanas),
                   icon: const Icon(Icons.add_rounded, size: 18),
-                  label: const Text(
+                  label: Text(
                     'Nueva Manzana',
-                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                    style: AppTypography.smallBold,
                   ),
                   style: FilledButton.styleFrom(
                     visualDensity: VisualDensity.compact,

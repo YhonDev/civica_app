@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/format/app_currency.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme/app_colors.dart';
@@ -11,6 +12,7 @@ import '../../features/auth/auth_cubit.dart';
 import '../../core/network/api_client.dart';
 import '../solicitudes/solicitudes_repository.dart';
 import '../../shared/widgets/solicitud_card.dart';
+import '../../core/widgets/responsive_builder.dart';
 import '../../shared/widgets/screen_header.dart';
 import '../cartera/widgets/cobro_card.dart';
 import '../cartera/models/cartera_models.dart';
@@ -127,7 +129,9 @@ class _HistorialScreenState extends State<HistorialScreen> {
 
     return Scaffold(
       body: SafeArea(
-        child: Column(
+        // En tablet/desktop el contenido no debe estirarse a todo el ancho.
+        child: ContentConstrainedBox(
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ScreenHeader(title: isCobrador ? 'Actividad' : 'Historial'),
@@ -223,10 +227,7 @@ class _HistorialScreenState extends State<HistorialScreen> {
                                                   Expanded(
                                                     child: Text(
                                                       '$manzana $casa',
-                                                      style: AppTypography.subtitle.copyWith(
-                                                        fontWeight: FontWeight.w700,
-                                                        fontSize: 15,
-                                                      ),
+                                                      style: AppTypography.cardTitle,
                                                     ),
                                                   ),
                                                   if (esViaSolicitud)
@@ -240,8 +241,7 @@ class _HistorialScreenState extends State<HistorialScreen> {
                                                       ),
                                                       child: Text(
                                                         '📩 Vía Solicitud',
-                                                        style: TextStyle(
-                                                          fontSize: 10,
+                                                        style: AppTypography.micro.copyWith(
                                                           fontWeight: FontWeight.w800,
                                                           color: AppColors.primary,
                                                         ),
@@ -259,8 +259,7 @@ class _HistorialScreenState extends State<HistorialScreen> {
                                               const SizedBox(height: 4),
                                               Text(
                                                 '$dateFormatted • $nroRecibo',
-                                                style: TextStyle(
-                                                  fontSize: 11,
+                                                style: AppTypography.small.copyWith(
                                                   color: AppColors.textSecondary.withValues(alpha: 0.8),
                                                 ),
                                               ),
@@ -269,11 +268,10 @@ class _HistorialScreenState extends State<HistorialScreen> {
                                         ),
                                         const SizedBox(width: 8),
                                         Text(
-                                          '\$$monto',
-                                          style: AppTypography.subtitle.copyWith(
+                                          AppCurrency.format(monto),
+                                          style: AppTypography.cardValue.copyWith(
                                             fontWeight: FontWeight.w900,
                                             color: AppColors.success,
-                                            fontSize: 16,
                                           ),
                                         ),
                                       ],
@@ -317,6 +315,7 @@ class _HistorialScreenState extends State<HistorialScreen> {
                         ),
             ),
           ],
+          ),
         ),
       ),
     );

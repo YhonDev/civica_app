@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import '../../core/format/app_currency.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
@@ -93,7 +93,7 @@ class EstadoCuentaCard extends StatelessWidget {
                         border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
                       ),
                       child: Text(
-                        'Tarifa: \$${NumberFormat.decimalPattern('es_CO').format((tarifaActual!['cobroMensual'] ?? tarifaActual!['cuotaMensual'] ?? tarifaActual!['montoSegunModalidad'] as num?)?.toInt() ?? 40000)}',
+                        'Tarifa: ${AppCurrency.formatOrNull((tarifaActual!['cobroMensual'] ?? tarifaActual!['cuotaMensual'] ?? tarifaActual!['montoSegunModalidad'] as num?)?.toInt(), fallback: 40000)}',
                         style: AppTypography.caption.copyWith(
                           color: AppColors.textSecondary,
                           fontWeight: FontWeight.w600,

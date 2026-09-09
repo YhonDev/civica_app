@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import '../../core/theme/app_breakpoints.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/format/app_currency.dart';
 import '../../shared/widgets/mini_stat_card.dart';
 import '../../shared/widgets/donut_chart.dart';
 import '../../shared/widgets/month_selector.dart';
@@ -43,8 +43,6 @@ class _ReportesScreenState extends State<ReportesScreen> {
     }
   }
 
-  final currencyFormat = NumberFormat.currency(symbol: '\$', decimalDigits: 0, locale: 'es_CO');
-
   Widget _buildKpisGrid() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -58,14 +56,14 @@ class _ReportesScreenState extends State<ReportesScreen> {
           children: [
             MiniStatCard(
               label: 'Total Recaudado',
-              value: currencyFormat.format(_data?.totalRecaudado ?? 0),
+              value: AppCurrency.format(_data?.totalRecaudado ?? 0),
               icon: Icons.monetization_on_rounded,
               color: AppColors.success,
             ),
             const SizedBox(width: AppSpacing.xs),
             MiniStatCard(
               label: 'Pendiente',
-              value: currencyFormat.format(_data?.totalPendiente ?? 0),
+              value: AppCurrency.format(_data?.totalPendiente ?? 0),
               icon: Icons.pending_actions_rounded,
               color: AppColors.warning,
             ),
@@ -76,7 +74,7 @@ class _ReportesScreenState extends State<ReportesScreen> {
           children: [
             MiniStatCard(
               label: 'En Mora',
-              value: currencyFormat.format(_data?.totalVencido ?? 0),
+              value: AppCurrency.format(_data?.totalVencido ?? 0),
               icon: Icons.error_outline_rounded,
               color: AppColors.error,
             ),
@@ -158,7 +156,7 @@ class _ReportesScreenState extends State<ReportesScreen> {
                 leading: Icon(Icons.flag_rounded, color: AppColors.primary),
                 title: const Text('Meta del Mes'),
                 trailing: Text(
-                  currencyFormat.format(_data?.meta ?? 0),
+                  AppCurrency.format(_data?.meta ?? 0),
                   style: AppTypography.body.copyWith(fontWeight: FontWeight.bold),
                 ),
               ),
@@ -167,7 +165,7 @@ class _ReportesScreenState extends State<ReportesScreen> {
                 leading: Icon(Icons.check_circle_rounded, color: AppColors.success),
                 title: const Text('Recaudado Real'),
                 trailing: Text(
-                  currencyFormat.format(_data?.totalRecaudado ?? 0),
+                  AppCurrency.format(_data?.totalRecaudado ?? 0),
                   style: AppTypography.body.copyWith(
                     fontWeight: FontWeight.bold,
                     color: AppColors.success,
@@ -179,7 +177,7 @@ class _ReportesScreenState extends State<ReportesScreen> {
                 leading: Icon(Icons.warning_rounded, color: AppColors.error),
                 title: const Text('Saldo en Riesgo (Mora)'),
                 trailing: Text(
-                  currencyFormat.format(_data?.totalVencido ?? 0),
+                  AppCurrency.format(_data?.totalVencido ?? 0),
                   style: AppTypography.body.copyWith(
                     fontWeight: FontWeight.bold,
                     color: AppColors.error,

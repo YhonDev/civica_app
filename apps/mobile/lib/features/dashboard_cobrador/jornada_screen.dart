@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/format/app_currency.dart';
 import '../../features/auth/auth_cubit.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
@@ -166,9 +167,8 @@ class _JornadaViewState extends State<_JornadaView> with LifecycleObserverMixin 
               // ── Header ──────────────────────────────────────────────
               Text(
                 nombre,
-                style: AppTypography.title.copyWith(
+                style: AppTypography.sectionHeader.copyWith(
                   fontWeight: FontWeight.w900,
-                  fontSize: 26,
                 ),
               ),
               const SizedBox(height: 4),
@@ -353,10 +353,8 @@ class _JornadaViewState extends State<_JornadaView> with LifecycleObserverMixin 
                     ),
                     child: Text(
                       'Tocar para cobrar',
-                      style: AppTypography.small.copyWith(
+                      style: AppTypography.smallBold.copyWith(
                         color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 11,
                       ),
                     ),
                   ),
@@ -469,10 +467,8 @@ class _JornadaViewState extends State<_JornadaView> with LifecycleObserverMixin 
                     children: [
                       Text(
                         '${data.solicitudes.length} activas',
-                        style: AppTypography.caption.copyWith(
+                        style: AppTypography.smallBold.copyWith(
                           color: AppColors.warning,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 11,
                         ),
                       ),
                       const SizedBox(width: 4),
@@ -682,12 +678,4 @@ class _JornadaViewState extends State<_JornadaView> with LifecycleObserverMixin 
 // HELPERS
 // ═══════════════════════════════════════════════════════════════════
 
-String _formatPesos(int pesos) {
-  if (pesos >= 1000000) {
-    return '\$${(pesos / 1000000).toStringAsFixed(1)}M';
-  }
-  if (pesos >= 1000) {
-    return '\$${(pesos / 1000).toStringAsFixed(0)}K';
-  }
-  return '\$$pesos';
-}
+String _formatPesos(int pesos) => AppCurrency.formatCompact(pesos);

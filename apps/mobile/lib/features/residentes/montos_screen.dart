@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import '../../core/format/app_currency.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
@@ -16,8 +16,6 @@ class MontosScreen extends StatefulWidget {
 class _MontosScreenState extends State<MontosScreen> {
   bool _loading = true;
   List<Map<String, dynamic>> _montos = [];
-  final currencyFormat = NumberFormat.currency(symbol: '\$', decimalDigits: 0, locale: 'es_CO');
-
   @override
   void initState() {
     super.initState();
@@ -195,7 +193,7 @@ class _MontosScreenState extends State<MontosScreen> {
                               child: Icon(Icons.attach_money_rounded, color: AppColors.success),
                             ),
                             title: Text(
-                              currencyFormat.format(montoCop),
+                              AppCurrency.format(montoCop),
                               style: AppTypography.subtitle.copyWith(fontWeight: FontWeight.bold),
                             ),
                             trailing: IconButton(

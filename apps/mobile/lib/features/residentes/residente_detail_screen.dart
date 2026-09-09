@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/format/app_currency.dart';
 import '../../core/network/api_client.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
@@ -433,7 +434,7 @@ class _ResidenteDetailScreenState extends State<ResidenteDetailScreen> {
               Expanded(
                 child: KPICard(
                   title: 'Deuda Actual',
-                  value: '\$${_residente.saldoPendiente.toStringAsFixed(0)}',
+                  value: AppCurrency.format(_residente.saldoPendiente),
                   subtitle: _residente.estadoFinanciero,
                   icon: Icons.account_balance_wallet_outlined,
                   color: _residente.saldoPendiente > 0 ? AppColors.error : AppColors.success,
@@ -586,8 +587,8 @@ class _ResidenteDetailScreenState extends State<ResidenteDetailScreen> {
         ),
         Text(
           dayName,
-          style: AppTypography.small.copyWith(
-            fontSize: 9,
+          style: AppTypography.micro.copyWith(
+            fontWeight: FontWeight.w400,
             color: AppColors.textSecondary,
           ),
         ),
