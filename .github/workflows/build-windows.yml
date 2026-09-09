@@ -1,0 +1,96 @@
+name: Build Windows Desktop
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Tag de la release de GitHub para publicar el ZIP (ej. v1.0.0)'
+        required: false
+        default: 'v1.0.0'
+      upload_to_release:
+        description: 'Subir automáticamente a la release en Cuentiva/Cuentiva-platform (true/false)'
+        required: false
+        default: 'true'
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-windows:
+    name: Build Windows x64 Executable
+    runs-on: windows-latest
+
+    defaults:
+      run:
+        working-directory: apps/mobile
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Enable Windows Desktop Support
+        run: flutter config --enable-windows-desktop
+
+      - name: Create .env asset placeholder
+        run: |
+          if (Test-Path .env.example) {
+            Copy-Item .env.example .env
+          } else {
+            New-Item -ItemType File -Path .env -Force
+          }
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build Windows Release
+        run: flutter build windows --release --dart-define=API_BASE_URL=https://cuentiva.onrender.com/api
+
+      - name: Package Windows Bundle into ZIP
+        id: package
+        shell: pwsh
+        run: |
+          $tag = "${{ github.event.inputs.release_tag }}"
+          if ([string]::IsNullOrWhiteSpace($tag)) {
+            $tag = "${{ github.ref_name }}"
+          }
+          if ([string]::IsNullOrWhiteSpace($tag) -or $tag -eq "dev" -or $tag -eq "main") {
+            $tag = "v1.0.0"
+          }
+
+          $zipName = "cuentiva-desktop-windows-x64-$tag.zip"
+          $buildDir = "build/windows/x64/runner/Release"
+
+          Write-Host "Comprimiendo build desde $buildDir hacia $zipName..."
+          Compress-Archive -Path "$buildDir/*" -DestinationPath $zipName -Force
+
+          $hash = (Get-FileHash -Path $zipName -Algorithm SHA256).Hash.ToLower()
+          Write-Host "SHA256: $hash  $zipName"
+          "$hash  $zipName" | Out-File -FilePath "SHA256_WINDOWS.txt" -Encoding utf8
+
+          echo "ZIP_PATH=apps/mobile/$zipName" >> $env:GITHUB_ENV
+          echo "ZIP_NAME=$zipName" >> $env:GITHUB_ENV
+          echo "HASH_PATH=apps/mobile/SHA256_WINDOWS.txt" >> $env:GITHUB_ENV
+          echo "RELEASE_TAG=$tag" >> $env:GITHUB_ENV
+
+      - name: Upload Windows Bundle Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ZIP_NAME }}
+          path: ${{ env.ZIP_PATH }}
+          retention-days: 14
+
+      - name: Upload to Cuentiva/Cuentiva-platform Release
+        if: ${{ github.event.inputs.upload_to_release != 'false' && env.RELEASE_TAG != '' }}
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: |
+          Write-Host "Subiendo ${{ env.ZIP_NAME }} a release ${{ env.RELEASE_TAG }} en Cuentiva/Cuentiva-platform..."
+          gh release upload ${{ env.RELEASE_TAG }} --repo Cuentiva/Cuentiva-platform --clobber ${{ env.ZIP_PATH }} ${{ env.HASH_PATH }}
+          Write-Host "✅ Subida completada exitosamente."
