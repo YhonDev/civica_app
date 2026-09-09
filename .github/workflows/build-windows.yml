@@ -49,6 +49,8 @@ jobs:
         run: flutter pub get
 
       - name: Build Windows Release
+        env:
+          CL: "/D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS"
         run: flutter build windows --release --dart-define=API_BASE_URL=https://cuentiva.onrender.com/api
 
       - name: Package Windows Bundle into ZIP
