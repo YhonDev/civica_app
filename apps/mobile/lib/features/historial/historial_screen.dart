@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/format/app_currency.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/theme/app_breakpoints.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
@@ -146,21 +147,13 @@ class _HistorialScreenState extends State<HistorialScreen> {
                           title: 'Sin movimientos',
                           description: 'Aún no tienes cuotas ni pagos registrados.',
                         )
-                      : ListView.separated(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.screenPadding,
-                            vertical: AppSpacing.sm,
-                          ),
-                          itemCount: _itemCount,
-                          separatorBuilder: (_, _) =>
-                              const SizedBox(height: AppSpacing.sm),
-                          itemBuilder: (context, index) {
-                            if (index == _visibleCount &&
-                                _visibleCount < _cuotasDb.length) {
-                              return _buildVerMas();
-                            }
+                      : Builder(
+                          builder: (context) {
+                            final isWide = context.isWideScreen;
 
-                            if (isCobrador) {
+                            // Constructor compartido por lista (móvil) y grid (tablet/desktop).
+                            Widget buildItem(int index) {
+                              if (isCobrador) {
                               final c = _cuotasDb[index];
                               final fechaStr = c['fechaPago'] as String? ?? c['createdAt'] as String? ?? '';
                               final fecha = DateTime.tryParse(fechaStr) ?? DateTime.now();
@@ -180,9 +173,7 @@ class _HistorialScreenState extends State<HistorialScreen> {
                                   borderRadius: BorderRadius.circular(16),
                                   side: BorderSide(color: AppColors.success.withValues(alpha: 0.3)),
                                 ),
-                                color: Theme.of(context).brightness == Brightness.dark
-                                    ? const Color(0xFF0F172A)
-                                    : Colors.white,
+                                color: AppColors.elevatedCard,
                                 elevation: 1,
                                 child: InkWell(
                                   borderRadius: BorderRadius.circular(16),
@@ -310,6 +301,57 @@ class _HistorialScreenState extends State<HistorialScreen> {
                             return CobroCard(
                               cobro: cobroItem,
                               onTap: () => _handleCuotaTap(c),
+                            );
+                            }
+
+                            // ── Tablet/desktop: grid de N columnas ──
+                            final hasMore = _visibleCount < _cuotasDb.length;
+                            if (isWide) {
+                              final cols = context.gridColumns;
+                              return CustomScrollView(
+                                slivers: [
+                                  SliverPadding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: AppSpacing.screenPadding,
+                                      vertical: AppSpacing.sm,
+                                    ),
+                                    sliver: SliverGrid(
+                                      gridDelegate:
+                                          SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: cols,
+                                        mainAxisExtent: 195,
+                                        crossAxisSpacing: 14,
+                                        mainAxisSpacing: 14,
+                                      ),
+                                      delegate: SliverChildBuilderDelegate(
+                                        (context, index) => buildItem(index),
+                                        childCount: _visibleCount,
+                                      ),
+                                    ),
+                                  ),
+                                  // "Ver más" a ancho completo bajo el grid.
+                                  if (hasMore)
+                                    SliverToBoxAdapter(child: _buildVerMas()),
+                                ],
+                              );
+                            }
+
+                            // ── Móvil: lista con "Ver más" intercalado ──
+                            return ListView.separated(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.screenPadding,
+                                vertical: AppSpacing.sm,
+                              ),
+                              itemCount: _itemCount,
+                              separatorBuilder: (_, _) =>
+                                  const SizedBox(height: AppSpacing.sm),
+                              itemBuilder: (context, index) {
+                                if (index == _visibleCount &&
+                                    _visibleCount < _cuotasDb.length) {
+                                  return _buildVerMas();
+                                }
+                                return buildItem(index);
+                              },
                             );
                           },
                         ),
