@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
@@ -83,6 +84,10 @@ class AppCurrencyInputFormatter extends TextInputFormatter {
   }
 
   /// Agrupa de a 3 dígitos desde la derecha con punto: `1000000` → `1.000.000`.
+  ///
+  /// Expuesto solo para tests (`@visibleForTesting`); el código de producción
+  /// usa el formatter vía [formatEditUpdate] o [AppCurrency.formatInput].
+  @visibleForTesting
   static String groupThousands(String digits) {
     final buffer = StringBuffer();
     for (var i = 0; i < digits.length; i++) {
