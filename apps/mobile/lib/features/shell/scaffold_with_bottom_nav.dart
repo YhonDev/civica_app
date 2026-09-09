@@ -280,15 +280,24 @@ class DesktopSidebar extends StatelessWidget {
                 ? Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(7),
+                        padding: const EdgeInsets.all(4),
                         decoration: BoxDecoration(
                           color: AppColors.primary.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Icon(
-                          Icons.payments_rounded,
-                          color: AppColors.primary,
-                          size: 24,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(6),
+                          child: Image.asset(
+                            'img/logo.png',
+                            width: 24,
+                            height: 24,
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, __, ___) => const Icon(
+                              Icons.payments_rounded,
+                              color: AppColors.primary,
+                              size: 24,
+                            ),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 10),
