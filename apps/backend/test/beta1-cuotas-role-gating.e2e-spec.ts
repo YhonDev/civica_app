@@ -328,11 +328,11 @@ describe('Beta1 Cobros Role Gating', () => {
       expect(res.body.length).toBeGreaterThanOrEqual(1);
     });
 
-    it('RESIDENTE cannot access another residente cobros → 401', async () => {
+    it('RESIDENTE cannot access another residente cobros → 403', async () => {
       const res = await request(app.getHttpServer())
         .get(`/cobros/residente/${residenteBId}`)
         .set('Authorization', `Bearer ${residenteAToken}`)
-        .expect(401);
+        .expect(403);
 
       expect(res.body).toHaveProperty('message');
     });
