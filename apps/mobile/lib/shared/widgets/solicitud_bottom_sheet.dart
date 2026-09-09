@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../../core/format/app_currency.dart';
 import 'package:intl/intl.dart';
 
@@ -166,8 +165,8 @@ class _SolicitudBottomSheetState extends State<SolicitudBottomSheet> {
     final int pagoActualPesos =
         pagoMap != null ? ((pagoMap['monto'] as num) / 100).round() : 0;
 
-    final montoCtrl =
-        TextEditingController(text: pagoActualPesos > 0 ? '$pagoActualPesos' : '');
+    final montoCtrl = TextEditingController(
+        text: pagoActualPesos > 0 ? AppCurrency.formatInput(pagoActualPesos) : '');
     final motivoCtrl =
         TextEditingController(text: 'Corrección de valor por solicitud de revisión');
 
@@ -203,10 +202,11 @@ class _SolicitudBottomSheetState extends State<SolicitudBottomSheet> {
               TextField(
                 controller: montoCtrl,
                 keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                // Formato en vivo: el admin ve $ 10.000 mientras escribe.
+                inputFormatters: [AppCurrencyInputFormatter()],
                 decoration: const InputDecoration(
                   prefixText: r'$ ',
-                  hintText: 'Ej. 20000',
+                  hintText: 'Ej. 20.000',
                 ),
               ),
               const SizedBox(height: AppSpacing.md),
@@ -234,8 +234,8 @@ class _SolicitudBottomSheetState extends State<SolicitudBottomSheet> {
           ),
           FilledButton(
             onPressed: () {
-              final val = int.tryParse(montoCtrl.text.trim());
-              if (val == null || val <= 0) {
+              final val = AppCurrency.parse(montoCtrl.text).toInt();
+              if (val <= 0) {
                 TopToast.showError(ctx, 'Ingresa un monto válido mayor a 0');
                 return;
               }
@@ -248,7 +248,7 @@ class _SolicitudBottomSheetState extends State<SolicitudBottomSheet> {
     );
 
     if (confirmed == true && mounted) {
-      final nuevoMontoPesos = int.tryParse(montoCtrl.text.trim()) ?? 0;
+      final nuevoMontoPesos = AppCurrency.parse(montoCtrl.text).toInt();
       final nuevoMontoCentavos = nuevoMontoPesos * 100;
       final motivo = motivoCtrl.text.trim().isNotEmpty
           ? motivoCtrl.text.trim()

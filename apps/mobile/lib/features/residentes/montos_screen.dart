@@ -56,18 +56,20 @@ class _MontosScreenState extends State<MontosScreen> {
         content: TextField(
           controller: controller,
           keyboardType: TextInputType.number,
+          // Formato en vivo: el usuario ve $ 10.000 mientras escribe.
+          inputFormatters: [AppCurrencyInputFormatter()],
           decoration: const InputDecoration(
             labelText: 'Monto en COP',
             prefixText: '\$ ',
-            hintText: 'Ej: 10000',
+            hintText: 'Ej: 10.000',
           ),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
           ElevatedButton(
             onPressed: () {
-              final val = int.tryParse(controller.text.trim());
-              if (val != null && val > 0) {
+              final val = AppCurrency.parse(controller.text).toInt();
+              if (val > 0) {
                 Navigator.pop(ctx, val);
               }
             },

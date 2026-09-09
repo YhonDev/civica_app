@@ -59,7 +59,7 @@ class _TarifasScreenState extends State<TarifasScreen> {
     }
 
     final isEdit = tarifaId != null;
-    final controller = TextEditingController(text: currentMonto.toString());
+    final controller = TextEditingController(text: AppCurrency.formatInput(currentMonto));
     
     final result = await showDialog<int>(
       context: context,
@@ -78,6 +78,8 @@ class _TarifasScreenState extends State<TarifasScreen> {
               controller: controller,
               keyboardType: TextInputType.number,
               autofocus: true,
+              // Formato en vivo: el admin ve $ 40.000 mientras escribe.
+              inputFormatters: [const AppCurrencyInputFormatter()],
               decoration: const InputDecoration(
                 labelText: 'Monto mensual base (\$ COP)',
                 prefixText: '\$ ',
@@ -93,8 +95,8 @@ class _TarifasScreenState extends State<TarifasScreen> {
           ),
           FilledButton(
             onPressed: () {
-              final val = int.tryParse(controller.text.replaceAll(RegExp(r'[^0-9]'), ''));
-              Navigator.pop(context, val);
+              final val = AppCurrency.parse(controller.text).toInt();
+              Navigator.pop(context, val > 0 ? val : null);
             },
             child: Text(isEdit ? 'Guardar Cambios' : 'Crear Tarifa'),
           ),
