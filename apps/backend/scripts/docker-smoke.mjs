@@ -253,18 +253,30 @@ async function main() {
 function finish(success) {
   step('Limpieza');
   cleanup();
-  // Esperar a que los rm terminen antes de comprobar residuos (evita carrera)
+  // Esperar a que los rm terminen y comprobar existencia con inspect
+  // (exit 1 = "No such object" = eliminado; ps --filter da falsos positivos)
   Promise.all([
     run('docker', ['rm', '-f', PG_CONTAINER]),
     run('docker', ['rm', '-f', API_CONTAINER]),
   ])
-    .then(() => Promise.all([
-      run('docker', ['ps', '-a', '--filter', `name=${PG_CONTAINER}`, '--format', '{{.Names}}']),
-      run('docker', ['ps', '-a', '--filter', `name=${API_CONTAINER}`, '--format', '{{.Names}}']),
-    ]))
-    .then(([a, b]) => {
-      if (!a.stdout.trim() && !b.stdout.trim()) ok('contenedores scratch eliminados');
-      else fail(`residuos: ${a.stdout.trim()} ${b.stdout.trim()}`);
+    .then(async () => {
+      // rm -f regresa antes de que el teardown termine (estado "removing"):
+      // sondear hasta que inspect deje de encontrar el contenedor.
+      const leftovers = [];
+      for (const name of [PG_CONTAINER, API_CONTAINER]) {
+        let gone = false;
+        for (let i = 0; i < 20; i++) {
+          const probe = await run('docker', ['inspect', '--format', '{{.State.Status}}', name]);
+          if (probe.code !== 0) { gone = true; break; }
+          await new Promise((r) => setTimeout(r, 500));
+        }
+        if (!gone) {
+          const probe = await run('docker', ['inspect', '--format', '{{.State.Status}}', name]);
+          leftovers.push(`${name}(${probe.stdout.trim()})`);
+        }
+      }
+      if (leftovers.length === 0) ok('contenedores scratch eliminados');
+      else fail(`residuos: ${leftovers.join(' ')}`);
 
       console.log('');
       if (failing) {
