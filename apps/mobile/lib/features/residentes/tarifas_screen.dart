@@ -34,7 +34,7 @@ class _TarifasScreenState extends State<TarifasScreen> {
       if (proyectos.isNotEmpty) {
         _proyectoId = proyectos.first['id'];
         final response = await _repository.getTarifasVigentes(_proyectoId!);
-        
+
         if (mounted) {
           setState(() {
             _tarifas = response['tarifas'] ?? {};
@@ -52,26 +52,38 @@ class _TarifasScreenState extends State<TarifasScreen> {
     }
   }
 
-  Future<void> _crearOEditarTarifaDialog({String? tarifaId, int currentMonto = 40000}) async {
+  Future<void> _crearOEditarTarifaDialog({
+    String? tarifaId,
+    int currentMonto = 40000,
+  }) async {
     if (_proyectoId == null) {
       TopToast.showError(context, 'Primero crea una Urbanización/Proyecto');
       return;
     }
 
     final isEdit = tarifaId != null;
-    final controller = TextEditingController(text: AppCurrency.formatInput(currentMonto));
-    
+    final controller = TextEditingController(
+      text: AppCurrency.formatInput(currentMonto),
+    );
+
     final result = await showDialog<int>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(isEdit ? 'Editar Tarifa Vigente' : 'Crear Tarifa del Conjunto'),
+        // El diálogo se desplaza internamente cuando el teclado reduce
+        // el alto útil (pantallas cortas, fuentes grandes).
+        scrollable: true,
+        title: Text(
+          isEdit ? 'Editar Tarifa Vigente' : 'Crear Tarifa del Conjunto',
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Establece el monto mensual base del conjunto. El motor de recaudo distribuirá automáticamente las cuotas según la modalidad asignada.',
-              style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+              style: AppTypography.caption.copyWith(
+                color: AppColors.textSecondary,
+              ),
             ),
             const SizedBox(height: AppSpacing.md),
             TextField(
@@ -103,7 +115,7 @@ class _TarifasScreenState extends State<TarifasScreen> {
         ],
       ),
     );
-    
+
     if (result != null && result > 0) {
       setState(() => _loading = true);
       try {
@@ -120,7 +132,9 @@ class _TarifasScreenState extends State<TarifasScreen> {
         if (mounted) {
           TopToast.showSuccess(
             context,
-            isEdit ? 'Tarifa actualizada correctamente' : 'Tarifa creada exitosamente',
+            isEdit
+                ? 'Tarifa actualizada correctamente'
+                : 'Tarifa creada exitosamente',
           );
         }
       } catch (e) {
@@ -138,7 +152,9 @@ class _TarifasScreenState extends State<TarifasScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('¿Desactivar Tarifa?'),
-        content: const Text('Esta tarifa dejará de estar vigente para los nuevos cobros del conjunto.'),
+        content: const Text(
+          'Esta tarifa dejará de estar vigente para los nuevos cobros del conjunto.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -174,9 +190,13 @@ class _TarifasScreenState extends State<TarifasScreen> {
   @override
   Widget build(BuildContext context) {
     final tarifaMensual = _tarifas['MENSUAL'];
-    final tarifaId = tarifaMensual != null ? (tarifaMensual['id'] as String?) : null;
-    final montoMensual = (tarifaMensual != null) ? (tarifaMensual['montoPesos'] as int? ?? 0) : 0;
-    
+    final tarifaId = tarifaMensual != null
+        ? (tarifaMensual['id'] as String?)
+        : null;
+    final montoMensual = (tarifaMensual != null)
+        ? (tarifaMensual['montoPesos'] as int? ?? 0)
+        : 0;
+
     final montoQuincenalCalculado = (montoMensual / 2).round();
     final montoSemanalCalculado = (montoMensual / 4).round();
 
@@ -205,16 +225,23 @@ class _TarifasScreenState extends State<TarifasScreen> {
                   decoration: BoxDecoration(
                     color: AppColors.primary.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+                    border: Border.all(
+                      color: AppColors.primary.withValues(alpha: 0.2),
+                    ),
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.info_outline_rounded, color: AppColors.primary),
+                      Icon(
+                        Icons.info_outline_rounded,
+                        color: AppColors.primary,
+                      ),
                       const SizedBox(width: AppSpacing.sm),
                       Expanded(
                         child: Text(
                           'El Administrador configura la Tarifa Base General. El motor de recaudo distribuye las cuotas automáticamente según la modalidad física de cada casa.',
-                          style: AppTypography.caption.copyWith(color: AppColors.textPrimary),
+                          style: AppTypography.caption.copyWith(
+                            color: AppColors.textPrimary,
+                          ),
                         ),
                       ),
                     ],
@@ -224,7 +251,9 @@ class _TarifasScreenState extends State<TarifasScreen> {
 
                 Text(
                   'Tarifa Base Vigente',
-                  style: AppTypography.title.copyWith(fontWeight: FontWeight.w700),
+                  style: AppTypography.title.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: AppSpacing.md),
 
@@ -240,12 +269,17 @@ class _TarifasScreenState extends State<TarifasScreen> {
                               Expanded(
                                 child: Row(
                                   children: [
-                                    Icon(Icons.account_balance_wallet_outlined, color: AppColors.primary),
+                                    Icon(
+                                      Icons.account_balance_wallet_outlined,
+                                      color: AppColors.primary,
+                                    ),
                                     const SizedBox(width: AppSpacing.sm),
                                     Flexible(
                                       child: Text(
                                         'Tarifa General Mensual',
-                                        style: AppTypography.subtitle.copyWith(fontWeight: FontWeight.bold),
+                                        style: AppTypography.subtitle.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
@@ -267,9 +301,13 @@ class _TarifasScreenState extends State<TarifasScreen> {
                                   if (tarifaId != null)
                                     IconButton(
                                       visualDensity: VisualDensity.compact,
-                                      icon: Icon(Icons.delete_outline_rounded, color: AppColors.error),
+                                      icon: Icon(
+                                        Icons.delete_outline_rounded,
+                                        color: AppColors.error,
+                                      ),
                                       tooltip: 'Desactivar Tarifa',
-                                      onPressed: () => _eliminarTarifa(tarifaId),
+                                      onPressed: () =>
+                                          _eliminarTarifa(tarifaId),
                                     ),
                                 ],
                               ),
@@ -293,9 +331,18 @@ class _TarifasScreenState extends State<TarifasScreen> {
                             ),
                           ),
                           const SizedBox(height: AppSpacing.xs),
-                          _buildDesgloseRow('Modalidad Semanal (4 cuotas):', '${AppCurrency.format(montoSemanalCalculado)} / cuota'),
-                          _buildDesgloseRow('Modalidad Quincenal (2 cuotas):', '${AppCurrency.format(montoQuincenalCalculado)} / cuota'),
-                          _buildDesgloseRow('Modalidad Mensual (1 cuota):', '${AppCurrency.format(montoMensual)} / cuota'),
+                          _buildDesgloseRow(
+                            'Modalidad Semanal (4 cuotas):',
+                            '${AppCurrency.format(montoSemanalCalculado)} / cuota',
+                          ),
+                          _buildDesgloseRow(
+                            'Modalidad Quincenal (2 cuotas):',
+                            '${AppCurrency.format(montoQuincenalCalculado)} / cuota',
+                          ),
+                          _buildDesgloseRow(
+                            'Modalidad Mensual (1 cuota):',
+                            '${AppCurrency.format(montoMensual)} / cuota',
+                          ),
                         ],
                       ),
                     ),
@@ -304,21 +351,34 @@ class _TarifasScreenState extends State<TarifasScreen> {
                   Card(
                     color: AppColors.surface,
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 36,
+                        horizontal: 20,
+                      ),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.price_change_outlined, size: 48, color: AppColors.textSecondary.withValues(alpha: 0.5)),
+                          Icon(
+                            Icons.price_change_outlined,
+                            size: 48,
+                            color: AppColors.textSecondary.withValues(
+                              alpha: 0.5,
+                            ),
+                          ),
                           const SizedBox(height: AppSpacing.md),
                           Text(
                             'No hay tarifa configurada',
-                            style: AppTypography.subtitle.copyWith(fontWeight: FontWeight.bold),
+                            style: AppTypography.subtitle.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                           const SizedBox(height: AppSpacing.xs),
                           Text(
                             'Crea la tarifa base inicial para que el motor de recaudo calcule los cobros de las casas.',
                             textAlign: TextAlign.center,
-                            style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+                            style: AppTypography.caption.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
                           ),
                           const SizedBox(height: AppSpacing.md),
                           ElevatedButton.icon(
@@ -341,8 +401,16 @@ class _TarifasScreenState extends State<TarifasScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
-          Text(value, style: AppTypography.caption.copyWith(fontWeight: FontWeight.w600)),
+          Text(
+            label,
+            style: AppTypography.caption.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+          Text(
+            value,
+            style: AppTypography.caption.copyWith(fontWeight: FontWeight.w600),
+          ),
         ],
       ),
     );

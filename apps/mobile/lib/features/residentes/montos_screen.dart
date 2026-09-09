@@ -26,7 +26,9 @@ class _MontosScreenState extends State<MontosScreen> {
     setState(() => _loading = true);
     try {
       final response = await ApiClient.instance.get('/montos-predefinidos');
-      final list = List<Map<String, dynamic>>.from(response.data as List? ?? []);
+      final list = List<Map<String, dynamic>>.from(
+        response.data as List? ?? [],
+      );
       if (mounted) {
         setState(() {
           _montos = list;
@@ -43,7 +45,9 @@ class _MontosScreenState extends State<MontosScreen> {
   Future<void> _agregarMontoDialog() async {
     if (_montos.length >= 5) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Máximo 5 montos predefinidos permitidos.')),
+        const SnackBar(
+          content: Text('Máximo 5 montos predefinidos permitidos.'),
+        ),
       );
       return;
     }
@@ -52,6 +56,9 @@ class _MontosScreenState extends State<MontosScreen> {
     final result = await showDialog<int>(
       context: context,
       builder: (ctx) => AlertDialog(
+        // El diálogo se desplaza internamente cuando el teclado reduce
+        // el alto útil (pantallas cortas, fuentes grandes).
+        scrollable: true,
         title: const Text('Nuevo Monto Predefinido'),
         content: TextField(
           controller: controller,
@@ -65,7 +72,10 @@ class _MontosScreenState extends State<MontosScreen> {
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancelar'),
+          ),
           ElevatedButton(
             onPressed: () {
               final val = AppCurrency.parse(controller.text).toInt();
@@ -81,15 +91,18 @@ class _MontosScreenState extends State<MontosScreen> {
 
     if (result != null) {
       try {
-        await ApiClient.instance.post('/montos-predefinidos', data: {
-          'monto': result * 100, // a centavos
-        });
+        await ApiClient.instance.post(
+          '/montos-predefinidos',
+          data: {
+            'monto': result * 100, // a centavos
+          },
+        );
         _loadMontos();
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error al crear monto: $e')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error al crear monto: $e')));
         }
       }
     }
@@ -101,9 +114,9 @@ class _MontosScreenState extends State<MontosScreen> {
       _loadMontos();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al eliminar: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error al eliminar: $e')));
       }
     }
   }
@@ -135,16 +148,23 @@ class _MontosScreenState extends State<MontosScreen> {
                     decoration: BoxDecoration(
                       color: AppColors.primary.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+                      border: Border.all(
+                        color: AppColors.primary.withValues(alpha: 0.2),
+                      ),
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.info_outline_rounded, color: AppColors.primary),
+                        Icon(
+                          Icons.info_outline_rounded,
+                          color: AppColors.primary,
+                        ),
                         const SizedBox(width: AppSpacing.sm),
                         Expanded(
                           child: Text(
                             'Configura hasta 5 montos rápidos de pago para facilitar el registro en campo sin digitar números.',
-                            style: AppTypography.caption.copyWith(color: AppColors.textPrimary),
+                            style: AppTypography.caption.copyWith(
+                              color: AppColors.textPrimary,
+                            ),
                           ),
                         ),
                       ],
@@ -155,8 +175,18 @@ class _MontosScreenState extends State<MontosScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Montos Activos', style: AppTypography.subtitle.copyWith(fontWeight: FontWeight.bold)),
-                      Text('${_montos.length} / 5', style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
+                      Text(
+                        'Montos Activos',
+                        style: AppTypography.subtitle.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        '${_montos.length} / 5',
+                        style: AppTypography.caption.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: AppSpacing.sm),
@@ -165,18 +195,21 @@ class _MontosScreenState extends State<MontosScreen> {
                     const EmptyState(
                       icon: Icons.payments_outlined,
                       title: 'Sin montos configurados',
-                      description: 'Toca el botón + para agregar el primer monto predefinido.',
+                      description:
+                          'Toca el botón + para agregar el primer monto predefinido.',
                     )
                   else
                     ListView.separated(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       itemCount: _montos.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.xs),
+                      separatorBuilder: (_, _) =>
+                          const SizedBox(height: AppSpacing.xs),
                       itemBuilder: (context, index) {
                         final item = _montos[index];
                         final id = item['id'] as String;
-                        final montoCents = (item['monto'] as num?)?.toInt() ?? 0;
+                        final montoCents =
+                            (item['monto'] as num?)?.toInt() ?? 0;
                         final montoCop = (montoCents / 100).round();
 
                         return Card(
@@ -192,14 +225,22 @@ class _MontosScreenState extends State<MontosScreen> {
                                 color: AppColors.success.withValues(alpha: 0.1),
                                 shape: BoxShape.circle,
                               ),
-                              child: Icon(Icons.attach_money_rounded, color: AppColors.success),
+                              child: Icon(
+                                Icons.attach_money_rounded,
+                                color: AppColors.success,
+                              ),
                             ),
                             title: Text(
                               AppCurrency.format(montoCop),
-                              style: AppTypography.subtitle.copyWith(fontWeight: FontWeight.bold),
+                              style: AppTypography.subtitle.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                             trailing: IconButton(
-                              icon: Icon(Icons.delete_outline_rounded, color: AppColors.error),
+                              icon: Icon(
+                                Icons.delete_outline_rounded,
+                                color: AppColors.error,
+                              ),
                               onPressed: () => _eliminarMonto(id),
                             ),
                           ),
