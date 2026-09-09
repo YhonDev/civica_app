@@ -185,80 +185,153 @@ La ejecución requiere tener instalado Flutter; este entorno de desarrollo no ga
 
 ## Pruebas y CI
 
-### Comandos locales
+### Comandos de Verificación Local
 
 ```bash
-# Backend
+# Backend (Pruebas unitarias completas)
 cd apps/backend
 npm test
-npm run test:cov
-npm run test:e2e
 
-# Móvil
+# Backend (Pruebas de cobertura)
+npm run test:cov
+
+# Backend (Pruebas E2E y Smoke Test contra base de datos)
+npm run test:e2e
+npm run test:smoke
+
+# Móvil (Análisis estático y pruebas de widgets)
 cd apps/mobile
 flutter analyze
 flutter test
 ```
 
-El repositorio contiene pruebas unitarias, de integración/e2e y widget, pero este README no fija cifras de tests ni cobertura: deben obtenerse de una ejecución reproducible del entorno y no de documentación histórica.
+### Pipeline de Integración Continua (GitHub Actions)
 
-### Pipeline actual
+El archivo [.github/workflows/ci.yml](.github/workflows/ci.yml) se ejecuta automáticamente en cada `push` y `pull_request` sobre `main` y `dev`:
+1. **Backend**:
+   * Levanta un contenedor Postgres 16 en el runner de CI.
+   * Aplica [schema.sql](apps/backend/database/schema.sql) y migraciones incrementales.
+   * Ejecuta chequeo TypeScript (`tsc --noEmit`) y pruebas unitarias con Jest.
+   * Ejecuta pruebas E2E y levanta el servidor compilado (`dist/main.js`).
+   * Ejecuta el *smoke test* contra el servidor vivo y reporta logs en caso de fallo.
+2. **Móvil / Desktop**:
+   * Inicializa el SDK de Flutter (`stable`).
+   * Valida sintaxis con `flutter analyze` y ejecuta la suite de tests de widgets.
+3. **Automatizaciones Operativas**:
+   * [.github/workflows/wake-up-cron.yml](.github/workflows/wake-up-cron.yml): Despertador automático diario a las 00:00 COT para calentar la instancia de Render antes de los cron jobs nocturnos.
+   * [.github/workflows/build-windows.yml](.github/workflows/build-windows.yml): Compilación nativa de Windows x64 en runner `windows-latest` y empaquetado en `.zip`.
 
-`.github/workflows/ci.yml` se ejecuta para `main` y `master` y realiza:
+---
 
-1. Backend con Node.js 22: `npm ci`, `npx tsc --noEmit`, `npm test` y `npm run test:cov`.
-2. Móvil con Flutter estable: `flutter pub get`, `flutter analyze` y `flutter test --no-coverage`.
-3. Publicación del artefacto de coverage del backend durante 14 días.
+## Guía Maestra de Ingeniería y Estándar de Contribución
 
-El workflow actual no ejecuta `npm run test:e2e`, build de producción, migraciones, smoke tests de arranque o pruebas de endpoints protegidos.
+Para garantizar la estabilidad en producción y la trazabilidad del código, todo el equipo y agentes automatizados siguen rigurosamente este protocolo:
 
-## Documentación
+### 1. Flujo Oficial de Ramas y Pull Requests (Gitflow Profesional)
 
-La documentación técnica vigente está en [`docs/`](./docs/):
+```mermaid
+graph LR
+    subgraph Ciclo de Desarrollo
+        DEV_LOCAL[dev Local] -->|git checkout -b| FEAT_BRANCH[feature/nueva-cosa]
+        FEAT_BRANCH -->|Commit & Test Local| FEAT_LOCAL[Probado en Local]
+        FEAT_LOCAL -->|git push origin| FEAT_REMOTE[origin/feature/nueva-cosa]
+        FEAT_REMOTE -->|Crear PR| PR_DEV[Pull Request a origin/dev]
+        PR_DEV -->|Revisión & Aprobación Manual| DEV_REMOTE[origin/dev]
+    end
 
-- [Índice de documentación](./docs/README.md)
-- [Arquitectura](./docs/05-arquitectura.md)
-- [Modelo de dominio](./docs/06-modelo-dominio.md)
-- [Estrategias offline y multi-tenant](./docs/09-estrategias.md)
-- [Despliegue](./docs/10-despliegue.md)
-- [Decisiones de arquitectura](./docs/11-adrs.md)
-- [Trazabilidad](./docs/12-trazabilidad.md)
-- [UI por rol](./docs/14-ui-por-rol.md)
-- [Especificaciones de pantallas](./docs/20-screen-specifications.md)
-- [Biblioteca de componentes](./docs/21-component-library.md)
+    subgraph Corte de Versión
+        DEV_REMOTE -->|Acumular 5-10 features| PR_MAIN[Pull Request a origin/main]
+        PR_MAIN -->|Merge & Tag v1.x.x| MAIN_REMOTE[origin/main Producción]
+        MAIN_REMOTE -->|Auto-deploy| RENDER[Render Cloud API]
+    end
+```
 
-Algunos documentos y scripts conservan nomenclatura o decisiones de etapas anteriores del proyecto. Contrasta siempre la documentación con el código actual antes de ejecutar SQL o diseñar una integración.
+> [!IMPORTANT]
+> **Cero Pushes Directos a Producción ni a Desarrollo Remoto**:
+> Está prohibido hacer `git push origin main` o `git push origin dev` de forma directa. Todo cambio viaja a través de ramas temporales y Pull Requests revisados y aprobados manualmente.
 
-## Limitaciones y deuda técnica conocida
+#### Protocolo Paso a Paso para Nuevas Funcionalidades o Fixes:
 
-### Seguridad — prioridad crítica
+```bash
+# 1. Asegurar que la rama base 'dev' local esté al día
+git checkout dev
+git pull origin dev
 
-- El aislamiento multi-tenant no es uniforme. Hay repositorios, consultas y endpoints de proyectos, residentes, tarifas, montos, cobros, tickets, solicitudes, asignaciones y reportes que no reciben o aplican `tenantId` de forma consistente.
-- El esquema SQL declara RLS, pero las políticas observadas son de servicio y no implementan por sí solas un contexto tenant-aware para las consultas TypeORM. No debe asumirse que RLS compensa los filtros de aplicación faltantes.
-- Deben revisarse IDOR, validaciones de recursos anidados, cambio de contraseña y revocación de sesiones, acceso al health check y exposición de tokens en logs.
-- La base local SQLite almacena información operativa offline sin cifrado de base de datos observado.
-- Las credenciales demo de la UI y las credenciales embebidas en scripts legacy deben retirarse o aislarse de cualquier build no demo. Si algún secreto fue compartido, debe revocarse y rotarse.
+# 2. Crear rama temporal de trabajo (usar prefijo feature/ o fix/)
+git checkout -b feature/nombre-descriptivo
+# o para corrección de bugs:
+git checkout -b fix/nombre-del-bug
 
-### Rendimiento y consistencia
+# 3. Desarrollar, implementar y validar localmente
+npm test              # en apps/backend
+flutter test          # en apps/mobile
 
-- Algunos dashboards, timelines y reportes cargan conjuntos grandes y filtran/agregan en memoria, sin paginación o agregación SQL suficiente.
-- La generación de cobros se invoca desde una ruta de dashboard y puede realizar trabajo global; debería trasladarse a un job controlado y tener restricciones únicas contra duplicados concurrentes.
-- La numeración de tickets usa una estrategia susceptible a carreras (`MAX + 1`) bajo pagos concurrentes.
-- El pago y la generación del ticket no están completamente ligados a la misma transacción.
+# 4. Crear commit semántico y subir rama
+git add .
+git commit -m "feat(modulo): descripción concisa del cambio"
+git push -u origin feature/nombre-descriptivo
 
-### UI/UX y mantenimiento
+# 5. Abrir Pull Request hacia dev usando GitHub CLI
+gh pr create \
+  --base dev \
+  --head feature/nombre-descriptivo \
+  --title "feat: Titulo claro de la funcionalidad" \
+  --body "### Resumen de cambios\n- Detalle 1\n- Detalle 2\n\n### Verificación realizada\n- Tests locales aprobados."
 
-- Hay pantallas placeholder, acciones sin callback, rutas duplicadas y estados de error que terminan mostrando un estado vacío indistinguible de una respuesta sin datos.
-- Deben validarse accesibilidad, contraste, escalado de texto, overflow en pantallas pequeñas y navegación Android back.
-- Existen componentes candidatos a retirar o integrar —por ejemplo, sistemas duplicados de quick actions/charts— y DAOs legacy sin referencias aparentes. No deben eliminarse sin confirmar ownership y ejecutar análisis/tests.
-- Los scripts `inspect-propietarios.js`, `clean-propietarios.js` y parte de los wrappers de propietarios conservan nomenclatura legacy; deben archivarse o migrarse mediante una decisión explícita.
+# 6. Una vez revisado y aprobado el PR en GitHub:
+git checkout dev
+git pull origin dev
+git branch -d feature/nombre-descriptivo  # Limpiar rama local
+```
 
-Estas limitaciones son un diagnóstico del estado observado, no cambios aplicados por este README.
+### 2. Estándar de Commits Semánticos (Conventional Commits)
 
-## Contribución
+Cada commit debe incluir un prefijo identificador claro:
+- `feat:` Nuevas funcionalidades para el usuario o API.
+- `fix:` Corrección de errores o anomalías de negocio.
+- `security:` Endurecimiento de seguridad, tokens, hashing, sanitización o RLS.
+- `perf:` Mejoras de rendimiento o consultas optimizadas.
+- `docs:` Cambios o añadidos en documentación técnica.
+- `test:` Inclusión o ajuste de suites de prueba.
+- `chore:` Tareas de mantenimiento, dependencias o configuración interna.
 
-1. Crea una rama de trabajo.
-2. No incluyas `.env`, tokens, contraseñas, bases locales ni artefactos generados.
-3. Mantén los cambios acotados al dominio que modificas.
-4. Ejecuta las verificaciones relevantes antes de abrir una revisión.
-5. Comprueba que cualquier cambio de esquema, contrato de dinero, autorización o sincronización incluya pruebas y documentación actualizada.
+### 3. Política de Versiones (SemVer) y Despliegue
+
+- **Backend (Render Cloud)**: Despliegue continuo activado en la rama `main`. Cada fusión aprobada a `main` desencadena automáticamente la compilación y puesta en producción en `https://cuentiva.onrender.com/api`.
+- **Clientes Móvil y Desktop (APK / ZIP)**:
+  - Se acumulan entre **5 y 10 features / mejoras** probadas en `dev` antes de realizar un corte de versión oficial.
+  - Esto evita saturar a los usuarios y administradores con actualizaciones continuas por cambios cosméticos.
+  - Al cortar versión, se genera un tag de release (ej. `v1.1.0`), se compila el APK y se dispara el workflow `build-windows.yml` para publicar los instaladores simultáneamente en el repositorio oficial de descargas.
+
+---
+
+## Comandos Operativos Cloud
+
+### Conexión a la Base de Datos Cloud (Supabase Pooler)
+```bash
+# Conexión directa mediante psql con SSL
+psql "postgresql://postgres.fpgukukujxfrlvynpyha:6eq7I3m4RFH6ft@aws-1-us-east-2.pooler.supabase.com:5432/postgres?sslmode=require"
+```
+
+### Disparo Manual de Generación de Cobros en Nube
+```bash
+# Invocación autenticada al endpoint de producción (solo rol ADMIN)
+curl -X POST https://cuentiva.onrender.com/api/cobros/generar \
+  -H "Authorization: Bearer <TOKEN_ADMIN_JWT>" \
+  -H "Content-Type: application/json"
+```
+
+### Monitoreo del Cron Despertador Nocturno
+```bash
+# Inspeccionar ejecuciones del workflow despertador
+gh workflow view wake-up-cron.yml --web
+# o dispararlo manualmente para probar calentamiento
+gh workflow run wake-up-cron.yml
+```
+
+### Compilación y Publicación de Windows Desktop
+```bash
+# Disparar compilación remota de Windows x64 en GitHub Actions
+gh workflow run build-windows.yml -f release_tag=v1.0.0 -f upload_to_release=true
+```
+
