@@ -317,6 +317,9 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
       // En tablet/desktop el sheet no debe estirarse a todo el ancho.
       child: ContentConstrainedBox(
         maxWidth: AppBreakpoints.maxFormWidth,
+        // Scroll interno: con el teclado abierto el espacio se reduce y el
+        // contenido debe desplazarse, no desbordar (alto dinámico).
+        child: SingleChildScrollView(
         child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -731,6 +734,7 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
             ),
           ),
         ],
+        ),
         ),
       ),
     );
