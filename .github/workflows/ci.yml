@@ -83,7 +83,7 @@ jobs:
 
       - name: Start server (background)
         run: |
-          node dist/src/main.js > /tmp/server.log 2>&1 &
+          node dist/main.js > /tmp/server.log 2>&1 &
           echo $! > /tmp/server.pid
           # Esperar a que /health responda (máx 60s)
           for i in $(seq 1 30); do
