@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/format/app_currency.dart';
 
+import '../../core/theme/app_card_styles.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
@@ -55,17 +56,7 @@ class EstadoCuentaCard extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: AppSpacing.cardEdgeInsets,
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      decoration: AppCardStyles.heroCard(context),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -87,17 +78,10 @@ class EstadoCuentaCard extends StatelessWidget {
                   if (tarifaActual != null)
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
-                      ),
+                      decoration: AppCardStyles.metaChip(),
                       child: Text(
                         'Tarifa: ${AppCurrency.formatOrNull((tarifaActual!['cobroMensual'] ?? tarifaActual!['cuotaMensual'] ?? tarifaActual!['montoSegunModalidad'] as num?)?.toInt(), fallback: 40000)}',
-                        style: AppTypography.caption.copyWith(
-                          color: AppColors.textSecondary,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: AppCardStyles.metaChipText,
                       ),
                     ),
                 ],
@@ -107,9 +91,7 @@ class EstadoCuentaCard extends StatelessWidget {
               // Saldo
               Text(
                 saldoLabel,
-                style: AppTypography.title.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
+                style: AppCardStyles.heroValue,
               ),
               if (secondaryLabel != null) ...[
                 const SizedBox(height: AppSpacing.sm),

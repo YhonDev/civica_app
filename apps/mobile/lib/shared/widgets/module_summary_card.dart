@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_card_styles.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
@@ -43,21 +44,14 @@ class ModuleSummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-        border: highlightBorder
-            ? Border.all(color: AppColors.warning.withValues(alpha: 0.5), width: 1.5)
-            : Border.all(color: AppColors.border.withValues(alpha: 0.6)),
-        boxShadow: [
-          BoxShadow(
-            color: highlightBorder
-                ? AppColors.warning.withValues(alpha: 0.08)
-                : Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+      decoration: AppCardStyles.sectionCard(
+        context,
+        borderColor: highlightBorder
+            ? AppColors.warning.withValues(alpha: 0.5)
+            : null,
+        glowColor: highlightBorder
+            ? AppColors.warning.withValues(alpha: 0.08)
+            : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -98,17 +92,14 @@ class ModuleSummaryCard extends StatelessWidget {
                             children: [
                               Text(
                                 item.value,
-                                style: AppTypography.title.copyWith(
-                                  fontWeight: FontWeight.w800,
-                                  color: item.color ?? AppColors.textPrimary,
+                                style: AppCardStyles.bigStat(
+                                  item.color ?? AppColors.textPrimary,
                                 ),
                               ),
                               const SizedBox(height: 2),
                               Text(
                                 item.label,
-                                style: AppTypography.small.copyWith(
-                                  color: AppColors.textSecondary,
-                                ),
+                                style: AppCardStyles.kpiLabel,
                               ),
                             ],
                           );
@@ -138,9 +129,7 @@ class ModuleSummaryCard extends StatelessWidget {
                                 Expanded(
                                   child: Text(
                                     item.label,
-                                    style: AppTypography.body.copyWith(
-                                      color: AppColors.textSecondary,
-                                    ),
+                                    style: AppCardStyles.listRowLabel,
                                   ),
                                 ),
                                 if (item.onTap != null)
@@ -190,10 +179,7 @@ class ModuleSummaryCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         actionLabel,
-                        style: AppTypography.bodyMedium.copyWith(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: AppCardStyles.cardAction,
                       ),
                     ),
                     Icon(
