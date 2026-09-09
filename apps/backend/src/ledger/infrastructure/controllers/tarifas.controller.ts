@@ -8,6 +8,7 @@ import {
   Query,
   Body,
   UseGuards,
+  NotFoundException,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { ConfigurarTarifaUseCase } from '../../application/use-cases/configurar-tarifa.use-case';
@@ -106,7 +107,7 @@ export class TarifasController {
   async obtener(@Param('id') id: string, @CurrentTenant() tenantId: string) {
     const tarifa = await this.tarifaRepository.findById(id, tenantId);
     if (!tarifa) {
-      return { error: 'Tarifa no encontrada' };
+      throw new NotFoundException('Tarifa no encontrada');
     }
     return tarifa;
   }
@@ -133,7 +134,7 @@ export class TarifasController {
   async desactivar(@Param('id') id: string, @CurrentTenant() tenantId: string) {
     const tarifa = await this.tarifaRepository.findById(id, tenantId);
     if (!tarifa) {
-      return { error: 'Tarifa no encontrada' };
+      throw new NotFoundException('Tarifa no encontrada');
     }
     tarifa.desactivar();
     await this.tarifaRepository.save(tarifa);
