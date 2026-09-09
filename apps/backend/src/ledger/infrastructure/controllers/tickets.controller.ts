@@ -5,6 +5,8 @@ import {
   Query,
   UseGuards,
   NotFoundException,
+  UnauthorizedException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { TicketRepository } from '../persistence/ticket.repository';
@@ -75,11 +77,20 @@ export class TicketsController {
 
     // By residenteId — list tickets for a residente
     if (residenteId) {
-      if (
-        user.rol === RolUsuario.RESIDENTE &&
-        user.residenteId !== residenteId
-      ) {
-        return [];
+      // Un RESIDENTE solo puede consultar sus propios tickets (IDOR):
+      // 401 si su cuenta no tiene residenteId, 403 si intenta consultar
+      // los tickets de otro residente.
+      if (user.rol === RolUsuario.RESIDENTE) {
+        if (!user.residenteId) {
+          throw new UnauthorizedException(
+            'Cuenta residente sin residenteId vinculado',
+          );
+        }
+        if (user.residenteId !== residenteId) {
+          throw new ForbiddenException(
+            'No tienes permiso para ver estos tickets',
+          );
+        }
       }
       const tickets = await this.ticketRepo.findByResidente(
         residenteId,
@@ -91,9 +102,12 @@ export class TicketsController {
       return tickets.map((t) => mapTicketToResponse(t, projection));
     }
 
-    // Default: all tickets for the tenant (admin only)
+    // Default: all tickets for the tenant (admin only).
+    // COBRADOR/RESIDENTE sin filtros: 403 explícito en vez de [] silencioso.
     if (user.rol !== RolUsuario.ADMIN) {
-      return [];
+      throw new ForbiddenException(
+        'Solo un administrador puede listar todos los tickets',
+      );
     }
 
     const tickets = await this.ticketRepo.findByTenantPaginated(tenantId, {
