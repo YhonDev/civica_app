@@ -241,35 +241,30 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
 
   Widget _buildFilterChip(String key, String label, Color activeColor) {
     final isSelected = _selectedStatusFilter == key;
-    return FilterChip(
-      key: Key('filter_chip_$key'),
-      selected: isSelected,
-      showCheckmark: false,
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-      labelPadding: EdgeInsets.zero,
-      label: Center(
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text(
-            label,
-            style: AppTypography.smallBold.copyWith(
-              color: isSelected ? Colors.white : AppColors.textPrimary,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-            ),
+    return Padding(
+      padding: const EdgeInsets.only(right: 6),
+      child: ChoiceChip(
+        key: Key('filter_chip_$key'),
+        label: Text(label),
+        selected: isSelected,
+        showCheckmark: false,
+        onSelected: (_) {
+          setState(() {
+            _selectedStatusFilter = key;
+          });
+        },
+        selectedColor: activeColor,
+        labelStyle: AppTypography.smallBold.copyWith(
+          color: isSelected ? Colors.white : AppColors.textSecondary,
+        ),
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(
+            color: isSelected ? activeColor : AppColors.border,
           ),
         ),
       ),
-      selectedColor: activeColor,
-      backgroundColor: AppColors.card,
-      side: BorderSide(
-        color: isSelected ? activeColor : AppColors.border.withValues(alpha: 0.5),
-      ),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      onSelected: (_) {
-        setState(() {
-          _selectedStatusFilter = key;
-        });
-      },
     );
   }
 
@@ -892,20 +887,20 @@ class _CarteraSharedLayout extends StatelessWidget {
               ),
             ),
 
-          // Chips de Filtro Rápido en 1-Tap con Contadores Dinámicos del Sector
+          // Chips de Filtro de Estado: horizontal unificado con scroll suave y bordes desvanecidos
           SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
-              child: Row(
-                children: [
-                  Expanded(child: buildFilterChip('TODOS', 'Todas ($totalSectorCount)', AppColors.primary)),
-                  const SizedBox(width: 4),
-                  Expanded(child: buildFilterChip('PENDIENTE', 'Pendientes (${dynamicResumen.cantidadPendientes})', AppColors.warning)),
-                  const SizedBox(width: 4),
-                  Expanded(child: buildFilterChip('MORA', 'Mora (${dynamicResumen.cantidadMora})', AppColors.error)),
-                  const SizedBox(width: 4),
-                  Expanded(child: buildFilterChip('PAGADO', 'Pagadas (${dynamicResumen.cantidadPagados})', AppColors.success)),
-                ],
+            child: SizedBox(
+              height: 32,
+              child: FadingHorizontalScroll(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
+                child: Row(
+                  children: [
+                    buildFilterChip('TODOS', 'Todas ($totalSectorCount)', AppColors.primary),
+                    buildFilterChip('PENDIENTE', 'Pendientes (${dynamicResumen.cantidadPendientes})', AppColors.warning),
+                    buildFilterChip('MORA', 'Mora (${dynamicResumen.cantidadMora})', AppColors.error),
+                    buildFilterChip('PAGADO', 'Pagadas (${dynamicResumen.cantidadPagados})', AppColors.success),
+                  ],
+                ),
               ),
             ),
           ),
