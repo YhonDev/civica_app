@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 /// Única fuente de verdad para el formato de dinero en toda la app.
@@ -44,10 +45,72 @@ abstract final class AppCurrency {
 
   /// Convierte texto como `'$ 10.000'`, `'10.000'` o `'10000'` a [num].
   ///
-  /// Para inputs de monto: combinar con `FilteringTextInputFormatter.digitsOnly`
-  /// y parsear al enviar; no se formatea mientras se escribe.
+  /// Complemento de [AppCurrencyInputFormatter]: parsea lo que el usuario
+  /// ve en el campo (con separadores) al enviar.
   static num parse(String text) {
     final cleaned = text.replaceAll(RegExp(r'[^0-9-]'), '');
     return num.tryParse(cleaned) ?? 0;
+  }
+
+  /// `10.000` — dígitos agrupados para el input de monto (sin símbolo;
+  /// el `$ ` lo aporta el `prefixText` del campo).
+  static String formatInput(int amount) => _number.format(amount);
+}
+
+/// Formatea el monto mientras se escribe: `10000` → `10.000`.
+///
+/// Mantiene el cursor después del último dígito editado y elimina todo
+/// carácter no numérico. Usar junto a [AppCurrency.parse] al enviar.
+class AppCurrencyInputFormatter extends TextInputFormatter {
+  static final RegExp _digit = RegExp(r'[0-9]');
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final digits = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.isEmpty) return const TextEditingValue(text: '');
+
+    final digitsBeforeCursor = _countDigitsBefore(newValue);
+    final formatted = groupThousands(digits);
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(
+        offset: _cursorAfter(formatted, digitsBeforeCursor),
+      ),
+    );
+  }
+
+  /// Agrupa de a 3 dígitos desde la derecha con punto: `1000000` → `1.000.000`.
+  static String groupThousands(String digits) {
+    final buffer = StringBuffer();
+    for (var i = 0; i < digits.length; i++) {
+      buffer.write(digits[i]);
+      final remaining = digits.length - i - 1;
+      if (remaining > 0 && remaining % 3 == 0) buffer.write('.');
+    }
+    return buffer.toString();
+  }
+
+  static int _countDigitsBefore(TextEditingValue value) {
+    final limit = value.selection.baseOffset.clamp(0, value.text.length);
+    var count = 0;
+    for (var i = 0; i < limit; i++) {
+      if (_digit.hasMatch(value.text[i])) count++;
+    }
+    return count;
+  }
+
+  static int _cursorAfter(String formatted, int digitsBefore) {
+    if (digitsBefore <= 0) return 0;
+    var count = 0;
+    for (var i = 0; i < formatted.length; i++) {
+      if (_digit.hasMatch(formatted[i])) {
+        count++;
+        if (count == digitsBefore) return i + 1;
+      }
+    }
+    return formatted.length;
   }
 }

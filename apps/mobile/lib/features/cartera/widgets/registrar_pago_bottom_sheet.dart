@@ -125,10 +125,10 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
           total += (_cuotasList[idx]['monto'] as num? ?? 20000).toInt();
         }
       }
-      _montoController.text = total.toString();
+      _montoController.text = AppCurrency.formatInput(total);
     } else {
       final suggestedAmount = widget.cobro.monto > 0 ? widget.cobro.monto : widget.cobro.saldo;
-      _montoController.text = suggestedAmount.toInt().toString();
+      _montoController.text = AppCurrency.formatInput(suggestedAmount.toInt());
     }
   }
 
@@ -214,8 +214,8 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
   }
 
   Future<void> _registrarPago() async {
-    final montoText = _montoController.text.trim().replaceAll(',', '').replaceAll('.', '');
-    final monto = int.tryParse(montoText) ?? 0;
+    // El campo muestra "10.000" (agrupado); se parsea quitando separadores.
+    final monto = AppCurrency.parse(_montoController.text).round();
 
     if (monto <= 0) {
       TopToast.show(
@@ -582,7 +582,7 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
                         for (final i in _selectedIndices) {
                           sum += (_cuotasList[i]['monto'] as num? ?? 20000).toInt();
                         }
-                        _montoController.text = sum.toString();
+                        _montoController.text = AppCurrency.formatInput(sum);
                       });
                     },
                   );
@@ -604,6 +604,10 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
           TextFormField(
             controller: _montoController,
             keyboardType: TextInputType.number,
+            inputFormatters: [
+              // Formato en vivo: el usuario ve $ 10.000 mientras escribe.
+              AppCurrencyInputFormatter(),
+            ],
             style: AppTypography.subtitle.copyWith(
               fontWeight: FontWeight.w700,
             ),
@@ -634,10 +638,10 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
                               '$n ${n == 1 ? 'Cuota' : 'Cuotas'} (${AppCurrency.format((widget.cobro.monto * n).toInt())})',
                               style: AppTypography.small,
                             ),
-                            selected: _montoController.text == (widget.cobro.monto * n).toInt().toString(),
+                            selected: AppCurrency.parse(_montoController.text) == (widget.cobro.monto * n).toInt(),
                             onSelected: (_) {
                               setState(() {
-                                _montoController.text = (widget.cobro.monto * n).toInt().toString();
+                                _montoController.text = AppCurrency.formatInput((widget.cobro.monto * n).toInt());
                               });
                             },
                           ),
@@ -649,10 +653,10 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
                       'Total (${AppCurrency.format(widget.cobro.saldo.toInt())})',
                       style: AppTypography.small,
                     ),
-                    selected: _montoController.text == widget.cobro.saldo.toInt().toString(),
+                    selected: AppCurrency.parse(_montoController.text) == widget.cobro.saldo.toInt(),
                     onSelected: (_) {
                       setState(() {
-                        _montoController.text = widget.cobro.saldo.toInt().toString();
+                        _montoController.text = AppCurrency.formatInput(widget.cobro.saldo.toInt());
                       });
                     },
                   ),
