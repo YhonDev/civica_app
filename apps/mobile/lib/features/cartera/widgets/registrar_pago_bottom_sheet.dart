@@ -115,6 +115,13 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
     _selectedIndices.add(initialIdx);
 
     _recalcularMonto();
+    // Rebuild en vivo para que los chips 1x/2x/3x/4x/Total reflejen el
+    // monto mientras el usuario escribe, no solo al presionar un chip.
+    _montoController.addListener(_onMontoChanged);
+  }
+
+  void _onMontoChanged() {
+    if (mounted) setState(() {});
   }
 
   void _recalcularMonto() {
@@ -209,6 +216,7 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
 
   @override
   void dispose() {
+    _montoController.removeListener(_onMontoChanged);
     _montoController.dispose();
     super.dispose();
   }
@@ -419,15 +427,20 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
                           Icons.bolt_rounded,
                           size: 16,
                           color: _isQuickMode ? Colors.white : AppColors.textSecondary,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          'Cuota Actual',
-                          style: AppTypography.caption.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: _isQuickMode ? Colors.white : AppColors.textSecondary,
-                          ),
-                        ),
+                        ),                            const SizedBox(width: 6),
+                            // Flexible: el label se ajusta sin desbordar el
+                            // tab en pantallas estrechas o textos largos.
+                            Flexible(
+                              child: Text(
+                                'Cuota Actual',
+                                style: AppTypography.caption.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: _isQuickMode
+                                      ? Colors.white
+                                      : AppColors.textSecondary,
+                                ),
+                              ),
+                            ),
                       ],
                     ),
                   ),
@@ -473,15 +486,18 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
                           Icons.account_balance_wallet_rounded,
                           size: 16,
                           color: !_isQuickMode ? Colors.white : AppColors.textSecondary,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          'Ver Deuda',
-                          style: AppTypography.caption.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: !_isQuickMode ? Colors.white : AppColors.textSecondary,
-                          ),
-                        ),
+                        ),                            const SizedBox(width: 6),
+                            Flexible(
+                              child: Text(
+                                'Ver Deuda',
+                                style: AppTypography.caption.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: !_isQuickMode
+                                      ? Colors.white
+                                      : AppColors.textSecondary,
+                                ),
+                              ),
+                            ),
                       ],
                     ),
                   ),
@@ -500,12 +516,15 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
               borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
             ),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  _isQuickMode ? 'Valor cuota actual' : 'Saldo total adeudado',
-                  style: AppTypography.body.copyWith(
-                    color: AppColors.textSecondary,
+                // Expanded: en pantallas estrechas el label envuelve en vez
+                // de empujar el monto fuera del Row (contenido dinámico).
+                Expanded(
+                  child: Text(
+                    _isQuickMode ? 'Valor cuota actual' : 'Saldo total adeudado',
+                    style: AppTypography.body.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ),
                 Text(
@@ -552,39 +571,45 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
 
                   final titleStr = _formatCuotaTitle(Map<String, dynamic>.from(cuota as Map), idx);
 
-                  return CheckboxListTile(
-                    dense: true,
-                    value: isSelected,
-                    title: Text(
-                      '$titleStr — ${AppCurrency.format(montoCuota)}',
-                      style: AppTypography.bodyMedium.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: isSelected ? AppColors.primary : AppColors.textPrimary,
+                  // Material transparente: el ink splash del tile se pinta
+                  // en el Material más cercano; sin esto la decoración del
+                  // contenedor lo oculta (warning de ListTile).
+                  return Material(
+                    type: MaterialType.transparency,
+                    child: CheckboxListTile(
+                      dense: true,
+                      value: isSelected,
+                      title: Text(
+                        '$titleStr — ${AppCurrency.format(montoCuota)}',
+                        style: AppTypography.bodyMedium.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: isSelected ? AppColors.primary : AppColors.textPrimary,
+                        ),
                       ),
-                    ),
-                    subtitle: Text(
-                      'Estado: $estadoCuota',
-                      style: AppTypography.small.copyWith(
-                        color: estadoCuota == 'VENCIDA' ? AppColors.error : AppColors.textSecondary,
+                      subtitle: Text(
+                        'Estado: $estadoCuota',
+                        style: AppTypography.small.copyWith(
+                          color: estadoCuota == 'VENCIDA' ? AppColors.error : AppColors.textSecondary,
+                        ),
                       ),
-                    ),
-                    activeColor: AppColors.primary,
-                    onChanged: (val) {
-                      setState(() {
-                        if (val == true) {
-                          _selectedIndices.add(idx);
-                        } else {
-                          if (_selectedIndices.length > 1) {
-                            _selectedIndices.remove(idx);
+                      activeColor: AppColors.primary,
+                      onChanged: (val) {
+                        setState(() {
+                          if (val == true) {
+                            _selectedIndices.add(idx);
+                          } else {
+                            if (_selectedIndices.length > 1) {
+                              _selectedIndices.remove(idx);
+                            }
                           }
-                        }
-                        int sum = 0;
-                        for (final i in _selectedIndices) {
-                          sum += (_cuotasList[i]['monto'] as num? ?? 20000).toInt();
-                        }
-                        _montoController.text = AppCurrency.formatInput(sum);
-                      });
-                    },
+                          int sum = 0;
+                          for (final i in _selectedIndices) {
+                            sum += (_cuotasList[i]['monto'] as num? ?? 20000).toInt();
+                          }
+                          _montoController.text = AppCurrency.formatInput(sum);
+                        });
+                      },
+                    ),
                   );
                 },
               ),
