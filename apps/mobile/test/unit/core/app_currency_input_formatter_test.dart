@@ -13,7 +13,7 @@ TextEditingValue _edit(String currentText, String insert, int caret) {
     text: newText,
     selection: TextSelection.collapsed(offset: caret + insert.length),
   );
-  return AppCurrencyInputFormatter().formatEditUpdate(oldValue, newValue);
+  return const AppCurrencyInputFormatter().formatEditUpdate(oldValue, newValue);
 }
 
 void main() {
@@ -28,7 +28,7 @@ void main() {
     test('formatea al escribir desde vacío', () {
       // "1" → "1", luego "0" → "10", ... hasta "10000" → "10.000"
       var value = const TextEditingValue(text: '');
-      final formatter = AppCurrencyInputFormatter();
+      const formatter = AppCurrencyInputFormatter();
       const seq = ['1', '0', '0', '0', '0'];
       var caret = 0;
       for (final ch in seq) {
@@ -65,7 +65,8 @@ void main() {
         text: '10.00',
         selection: TextSelection.collapsed(offset: 5),
       );
-      final result = AppCurrencyInputFormatter().formatEditUpdate(oldValue, newValue);
+      const formatter = AppCurrencyInputFormatter();
+      final result = formatter.formatEditUpdate(oldValue, newValue);
       expect(result.text, '1.000'); // re-agrupa: quedan 4 dígitos "1000"
       expect(result.selection.baseOffset, 5); // cursor tras el dígito 4º
     });
@@ -76,7 +77,7 @@ void main() {
         text: 'abc',
         selection: TextSelection.collapsed(offset: 3),
       );
-      final result = AppCurrencyInputFormatter().formatEditUpdate(oldValue, newValue);
+      final result = const AppCurrencyInputFormatter().formatEditUpdate(oldValue, newValue);
       expect(result.text, '');
     });
 
@@ -86,7 +87,7 @@ void main() {
         selection: TextSelection.collapsed(offset: 6),
       );
       final newValue = const TextEditingValue(text: '');
-      final result = AppCurrencyInputFormatter().formatEditUpdate(oldValue, newValue);
+      final result = const AppCurrencyInputFormatter().formatEditUpdate(oldValue, newValue);
       expect(result.text, '');
     });
 

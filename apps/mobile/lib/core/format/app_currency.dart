@@ -65,6 +65,9 @@ abstract final class AppCurrency {
 class AppCurrencyInputFormatter extends TextInputFormatter {
   static final RegExp _digit = RegExp(r'[0-9]');
 
+  /// Instanciable como const: la clase es stateless (el RegExp es estático).
+  const AppCurrencyInputFormatter();
+
   @override
   TextEditingValue formatEditUpdate(
     TextEditingValue oldValue,
