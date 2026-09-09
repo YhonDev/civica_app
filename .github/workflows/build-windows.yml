@@ -94,5 +94,5 @@ jobs:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         run: |
           Write-Host "Subiendo ${{ env.ZIP_NAME }} a release ${{ env.RELEASE_TAG }} en Cuentiva/Cuentiva-platform..."
-          gh release upload ${{ env.RELEASE_TAG }} --repo Cuentiva/Cuentiva-platform --clobber ${{ env.ZIP_PATH }} ${{ env.HASH_PATH }}
+          gh release upload ${{ env.RELEASE_TAG }} --repo Cuentiva/Cuentiva-platform --clobber ${{ env.ZIP_NAME }} SHA256_WINDOWS.txt
           Write-Host "✅ Subida completada exitosamente."
