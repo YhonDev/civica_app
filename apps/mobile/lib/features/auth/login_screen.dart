@@ -164,7 +164,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: Image.asset(
                             'img/logo.png',
                             fit: BoxFit.contain,
-                            errorBuilder: (_, __, ___) => Icon(
+                            errorBuilder: (_, _, _) => Icon(
                               Icons.payments_rounded,
                               size: 44,
                               color: colorScheme.primary,
@@ -179,7 +179,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         'img/nombre1.png',
                         height: 38,
                         fit: BoxFit.contain,
-                        errorBuilder: (_, __, ___) => Text(
+                        errorBuilder: (_, _, _) => Text(
                           'Cuentiva',
                           style: theme.textTheme.headlineMedium?.copyWith(
                             fontWeight: FontWeight.bold,

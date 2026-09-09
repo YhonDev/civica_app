@@ -292,7 +292,7 @@ class DesktopSidebar extends StatelessWidget {
                             width: 24,
                             height: 24,
                             fit: BoxFit.contain,
-                            errorBuilder: (_, __, ___) => const Icon(
+                            errorBuilder: (_, _, _) => const Icon(
                               Icons.payments_rounded,
                               color: AppColors.primary,
                               size: 24,
