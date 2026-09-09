@@ -131,215 +131,240 @@ class _LoginScreenState extends State<LoginScreen> {
         return Scaffold(
           backgroundColor: colorScheme.surface,
           body: SafeArea(
-            child: Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    maxWidth: AppBreakpoints.maxFormWidth,
-                  ),
-                  child: Form(
-                  key: _formKey,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Logo / Icon
-                      Container(
-                        width: 84,
-                        height: 84,
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: colorScheme.surface,
-                          borderRadius: BorderRadius.circular(22),
-                          boxShadow: [
-                            BoxShadow(
-                              color: colorScheme.primary.withValues(alpha: 0.12),
-                              blurRadius: 16,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: (constraints.maxHeight - 48).clamp(0.0, double.infinity),
+                    ),
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(
+                          maxWidth: AppBreakpoints.maxFormWidth,
                         ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child: Image.asset(
-                            'img/logo.png',
-                            fit: BoxFit.contain,
-                            errorBuilder: (_, _, _) => Icon(
-                              Icons.payments_rounded,
-                              size: 44,
-                              color: colorScheme.primary,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Nombre / Marca
-                      Image.asset(
-                        'img/nombre1.png',
-                        height: 38,
-                        fit: BoxFit.contain,
-                        errorBuilder: (_, _, _) => Text(
-                          'Cuentiva',
-                          style: theme.textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: colorScheme.primary,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Inicia sesión para continuar',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.outline,
-                        ),
-                      ),
-                      const SizedBox(height: 36),
-
-                      // Email / Username
-                      TextFormField(
-                        controller: _emailCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Nombre de usuario',
-                          prefixIcon: Icon(Icons.person_outlined),
-                          border: OutlineInputBorder(),
-                        ),
-                        keyboardType: TextInputType.text,
-                        textCapitalization: TextCapitalization.none,
-                        onChanged: (_) => _onFieldChanged(),
-                        validator: (v) {
-                          if (v == null || v.trim().isEmpty) {
-                            return 'Ingresa tu usuario';
-                          }
-                          return null;
-                        },
-                        textInputAction: TextInputAction.next,
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Contraseña
-                      TextFormField(
-                        controller: _passwordCtrl,
-                        decoration: InputDecoration(
-                          labelText: 'Contraseña',
-                          prefixIcon: const Icon(Icons.lock_outlined),
-                          border: const OutlineInputBorder(),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscurePassword
-                                  ? Icons.visibility_off_outlined
-                                  : Icons.visibility_outlined,
-                            ),
-                            onPressed: () => setState(
-                                () => _obscurePassword = !_obscurePassword),
-                          ),
-                        ),
-                        obscureText: _obscurePassword,
-                        onChanged: (_) => _onFieldChanged(),
-                        validator: (v) {
-                          if (v == null || v.isEmpty) {
-                            return 'Ingresa tu contraseña';
-                          }
-                          return null;
-                        },
-                        textInputAction: TextInputAction.done,
-                        onFieldSubmitted: (_) => _handleLogin(context),
-                      ),
-                      const SizedBox(height: 8),
-
-                      // Recordar usuario Checkbox
-                      Row(
-                        children: [
-                          SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: Checkbox(
-                              value: _rememberUser,
-                              onChanged: (val) {
-                                setState(() => _rememberUser = val ?? false);
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          GestureDetector(
-                            onTap: () => setState(() => _rememberUser = !_rememberUser),
-                            child: Text(
-                              'Recordar usuario',
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-
-                      // Error message
-                      if (state.errorMessage != null)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: Text(
-                            state.errorMessage!,
-                            style: TextStyle(color: colorScheme.error),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-
-                      const SizedBox(height: 16),
-
-                      // Botón de login
-                      SizedBox(
-                        width: double.infinity,
-                        height: 52,
-                        child: FilledButton.icon(
-                          onPressed: state.status == AuthStatus.loading
-                              ? null
-                              : () => _handleLogin(context),
-                          icon: state.status == AuthStatus.loading
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
+                        child: IntrinsicHeight(
+                          child: Form(
+                            key: _formKey,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Spacer(flex: 1),
+                                // Logo / Icon
+                                Container(
+                                  width: 84,
+                                  height: 84,
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: colorScheme.surface,
+                                    borderRadius: BorderRadius.circular(22),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: colorScheme.primary.withValues(alpha: 0.12),
+                                        blurRadius: 16,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
                                   ),
-                                )
-                              : const Icon(Icons.login_rounded),
-                          label: Text(
-                            state.status == AuthStatus.loading
-                                ? 'Iniciando sesión...'
-                                : 'Iniciar sesión',
-                          ),
-                          style: FilledButton.styleFrom(
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(16),
+                                    child: Image.asset(
+                                      'img/logo.png',
+                                      fit: BoxFit.contain,
+                                      errorBuilder: (_, _, _) => Icon(
+                                        Icons.payments_rounded,
+                                        size: 44,
+                                        color: colorScheme.primary,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+
+                                // Nombre / Marca
+                                Image.asset(
+                                  'img/nombre1.png',
+                                  height: 38,
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (_, _, _) => Text(
+                                    'Cuentiva',
+                                    style: theme.textTheme.headlineMedium?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: colorScheme.primary,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  'Inicia sesión para continuar',
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: colorScheme.outline,
+                                  ),
+                                ),
+                                const SizedBox(height: 36),
+
+                                // Email / Username
+                                TextFormField(
+                                  controller: _emailCtrl,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Nombre de usuario',
+                                    prefixIcon: Icon(Icons.person_outlined),
+                                    border: OutlineInputBorder(),
+                                  ),
+                                  keyboardType: TextInputType.text,
+                                  textCapitalization: TextCapitalization.none,
+                                  onChanged: (_) => _onFieldChanged(),
+                                  validator: (v) {
+                                    if (v == null || v.trim().isEmpty) {
+                                      return 'Ingresa tu usuario';
+                                    }
+                                    return null;
+                                  },
+                                  textInputAction: TextInputAction.next,
+                                ),
+                                const SizedBox(height: 16),
+
+                                // Contraseña
+                                TextFormField(
+                                  controller: _passwordCtrl,
+                                  decoration: InputDecoration(
+                                    labelText: 'Contraseña',
+                                    prefixIcon: const Icon(Icons.lock_outlined),
+                                    border: const OutlineInputBorder(),
+                                    suffixIcon: IconButton(
+                                      icon: Icon(
+                                        _obscurePassword
+                                            ? Icons.visibility_off_outlined
+                                            : Icons.visibility_outlined,
+                                      ),
+                                      onPressed: () => setState(
+                                          () => _obscurePassword = !_obscurePassword),
+                                    ),
+                                  ),
+                                  obscureText: _obscurePassword,
+                                  onChanged: (_) => _onFieldChanged(),
+                                  validator: (v) {
+                                    if (v == null || v.isEmpty) {
+                                      return 'Ingresa tu contraseña';
+                                    }
+                                    return null;
+                                  },
+                                  textInputAction: TextInputAction.done,
+                                  onFieldSubmitted: (_) => _handleLogin(context),
+                                ),
+                                const SizedBox(height: 8),
+
+                                // Recordar usuario Checkbox
+                                Row(
+                                  children: [
+                                    SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: Checkbox(
+                                        value: _rememberUser,
+                                        onChanged: (val) {
+                                          setState(() => _rememberUser = val ?? false);
+                                        },
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    GestureDetector(
+                                      onTap: () => setState(() => _rememberUser = !_rememberUser),
+                                      child: Text(
+                                        'Recordar usuario',
+                                        style: theme.textTheme.bodyMedium?.copyWith(
+                                          color: colorScheme.onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+
+                                // Error message
+                                if (state.errorMessage != null)
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 8),
+                                    child: Text(
+                                      state.errorMessage!,
+                                      style: TextStyle(color: colorScheme.error),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+
+                                const SizedBox(height: 16),
+
+                                // Botón de login
+                                ConstrainedBox(
+                                  constraints: const BoxConstraints(minHeight: 52),
+                                  child: SizedBox(
+                                    width: double.infinity,
+                                    child: FilledButton.icon(
+                                      onPressed: state.status == AuthStatus.loading
+                                          ? null
+                                          : () => _handleLogin(context),
+                                      icon: state.status == AuthStatus.loading
+                                          ? const SizedBox(
+                                              width: 20,
+                                              height: 20,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                color: Colors.white,
+                                              ),
+                                            )
+                                          : const Icon(Icons.login_rounded),
+                                      label: Text(
+                                        state.status == AuthStatus.loading
+                                            ? 'Iniciando sesión...'
+                                            : 'Iniciar sesión',
+                                      ),
+                                      style: FilledButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 20,
+                                          vertical: 12,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                if (_isBiometricsEnabled) ...[
+                                  const SizedBox(height: 12),
+                                  ConstrainedBox(
+                                    constraints: const BoxConstraints(minHeight: 48),
+                                    child: SizedBox(
+                                      width: double.infinity,
+                                      child: OutlinedButton.icon(
+                                        onPressed: _autenticarConHuella,
+                                        icon: const Icon(Icons.fingerprint_rounded, size: 22),
+                                        label: const Text('Ingresar con huella dactilar'),
+                                        style: OutlinedButton.styleFrom(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 20,
+                                            vertical: 12,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                                const Spacer(flex: 2),
+                              ],
                             ),
                           ),
                         ),
                       ),
-                      if (_isBiometricsEnabled) ...[
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 48,
-                          child: OutlinedButton.icon(
-                            onPressed: _autenticarConHuella,
-                            icon: const Icon(Icons.fingerprint_rounded, size: 22),
-                            label: const Text('Ingresar con huella dactilar'),
-                            style: OutlinedButton.styleFrom(
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
+                    ),
                   ),
-                ),
-              ),
+                );
+              },
             ),
-          ),
           ),
         );
       },
