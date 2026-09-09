@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
@@ -121,6 +122,21 @@ class AuthCubit extends Cubit<AuthState> {
         return;
       }
 
+      // Si se solicita forceRestore (autenticación biométrica exitosa) y tenemos
+      // el usuario en caché, entramos inmediatamente sin bloquear por arranque en frío
+      if (forceRestore && cachedUser != null) {
+        _initRealtimeSocket(cachedUser);
+        emit(AuthState.authenticated(cachedUser));
+        unawaited(_authApi.refreshSession().then((user) {
+          if (user != null) {
+            emit(AuthState.authenticated(user));
+          }
+        }).catchError((e) {
+          debugPrint('[AuthCubit] Background refresh after biometric unlock: $e');
+        }));
+        return;
+      }
+
       try {
         final user = await _authApi.refreshSession();
         if (user != null) {
@@ -191,14 +207,29 @@ class AuthCubit extends Cubit<AuthState> {
     return clean;
   }
 
+  /// Limpia cualquier mensaje de error en la pantalla de login.
+  void clearError() {
+    if (state.errorMessage != null) {
+      emit(const AuthState.unauthenticated());
+    }
+  }
+
   /// Cierra sesión.
   Future<void> logout() async {
     try {
       RealtimeSocketService.instance.disconnect();
+    } catch (_) {}
+    try {
       LocalCacheRepository.instance.invalidateAll();
+    } catch (_) {}
+    try {
+      await BiometricAuthService.instance.clearBiometricCredentials();
+      await BiometricAuthService.instance.setBiometricsEnabled(false);
+    } catch (_) {}
+    try {
       await _authApi.logout();
     } catch (_) {
-      // Ignorar errores en logout
+      // Ignorar errores de red o API en logout
     }
     emit(const AuthState.unauthenticated());
   }

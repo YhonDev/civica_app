@@ -8,6 +8,7 @@ import {
   Delete,
   UseGuards,
   UnauthorizedException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { DataSource } from 'typeorm';
@@ -113,10 +114,20 @@ export class CobrosController {
   ) {
     if (!tenantId) return [];
 
-    if (user.rol === RolUsuario.RESIDENTE && user.residenteId !== residenteId) {
-      throw new UnauthorizedException(
-        'No tienes permiso para ver estos cobros',
-      );
+    // Un RESIDENTE solo puede consultar sus propios cobros (IDOR):
+    // 401 si su cuenta no tiene residenteId, 403 si intenta consultar
+    // los cobros de otro residente.
+    if (user.rol === RolUsuario.RESIDENTE) {
+      if (!user.residenteId) {
+        throw new UnauthorizedException(
+          'Cuenta residente sin residenteId vinculado',
+        );
+      }
+      if (user.residenteId !== residenteId) {
+        throw new ForbiddenException(
+          'No tienes permiso para ver estos cobros',
+        );
+      }
     }
 
     // Mismo scope que `listar`: etapas asignadas al cobrador + tenant.

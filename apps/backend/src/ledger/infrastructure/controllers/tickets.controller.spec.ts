@@ -3,7 +3,7 @@ import { TicketsController } from './tickets.controller';
 import { TicketRepository } from '../persistence/ticket.repository';
 import { TicketCobro } from '../../domain/ticket-cobro.entity';
 import { RolUsuario, Usuario } from '../../../iam/domain/usuario.entity';
-import { NotFoundException } from '@nestjs/common';
+import { ForbiddenException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 
 describe('TicketsController', () => {
   let controller: TicketsController;
@@ -180,16 +180,45 @@ describe('TicketsController', () => {
     });
 
     it('should not list tickets for another residente when resident role', async () => {
-      const result = await controller.list(
-        'residente-2',
-        '',
-        '',
-        createMockUser(RolUsuario.RESIDENTE),
-        'tenant-1',
-      );
-
-      expect(result).toEqual([]);
+      await expect(
+        controller.list(
+          'residente-2',
+          '',
+          '',
+          createMockUser(RolUsuario.RESIDENTE),
+          'tenant-1',
+        ),
+      ).rejects.toThrow(ForbiddenException);
       expect(mockTicketRepo.findByResidente).not.toHaveBeenCalled();
+    });
+
+    it('should reject with 401 a resident account without residenteId', async () => {
+      const orphan = createMockUser(RolUsuario.RESIDENTE);
+      orphan.residenteId = null;
+
+      await expect(
+        controller.list(
+          'residente-2',
+          '',
+          '',
+          orphan,
+          'tenant-1',
+        ),
+      ).rejects.toThrow(UnauthorizedException);
+      expect(mockTicketRepo.findByResidente).not.toHaveBeenCalled();
+    });
+
+    it('should reject with 403 a COBRADOR listing all tickets without filters', async () => {
+      await expect(
+        controller.list(
+          '',
+          '',
+          '',
+          createMockUser(RolUsuario.COBRADOR),
+          'tenant-1',
+        ),
+      ).rejects.toThrow(ForbiddenException);
+      expect(mockTicketRepo.findByTenantPaginated).not.toHaveBeenCalled();
     });
   });
 

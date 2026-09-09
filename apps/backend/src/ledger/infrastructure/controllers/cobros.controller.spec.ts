@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { Reflector } from '@nestjs/core';
 import { DataSource } from 'typeorm';
-import { UnauthorizedException } from '@nestjs/common';
+import { ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { CobrosController } from './cobros.controller';
 import { CobroRepository } from '../persistence/cobro.repository';
 import { EliminarCobroUseCase } from '../../application/use-cases/eliminar-cobro.use-case';
@@ -123,6 +123,16 @@ describe('CobrosController — aislamiento multi-tenant', () => {
 
       await expect(
         controller.listarPorResidente('res-OTRO', TENANT_A, residente),
+      ).rejects.toThrow(ForbiddenException);
+
+      expect(mockCobroRepo.findByResidente).not.toHaveBeenCalled();
+    });
+
+    it('should reject with 401 a resident account without residenteId', async () => {
+      const orphan = crearUser({ rol: RolUsuario.RESIDENTE, residenteId: undefined });
+
+      await expect(
+        controller.listarPorResidente('res-OTRO', TENANT_A, orphan),
       ).rejects.toThrow(UnauthorizedException);
 
       expect(mockCobroRepo.findByResidente).not.toHaveBeenCalled();

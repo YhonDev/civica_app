@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
 import 'package:flutter/material.dart';
@@ -24,6 +25,12 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
   bool _isBiometricsEnabled = false;
   bool _rememberUser = false;
+  Timer? _errorTimer;
+
+  void _onFieldChanged() {
+    _errorTimer?.cancel();
+    context.read<AuthCubit>().clearError();
+  }
 
   @override
   void initState() {
@@ -98,6 +105,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   void dispose() {
+    _errorTimer?.cancel();
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
     super.dispose();
@@ -108,7 +116,17 @@ class _LoginScreenState extends State<LoginScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return BlocBuilder<AuthCubit, AuthState>(
+    return BlocConsumer<AuthCubit, AuthState>(
+      listener: (context, state) {
+        if (state.errorMessage != null) {
+          _errorTimer?.cancel();
+          _errorTimer = Timer(const Duration(seconds: 4), () {
+            if (mounted) {
+              context.read<AuthCubit>().clearError();
+            }
+          });
+        }
+      },
       builder: (context, state) {
         return Scaffold(
           backgroundColor: colorScheme.surface,
@@ -127,29 +145,49 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       // Logo / Icon
                       Container(
-                        width: 80,
-                        height: 80,
+                        width: 84,
+                        height: 84,
+                        padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
-                          color: colorScheme.primaryContainer,
-                          borderRadius: BorderRadius.circular(20),
+                          color: colorScheme.surface,
+                          borderRadius: BorderRadius.circular(22),
+                          boxShadow: [
+                            BoxShadow(
+                              color: colorScheme.primary.withValues(alpha: 0.12),
+                              blurRadius: 16,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
-                        child: Icon(
-                          Icons.payments_rounded,
-                          size: 44,
-                          color: colorScheme.onPrimaryContainer,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Image.asset(
+                            'img/logo.png',
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, _, _) => Icon(
+                              Icons.payments_rounded,
+                              size: 44,
+                              color: colorScheme.primary,
+                            ),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 16),
 
-                      // Título
-                      Text(
-                        'Cívica Pago',
-                        style: theme.textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.primary,
+                      // Nombre / Marca
+                      Image.asset(
+                        'img/nombre1.png',
+                        height: 38,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, _, _) => Text(
+                          'Cuentiva',
+                          style: theme.textTheme.headlineMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: colorScheme.primary,
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 6),
                       Text(
                         'Inicia sesión para continuar',
                         style: theme.textTheme.bodyMedium?.copyWith(
@@ -168,6 +206,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         keyboardType: TextInputType.text,
                         textCapitalization: TextCapitalization.none,
+                        onChanged: (_) => _onFieldChanged(),
                         validator: (v) {
                           if (v == null || v.trim().isEmpty) {
                             return 'Ingresa tu usuario';
@@ -196,6 +235,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                         obscureText: _obscurePassword,
+                        onChanged: (_) => _onFieldChanged(),
                         validator: (v) {
                           if (v == null || v.isEmpty) {
                             return 'Ingresa tu contraseña';
