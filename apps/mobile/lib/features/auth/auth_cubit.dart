@@ -196,12 +196,14 @@ class AuthCubit extends Cubit<AuthState> {
       emit(AuthState.error(_sanitizeErrorMessage(e.message)));
     } catch (e, stack) {
       debugPrint('[AuthCubit] Error inesperado en login: $e\n$stack');
-      emit(AuthState.error(_sanitizeErrorMessage(e.toString())));
+      emit(AuthState.error(_sanitizeErrorMessage(e)));
     }
   }
 
   /// Delega en el sanitizador compartido (core/network/error_messages.dart).
-  String _sanitizeErrorMessage(String message) => sanitizeApiError(message);
+  /// Pasa el OBJETO del error (no toString): el sanitizador distingue tipos
+  /// y evita filtrar diagnostics técnicos en la UI.
+  String _sanitizeErrorMessage(Object error) => sanitizeApiError(error);
 
   /// Limpia cualquier mensaje de error en la pantalla de login.
   void clearError() {

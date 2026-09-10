@@ -237,14 +237,20 @@ void main() {
       expect(cubit.state.errorMessage, 'Algo falló');
     });
 
-    test('error técnico DioException se sanitiza a mensaje seguro de red', () async {
+    test('error técnico DioException se sanitiza a mensaje seguro', () async {
       final api = FakeAuthApi(loginError: Exception('DioException [bad response]: 500'));
       final cubit = AuthCubit(authApi: api);
       addTearDown(() => cubit.close());
 
       await cubit.login(username: 'a@b.com', password: 'p');
       expect(cubit.state.status, AuthStatus.error);
-      expect(cubit.state.errorMessage, 'No se pudo conectar con el servidor. Verifica tu conexión a internet.');
+      // Política allowlist: un diagnóstico técnico envuelto NO es copy del
+      // equipo → fallback genérico (no el mensaje de conexión, que se reserva
+      // para errores de red TIPADOS).
+      expect(
+        cubit.state.errorMessage,
+        'Ocurrió un error inesperado. Intenta de nuevo.',
+      );
     });
   });
 
