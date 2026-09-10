@@ -133,6 +133,11 @@ class AuthCubit extends Cubit<AuthState> {
           }
         }).catchError((e) {
           debugPrint('[AuthCubit] Background refresh after biometric unlock: $e');
+          // Refresh token revocado/expirado: la sesión ya no es válida.
+          // Cerrar sesión en vez de permanecer "autenticado" con datos locales.
+          if (e is AuthException) {
+            unawaited(logout());
+          }
         }));
         return;
       }

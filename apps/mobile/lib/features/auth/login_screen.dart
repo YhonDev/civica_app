@@ -83,23 +83,17 @@ class _LoginScreenState extends State<LoginScreen> {
     final authCubit = context.read<AuthCubit>();
     final hasSession = await ApiClient.instance.isLoggedIn();
     if (hasSession) {
+      // Desbloqueo passwordless: restaura la sesión con el refresh token.
       await authCubit.checkSession(forceRestore: true);
       return;
     }
 
-    final creds = await BiometricAuthService.instance.getBiometricCredentials();
-    if (creds != null && creds['username'] != null && creds['password'] != null) {
-      await authCubit.login(
-        username: creds['username']!,
-        password: creds['password']!,
+    // Ya no se guardan contraseñas (security: nunca persistir la clave real).
+    if (mounted) {
+      TopToast.showInfo(
+        context,
+        'Inicia sesión con tu contraseña para activar el desbloqueo con huella',
       );
-    } else {
-      if (mounted) {
-        TopToast.showInfo(
-          context,
-          'Inicia sesión con tu contraseña una vez para sincronizar tu huella',
-        );
-      }
     }
   }
 
@@ -383,15 +377,8 @@ class _LoginScreenState extends State<LoginScreen> {
       username: username,
     );
 
-    // Guardar credenciales cifradas en Keystore SOLO si la biometría está
-    // activada: nunca almacenar la contraseña (aunque cifrada) sin el
-    // consentimiento explícito del flujo de activación de huella.
-    final biometricsEnabled =
-        await BiometricAuthService.instance.isBiometricsEnabled();
-    if (biometricsEnabled) {
-      await BiometricAuthService.instance
-          .saveBiometricCredentials(username, password);
-    }
+    // Nota de seguridad: la contraseña NUNCA se persiste. El re-login
+    // biométrico restaura la sesión con el refresh token almacenado.
 
     if (!context.mounted) return;
     context.read<AuthCubit>().login(

@@ -5,7 +5,6 @@ import 'package:civica_pago_mobile/core/network/api_client.dart';
 import 'package:civica_pago_mobile/features/auth/auth_cubit.dart';
 import 'package:civica_pago_mobile/core/network/auth_api.dart';
 import 'package:civica_pago_mobile/core/network/api_exceptions.dart';
-
 /// Fake [AuthApi] that returns configurable results for testing.
 class FakeAuthApi extends AuthApi {
   final LoginResult? loginResult;
@@ -14,11 +13,33 @@ class FakeAuthApi extends AuthApi {
 
   bool logoutCalled = false;
 
+  // Controles para checkSession / refreshSession.
+  bool hasTokens = false;
+  bool accessValid = false;
+  Map<String, dynamic>? cachedUser;
+  Object? refreshError;
+  Map<String, dynamic>? refreshResult;
+
   FakeAuthApi({
     this.loginResult,
     this.loginError,
     this.logoutError,
   }) : super(null);
+
+  @override
+  Future<bool> isLoggedIn() async => hasTokens;
+
+  @override
+  Future<bool> isAccessTokenValid() async => accessValid;
+
+  @override
+  Future<Map<String, dynamic>?> getCachedUser() async => cachedUser;
+
+  @override
+  Future<Map<String, dynamic>?> refreshSession() async {
+    if (refreshError != null) throw refreshError!;
+    return refreshResult;
+  }
 
   @override
   Future<LoginResult> login({
@@ -115,6 +136,48 @@ void main() {
 
       await cubit.checkSession();
       expect(cubit.state.status, AuthStatus.unauthenticated);
+    });
+
+    test('forceRestore con usuario en caché entra autenticado y refresca en background', () async {
+      final api = FakeAuthApi()
+        ..hasTokens = true
+        ..accessValid = false
+        ..cachedUser = const {'nombre': 'Cobrador', 'rol': 'COBRADOR'}
+        ..refreshResult = const {'nombre': 'Cobrador', 'rol': 'COBRADOR'};
+      final cubit = AuthCubit(authApi: api);
+      addTearDown(() => cubit.close());
+
+      await cubit.checkSession(forceRestore: true);
+      expect(cubit.state.status, AuthStatus.authenticated);
+
+      // El refresh en background resuelve y re-emite autenticado.
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(cubit.state.status, AuthStatus.authenticated);
+      expect(api.logoutCalled, false);
+    });
+
+    test('forceRestore + refresh con AuthException → logout (sesión revocada)', () async {
+      // Storage en memoria: sin plataforma, determinista.
+      ApiClient.init(
+        baseUrl: 'http://test.local',
+        storage: InMemorySecureStorage(),
+      );
+      final api = FakeAuthApi()
+        ..hasTokens = true
+        ..accessValid = false
+        ..cachedUser = const {'nombre': 'Cobrador', 'rol': 'COBRADOR'}
+        ..refreshError = const AuthException(message: 'Sesión expirada');
+      final cubit = AuthCubit(authApi: api);
+      addTearDown(() => cubit.close());
+
+      await cubit.checkSession(forceRestore: true);
+      // Entra autenticado con datos locales (desbloqueo biométrico).
+      expect(cubit.state.status, AuthStatus.authenticated);
+
+      // El refresh falla con AuthException → debe cerrar sesión.
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(cubit.state.status, AuthStatus.unauthenticated);
+      expect(api.logoutCalled, true);
     });
   });
 
