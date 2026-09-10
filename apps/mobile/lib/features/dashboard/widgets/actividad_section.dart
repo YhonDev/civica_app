@@ -237,7 +237,7 @@ class ActividadSection extends StatelessWidget {
                   context: context,
                   isScrollControlled: true,
                   shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.chipRadius)),
                   ),
                   builder: (context) => Padding(
                     padding: const EdgeInsets.all(AppSpacing.cardPadding),
@@ -296,7 +296,7 @@ class ActividadSection extends StatelessWidget {
                                   padding: const EdgeInsets.all(AppSpacing.md),
                                   decoration: BoxDecoration(
                                     color: AppColors.success.withValues(alpha: 0.08),
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                                     border: Border.all(color: AppColors.success.withValues(alpha: 0.2)),
                                   ),
                                   child: Column(
@@ -426,7 +426,7 @@ class ActividadSection extends StatelessWidget {
       padding: const EdgeInsets.all(AppSpacing.sm),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
         border: Border.all(color: AppColors.border),
       ),
       child: Column(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/network/error_messages.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
@@ -80,7 +81,7 @@ class _ProyectoDetailScreenState extends State<ProyectoDetailScreen> {
               padding: const EdgeInsets.all(AppSpacing.cardPadding),
               decoration: BoxDecoration(
                 color: AppColors.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
                 border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
               ),
               child: Row(
@@ -204,7 +205,7 @@ class _ProyectoDetailScreenState extends State<ProyectoDetailScreen> {
       padding: const EdgeInsets.all(AppSpacing.cardPadding),
       decoration: BoxDecoration(
         color: AppColors.card,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
         border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
       ),
       child: Column(
@@ -500,7 +501,7 @@ class _GeneradorEstructuraSheetState extends State<_GeneradorEstructuraSheet> {
           _isSubmitting = false;
           _progresoTexto = '';
         });
-        TopToast.showError(context, 'Error al generar estructura: $e');
+        TopToast.showError(context, 'Error al generar estructura: ${sanitizeApiError(e)}');
       }
     }
   }

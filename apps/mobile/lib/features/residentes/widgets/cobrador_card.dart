@@ -21,14 +21,14 @@ class CobradorCard extends StatelessWidget {
       elevation: 0,
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
         side: BorderSide(color: AppColors.border.withValues(alpha: 0.5)),
       ),
       child: InkWell(
         onTap: onTap ?? () {
           context.push('/cobrador-detalle', extra: cobrador);
         },
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.cardPadding),
           child: Column(
@@ -73,10 +73,10 @@ class CobradorCard extends StatelessWidget {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
                     decoration: BoxDecoration(
                       color: (cobrador.activo ? AppColors.success : AppColors.textDisabled).withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                     ),
                     child: Text(
                       cobrador.activo ? 'Activo' : 'Inactivo',

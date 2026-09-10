@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/network/error_messages.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -182,7 +183,7 @@ class _ResidenteDetailScreenState extends State<ResidenteDetailScreen> {
       }
     } catch (e) {
       if (mounted) {
-        TopToast.showError(context, 'Error al eliminar residente: $e');
+        TopToast.showError(context, 'Error al eliminar residente: ${sanitizeApiError(e)}');
       }
     }
   }
@@ -203,7 +204,7 @@ class _ResidenteDetailScreenState extends State<ResidenteDetailScreen> {
           return Container(
             decoration: BoxDecoration(
               color: AppColors.background,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(AppSpacing.lg)),
             ),
             padding: EdgeInsets.only(
               left: AppSpacing.md,
@@ -222,7 +223,7 @@ class _ResidenteDetailScreenState extends State<ResidenteDetailScreen> {
                       height: 4,
                       decoration: BoxDecoration(
                         color: AppColors.border,
-                        borderRadius: BorderRadius.circular(2),
+                        borderRadius: BorderRadius.circular(AppSpacing.radiusProgress),
                       ),
                     ),
                   ),
@@ -359,7 +360,7 @@ class _ResidenteDetailScreenState extends State<ResidenteDetailScreen> {
         actions: [
           if (_cargando)
             const Padding(
-              padding: EdgeInsets.only(right: 16),
+              padding: EdgeInsets.only(right: AppSpacing.md),
               child: SizedBox(
                 width: 20,
                 height: 20,
@@ -654,11 +655,11 @@ class _ResidenteDetailScreenState extends State<ResidenteDetailScreen> {
           context.push(route, extra: extra);
         }
       },
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
           border: Border.all(color: AppColors.border),
         ),
         child: Row(

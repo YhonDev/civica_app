@@ -152,12 +152,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # .env esta en .gitignore (contiene la anon key local) pero pubspec.yaml
-      # lo declara como asset: flutter analyze falla si el archivo no existe.
-      # Se crea desde el placeholder para que analyze/test corran limpio en CI.
-      - name: Create .env asset from example (CI placeholder)
-        run: cp .env.example .env
-
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
@@ -166,11 +160,17 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      # Filosofía de tokens: el dinero, la tipografía y el color se cambian
-      # en UN archivo (AppCurrency / AppTypography / AppColors). Falla si
-      # reaparecen literales NumberFormat/fontSize/Color(0x fuera de core.
+      # Filosofía de tokens: el dinero, la tipografía, el color y los radios
+      # se cambian en UN archivo (AppCurrency / AppTypography / AppColors /
+      # AppSpacing). Falla si reaparecen literales fuera de core.
       - name: Design system guard
         run: bash ../../scripts/check_design_system.sh
+
+      # Guardian preciso (EdgeInsets tokenizados, línea/columna, regla
+      # infringida). Se ejecuta aparte para que el fallo sea inmediato y
+      # reconocible antes de correr la suite completa.
+      - name: Design token guard (test)
+        run: flutter test test/design_token_guard_test.dart
 
       - name: Analyze
         run: flutter analyze

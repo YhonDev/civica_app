@@ -186,7 +186,7 @@ class _ProyectoAjustesScreenState extends State<ProyectoAjustesScreen> {
               padding: const EdgeInsets.all(AppSpacing.cardPadding),
               decoration: BoxDecoration(
                 color: AppColors.primary.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                 border: Border.all(
                     color: AppColors.primary.withValues(alpha: 0.2)),
               ),
@@ -213,7 +213,7 @@ class _ProyectoAjustesScreenState extends State<ProyectoAjustesScreen> {
           Container(
             decoration: BoxDecoration(
               color: AppColors.surface,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
               border: Border.all(color: AppColors.border),
             ),
             child: Column(
@@ -281,7 +281,7 @@ class _ProyectoAjustesScreenState extends State<ProyectoAjustesScreen> {
           Container(
             decoration: BoxDecoration(
               color: AppColors.surface,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
               border: Border.all(color: AppColors.border),
             ),
             child: SwitchListTile(
@@ -400,12 +400,12 @@ class _ProyectoAjustesScreenState extends State<ProyectoAjustesScreen> {
       elevation: 0,
       color: AppColors.error.withValues(alpha: 0.05),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
         side: BorderSide(color: AppColors.error.withValues(alpha: 0.3)),
       ),
       child: ListTile(
         leading: Container(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(AppSpacing.sm),
           decoration: BoxDecoration(
             color: AppColors.error.withValues(alpha: 0.1),
             shape: BoxShape.circle,

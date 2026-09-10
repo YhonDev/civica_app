@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_spacing.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/network/api_health_service.dart';
@@ -51,7 +52,7 @@ class _ApiUnavailableScreenState extends State<ApiUnavailableScreen> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(AppSpacing.lg),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [

@@ -214,7 +214,7 @@ class CarteraConsolidadaScreen extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
       decoration: BoxDecoration(
         color: badgeColor.withValues(alpha: 0.03),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
         border: Border.all(color: badgeColor.withValues(alpha: 0.12)),
       ),
       child: Column(
@@ -278,7 +278,7 @@ class CarteraConsolidadaScreen extends StatelessWidget {
       side: BorderSide(
         color: isSelected ? activeColor : AppColors.border.withValues(alpha: 0.5),
       ),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.chipRadius)),
       onSelected: (_) {
         context.read<ConsolidatedCubit>().setFilter(key);
       },
@@ -305,7 +305,7 @@ class CarteraConsolidadaScreen extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
       decoration: BoxDecoration(
         color: isDark ? AppColors.elevatedCard : Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
         border: Border.all(
           color: cardBorderColor,
           width: isOverdue ? 1.5 : 1.0,
@@ -330,7 +330,7 @@ class CarteraConsolidadaScreen extends StatelessWidget {
                 color: isOverdue
                     ? AppColors.error.withValues(alpha: 0.1)
                     : AppColors.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
               ),
               child: Icon(
                 isOverdue ? Icons.home_work_outlined : Icons.person_outline_rounded,

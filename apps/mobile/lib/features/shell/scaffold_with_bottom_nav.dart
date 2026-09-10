@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_spacing.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -280,13 +281,13 @@ class DesktopSidebar extends StatelessWidget {
                 ? Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(4),
+                        padding: const EdgeInsets.all(AppSpacing.xs),
                         decoration: BoxDecoration(
                           color: AppColors.primary.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                         ),
                         child: ClipRRect(
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                           child: Image.asset(
                             'img/logo.png',
                             width: 24,
@@ -317,10 +318,10 @@ class DesktopSidebar extends StatelessWidget {
                   )
                 : Center(
                     child: Container(
-                      padding: const EdgeInsets.all(8),
+                      padding: const EdgeInsets.all(AppSpacing.sm),
                       decoration: BoxDecoration(
                         color: AppColors.primary.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                       ),
                       child: const Icon(
                         Icons.payments_rounded,
@@ -351,7 +352,7 @@ class DesktopSidebar extends StatelessWidget {
                     color: isSelected
                         ? AppColors.primary.withValues(alpha: 0.12)
                         : Colors.transparent,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                     border: Border.all(
                       color: isSelected
                           ? AppColors.primary.withValues(alpha: 0.30)
@@ -403,7 +404,7 @@ class DesktopSidebar extends StatelessWidget {
                 return Material(
                   color: Colors.transparent,
                   child: InkWell(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                     hoverColor: AppColors.primary.withValues(alpha: 0.05),
                     onTap: () => onTabTap(tab),
                     child: isExpanded

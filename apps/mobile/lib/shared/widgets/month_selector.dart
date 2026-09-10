@@ -100,12 +100,12 @@ class _ArrowButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: Colors.transparent,
-      borderRadius: BorderRadius.circular(50),
+      borderRadius: BorderRadius.circular(AppSpacing.radiusCircle),
       child: InkWell(
-        borderRadius: BorderRadius.circular(50),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusCircle),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(AppSpacing.sm),
           child: Icon(icon, size: 24, color: AppColors.textSecondary),
         ),
       ),

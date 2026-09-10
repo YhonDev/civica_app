@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/network/error_messages.dart';
 import '../../core/format/app_currency.dart';
 import 'package:intl/intl.dart';
 
@@ -97,7 +98,7 @@ class _SolicitudBottomSheetState extends State<SolicitudBottomSheet> {
         });
       }
     } catch (e) {
-      debugPrint('Error cargando detalle resolución: $e');
+      debugPrint('Error cargando detalle resolución: ${sanitizeApiError(e)}');
       if (mounted) {
         setState(() => _loadingDetalle = false);
       }
@@ -283,7 +284,7 @@ class _SolicitudBottomSheetState extends State<SolicitudBottomSheet> {
         AppFeedback.error();
         if (mounted) {
           setState(() => _enviando = false);
-          TopToast.showError(context, 'Error al corregir pago: $e');
+          TopToast.showError(context, 'Error al corregir pago: ${sanitizeApiError(e)}');
         }
       }
     }
@@ -378,7 +379,7 @@ class _SolicitudBottomSheetState extends State<SolicitudBottomSheet> {
         AppFeedback.error();
         if (mounted) {
           setState(() => _enviando = false);
-          TopToast.showError(context, 'Error al revertir pago: $e');
+          TopToast.showError(context, 'Error al revertir pago: ${sanitizeApiError(e)}');
         }
       }
     }
@@ -425,7 +426,7 @@ class _SolicitudBottomSheetState extends State<SolicitudBottomSheet> {
       AppFeedback.error();
       if (mounted) {
         setState(() => _enviando = false);
-        TopToast.showError(context, 'Error al rechazar solicitud: $e');
+        TopToast.showError(context, 'Error al rechazar solicitud: ${sanitizeApiError(e)}');
       }
     }
   }
@@ -468,7 +469,7 @@ class _SolicitudBottomSheetState extends State<SolicitudBottomSheet> {
       AppFeedback.error();
       if (mounted) {
         setState(() => _enviando = false);
-        TopToast.showError(context, 'Error: $e');
+        TopToast.showError(context, 'Error: ${sanitizeApiError(e)}');
       }
     }
   }
@@ -527,7 +528,7 @@ class _SolicitudBottomSheetState extends State<SolicitudBottomSheet> {
                 margin: const EdgeInsets.only(bottom: AppSpacing.md),
                 decoration: BoxDecoration(
                   color: AppColors.border,
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusProgress),
                 ),
               ),
             ),
@@ -540,7 +541,7 @@ class _SolicitudBottomSheetState extends State<SolicitudBottomSheet> {
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: _statusColor.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                   ),
                   child: Icon(
                     Icons.description_outlined,

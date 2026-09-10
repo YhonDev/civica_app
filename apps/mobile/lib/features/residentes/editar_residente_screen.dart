@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/network/error_messages.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
@@ -241,7 +242,7 @@ class _EditarResidenteScreenState extends State<EditarResidenteScreen> {
                   padding: const EdgeInsets.all(AppSpacing.md),
                   decoration: BoxDecoration(
                     color: AppColors.success.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                     border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
                   ),
                   child: Row(
@@ -326,7 +327,7 @@ class _EditarResidenteScreenState extends State<EditarResidenteScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al actualizar residente: $e')),
+          SnackBar(content: Text('Error al actualizar residente: ${sanitizeApiError(e)}')),
         );
       }
     } finally {

@@ -114,7 +114,7 @@ class CarteraResumenHeader extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
       decoration: BoxDecoration(
         color: badgeColor.withValues(alpha: 0.03),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
         border: Border.all(color: badgeColor.withValues(alpha: 0.12)),
       ),
       child: Column(

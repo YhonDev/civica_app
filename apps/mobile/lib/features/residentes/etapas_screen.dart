@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/network/error_messages.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
@@ -58,7 +59,7 @@ class _EtapasScreenState extends State<EtapasScreen> {
           _isLoading = false;
           _isRefreshing = false;
         });
-        TopToast.showError(context, 'Error al cargar etapas: $e');
+        TopToast.showError(context, 'Error al cargar etapas: ${sanitizeApiError(e)}');
       }
     }
   }
@@ -76,7 +77,7 @@ class _EtapasScreenState extends State<EtapasScreen> {
       }
     } catch (e) {
       if (mounted) {
-        TopToast.showError(context, 'Error al crear etapa: $e');
+        TopToast.showError(context, 'Error al crear etapa: ${sanitizeApiError(e)}');
       }
     }
   }
@@ -228,7 +229,7 @@ class _EtapasScreenState extends State<EtapasScreen> {
                           ),
                           decoration: BoxDecoration(
                             color: AppColors.primary.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                           ),
                           child: Text(
                             '${_etapas.length} registradas',
@@ -275,7 +276,7 @@ class _EtapasScreenState extends State<EtapasScreen> {
                               decoration: BoxDecoration(
                                 color:
                                     AppColors.primary.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                               ),
                               child: Icon(
                                 Icons.folder_rounded,
@@ -377,7 +378,7 @@ class _EtapasScreenState extends State<EtapasScreen> {
               } catch (e) {
                 if (mounted) {
                   TopToast.showError(
-                      context, 'Error al eliminar etapa: $e');
+                      context, 'Error al eliminar etapa: ${sanitizeApiError(e)}');
                 }
               }
             },
@@ -411,7 +412,7 @@ class _EtapasScreenState extends State<EtapasScreen> {
                   labelText: 'Cantidad',
                   hintText: 'Ej. 5',
                   border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12)),
+                      borderRadius: BorderRadius.circular(AppSpacing.buttonRadius)),
                 ),
                 validator: (val) {
                   if (val == null || val.isEmpty) return 'Requerido';
@@ -461,7 +462,7 @@ class _EtapasScreenState extends State<EtapasScreen> {
       }
     } catch (e) {
       if (mounted) {
-        TopToast.showError(context, 'Error al crear etapas: $e');
+        TopToast.showError(context, 'Error al crear etapas: ${sanitizeApiError(e)}');
       }
     }
   }

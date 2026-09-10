@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/network/error_messages.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/format/app_currency.dart';
@@ -100,7 +101,7 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
         });
       }
     } catch (e) {
-      debugPrint('Error loading cuotas: $e');
+      debugPrint('Error loading cuotas: ${sanitizeApiError(e)}');
       if (mounted) {
         setState(() {
           _loadingCuotas = false;
@@ -191,12 +192,12 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
         context.pop(true); // Return true to indicate a reload is needed
       }
     } catch (e) {
-      debugPrint('Error sending solicitud: $e');
+      debugPrint('Error sending solicitud: ${sanitizeApiError(e)}');
       if (mounted) {
         setState(() {
           _enviando = false;
         });
-        TopToast.showError(context, 'Error al enviar la solicitud: $e');
+        TopToast.showError(context, 'Error al enviar la solicitud: ${sanitizeApiError(e)}');
       }
     }
   }

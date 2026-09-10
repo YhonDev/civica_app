@@ -143,7 +143,7 @@ class _MiCasaScreenState extends State<MiCasaScreen> with LifecycleObserverMixin
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
                                 color: AppColors.primary.withValues(alpha: 0.08),
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                               ),
                               child: Icon(Icons.home_work_rounded, color: AppColors.primary, size: 26),
                             ),

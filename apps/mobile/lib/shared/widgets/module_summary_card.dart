@@ -145,7 +145,7 @@ class ModuleSummaryCard extends StatelessWidget {
                           return item.onTap != null
                               ? InkWell(
                                   onTap: item.onTap,
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                                   child: rowContent,
                                 )
                               : rowContent;

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/network/error_messages.dart';
 import '../../core/format/app_currency.dart';
 
 import '../../core/theme/app_colors.dart';
@@ -45,7 +46,7 @@ class _TarifasScreenState extends State<TarifasScreen> {
         if (mounted) setState(() => _loading = false);
       }
     } catch (e) {
-      debugPrint('Error loading tarifas: $e');
+      debugPrint('Error loading tarifas: ${sanitizeApiError(e)}');
       if (mounted) {
         setState(() => _loading = false);
       }
@@ -138,10 +139,10 @@ class _TarifasScreenState extends State<TarifasScreen> {
           );
         }
       } catch (e) {
-        debugPrint('Error guardando tarifa: $e');
+        debugPrint('Error guardando tarifa: ${sanitizeApiError(e)}');
         setState(() => _loading = false);
         if (mounted) {
-          TopToast.showError(context, 'Error al guardar la tarifa: $e');
+          TopToast.showError(context, 'Error al guardar la tarifa: ${sanitizeApiError(e)}');
         }
       }
     }
@@ -178,10 +179,10 @@ class _TarifasScreenState extends State<TarifasScreen> {
           TopToast.showSuccess(context, 'Tarifa desactivada correctamente');
         }
       } catch (e) {
-        debugPrint('Error desactivando tarifa: $e');
+        debugPrint('Error desactivando tarifa: ${sanitizeApiError(e)}');
         setState(() => _loading = false);
         if (mounted) {
-          TopToast.showError(context, 'Error al eliminar tarifa: $e');
+          TopToast.showError(context, 'Error al eliminar tarifa: ${sanitizeApiError(e)}');
         }
       }
     }
@@ -224,7 +225,7 @@ class _TarifasScreenState extends State<TarifasScreen> {
                   padding: const EdgeInsets.all(AppSpacing.md),
                   decoration: BoxDecoration(
                     color: AppColors.primary.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                     border: Border.all(
                       color: AppColors.primary.withValues(alpha: 0.2),
                     ),
@@ -397,7 +398,7 @@ class _TarifasScreenState extends State<TarifasScreen> {
 
   Widget _buildDesgloseRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [

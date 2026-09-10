@@ -104,10 +104,10 @@ class CobroCard extends StatelessWidget {
                   children: [
                     // Contenedor de ícono
                     Container(
-                      padding: const EdgeInsets.all(8),
+                      padding: const EdgeInsets.all(AppSpacing.sm),
                       decoration: BoxDecoration(
                         color: _color.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                       ),
                       child: Icon(
                         _icon,
@@ -145,7 +145,7 @@ class CobroCard extends StatelessWidget {
                                     ),
                                     decoration: BoxDecoration(
                                       color: AppColors.primary.withValues(alpha: 0.1),
-                                      borderRadius: BorderRadius.circular(6),
+                                      borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                                     ),
                                     child: Text(
                                       cobro.tituloCuota,
@@ -176,7 +176,7 @@ class CobroCard extends StatelessWidget {
                                     child: Text(
                                       cobro.nombre,
                                       style: AppTypography.label.copyWith(
-                                        color: AppColors.ink,
+                                        color: AppColors.elevatedCardText,
                                         fontWeight: FontWeight.w700,
                                       ),
                                       maxLines: 1,
@@ -260,7 +260,7 @@ class CobroCard extends StatelessWidget {
                                                     ? AppColors.success
                                                     : AppColors.primary))
                                             .withValues(alpha: 0.1),
-                                        borderRadius: BorderRadius.circular(6),
+                                        borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                                       ),
                                       child: Text(
                                         _fechaDetalle,
@@ -292,7 +292,7 @@ class CobroCard extends StatelessWidget {
                       ),
                       decoration: BoxDecoration(
                         color: _color.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                         border: Border.all(
                           color: _color.withValues(alpha: 0.5),
                           width: 1,
@@ -337,7 +337,7 @@ class CobroCard extends StatelessWidget {
                             child: Text(
                               montoFormatted,
                               style: AppCardStyles.cobroValue(
-                                color: cobro.isMora ? AppColors.error : AppColors.ink,
+                                color: cobro.isMora ? AppColors.error : AppColors.elevatedCardText,
                               ),
                             ),
                           ),
@@ -375,7 +375,7 @@ class CobroCard extends StatelessWidget {
                           ),
                           visualDensity: VisualDensity.compact,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                           ),
                         ),
                         label: const Text(
@@ -395,7 +395,7 @@ class CobroCard extends StatelessWidget {
                           ),
                           visualDensity: VisualDensity.compact,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                           ),
                         ),
                         label: const Text(

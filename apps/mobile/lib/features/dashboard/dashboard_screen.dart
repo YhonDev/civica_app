@@ -156,11 +156,11 @@ class _DashboardHeader extends StatelessWidget {
                   ],
                 ),
               ),
-              // Notificaciones
+              // Notificaciones → centro de atención (solicitudes y revisiones)
               IconButton(
                 icon: const Icon(Icons.notifications_outlined),
                 color: AppColors.textSecondary,
-                onPressed: () {},
+                onPressed: () => context.push('/solicitudes'),
                 tooltip: 'Notificaciones',
               ),
             ],
@@ -380,7 +380,7 @@ class _DashboardContentState extends State<_DashboardContent>
                         const SizedBox(height: AppSpacing.sm),
                         ...widget.data.cobrosPorSemana.map((semana) {
                           return Padding(
-                            padding: const EdgeInsets.only(bottom: 4),
+                            padding: const EdgeInsets.only(bottom: AppSpacing.xs),
                             child: Row(
                               children: [
                                 SizedBox(

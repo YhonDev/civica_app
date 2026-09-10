@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/network/error_messages.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
@@ -95,7 +96,7 @@ class _NuevoResidenteScreenState extends State<NuevoResidenteScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al crear residente: $e')),
+        SnackBar(content: Text('Error al crear residente: ${sanitizeApiError(e)}')),
       );
     } finally {
       if (mounted) {
@@ -263,7 +264,7 @@ class _NuevoResidenteScreenState extends State<NuevoResidenteScreen> {
                   padding: const EdgeInsets.all(AppSpacing.md),
                   decoration: BoxDecoration(
                     color: AppColors.info.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                     border: Border.all(color: AppColors.info.withValues(alpha: 0.3)),
                   ),
                   child: Row(

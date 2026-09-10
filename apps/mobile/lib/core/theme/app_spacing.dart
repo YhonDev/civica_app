@@ -25,6 +25,17 @@ class AppSpacing {
   static const double inputRadius = 12;
   static const double bottomSheetRadius = 20;
 
+  // Radios de la escala completa (migración de literales, ver §9.5 del
+  // design system): cada `BorderRadius.circular(<literal>)` de la app
+  // debe expresarse con uno de estos tokens.
+  static const double radiusSm = 6;      // micro-elementos: badges, chips internos
+  static const double radiusMd = 8;      // botones compactos, contenedores pequeños
+  static const double radiusLg = 10;     // icon tiles, mini-tarjetas
+  static const double radiusProgress = 4; // barras de progreso, skeleton y pills finas
+  static const double radiusXl = 22;     // tiles héroe (logo login), avatares cuadrados
+  static const double heroRadius = 28;   // contenedores héroe del modo inmersivo
+  static const double radiusCircle = 999; // círculos perfectos (recorta al 50%)
+
   // ── Edge insets helper ────────────────────────────
   static EdgeInsets get screenEdgeInsets =>
       const EdgeInsets.symmetric(horizontal: screenPadding);

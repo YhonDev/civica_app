@@ -332,7 +332,7 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
               margin: const EdgeInsets.only(bottom: AppSpacing.md),
               decoration: BoxDecoration(
                 color: AppColors.border,
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: BorderRadius.circular(AppSpacing.radiusProgress),
               ),
             ),
           ),
@@ -401,14 +401,14 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
                       });
                     }
                   },
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     padding: const EdgeInsets.symmetric(vertical: 9),
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: _isQuickMode ? AppColors.primary : AppColors.surface,
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                       border: Border.all(
                         color: _isQuickMode ? AppColors.primary : AppColors.border,
                         width: 1.2,
@@ -460,14 +460,14 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
                       });
                     }
                   },
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     padding: const EdgeInsets.symmetric(vertical: 9),
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: !_isQuickMode ? AppColors.primaryDark : AppColors.surface,
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                       border: Border.all(
                         color: !_isQuickMode ? AppColors.primaryDark : AppColors.border,
                         width: 1.2,

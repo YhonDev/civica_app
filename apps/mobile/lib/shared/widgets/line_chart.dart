@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_spacing.dart';
 
 import '../../core/format/app_currency.dart';
 import '../../core/theme/app_colors.dart';
@@ -56,7 +57,7 @@ class LineChartWidget extends StatelessWidget {
         SizedBox(
           height: height,
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
             child: CustomPaint(
               size: Size(double.infinity, height),
               painter: _LineChartPainter(points: points),

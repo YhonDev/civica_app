@@ -139,7 +139,7 @@ class _CobradorSolicitudesScreenState extends State<CobradorSolicitudesScreen> {
                 Container(
                   decoration: BoxDecoration(
                     color: AppColors.cobradorCard,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                     border: Border.all(color: AppColors.border),
                   ),
                   child: TextField(
@@ -286,7 +286,7 @@ class _CobradorSolicitudesScreenState extends State<CobradorSolicitudesScreen> {
       side: BorderSide(
         color: isSelected ? AppColors.primary : AppColors.border,
       ),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusMd)),
       visualDensity: VisualDensity.compact,
     );
   }
