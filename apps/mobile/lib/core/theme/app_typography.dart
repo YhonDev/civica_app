@@ -141,6 +141,9 @@ class AppTypography {
     height: 1.4,
   );
 
+  // ── Emoji (18px) — glifos decorativos (sin altura fija, no es texto) ──
+  static const emoji = TextStyle(fontSize: 18);
+
   /// Returns a [TextTheme] built from the design tokens.
   static TextTheme toTextTheme() {
     return TextTheme(

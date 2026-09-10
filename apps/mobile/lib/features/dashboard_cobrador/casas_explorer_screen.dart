@@ -1307,7 +1307,7 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                     color: color.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(18),
                   ),
-                  child: Center(child: Text(emoji, style: const TextStyle(fontSize: 18))),
+                  child: Center(child: Text(emoji, style: AppTypography.emoji)),
                 ),
                 const SizedBox(width: AppSpacing.md),
 

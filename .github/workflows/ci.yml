@@ -166,6 +166,12 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      # Filosofía de tokens: el dinero, la tipografía y el color se cambian
+      # en UN archivo (AppCurrency / AppTypography / AppColors). Falla si
+      # reaparecen literales NumberFormat/fontSize/Color(0x fuera de core.
+      - name: Design system guard
+        run: bash ../../scripts/check_design_system.sh
+
       - name: Analyze
         run: flutter analyze
 
