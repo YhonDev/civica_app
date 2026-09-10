@@ -1,6 +1,7 @@
 import 'package:uuid/uuid.dart';
 import 'package:drift/drift.dart' as drift;
 import '../database/app_database.dart';
+import '../format/app_currency.dart';
 
 class MotorRecaudoService {
   final AppDatabase _db;
@@ -110,7 +111,7 @@ class MotorRecaudoService {
         await _registrarActividad(
           tenantId: cobro.tenantId,
           tipo: 'PAGO_REGISTRADO',
-          descripcion: 'Pago de \$${aplicable / 100} registrado. Nuevo estado: \$nuevoEstado',
+          descripcion: 'Pago de ${AppCurrency.formatCents(aplicable.round())} registrado. Nuevo estado: $nuevoEstado',
           entidadId: pagoId,
           entidadTipo: 'PAGO',
         );

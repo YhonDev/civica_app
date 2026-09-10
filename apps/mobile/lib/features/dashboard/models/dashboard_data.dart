@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+import '../../../core/format/app_currency.dart';
+
 /// Response from GET /dashboard/administrador?mes=X&anio=Y
 class DashboardData extends Equatable {
   final int mes;
@@ -101,16 +103,11 @@ class DashboardData extends Equatable {
     return DashboardData(
       mes: int.tryParse(json['mes']?.toString() ?? '') ?? 0,
       anio: int.tryParse(json['anio']?.toString() ?? '') ?? 0,
-      recaudoMes:
-          (double.tryParse(resumen['recaudoTotal']?.toString() ?? '') ?? 0) /
-              100,
-      metaMensual:
-          (double.tryParse(resumen['metaMensual']?.toString() ?? '') ?? 0) /
-              100,
+      recaudoMes: AppCurrency.centsFromJson(resumen['recaudoTotal']).toDouble(),
+      metaMensual: AppCurrency.centsFromJson(resumen['metaMensual']).toDouble(),
       pagaron: pagaron,
       pendientes: pendientes,
-      mora: (double.tryParse(resumen['moraTotal']?.toString() ?? '') ?? 0) /
-          100,
+      mora: AppCurrency.centsFromJson(resumen['moraTotal']).toDouble(),
       porcentaje:
           double.tryParse(resumen['porcentajeMeta']?.toString() ?? '') ?? 0,
       evolucion: (json['evolucion'] as List<dynamic>?)
@@ -157,11 +154,8 @@ class DashboardData extends Equatable {
       cobrosPagados: cobrosPagados,
       cobrosPendientes: cobrosPendientes,
       cobrosMora: cobrosMora,
-      acumuladoAnual:
-          (double.tryParse(json['acumuladoAnual']?.toString() ?? '') ?? 0) /
-              100,
-      metaAnual:
-          (double.tryParse(json['metaAnual']?.toString() ?? '') ?? 0) / 100,
+      acumuladoAnual: AppCurrency.centsFromJson(json['acumuladoAnual']).toDouble(),
+      metaAnual: AppCurrency.centsFromJson(json['metaAnual']).toDouble(),
       historialMeses: (json['historialMeses'] as List<dynamic>?)
               ?.map((e) => MesHistorico.fromJson(e as Map<String, dynamic>))
               .toList() ??
@@ -207,7 +201,7 @@ class EvolucionPunto extends Equatable {
   factory EvolucionPunto.fromJson(Map<String, dynamic> json) {
     return EvolucionPunto(
       dia: json['dia'] as String? ?? '',
-      valor: (double.tryParse(json['valor']?.toString() ?? '') ?? 0) / 100,
+      valor: AppCurrency.centsFromJson(json['valor']).toDouble(),
     );
   }
 
@@ -230,7 +224,7 @@ class ModalidadItem extends Equatable {
     return ModalidadItem(
       nombre: json['modalidad'] as String? ?? '',
       porcentaje: double.tryParse(json['porcentaje']?.toString() ?? '') ?? 0,
-      valor: (double.tryParse(json['montoRecaudo']?.toString() ?? '') ?? 0) / 100,
+      valor: AppCurrency.centsFromJson(json['montoRecaudo']).toDouble(),
     );
   }
 
@@ -342,9 +336,9 @@ class MesHistorico extends Equatable {
     return MesHistorico(
       mes: int.tryParse(json['mes']?.toString() ?? '') ?? 1,
       anio: int.tryParse(json['anio']?.toString() ?? '') ?? 2026,
-      recaudo: (double.tryParse(json['recaudo']?.toString() ?? '') ?? 0) / 100,
+      recaudo: AppCurrency.centsFromJson(json['recaudo']).toDouble(),
       pendientes: int.tryParse(json['pendientes']?.toString() ?? '') ?? 0,
-      mora: (double.tryParse(json['mora']?.toString() ?? '') ?? 0) / 100,
+      mora: AppCurrency.centsFromJson(json['mora']).toDouble(),
     );
   }
 

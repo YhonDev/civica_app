@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+import '../../../core/format/app_currency.dart';
+
 /// Resumen general de la cartera (totales).
 class CarteraResumen extends Equatable {
   final double totalPendiente;
@@ -273,8 +275,8 @@ class CobroItem extends Equatable {
     if (estadoDb == 'PAGADA' || estadoDb == 'PAGADO') estadoUi = 'Pagado';
     if (estadoDb == 'VENCIDA' || estadoDb == 'MORA') estadoUi = 'Mora';
 
-    final double monto = (json['monto'] ?? 0) / 100.0;
-    final double pagado = (json['montoPagado'] ?? 0) / 100.0;
+    final double monto = AppCurrency.centsFromJson(json['monto']).toDouble();
+    final double pagado = AppCurrency.centsFromJson(json['montoPagado']).toDouble();
     final double saldo = monto - pagado;
 
     final propietario = json['residente'] as Map<String, dynamic>?;

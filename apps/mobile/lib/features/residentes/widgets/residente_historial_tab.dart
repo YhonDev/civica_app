@@ -111,7 +111,7 @@ class _ResidenteHistorialScreenState extends State<ResidenteHistorialScreen> {
     }
 
     if (!mounted) return;
-    final monto = ((pago['monto'] ?? 0) / 100.0).round();
+    final monto = AppCurrency.centsFromJson(pago['monto']);
     TicketBottomSheet.show(
       context,
       TicketData(
@@ -171,7 +171,7 @@ class _ResidenteHistorialScreenState extends State<ResidenteHistorialScreen> {
         separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.md),
         itemBuilder: (context, index) {
           final pago = _pagos[index];
-          final monto = (pago['monto'] ?? 0) / 100.0;
+          final monto = AppCurrency.centsFromJson(pago['monto']).toDouble();
           final fechaPago = pago['fechaPago'] != null
               ? DateFormat('dd MMM yyyy', 'es').format(DateTime.parse(pago['fechaPago']))
               : '';

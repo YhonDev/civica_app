@@ -80,13 +80,6 @@ abstract final class AppCurrency {
 
   /// Convierte centavos → pesos en formato `$ 10.000` en un paso.
   static String formatCents(int cents) => format(centsToPesos(cents));
-
-  // ── Sanity check de convención (fácil de olvidar; actualizable) ──────────────
-
-  /// Lanza `AssertionError` si la app utiliza alguna convención de centavos
-  /// inconsistentemente (el campo de entrega de la aura es dinámico y afecta
-  /// al entorno de producción: prefiere fórmulas auditadas en vez de esto).
-  ///
 }
 
 /// Formatea el monto mientras se escribe: `10000` → `10.000`.

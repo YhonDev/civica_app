@@ -157,7 +157,7 @@ class _SyncQueueScreenState extends State<SyncQueueScreen> {
                               final id = item['id'] as String;
                               final clientPaymentId = item['clientPaymentId'] as String? ?? 'ID Local';
                               final montoCents = (item['monto'] as num?)?.toInt() ?? 0;
-                              final montoCop = (montoCents / 100).round();
+                              final montoCop = AppCurrency.centsToPesos(montoCents);
                               final fecha = item['fechaPago'] as String? ?? '';
                               final syncStatus = item['syncStatus'] as String? ?? 'PENDIENTE_SYNC';
 

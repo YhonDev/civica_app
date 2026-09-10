@@ -94,7 +94,7 @@ class _MontosScreenState extends State<MontosScreen> {
         await ApiClient.instance.post(
           '/montos-predefinidos',
           data: {
-            'monto': result * 100, // a centavos
+            'monto': AppCurrency.pesosToCents(result), // a centavos
           },
         );
         _loadMontos();
@@ -210,7 +210,7 @@ class _MontosScreenState extends State<MontosScreen> {
                         final id = item['id'] as String;
                         final montoCents =
                             (item['monto'] as num?)?.toInt() ?? 0;
-                        final montoCop = (montoCents / 100).round();
+                        final montoCop = AppCurrency.centsToPesos(montoCents);
 
                         return Card(
                           elevation: 0,

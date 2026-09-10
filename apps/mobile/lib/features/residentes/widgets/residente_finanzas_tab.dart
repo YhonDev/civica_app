@@ -145,8 +145,8 @@ class _ResidenteFinanzasScreenState extends State<ResidenteFinanzasScreen> {
         itemBuilder: (context, index) {
           final cuota = _cuotas[index];
           final estado = cuota['estado'] as String;
-          final monto = (cuota['monto'] ?? 0) / 100.0;
-          final montoPagado = (cuota['montoPagado'] ?? 0) / 100.0;
+          final monto = AppCurrency.centsFromJson(cuota['monto']).toDouble();
+          final montoPagado = AppCurrency.centsFromJson(cuota['montoPagado']).toDouble();
           final saldo = monto - montoPagado;
           final concepto = cuota['concepto'] ?? 'Cobro';
           final mesStr = cuota['periodoInicio'] != null 

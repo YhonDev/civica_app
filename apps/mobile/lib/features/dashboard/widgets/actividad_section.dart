@@ -281,7 +281,7 @@ class ActividadSection extends StatelessWidget {
                           builder: (context) {
                             final meta = orig.metadata;
                             final rec = meta['totalRecaudado'] as num?;
-                            final recStr = rec != null ? AppCurrency.format((rec / 100).round()) : 'Recaudo de Jornada';
+                            final recStr = rec != null ? AppCurrency.formatCents(rec.round()) : 'Recaudo de Jornada';
                             final hInicio = meta['horaInicio'] as String?;
                             final hFin = meta['horaFin'] as String?;
                             final horarioStr = (hInicio != null && hFin != null) ? '$hInicio - $hFin' : item.hace;

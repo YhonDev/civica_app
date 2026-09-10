@@ -133,7 +133,7 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
 
     final estado = cuota['estado'] as String? ?? 'PENDIENTE';
     final monto = cuota['monto'] as int? ?? 0;
-    final amount = (monto / 100).round();
+    final amount = AppCurrency.centsToPesos(monto);
     final estadoStr = estado == 'PAGADA' ? 'Pagada' : 'Pendiente';
     return '$conceptoClean ($estadoStr · ${AppCurrency.format(amount)})';
   }

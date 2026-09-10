@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import '../../core/format/app_currency.dart';
 import '../../core/network/api_client.dart';
 import '../../core/network/api_exceptions.dart';
 import 'models/residentes_models.dart';
@@ -67,9 +68,13 @@ class ResidentesRepository {
         for (var cuota in cuotas) {
           if (cuota['estado'] == 'VENCIDA') {
             enMora = true;
-            saldo += ((cuota['monto'] ?? 0) - (cuota['montoPagado'] ?? 0)) / 100.0;
+            saldo += AppCurrency.centsToPesos(
+              (((cuota['monto'] ?? 0) as num) - ((cuota['montoPagado'] ?? 0) as num)).round(),
+            );
           } else if (cuota['estado'] == 'PENDIENTE') {
-            saldo += ((cuota['monto'] ?? 0) - (cuota['montoPagado'] ?? 0)) / 100.0;
+            saldo += AppCurrency.centsToPesos(
+              (((cuota['monto'] ?? 0) as num) - ((cuota['montoPagado'] ?? 0) as num)).round(),
+            );
           }
         }
 

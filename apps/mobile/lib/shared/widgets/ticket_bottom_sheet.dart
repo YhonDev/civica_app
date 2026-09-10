@@ -57,7 +57,7 @@ class TicketData {
       final numVal = (rawMonto is num) ? rawMonto.toDouble() : double.tryParse(rawMonto.toString()) ?? 0.0;
       // El backend entrega monto en CENTAVOS (ticket.mapper), siempre convertir a pesos.
       // La heurística anterior (>1000000) mostraba $800.000 para un ticket de $8.000.
-      montoPesos = (numVal / 100).round();
+      montoPesos = AppCurrency.centsFromJson(numVal);
     }
 
     final rawFecha = json['fecha'];

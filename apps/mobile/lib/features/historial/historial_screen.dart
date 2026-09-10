@@ -159,7 +159,9 @@ class _HistorialScreenState extends State<HistorialScreen> {
                               final fecha = DateTime.tryParse(fechaStr) ?? DateTime.now();
                               final dateFormatted = DateFormat('dd/MM/yyyy - hh:mm a').format(fecha);
                               final rawMonto = c['monto'] as int? ?? 0;
-                              final monto = rawMonto > 1000 ? (rawMonto / 100).round() : rawMonto;
+                              // El backend entrega SIEMPRE centavos (convención única:
+                              // ver AppCurrency.centsToPesos). Sin heurísticas por umbral.
+                              final monto = AppCurrency.centsToPesos(rawMonto);
                               final residente = c['residenteNombre'] as String? ?? 'Residente';
                               final casa = c['casaDireccion'] as String? ?? 'Inmueble';
                               final manzana = c['manzanaNombre'] as String? ?? '';
@@ -278,8 +280,8 @@ class _HistorialScreenState extends State<HistorialScreen> {
                             final rawPeriod = DateFormat.yMMMM('es').format(date);
                             final period = rawPeriod[0].toUpperCase() + rawPeriod.substring(1);
 
-                            final monto = (c['monto'] as int? ?? 0) ~/ 100;
-                            final montoPagado = (c['montoPagado'] as int? ?? 0) ~/ 100;
+                            final monto = AppCurrency.centsToPesos(c['monto'] as int? ?? 0);
+                            final montoPagado = AppCurrency.centsToPesos(c['montoPagado'] as int? ?? 0);
                             final cobroItem = CobroItem(
                               id: (c['id'] ?? '').toString(),
                               residenteId: (c['residenteId'] ?? '').toString(),
@@ -400,7 +402,7 @@ class _HistorialScreenState extends State<HistorialScreen> {
     } else if (c['estado'] == 'PAGADA') {
       final rawDate = c['fechaPago'] ?? c['updatedAt'] ?? c['createdAt'];
       final date = (DateTime.tryParse(rawDate?.toString() ?? '') ?? DateTime.now()).toLocal();
-      final monto = ((c['monto'] as int) / 100).round();
+      final monto = AppCurrency.centsToPesos(c['monto'] as int? ?? 0);
       TicketBottomSheet.show(
         context,
         TicketData(

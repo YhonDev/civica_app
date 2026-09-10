@@ -67,4 +67,63 @@ void main() {
       expect(AppCurrency.parse(''), 0);
     });
   });
+
+  group('AppCurrency.centsToPesos', () {
+    test('conversión exacta', () {
+      expect(AppCurrency.centsToPesos(100), 1);
+      expect(AppCurrency.centsToPesos(150000), 1500);
+      expect(AppCurrency.centsToPesos(1000000), 10000);
+    });
+
+    test('cero y negativos', () {
+      expect(AppCurrency.centsToPesos(0), 0);
+      expect(AppCurrency.centsToPesos(-50000), -500);
+    });
+
+    test('regresión: NO aplica la heurística "si > 1000 entonces /100"', () {
+      // Un monto de 1.500 centavos (15 pesos) y uno de 150.000 centavos
+      // (1.500 pesos) se convierten por la misma regla, sin umbrales.
+      expect(AppCurrency.centsToPesos(1500), 15);
+      expect(AppCurrency.centsToPesos(150000), 1500);
+    });
+  });
+
+  group('AppCurrency.pesosToCents', () {
+    test('conversión exacta', () {
+      expect(AppCurrency.pesosToCents(10000), 1000000);
+      expect(AppCurrency.pesosToCents(0), 0);
+      expect(AppCurrency.pesosToCents(-500), -50000);
+    });
+
+    test('ida y vuelta', () {
+      // 123456 centavos → 1234,56 pesos → redondea a 1235 → 123500 centavos.
+      expect(AppCurrency.pesosToCents(AppCurrency.centsToPesos(123456)), 123500);
+    });
+  });
+
+  group('AppCurrency.centsFromJson', () {
+    test('int', () {
+      expect(AppCurrency.centsFromJson(150000), 1500);
+    });
+
+    test('double', () {
+      expect(AppCurrency.centsFromJson(150000.0), 1500);
+    });
+
+    test('string numérica', () {
+      expect(AppCurrency.centsFromJson('150000'), 1500);
+    });
+
+    test('null o inválido devuelven 0', () {
+      expect(AppCurrency.centsFromJson(null), 0);
+      expect(AppCurrency.centsFromJson('abc'), 0);
+    });
+  });
+
+  group('AppCurrency.formatCents', () {
+    test('centavos → formato canónico en un paso', () {
+      expect(AppCurrency.formatCents(1000000), '\$ 10.000');
+      expect(AppCurrency.formatCents(0), '\$ 0');
+    });
+  });
 }

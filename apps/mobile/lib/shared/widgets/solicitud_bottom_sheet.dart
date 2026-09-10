@@ -164,7 +164,7 @@ class _SolicitudBottomSheetState extends State<SolicitudBottomSheet> {
     AppFeedback.selection();
     final pagoMap = _detalleResolucion?['pago'] as Map<String, dynamic>?;
     final int pagoActualPesos = pagoMap != null
-        ? ((pagoMap['monto'] as num) / 100).round()
+        ? AppCurrency.centsFromJson(pagoMap['monto'])
         : 0;
 
     final montoCtrl = TextEditingController(
@@ -254,7 +254,7 @@ class _SolicitudBottomSheetState extends State<SolicitudBottomSheet> {
 
     if (confirmed == true && mounted) {
       final nuevoMontoPesos = AppCurrency.parse(montoCtrl.text).toInt();
-      final nuevoMontoCentavos = nuevoMontoPesos * 100;
+      final nuevoMontoCentavos = AppCurrency.pesosToCents(nuevoMontoPesos);
       final motivo = motivoCtrl.text.trim().isNotEmpty
           ? motivoCtrl.text.trim()
           : 'Corrección de valor aprobada por administración.';
@@ -494,7 +494,7 @@ class _SolicitudBottomSheetState extends State<SolicitudBottomSheet> {
         : widget.solicitud.displaySubtitulo;
 
     final int? montoPagoPesos = pagoData?['monto'] != null
-        ? ((pagoData!['monto'] as num) / 100).round()
+        ? AppCurrency.centsFromJson(pagoData!['monto'])
         : null;
 
     final String montoFormateado = montoPagoPesos != null
