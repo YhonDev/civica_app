@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/network/error_messages.dart';
 import '../../core/format/app_currency.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
@@ -54,7 +55,7 @@ class _SyncQueueScreenState extends State<SyncQueueScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al sincronizar: $e')),
+          SnackBar(content: Text('Error al sincronizar: ${sanitizeApiError(e)}')),
         );
       }
     } finally {
@@ -85,7 +86,7 @@ class _SyncQueueScreenState extends State<SyncQueueScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Reintento fallido: $e')),
+          SnackBar(content: Text('Reintento fallido: ${sanitizeApiError(e)}')),
         );
       }
     } finally {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/network/error_messages.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
@@ -111,7 +112,8 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
     if (etapas.isEmpty) return const SizedBox.shrink();
 
     return SizedBox(
-      height: 34,
+      // Escala con la fuente de sistema (clamp 1.0–1.3) para no recortar chips.
+      height: 34 * context.scaleForText,
       child: FadingHorizontalScroll(
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
         child: Row(
@@ -174,7 +176,8 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
     if (manzanas.isEmpty) return const SizedBox.shrink();
 
     return SizedBox(
-      height: 32,
+      // Escala con la fuente de sistema (clamp 1.0–1.3) para no recortar chips.
+      height: 32 * context.scaleForText,
       child: FadingHorizontalScroll(
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
         child: Row(
@@ -494,7 +497,7 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Error al solicitar cobro: $e'),
+                                content: Text('Error al solicitar cobro: ${sanitizeApiError(e)}'),
                                 backgroundColor: AppColors.error,
                               ),
                             );
@@ -534,7 +537,9 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
               return SliverGrid(
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: cols,
-                  mainAxisExtent: 195,
+                  // Escala con la fuente de sistema para que las tarjetas
+                  // no recorten su contenido con texto grande.
+                  mainAxisExtent: 195 * context.scaleForText,
                   crossAxisSpacing: 14,
                   mainAxisSpacing: 14,
                 ),
@@ -878,7 +883,8 @@ class _CarteraSharedLayout extends StatelessWidget {
           // Chips de Filtro de Estado: horizontal unificado con scroll suave y bordes desvanecidos
           SliverToBoxAdapter(
             child: SizedBox(
-              height: 32,
+              // Escala con la fuente de sistema (clamp 1.0–1.3).
+              height: 32 * context.scaleForText,
               child: FadingHorizontalScroll(
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
                 child: Row(

@@ -156,11 +156,11 @@ class _DashboardHeader extends StatelessWidget {
                   ],
                 ),
               ),
-              // Notificaciones
+              // Notificaciones → centro de atención (solicitudes y revisiones)
               IconButton(
                 icon: const Icon(Icons.notifications_outlined),
                 color: AppColors.textSecondary,
-                onPressed: () {},
+                onPressed: () => context.push('/solicitudes'),
                 tooltip: 'Notificaciones',
               ),
             ],

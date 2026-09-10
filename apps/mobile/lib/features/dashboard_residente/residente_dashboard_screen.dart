@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/network/error_messages.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -152,7 +153,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
         }
       },
       onError: (e) {
-        debugPrint('Error loading dashboard: $e');
+        debugPrint('Error loading dashboard: ${sanitizeApiError(e)}');
         if (mounted && !silent && LocalCacheRepository.instance.getCached('dashboard:residente') == null) {
           setState(() {
             _loading = false;
@@ -684,7 +685,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
       }
     } catch (e) {
       if (mounted) {
-        TopToast.showError(context, 'Error al enviar solicitud: $e');
+        TopToast.showError(context, 'Error al enviar solicitud: ${sanitizeApiError(e)}');
       }
       return;
     }
@@ -694,7 +695,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
         await _loadDashboardData(silent: true);
       }
     } catch (e) {
-      debugPrint('[ResidenteDashboard] Advertencia al refrescar dashboard: $e');
+      debugPrint('[ResidenteDashboard] Advertencia al refrescar dashboard: ${sanitizeApiError(e)}');
     }
   }
 

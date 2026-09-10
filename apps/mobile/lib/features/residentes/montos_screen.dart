@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/network/error_messages.dart';
 import '../../core/format/app_currency.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
@@ -102,7 +103,7 @@ class _MontosScreenState extends State<MontosScreen> {
         if (mounted) {
           ScaffoldMessenger.of(
             context,
-          ).showSnackBar(SnackBar(content: Text('Error al crear monto: $e')));
+          ).showSnackBar(SnackBar(content: Text('Error al crear monto: ${sanitizeApiError(e)}')));
         }
       }
     }
@@ -116,7 +117,7 @@ class _MontosScreenState extends State<MontosScreen> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Error al eliminar: $e')));
+        ).showSnackBar(SnackBar(content: Text('Error al eliminar: ${sanitizeApiError(e)}')));
       }
     }
   }

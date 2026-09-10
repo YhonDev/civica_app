@@ -176,7 +176,7 @@ class CobroCard extends StatelessWidget {
                                     child: Text(
                                       cobro.nombre,
                                       style: AppTypography.label.copyWith(
-                                        color: AppColors.ink,
+                                        color: AppColors.elevatedCardText,
                                         fontWeight: FontWeight.w700,
                                       ),
                                       maxLines: 1,
@@ -337,7 +337,7 @@ class CobroCard extends StatelessWidget {
                             child: Text(
                               montoFormatted,
                               style: AppCardStyles.cobroValue(
-                                color: cobro.isMora ? AppColors.error : AppColors.ink,
+                                color: cobro.isMora ? AppColors.error : AppColors.elevatedCardText,
                               ),
                             ),
                           ),

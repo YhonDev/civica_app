@@ -13,6 +13,7 @@ import 'core/theme/app_colors.dart';
 import 'core/security/biometric_lifecycle_lock.dart';
 import 'core/security/session_lifecycle_manager.dart';
 import 'core/router/app_router.dart';
+import 'core/theme/app_breakpoints.dart';
 import 'features/auth/auth_cubit.dart';
 import 'features/setup/api_unavailable_screen.dart';
 
@@ -51,6 +52,67 @@ class CivicaPagoApp extends StatefulWidget {
   State<CivicaPagoApp> createState() => _CivicaPagoAppState();
 }
 
+/// Builder compartido de MaterialApp: unifica tema (light/dark), animación
+/// de tema nula y el clamp de textScaler a [1.0, AppBreakpoints.maxTextScale].
+///
+/// El clamp garantiza que los usuarios con fuente de sistema grande vean la
+/// UI escalada hasta un límite seguro, sin romper alturas fijas de chips,
+/// badges ni extents de grid (ver doc/DESIGN_SYSTEM.md §7.6).
+///
+/// Usa exactamente uno de: [home] (MaterialApp clásico) o [routerConfig]
+/// (MaterialApp.router, con [pageBuilder] como builder adicional).
+class _AppThemeBuilder extends StatelessWidget {
+  final Widget? home;
+  final RouterConfig<Object>? routerConfig;
+  final Widget Function(BuildContext, Widget?)? pageBuilder;
+
+  const _AppThemeBuilder({this.home, this.routerConfig, this.pageBuilder});
+
+  /// Builder combinado: pageBuilder opcional + clamp de textScaler.
+  Widget _wrapTransitions(BuildContext context, Widget? child) {
+    child = pageBuilder?.call(context, child) ?? child;
+    final ratio = MediaQuery.textScalerOf(context).scale(14) / 14;
+    final clamped = TextScaler.linear(
+      ratio.clamp(1.0, AppBreakpoints.maxTextScale),
+    );
+    return MediaQuery(
+      data: MediaQuery.of(context).copyWith(textScaler: clamped),
+      child: child ?? const SizedBox.shrink(),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: darkThemeNotifier,
+      builder: (context, isDark, _) {
+        if (routerConfig != null) {
+          return MaterialApp.router(
+            title: 'Cívica Pago',
+            debugShowCheckedModeBanner: false,
+            theme: buildLightTheme(),
+            darkTheme: buildDarkTheme(),
+            themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
+            themeAnimationDuration: Duration.zero,
+            routerConfig: routerConfig,
+            builder: _wrapTransitions,
+          );
+        }
+        return MaterialApp(
+          title: 'Cívica Pago',
+          debugShowCheckedModeBanner: false,
+          theme: buildLightTheme(),
+          darkTheme: buildDarkTheme(),
+          themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
+          themeAnimationDuration: Duration.zero,
+          builder: _wrapTransitions,
+          home: home,
+        );
+      },
+    );
+  }
+}
+
 class _CivicaPagoAppState extends State<CivicaPagoApp> {
   /// Solo en debug: verificar que la API responde antes de entrar a la app.
   /// En release el gate se salta (modo offline tolerante, no bloquea arranque).
@@ -80,13 +142,7 @@ class _CivicaPagoAppState extends State<CivicaPagoApp> {
 
         if (!apiOk) {
           if (snapshot.connectionState != ConnectionState.done) {
-            return MaterialApp(
-              title: 'Cívica Pago',
-              debugShowCheckedModeBanner: false,
-              theme: buildLightTheme(),
-              darkTheme: buildDarkTheme(),
-              themeMode: darkThemeNotifier.value ? ThemeMode.dark : ThemeMode.light,
-              themeAnimationDuration: Duration.zero,
+            return _AppThemeBuilder(
               home: Scaffold(
                 body: Center(
                   child: SizedBox(
@@ -103,13 +159,7 @@ class _CivicaPagoAppState extends State<CivicaPagoApp> {
           }
 
           // Check terminó y la API NO responde → pantalla de bloqueo clara.
-          return MaterialApp(
-            title: 'Cívica Pago',
-            debugShowCheckedModeBanner: false,
-            theme: buildLightTheme(),
-            darkTheme: buildDarkTheme(),
-            themeMode: darkThemeNotifier.value ? ThemeMode.dark : ThemeMode.light,
-            themeAnimationDuration: Duration.zero,
+          return _AppThemeBuilder(
             home: ApiUnavailableScreen(
               healthService: ApiHealthService(baseUrl: detectBaseUrl()),
               onAvailable: _reverificar,
@@ -131,57 +181,40 @@ class _AppRoot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<bool>(
-      valueListenable: darkThemeNotifier,
-      builder: (context, isDark, _) {
-        return BlocBuilder<AuthCubit, AuthState>(
-          builder: (context, state) {
-            if (state.status == AuthStatus.initial ||
-                state.status == AuthStatus.loading) {
-              return MaterialApp(
-                title: 'Cívica Pago',
-                debugShowCheckedModeBanner: false,
-                theme: buildLightTheme(),
-                darkTheme: buildDarkTheme(),
-                themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
-                themeAnimationDuration: Duration.zero,
-                home: Scaffold(
-                  body: Center(
-                    child: SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: AppColors.primary,
-                      ),
-                    ),
+    return BlocBuilder<AuthCubit, AuthState>(
+      builder: (context, state) {
+        if (state.status == AuthStatus.initial ||
+            state.status == AuthStatus.loading) {
+          return const _AppThemeBuilder(
+            home: Scaffold(
+              body: Center(
+                child: SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppColors.primary,
                   ),
                 ),
-              );
-            }
-
-            return BlocListener<AuthCubit, AuthState>(
-              listener: (context, authState) {
-                if (authState.isAuthenticated) {
-                  appRouter.go('/');
-                } else {
-                  appRouter.go('/login');
-                }
-              },
-              child: MaterialApp.router(
-                title: 'Cívica Pago',
-                debugShowCheckedModeBanner: false,
-                theme: buildLightTheme(),
-                darkTheme: buildDarkTheme(),
-                themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
-                themeAnimationDuration: Duration.zero,
-                routerConfig: appRouter,
-                builder: (context, child) => BiometricLifecycleLock(
-                  child: child ?? const SizedBox.shrink(),
-                ),
               ),
-            );
+            ),
+          );
+        }
+
+        return BlocListener<AuthCubit, AuthState>(
+          listener: (context, authState) {
+            if (authState.isAuthenticated) {
+              appRouter.go('/');
+            } else {
+              appRouter.go('/login');
+            }
           },
+          child: _AppThemeBuilder(
+            routerConfig: appRouter,
+            pageBuilder: (context, child) => BiometricLifecycleLock(
+              child: child ?? const SizedBox.shrink(),
+            ),
+          ),
         );
       },
     );

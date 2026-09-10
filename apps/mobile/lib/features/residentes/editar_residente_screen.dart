@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/network/error_messages.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
@@ -326,7 +327,7 @@ class _EditarResidenteScreenState extends State<EditarResidenteScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al actualizar residente: $e')),
+          SnackBar(content: Text('Error al actualizar residente: ${sanitizeApiError(e)}')),
         );
       }
     } finally {

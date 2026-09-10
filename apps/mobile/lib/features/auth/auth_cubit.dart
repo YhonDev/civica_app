@@ -7,6 +7,7 @@ import '../../core/network/auth_api.dart';
 import '../../core/network/api_client.dart';
 import '../../core/network/api_exceptions.dart';
 import '../../core/network/base_url.dart';
+import '../../core/network/error_messages.dart';
 import '../../core/network/local_cache_repository.dart';
 import '../../core/network/realtime_socket_service.dart';
 import '../../core/security/biometric_auth_service.dart';
@@ -199,18 +200,8 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 
-  String _sanitizeErrorMessage(String message) {
-    final clean = message.replaceFirst(RegExp(r'^(Exception|Error):\s*', caseSensitive: false), '');
-    final lower = clean.toLowerCase();
-    if (lower.contains('dioexception') ||
-        lower.contains('socketexception') ||
-        lower.contains('httpexception') ||
-        lower.contains('handshakeexception') ||
-        lower.contains('clientexception')) {
-      return 'No se pudo conectar con el servidor. Verifica tu conexión a internet.';
-    }
-    return clean;
-  }
+  /// Delega en el sanitizador compartido (core/network/error_messages.dart).
+  String _sanitizeErrorMessage(String message) => sanitizeApiError(message);
 
   /// Limpia cualquier mensaje de error en la pantalla de login.
   void clearError() {

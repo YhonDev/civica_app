@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/network/error_messages.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -182,7 +183,7 @@ class _ResidenteDetailScreenState extends State<ResidenteDetailScreen> {
       }
     } catch (e) {
       if (mounted) {
-        TopToast.showError(context, 'Error al eliminar residente: $e');
+        TopToast.showError(context, 'Error al eliminar residente: ${sanitizeApiError(e)}');
       }
     }
   }

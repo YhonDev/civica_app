@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/network/error_messages.dart';
 import '../../../core/format/app_currency.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -55,7 +56,7 @@ class _ResidenteFinanzasScreenState extends State<ResidenteFinanzasScreen> {
       if (mounted) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al cargar deudas: $e')),
+          SnackBar(content: Text('Error al cargar deudas: ${sanitizeApiError(e)}')),
         );
       }
     }
