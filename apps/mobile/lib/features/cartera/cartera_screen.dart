@@ -133,7 +133,7 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                 ),
                 backgroundColor: AppColors.surface,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
                   side: BorderSide(
                     color: _selectedEtapa == null ? AppColors.primary : AppColors.border,
                   ),
@@ -157,7 +157,7 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                   ),
                   backgroundColor: AppColors.surface,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
                     side: BorderSide(
                       color: isSelected ? AppColors.primary : AppColors.border,
                     ),
@@ -194,7 +194,7 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                 ),
                 backgroundColor: AppColors.surface,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
                   side: BorderSide(
                     color: _selectedManzana == null ? AppColors.accentTeal : AppColors.border,
                   ),
@@ -215,7 +215,7 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                   ),
                   backgroundColor: AppColors.surface,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
                     side: BorderSide(
                       color: isSelected ? AppColors.accentTeal : AppColors.border,
                     ),
@@ -249,7 +249,7 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
         ),
         backgroundColor: AppColors.surface,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
           side: BorderSide(
             color: isSelected ? activeColor : AppColors.border,
           ),
@@ -832,7 +832,7 @@ class _CarteraSharedLayout extends StatelessWidget {
                         fillColor: AppColors.searchField,
                         contentPadding: const EdgeInsets.symmetric(vertical: 12),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                           borderSide: BorderSide.none,
                         ),
                       ),
@@ -842,7 +842,7 @@ class _CarteraSharedLayout extends StatelessWidget {
                   Container(
                     decoration: BoxDecoration(
                       color: AppColors.searchField,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                     ),
                     child: IconButton(
                       tooltip: state.showCalendar ? 'Ver Lista' : 'Ver Calendario',

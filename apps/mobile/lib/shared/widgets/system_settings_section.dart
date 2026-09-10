@@ -85,7 +85,7 @@ class _SystemSettingsSectionState extends State<SystemSettingsSection> {
         return Container(
           decoration: BoxDecoration(
             color: AppColors.background,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(AppSpacing.lg)),
           ),
           padding: EdgeInsets.only(
             left: AppSpacing.md,
@@ -103,7 +103,7 @@ class _SystemSettingsSectionState extends State<SystemSettingsSection> {
                     height: 4,
                     decoration: BoxDecoration(
                       color: AppColors.border,
-                      borderRadius: BorderRadius.circular(2),
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusProgress),
                     ),
                   ),
                 ),
@@ -152,7 +152,7 @@ class _SystemSettingsSectionState extends State<SystemSettingsSection> {
               curve: Curves.easeInOut,
               decoration: BoxDecoration(
                 color: isDark ? AppColors.darkCard : AppColors.lightCard,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                 border: Border.all(
                   color: (isDark ? AppColors.darkBorder : AppColors.lightBorder).withValues(alpha: 0.5),
                 ),
@@ -166,15 +166,15 @@ class _SystemSettingsSectionState extends State<SystemSettingsSection> {
               ),
               child: Material(
                 color: Colors.transparent,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                 child: Column(
                   children: [
                   ListTile(
                     leading: Container(
-                      padding: const EdgeInsets.all(8),
+                      padding: const EdgeInsets.all(AppSpacing.sm),
                       decoration: BoxDecoration(
                         color: AppColors.accentPurple.withValues(alpha: 0.10),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                       ),
                       child: const Icon(Icons.palette_outlined, color: AppColors.accentPurple, size: 20),
                     ),
@@ -207,10 +207,10 @@ class _SystemSettingsSectionState extends State<SystemSettingsSection> {
                   if (_isBiometricsSupported) ...[
                     ListTile(
                       leading: Container(
-                        padding: const EdgeInsets.all(8),
+                        padding: const EdgeInsets.all(AppSpacing.sm),
                         decoration: BoxDecoration(
                           color: AppColors.primary.withValues(alpha: 0.10),
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                         ),
                         child: const Icon(Icons.fingerprint_rounded, color: AppColors.primary, size: 20),
                       ),
@@ -241,10 +241,10 @@ class _SystemSettingsSectionState extends State<SystemSettingsSection> {
                   ],
                   ListTile(
                     leading: Container(
-                      padding: const EdgeInsets.all(8),
+                      padding: const EdgeInsets.all(AppSpacing.sm),
                       decoration: BoxDecoration(
                         color: AppColors.error.withValues(alpha: 0.10),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                       ),
                       child: const Icon(Icons.lock_outlined, color: AppColors.error, size: 20),
                     ),

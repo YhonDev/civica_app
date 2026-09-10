@@ -113,7 +113,7 @@ class _ReportesScreenState extends State<ReportesScreen> {
         Card(
           elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
             side: BorderSide(color: AppColors.border),
           ),
           child: Padding(
@@ -159,7 +159,7 @@ class _ReportesScreenState extends State<ReportesScreen> {
         Card(
           elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
             side: BorderSide(color: AppColors.border),
           ),
           child: Column(

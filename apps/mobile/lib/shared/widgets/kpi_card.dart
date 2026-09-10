@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 
@@ -92,7 +93,7 @@ class KPICard extends StatelessWidget {
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
                       color: themeColor.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                     ),
                     child: Icon(icon, color: themeColor, size: 18),
                   ),
@@ -113,7 +114,7 @@ class KPICard extends StatelessWidget {
               if (percentage != null) ...[
                 const SizedBox(height: 6),
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusProgress),
                   child: LinearProgressIndicator(
                     value: (percentage! / 100).clamp(0.0, 1.0),
                     backgroundColor: themeColor.withValues(alpha: 0.12),

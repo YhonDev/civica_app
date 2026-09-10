@@ -81,7 +81,7 @@ class _ProyectoDetailScreenState extends State<ProyectoDetailScreen> {
               padding: const EdgeInsets.all(AppSpacing.cardPadding),
               decoration: BoxDecoration(
                 color: AppColors.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
                 border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
               ),
               child: Row(
@@ -205,7 +205,7 @@ class _ProyectoDetailScreenState extends State<ProyectoDetailScreen> {
       padding: const EdgeInsets.all(AppSpacing.cardPadding),
       decoration: BoxDecoration(
         color: AppColors.card,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
         border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
       ),
       child: Column(

@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../../core/theme/app_spacing.dart';
 import 'package:flutter/material.dart';
 import '../theme/app_typography.dart';
 import '../theme/app_feedback.dart';
@@ -186,7 +187,7 @@ class _TopToastWidgetState extends State<_TopToastWidget>
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
                   color: cardBgColor,
-                  borderRadius: BorderRadius.circular(26),
+                  borderRadius: BorderRadius.circular(AppSpacing.heroRadius),
                   border: Border.all(color: borderColor, width: 1.2),
                   boxShadow: [
                     BoxShadow(

@@ -528,7 +528,7 @@ class _SolicitudBottomSheetState extends State<SolicitudBottomSheet> {
                 margin: const EdgeInsets.only(bottom: AppSpacing.md),
                 decoration: BoxDecoration(
                   color: AppColors.border,
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusProgress),
                 ),
               ),
             ),
@@ -541,7 +541,7 @@ class _SolicitudBottomSheetState extends State<SolicitudBottomSheet> {
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: _statusColor.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                   ),
                   child: Icon(
                     Icons.description_outlined,

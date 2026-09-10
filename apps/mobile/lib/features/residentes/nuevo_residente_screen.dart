@@ -264,7 +264,7 @@ class _NuevoResidenteScreenState extends State<NuevoResidenteScreen> {
                   padding: const EdgeInsets.all(AppSpacing.md),
                   decoration: BoxDecoration(
                     color: AppColors.info.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                     border: Border.all(color: AppColors.info.withValues(alpha: 0.3)),
                   ),
                   child: Row(

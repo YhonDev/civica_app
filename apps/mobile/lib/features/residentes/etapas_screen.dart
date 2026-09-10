@@ -229,7 +229,7 @@ class _EtapasScreenState extends State<EtapasScreen> {
                           ),
                           decoration: BoxDecoration(
                             color: AppColors.primary.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                           ),
                           child: Text(
                             '${_etapas.length} registradas',
@@ -276,7 +276,7 @@ class _EtapasScreenState extends State<EtapasScreen> {
                               decoration: BoxDecoration(
                                 color:
                                     AppColors.primary.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                               ),
                               child: Icon(
                                 Icons.folder_rounded,
@@ -412,7 +412,7 @@ class _EtapasScreenState extends State<EtapasScreen> {
                   labelText: 'Cantidad',
                   hintText: 'Ej. 5',
                   border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12)),
+                      borderRadius: BorderRadius.circular(AppSpacing.buttonRadius)),
                 ),
                 validator: (val) {
                   if (val == null || val.isEmpty) return 'Requerido';

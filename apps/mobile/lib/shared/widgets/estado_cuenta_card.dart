@@ -77,7 +77,7 @@ class EstadoCuentaCard extends StatelessWidget {
                   ),
                   if (tarifaActual != null)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
                       decoration: AppCardStyles.metaChip(),
                       child: Text(
                         'Tarifa: ${AppCurrency.formatOrNull((tarifaActual!['cobroMensual'] ?? tarifaActual!['cuotaMensual'] ?? tarifaActual!['montoSegunModalidad'] as num?)?.toInt(), fallback: 40000)}',

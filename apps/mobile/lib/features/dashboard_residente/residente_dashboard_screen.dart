@@ -484,10 +484,10 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
 
     if (isProgramada) {
       rightWidget = Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
         decoration: BoxDecoration(
           color: AppColors.border.withValues(alpha: 0.2),
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
         ),
         child: Text(
           'Programada',
@@ -504,10 +504,10 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
       final badgeLabel = isEnCamino ? 'En camino' : 'En solicitud';
 
       rightWidget = Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
         decoration: BoxDecoration(
           color: badgeColor.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
           border: Border.all(color: badgeColor.withValues(alpha: 0.4)),
         ),
         child: Row(
@@ -541,7 +541,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
           side: BorderSide(color: AppColors.success.withValues(alpha: 0.5)),
           foregroundColor: AppColors.success,
           backgroundColor: AppColors.success.withValues(alpha: 0.05),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusMd)),
         ),
       );
     }
@@ -829,12 +829,12 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
       color: Colors.transparent,
       child: InkWell(
         onTap: () => _openTicket(item),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
           ),
           child: Row(
             children: [
@@ -842,7 +842,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                 ),
                 child: Icon(icon, color: color, size: 20),
               ),
@@ -902,7 +902,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
                 color: AppColors.warning.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
               ),
               child: Text(
                 '${_solicitudesPendientes.length}',

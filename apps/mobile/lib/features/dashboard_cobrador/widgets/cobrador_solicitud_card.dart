@@ -50,7 +50,7 @@ class CobradorSolicitudCard extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.sm),
         decoration: BoxDecoration(
           color: AppColors.cobradorSubcard,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
           border: Border.all(
             color: enCamino ? AppColors.info.withValues(alpha: 0.6) : AppColors.border,
             width: enCamino ? 1.4 : 1.0,
@@ -64,7 +64,7 @@ class CobradorSolicitudCard extends StatelessWidget {
                 color: enCamino
                     ? AppColors.info.withValues(alpha: 0.12)
                     : AppColors.primary.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
               ),
               child: Icon(
                 enCamino ? Icons.directions_car_rounded : Icons.home_outlined,
@@ -97,7 +97,7 @@ class CobradorSolicitudCard extends StatelessWidget {
                           color: enCamino
                               ? AppColors.info.withValues(alpha: 0.15)
                               : AppColors.warning.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.circular(AppSpacing.radiusProgress),
                         ),
                         child: Text(
                           enCamino ? 'En camino' : 'En espera',
@@ -143,8 +143,8 @@ class CobradorSolicitudCard extends StatelessWidget {
                   visualDensity: VisualDensity.compact,
                   foregroundColor: AppColors.info,
                   side: BorderSide(color: AppColors.info.withValues(alpha: 0.5)),
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusMd)),
                 ),
               )
             else
@@ -157,7 +157,7 @@ class CobradorSolicitudCard extends StatelessWidget {
                   backgroundColor: AppColors.success,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusMd)),
                 ),
               ),
           ],
@@ -171,7 +171,7 @@ class CobradorSolicitudCard extends StatelessWidget {
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: AppColors.cobradorSubcard,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
         border: Border.all(
           color: enCamino ? AppColors.info.withValues(alpha: 0.6) : AppColors.border,
           width: enCamino ? 1.5 : 1.0,
@@ -200,7 +200,7 @@ class CobradorSolicitudCard extends StatelessWidget {
                         margin: const EdgeInsets.only(right: 6),
                         decoration: BoxDecoration(
                           color: AppColors.primary.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                         ),
                         child: Text(
                           '#$ordenFifo',
@@ -231,7 +231,7 @@ class CobradorSolicitudCard extends StatelessWidget {
                   color: enCamino
                       ? AppColors.info.withValues(alpha: 0.15)
                       : AppColors.warning.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                 ),
                 child: Text(
                   enCamino ? '🚀 En camino' : '⏳ En espera',
@@ -282,7 +282,7 @@ class CobradorSolicitudCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
                 color: isDark ? Colors.black.withValues(alpha: 0.2) : AppColors.screenBackground,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                 border: Border.all(color: AppColors.border.withValues(alpha: 0.6)),
               ),
               child: Text(
@@ -305,7 +305,7 @@ class CobradorSolicitudCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                 ),
                 child: Text(
                   AppCurrency.formatCOP(saldo.toInt()),
@@ -327,7 +327,7 @@ class CobradorSolicitudCard extends StatelessWidget {
                     foregroundColor: AppColors.info,
                     side: BorderSide(color: AppColors.info.withValues(alpha: 0.6)),
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusMd)),
                   ),
                 )
               else
@@ -340,7 +340,7 @@ class CobradorSolicitudCard extends StatelessWidget {
                     backgroundColor: AppColors.success,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusMd)),
                   ),
                 ),
             ],

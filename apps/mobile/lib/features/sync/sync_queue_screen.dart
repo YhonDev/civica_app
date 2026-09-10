@@ -184,7 +184,7 @@ class _SyncQueueScreenState extends State<SyncQueueScreen> {
                               return Card(
                                 elevation: 0,
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
+                                  borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
                                   side: BorderSide(color: statusColor.withValues(alpha: 0.3)),
                                 ),
                                 child: Padding(
@@ -227,7 +227,7 @@ class _SyncQueueScreenState extends State<SyncQueueScreen> {
                                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                             decoration: BoxDecoration(
                                               color: statusColor.withValues(alpha: 0.15),
-                                              borderRadius: BorderRadius.circular(12),
+                                              borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                                             ),
                                             child: Text(
                                               statusLabel,
@@ -240,12 +240,12 @@ class _SyncQueueScreenState extends State<SyncQueueScreen> {
                                             const SizedBox(height: 6),
                                             InkWell(
                                               onTap: _syncing ? null : () => _reintentarItem(id),
-                                              borderRadius: BorderRadius.circular(8),
+                                              borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                                               child: Container(
                                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                                 decoration: BoxDecoration(
                                                   color: AppColors.error.withValues(alpha: 0.1),
-                                                  borderRadius: BorderRadius.circular(8),
+                                                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                                                   border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
                                                 ),
                                                 child: Row(

@@ -51,7 +51,7 @@ class _UrbanizacionScreenState extends State<UrbanizacionScreen> {
       isScrollControlled: true,
       backgroundColor: AppColors.background,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.chipRadius)),
       ),
       builder: (ctx) => Padding(
         padding: EdgeInsets.only(
@@ -83,7 +83,7 @@ class _UrbanizacionScreenState extends State<UrbanizacionScreen> {
                 decoration: InputDecoration(
                   labelText: 'Nombre del Proyecto',
                   hintText: 'Ej. Urbanización Los Pinos',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppSpacing.buttonRadius)),
                 ),
                 validator: (val) => val == null || val.isEmpty ? 'El nombre es requerido' : null,
               ),
@@ -204,12 +204,12 @@ class _UrbanizacionScreenState extends State<UrbanizacionScreen> {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
       child: Container(
         padding: const EdgeInsets.all(AppSpacing.cardPadding),
         decoration: BoxDecoration(
           color: isActive ? AppColors.primary.withValues(alpha: 0.1) : AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
           border: Border.all(
             color: isActive 
               ? AppColors.primary.withValues(alpha: 0.2) 
@@ -252,7 +252,7 @@ class _UrbanizacionScreenState extends State<UrbanizacionScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(
                           color: isActive ? AppColors.success.withValues(alpha: 0.2) : AppColors.warning.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                         ),
                         child: Text(
                           status,

@@ -259,7 +259,7 @@ class _CasasScreenState extends State<CasasScreen> {
                 decoration: InputDecoration(
                   labelText: 'Cantidad de Casas',
                   hintText: 'Ej. 10',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppSpacing.buttonRadius)),
                 ),
                 validator: (val) {
                   if (val == null || val.trim().isEmpty) return 'Requerido';
@@ -575,7 +575,7 @@ class _CasasScreenState extends State<CasasScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
                       color: AppColors.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                     ),
                     child: Text(
                       '${activeCasas.length} registradas',
@@ -646,7 +646,7 @@ class _CasasScreenState extends State<CasasScreen> {
                                   decoration: BoxDecoration(
                                     color: (isOcupada ? AppColors.success : AppColors.primary)
                                         .withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(10),
+                                    borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                                   ),
                                   child: Icon(
                                     Icons.home_rounded,
@@ -671,7 +671,7 @@ class _CasasScreenState extends State<CasasScreen> {
                                           color: isOcupada
                                               ? AppColors.success.withValues(alpha: 0.12)
                                               : AppColors.surface,
-                                          borderRadius: BorderRadius.circular(4),
+                                          borderRadius: BorderRadius.circular(AppSpacing.radiusProgress),
                                           border: Border.all(
                                             color: isOcupada
                                                 ? AppColors.success.withValues(alpha: 0.3)

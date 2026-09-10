@@ -140,7 +140,7 @@ class TicketBottomSheet extends StatelessWidget {
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: AppColors.success.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                 ),
                 child: Icon(
                   Icons.receipt_long_outlined,
@@ -274,7 +274,7 @@ class TicketBottomSheet extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

@@ -134,11 +134,11 @@ class _CalendarViewState extends State<CalendarView> {
                   widget.onDaySelected!(date, dayCobros);
                 }
               },
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
               child: Container(
                 decoration: BoxDecoration(
                   border: isToday ? Border.all(color: AppColors.primary, width: 1.5) : null,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                   color: isToday ? AppColors.primary.withValues(alpha: 0.05) : null,
                 ),
                 child: Column(

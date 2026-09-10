@@ -196,6 +196,10 @@ consolidación.
 - Radios:
   - `cardRadius` 16, `chipRadius` 20, `buttonRadius` 12, `inputRadius` 12,
     `bottomSheetRadius` 20.
+  - Escala completa de radios: `radiusSm` 6, `radiusMd` 8, `radiusLg` 10,
+    `radiusProgress` 4 (barras de progreso/pills finas), `radiusXl` 22
+    (tiles héroe), `heroRadius` 28 (contenedores héroe del modo inmersivo),
+    `radiusCircle` 999 (círculos perfectos).
 - Helpers:
   - `screenEdgeInsets`, `cardEdgeInsets`.
 
@@ -292,11 +296,19 @@ consolidación.
 
 ## 9. Reglas de guardian
 
-> **Chequeo automático:** `apps/mobile/test/design_token_guard_test.dart` (incluido en
-> `flutter test` y en CI) escanea `lib/` y falla si detecta `fontSize:` inline fuera de
-> `app_typography.dart`, `NumberFormat` fuera de `app_currency.dart`, o hex hardcodeado
-> `Color(0x…)` fuera de `app_colors.dart`. Estas reglas se aplican en la práctica, no
-> solo en papel; si el guard marca tu PR, mueve el valor a un token.
+> **Chequeo automático (dos capas):**
+> 1. `apps/mobile/test/design_token_guard_test.dart` (incluido en `flutter test` y como
+>    paso explícito `Design token guard (test)` en CI) escanea `lib/` y falla si detecta
+>    `fontSize:` inline, `NumberFormat`, hex `Color(0x…)`, radios con literal
+>    (`BorderRadius.circular(<n>)` / `Radius.circular(<n>)`) o `EdgeInsets` compuestos
+>    solo de valores tokenizados {4, 8, 16, 20, 24, 32} escritos con números — todo
+>    fuera de `core/theme/` y `core/format/`. El fallo incluye ruta, línea, columna y
+>    la regla infringida.
+> 2. `scripts/check_design_system.sh` (paso `Design system guard` en CI) es el espejo
+>    rápido de los patrones de texto.
+>
+> Estas reglas se aplican en la práctica, no solo en papel; si el guard marca tu PR,
+> mueve el valor a un token.
 
 ### 9.1 Reglas generales
 
@@ -329,10 +341,14 @@ consolidación.
 - Los colores semánticos (`success`, `error`, `warning`, `info`) existen para estados y
   feedback; usarlos como semántica, no como paleta decorativa arbitraria.
 
-### 9.5 Espaciado
+### 9.5 Espaciado y radios
 
 - Reusa `AppSpacing` antes de declarar offsets a mano.
-- Mantener radios consistentes mediante `AppSpacing.cardRadius`, `buttonRadius`, etc.
+- Mantener radios consistentes mediante `AppSpacing.cardRadius`, `buttonRadius`,
+  `radiusSm`… — nunca `BorderRadius.circular(<literal>)` fuera de `core/theme/`.
+- Un `EdgeInsets` cuyos valores son todos tokens de espaciado (4, 8, 16, 20, 24, 32)
+  debe escribirse con los tokens (`AppSpacing.xs/sm/md/screenPadding/lg/xl`); los
+  offsets posicionales no tokenizados siguen permitidos.
 
 ### 9.6 Responsive
 

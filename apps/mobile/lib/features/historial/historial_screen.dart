@@ -172,13 +172,13 @@ class _HistorialScreenState extends State<HistorialScreen> {
                               return Card(
                                 margin: const EdgeInsets.only(bottom: AppSpacing.sm),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
+                                  borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
                                   side: BorderSide(color: AppColors.success.withValues(alpha: 0.3)),
                                 ),
                                 color: AppColors.elevatedCard,
                                 elevation: 1,
                                 child: InkWell(
-                                  borderRadius: BorderRadius.circular(16),
+                                  borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
                                   onTap: () {
                                     TicketBottomSheet.show(
                                       context,
@@ -195,7 +195,7 @@ class _HistorialScreenState extends State<HistorialScreen> {
                                     );
                                   },
                                   child: Padding(
-                                    padding: const EdgeInsets.all(16),
+                                    padding: const EdgeInsets.all(AppSpacing.md),
                                     child: Row(
                                       children: [
                                         Container(
@@ -229,7 +229,7 @@ class _HistorialScreenState extends State<HistorialScreen> {
                                                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                                       decoration: BoxDecoration(
                                                         color: AppColors.primary.withValues(alpha: 0.12),
-                                                        borderRadius: BorderRadius.circular(8),
+                                                        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                                                         border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
                                                       ),
                                                       child: Text(
@@ -456,7 +456,7 @@ class _HistorialScreenState extends State<HistorialScreen> {
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
                       color: statusColor.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                     ),
                     child: Icon(
                       Icons.description_outlined,

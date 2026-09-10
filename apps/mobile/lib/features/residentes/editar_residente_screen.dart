@@ -242,7 +242,7 @@ class _EditarResidenteScreenState extends State<EditarResidenteScreen> {
                   padding: const EdgeInsets.all(AppSpacing.md),
                   decoration: BoxDecoration(
                     color: AppColors.success.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                     border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
                   ),
                   child: Row(

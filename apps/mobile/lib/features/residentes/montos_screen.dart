@@ -148,7 +148,7 @@ class _MontosScreenState extends State<MontosScreen> {
                     padding: const EdgeInsets.all(AppSpacing.md),
                     decoration: BoxDecoration(
                       color: AppColors.primary.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
                       border: Border.all(
                         color: AppColors.primary.withValues(alpha: 0.2),
                       ),
@@ -216,12 +216,12 @@ class _MontosScreenState extends State<MontosScreen> {
                         return Card(
                           elevation: 0,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
                             side: BorderSide(color: AppColors.border),
                           ),
                           child: ListTile(
                             leading: Container(
-                              padding: const EdgeInsets.all(8),
+                              padding: const EdgeInsets.all(AppSpacing.sm),
                               decoration: BoxDecoration(
                                 color: AppColors.success.withValues(alpha: 0.1),
                                 shape: BoxShape.circle,

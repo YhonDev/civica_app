@@ -33,7 +33,7 @@ class BalanceAnualBottomSheet extends StatelessWidget {
       height: MediaQuery.of(context).size.height * 0.85,
       decoration: BoxDecoration(
         color: AppColors.background,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(AppSpacing.lg)),
       ),
       child: Column(
         children: [
@@ -45,7 +45,7 @@ class BalanceAnualBottomSheet extends StatelessWidget {
               height: 4,
               decoration: BoxDecoration(
                 color: AppColors.border,
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: BorderRadius.circular(AppSpacing.radiusProgress),
               ),
             ),
           ),
@@ -106,7 +106,7 @@ class BalanceAnualBottomSheet extends StatelessWidget {
                         : porcentajeMeta >= 50
                             ? AppColors.warning.withValues(alpha: 0.1)
                             : AppColors.error.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
                   ),
                   child: Text(
                     '${porcentajeMeta.toStringAsFixed(0)}%',
@@ -142,7 +142,7 @@ class BalanceAnualBottomSheet extends StatelessWidget {
                   margin: const EdgeInsets.only(bottom: AppSpacing.sm),
                   elevation: 0,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                     side: BorderSide(
                       color: AppColors.border.withValues(alpha: 0.5),
                     ),
@@ -175,7 +175,7 @@ class BalanceAnualBottomSheet extends StatelessWidget {
                               color: pctRecaudo >= 80
                                   ? AppColors.success.withValues(alpha: 0.1)
                                   : AppColors.warning.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                             ),
                             child: Text(
                               '${pctRecaudo.toStringAsFixed(0)}%',

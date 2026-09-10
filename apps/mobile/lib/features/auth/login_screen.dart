@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../../core/theme/app_spacing.dart';
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
 import 'package:flutter/material.dart';
@@ -129,7 +130,7 @@ class _LoginScreenState extends State<LoginScreen> {
             child: LayoutBuilder(
               builder: (context, constraints) {
                 return SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.lg),
                   child: ConstrainedBox(
                     constraints: BoxConstraints(
                       minHeight: (constraints.maxHeight - 48).clamp(0.0, double.infinity),
@@ -153,7 +154,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   padding: const EdgeInsets.all(6),
                                   decoration: BoxDecoration(
                                     color: colorScheme.surface,
-                                    borderRadius: BorderRadius.circular(22),
+                                    borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
                                     boxShadow: [
                                       BoxShadow(
                                         color: colorScheme.primary.withValues(alpha: 0.12),
@@ -163,7 +164,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ],
                                   ),
                                   child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(16),
+                                    borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
                                     child: Image.asset(
                                       'img/logo.png',
                                       fit: BoxFit.contain,
@@ -294,7 +295,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 // Error message
                                 if (state.errorMessage != null)
                                   Padding(
-                                    padding: const EdgeInsets.only(bottom: 8),
+                                    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                                     child: Text(
                                       state.errorMessage!,
                                       style: TextStyle(color: colorScheme.error),
@@ -334,7 +335,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                           vertical: 12,
                                         ),
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(12),
+                                          borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                                         ),
                                       ),
                                     ),
@@ -356,7 +357,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                             vertical: 12,
                                           ),
                                           shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(12),
+                                            borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                                           ),
                                         ),
                                       ),

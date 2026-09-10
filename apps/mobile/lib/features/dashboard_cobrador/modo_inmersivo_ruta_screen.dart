@@ -338,12 +338,12 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
           filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
           child: Dialog(
             backgroundColor: Colors.transparent,
-            insetPadding: const EdgeInsets.all(24),
+            insetPadding: const EdgeInsets.all(AppSpacing.lg),
             child: Container(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               decoration: BoxDecoration(
                 color: AppColors.screenBackground.withValues(alpha: 0.95),
-                borderRadius: BorderRadius.circular(28),
+                borderRadius: BorderRadius.circular(AppSpacing.heroRadius),
                 border: Border.all(
                   color: AppColors.borderStrong,
                 ),
@@ -360,7 +360,7 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
                 children: [
                   // Icono de advertencia circular en rojo
                   Container(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(AppSpacing.md),
                     decoration: BoxDecoration(
                       color: AppColors.error.withValues(alpha: 0.15),
                       shape: BoxShape.circle,
@@ -402,11 +402,11 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
                     child: FilledButton.icon(
                       style: FilledButton.styleFrom(
                         backgroundColor: AppColors.primary,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
                         elevation: 4,
                         shadowColor: AppColors.primary.withValues(alpha: 0.35),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(18),
+                          borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                         ),
                       ),
                       onPressed: () => Navigator.of(dialogContext).pop(false),
@@ -429,7 +429,7 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
                           side: BorderSide(color: AppColors.error.withValues(alpha: 0.6), width: 1.2),
                           padding: const EdgeInsets.symmetric(vertical: 9),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                           ),
                         ),
                         onPressed: () => Navigator.of(dialogContext).pop(true),
@@ -549,7 +549,7 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
         children: [
           IconButton(
             icon: Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(AppSpacing.sm),
               decoration: BoxDecoration(
                 color: AppColors.cobradorCard,
                 shape: BoxShape.circle,
@@ -599,7 +599,7 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
         color: AppColors.cobradorCard.withValues(alpha: isDark ? 0.8 : 0.9),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
         border: Border.all(color: AppColors.borderStrong),
       ),
       child: Column(
@@ -636,7 +636,7 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
           ),
           const SizedBox(height: 8),
           ClipRRect(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
             child: LinearProgressIndicator(
               value: progress,
               minHeight: 8,
@@ -675,7 +675,7 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 250),
-                margin: const EdgeInsets.symmetric(horizontal: 4),
+                margin: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
                 height: 8,
                 width: isCurrent ? 24 : 8,
                 decoration: BoxDecoration(
@@ -684,7 +684,7 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
                       : isPassed || isPagado
                           ? AppColors.success
                           : (isDark ? Colors.white24 : AppColors.border),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                   boxShadow: isCurrent
                       ? [
                           BoxShadow(
@@ -733,7 +733,7 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
           padding: const EdgeInsets.all(AppSpacing.lg),
           decoration: BoxDecoration(
             color: statusBgColor,
-            borderRadius: BorderRadius.circular(28),
+            borderRadius: BorderRadius.circular(AppSpacing.heroRadius),
             border: Border.all(
               color: isSelected ? statusBorderColor : statusBorderColor.withValues(alpha: 0.5),
               width: isSelected ? 2.5 : 1.2,
@@ -759,7 +759,7 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
                       color: AppColors.primary.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                       border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
                     ),
                     child: Text(
@@ -777,7 +777,7 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: statusBorderColor.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                       border: Border.all(color: statusBorderColor.withValues(alpha: 0.3)),
                     ),
                     child: Row(
@@ -874,7 +874,7 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
                   padding: const EdgeInsets.all(AppSpacing.md),
                   decoration: BoxDecoration(
                     color: AppColors.warning.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                     border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
                   ),
                   child: Column(
@@ -907,7 +907,7 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
                 padding: const EdgeInsets.all(AppSpacing.lg),
                 decoration: BoxDecoration(
                   color: isDark ? AppColors.screenBackground.withValues(alpha: 0.85) : AppColors.cobradorCard,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
                   border: Border.all(color: AppColors.borderStrong),
                 ),
                 child: Row(
@@ -991,7 +991,7 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
                       width: 1.5,
                     ),
                     padding: const EdgeInsets.symmetric(vertical: 13),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.cardRadius)),
                   ),
                   onPressed: () {
                     if (isMora) {
@@ -1040,7 +1040,7 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
             Material(
               color: Colors.transparent,
               child: InkWell(
-                borderRadius: BorderRadius.circular(26),
+                borderRadius: BorderRadius.circular(AppSpacing.heroRadius),
                 onTap: _currentIndex > 0
                     ? () {
                         _pageController.previousPage(
@@ -1090,7 +1090,7 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
               child: Container(
                 height: 56,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
                   boxShadow: [
                     BoxShadow(
                       color: AppColors.primary.withValues(alpha: 0.45),
@@ -1104,7 +1104,7 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
                     backgroundColor: AppColors.primary,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
                     ),
                   ),
                   onPressed: () => _abrirCobroRapido(item),
@@ -1123,7 +1123,7 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
             Material(
               color: Colors.transparent,
               child: InkWell(
-                borderRadius: BorderRadius.circular(26),
+                borderRadius: BorderRadius.circular(AppSpacing.heroRadius),
                 onTap: _currentIndex < _items.length - 1
                     ? () {
                         _pageController.nextPage(
@@ -1262,7 +1262,7 @@ class _MapGridBackgroundPainter extends CustomPainter {
       for (double x = -size.width * 0.5; x < size.width * 2.0; x += blockW + 28) {
         final rect = RRect.fromRectAndRadius(
           Rect.fromLTWH(x, y, blockW, blockH),
-          const Radius.circular(8),
+          const Radius.circular(AppSpacing.radiusMd),
         );
         canvas.drawRRect(rect, blockPaint);
         canvas.drawRRect(rect, blockBorderPaint);

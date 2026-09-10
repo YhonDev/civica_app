@@ -140,7 +140,7 @@ class _ComunidadHubCard extends StatelessWidget {
                   height: 46,
                   decoration: BoxDecoration(
                     color: accentColor.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                   ),
                   child: Icon(
                     icon,

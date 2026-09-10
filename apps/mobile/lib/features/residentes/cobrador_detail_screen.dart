@@ -140,7 +140,7 @@ class _CobradorDetailScreenState extends State<CobradorDetailScreen> {
               padding: const EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(
                 color: AppColors.card,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
                 border: Border.all(color: AppColors.border),
               ),
               child: Row(
@@ -197,7 +197,7 @@ class _CobradorDetailScreenState extends State<CobradorDetailScreen> {
             Card(
               elevation: 0,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
                 side: BorderSide(color: AppColors.border),
               ),
               child: ListTile(
@@ -240,7 +240,7 @@ class _CobradorDetailScreenState extends State<CobradorDetailScreen> {
               padding: const EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(
                 color: Colors.red.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
                 border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
               ),
               child: Column(
@@ -272,7 +272,7 @@ class _CobradorDetailScreenState extends State<CobradorDetailScreen> {
                         backgroundColor: Colors.red,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                         ),
                       ),
                       onPressed: _isDeleting ? null : () => _confirmarEliminar(),

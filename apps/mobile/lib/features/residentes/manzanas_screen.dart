@@ -261,7 +261,7 @@ class _ManzanasScreenState extends State<ManzanasScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
                       color: AppColors.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                     ),
                     child: Text(
                       '${activeManzanas.length} registradas',
@@ -323,7 +323,7 @@ class _ManzanasScreenState extends State<ManzanasScreen> {
                               height: 38,
                               decoration: BoxDecoration(
                                 color: AppColors.primary.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                               ),
                               child: Icon(
                                 Icons.grid_view_rounded,

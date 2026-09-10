@@ -154,7 +154,7 @@ class _ResidentesScreenState extends State<ResidentesScreen> {
                   filled: true,
                   fillColor: AppColors.card,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                     borderSide: BorderSide.none,
                   ),
                   contentPadding: const EdgeInsets.symmetric(vertical: 12),
@@ -240,7 +240,7 @@ class _ResidentesScreenState extends State<ResidentesScreen> {
       padding: const EdgeInsets.all(AppSpacing.cardPadding),
       decoration: BoxDecoration(
         color: AppColors.card,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
         border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
       ),
       child: Column(
@@ -318,7 +318,7 @@ class _ResidentesScreenState extends State<ResidentesScreen> {
               selectedColor: AppColors.primary,
               checkmarkColor: Colors.white,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
                 side: BorderSide(
                   color: isSelected ? AppColors.primary : AppColors.border,
                 ),
