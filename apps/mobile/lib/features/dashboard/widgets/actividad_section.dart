@@ -17,6 +17,83 @@ class ActividadSection extends StatelessWidget {
 
   const ActividadSection({super.key, required this.actividad});
 
+  /// Formatea la descripción secundaria de la actividad evitando redundancias.
+  /// Para pagos, expone únicamente la cifra neta formateada (ej. `$ 10.000`),
+  /// omitiendo sufijos "COP", repetición de "Pago registrado" o mención de "cuotas".
+  static String formatDescripcion(ActividadItem a) {
+    final isPago = a.tipo.toLowerCase().contains('pago') || a.tipo.toLowerCase().contains('cobro');
+    if (isPago) {
+      if (a.metadata['monto'] != null) {
+        return AppCurrency.format(AppCurrency.centsFromJson(a.metadata['monto']));
+      }
+      final match = RegExp(r'(?:\$\s*|de\s+)?([\d\.,]{4,})(?:\s*COP)?', caseSensitive: false)
+          .firstMatch(a.descripcion);
+      if (match != null) {
+        final digits = match.group(1)!.replaceAll(RegExp(r'[^0-9]'), '');
+        final val = num.tryParse(digits);
+        if (val != null && val > 0) {
+          return AppCurrency.format(val);
+        }
+      }
+    }
+    return a.descripcion
+        .replaceAll(': undefined', '')
+        .replaceAll(': null', '')
+        .replaceAll(' COP', '')
+        .trim();
+  }
+
+  /// Abre el recibo digital de pago configurando con precisión los datos:
+  /// monto normalizado (de centavos a pesos), residente real, ubicación formateada
+  /// y cobrador real.
+  static void showPagoTicket(BuildContext context, ActividadItem orig, {String? itemId}) {
+    final effectiveId = itemId ?? orig.id;
+    final montoRaw = orig.metadata['monto'];
+    int montoVal;
+    if (montoRaw != null) {
+      montoVal = AppCurrency.centsFromJson(montoRaw);
+    } else {
+      final match = RegExp(r'(?:\$\s*|de\s+)?([\d\.,]{4,})(?:\s*COP)?', caseSensitive: false)
+          .firstMatch(orig.descripcion);
+      if (match != null) {
+        final digits = match.group(1)!.replaceAll(RegExp(r'[^0-9]'), '');
+        montoVal = int.tryParse(digits) ?? 10000;
+      } else {
+        montoVal = 10000;
+      }
+    }
+
+    final cobradorVal = orig.metadata['cobradorNombre'] as String? ?? orig.usuario;
+    final residenteVal = orig.metadata['residenteNombre'] as String? ??
+        orig.metadata['residente'] as String? ??
+        'Residente';
+    final etapa = orig.metadata['etapa'] as String?;
+    final manzana = orig.metadata['manzana'] as String?;
+    final casa = orig.metadata['casa'] as String? ?? orig.metadata['inmueble'] as String?;
+    final ubicacion = [
+      if (etapa != null && etapa.isNotEmpty) etapa,
+      if (manzana != null && manzana.isNotEmpty) manzana,
+      if (casa != null && casa.isNotEmpty) casa,
+    ].join(' · ');
+    final casaVal = ubicacion.isNotEmpty ? ubicacion : 'Inmueble';
+
+    TicketBottomSheet.show(
+      context,
+      TicketData(
+        numero: orig.metadata['nroRecibo'] as String? ??
+            orig.metadata['clientPaymentId'] as String? ??
+            'REC-${effectiveId.substring(0, effectiveId.length >= 8 ? 8 : effectiveId.length).toUpperCase()}',
+        fecha: orig.timestamp,
+        residente: residenteVal,
+        casa: casaVal,
+        monto: montoVal,
+        metodo: orig.metadata['metodo'] as String? ?? 'Efectivo',
+        estado: 'Pagado',
+        cobrador: cobradorVal,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Rule: If there are no real activities, do not show the section at all.
@@ -26,7 +103,6 @@ class ActividadSection extends StatelessWidget {
 
     // Display the top 2 most recent real activities from the database
     final items = actividad.take(2).map((a) {
-      final cleanDesc = a.descripcion.replaceAll(': undefined', '').replaceAll(': null', '');
       final isPago = a.tipo.toLowerCase().contains('pago') || a.tipo.toLowerCase().contains('cobro');
       final isSolicitud = a.tipo.toLowerCase().contains('solicitud');
       final isResidente = a.tipo.toLowerCase().contains('residente');
@@ -40,7 +116,7 @@ class ActividadSection extends StatelessWidget {
       return TimelineItem(
         id: a.id,
         tipo: a.tipo,
-        descripcion: cleanDesc,
+        descripcion: formatDescripcion(a),
         usuario: a.usuario,
         timestamp: a.timestamp,
         hace: a.hace,
@@ -210,24 +286,7 @@ class ActividadSection extends StatelessWidget {
                   ),
                 );
               } else if (isPago) {
-                // Real ticket bottom sheet
-                final montoRaw = orig.metadata['monto'] as num?;
-                final montoVal = montoRaw != null ? montoRaw.toInt() : 0;
-                final cobradorVal = orig.metadata['cobradorNombre'] as String? ?? orig.usuario;
-
-                TicketBottomSheet.show(
-                  context,
-                  TicketData(
-                    numero: 'REC-${item.id.substring(0, 8).toUpperCase()}',
-                    fecha: item.timestamp,
-                    residente: orig.usuario,
-                    casa: orig.descripcion.replaceAll(': undefined', ''),
-                    monto: montoVal,
-                    metodo: 'Efectivo',
-                    estado: 'Pagado',
-                    cobrador: cobradorVal,
-                  ),
-                );
+                showPagoTicket(context, orig, itemId: item.id);
               } else {
                 // Real solicitud bottom sheet
                 SolicitudBottomSheet.show(

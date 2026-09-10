@@ -10,9 +10,9 @@ import 'models/dashboard_data.dart';
 
 import '../../shared/widgets/screen_header.dart';
 import '../../shared/widgets/empty_state.dart';
-import '../../shared/widgets/ticket_bottom_sheet.dart';
 import '../../shared/widgets/solicitud_bottom_sheet.dart';
 import '../../shared/widgets/solicitud_card.dart';
+import 'widgets/actividad_section.dart';
 
 class ActividadAdminScreen extends StatefulWidget {
   const ActividadAdminScreen({super.key});
@@ -101,14 +101,27 @@ class _ActividadAdminScreenState extends State<ActividadAdminScreen> {
                       : SingleChildScrollView(
                           padding: const EdgeInsets.all(AppSpacing.screenPadding),
                           child: TimelineWidget(
-                            items: _filteredItems.map((a) => TimelineItem(
-                              id: a.id,
-                              tipo: a.tipo,
-                              descripcion: a.descripcion.replaceAll(': undefined', ''),
-                              usuario: a.usuario,
-                              timestamp: a.timestamp,
-                              hace: a.hace,
-                            )).toList(),
+                            items: _filteredItems.map((a) {
+                              final isPago = a.tipo.toLowerCase().contains('pago') || a.tipo.toLowerCase().contains('cobro');
+                              final isSolicitud = a.tipo.toLowerCase().contains('solicitud');
+                              final isResidente = a.tipo.toLowerCase().contains('residente');
+
+                              final contextTitle = isPago
+                                  ? 'Pago Registrado'
+                                  : (isSolicitud
+                                      ? 'Solicitud de Revisión'
+                                      : (isResidente ? 'Residente Actualizado' : null));
+
+                              return TimelineItem(
+                                id: a.id,
+                                tipo: a.tipo,
+                                descripcion: ActividadSection.formatDescripcion(a),
+                                usuario: a.usuario,
+                                timestamp: a.timestamp,
+                                hace: a.hace,
+                                contexto: contextTitle,
+                              );
+                            }).toList(),
                             onItemTap: _mostrarDetalleActividad,
                           ),
                         ),
@@ -171,24 +184,7 @@ class _ActividadAdminScreenState extends State<ActividadAdminScreen> {
     final isJornada = item.tipo.toLowerCase().contains('jornada') || item.tipo.toLowerCase().contains('ruta');
 
     if (isPago) {
-      final meta = orig.metadata;
-      final parsedMonto = meta['monto'] is int
-          ? meta['monto'] as int
-          : (meta['monto'] is double ? (meta['monto'] as double).toInt() : 2000000);
-
-      TicketBottomSheet.show(
-        context,
-        TicketData(
-          numero: meta['clientPaymentId'] as String? ?? 'REC-${item.id.substring(0, 8).toUpperCase()}',
-          fecha: item.timestamp,
-          residente: orig.usuario,
-          casa: orig.descripcion.replaceAll(': undefined', ''),
-          monto: parsedMonto,
-          metodo: 'Efectivo',
-          estado: 'Pagado',
-          cobrador: meta['cobradorNombre'] as String? ?? orig.usuario,
-        ),
-      );
+      ActividadSection.showPagoTicket(context, orig, itemId: item.id);
       return;
     }
 

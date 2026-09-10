@@ -56,6 +56,37 @@ abstract final class AppCurrency {
   /// `10.000` — dígitos agrupados para el input de monto (sin símbolo;
   /// el `$ ` lo aporta el `prefixText` del campo).
   static String formatInput(int amount) => _number.format(amount);
+
+  // ── Conversión de unidades ──────────────────────────────────────────────────
+
+  /// Convierte cantidades en centavos (entero) a pesos (entero).
+  ///
+  /// El backend y el motor de recaudo trabajan en centavos (1 peso = 100
+  /// centavos). Esta función es la única forma de convertir centavos → pesos:
+  /// evita la heurística `'si > 1000 entonces /100'` que corría mal en
+  /// cualquier monto ya expresado en pesos (p. ej. 1.500 pesos en centavos
+  /// → se partiría a 15, en pesos → se mostraría mal).
+  static int centsToPesos(int cents) => (cents / 100).round();
+
+  /// Convierte pesos (entero) a centavos (entero).
+  static int pesosToCents(int pesos) => pesos * 100;
+
+  /// Parsea un código JSON numérico de centavos a pesos.
+  ///
+  /// Equivalente seguro a `((json['monto'] as int) / 100).round()`:
+  /// la función documenta la convención de unidades y aisla el round.
+  static int centsFromJson(dynamic value) =>
+      centsToPesos((value is num ? value.toDouble() : double.tryParse(value.toString()) ?? 0).round());
+
+  /// Convierte centavos → pesos en formato `$ 10.000` en un paso.
+  static String formatCents(int cents) => format(centsToPesos(cents));
+
+  // ── Sanity check de convención (fácil de olvidar; actualizable) ──────────────
+
+  /// Lanza `AssertionError` si la app utiliza alguna convención de centavos
+  /// inconsistentemente (el campo de entrega de la aura es dinámico y afecta
+  /// al entorno de producción: prefiere fórmulas auditadas en vez de esto).
+  ///
 }
 
 /// Formatea el monto mientras se escribe: `10000` → `10.000`.
