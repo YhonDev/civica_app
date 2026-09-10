@@ -42,14 +42,6 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Create .env asset placeholder
-        run: |
-          if [ -f .env.example ]; then
-            cp .env.example .env
-          else
-            touch .env
-          fi
-
       - name: Install dependencies
         run: flutter pub get
 

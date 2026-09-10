@@ -1,8 +1,7 @@
-import 'package:flutter/foundation.dart' show kReleaseMode, kIsWeb;
+import 'package:flutter/foundation.dart' show kDebugMode, kReleaseMode, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'core/database/app_database.dart';
 import 'core/network/api_client.dart';
 import 'core/network/api_health_service.dart';
@@ -25,15 +24,10 @@ void main() async {
     await AppDatabase.init();
   }
 
-  try {
-    await dotenv.load(fileName: ".env");
-  } catch (e) {
-    debugPrint("Variables de entorno (.env) no cargadas: $e");
-  }
-
   ApiClient.init(
     baseUrl: detectBaseUrl(),
-    enableLogging: !kReleaseMode,
+    // kDebugMode (no !kReleaseMode): en profile tampoco se loguean URIs.
+    enableLogging: kDebugMode,
   );
 
   final detector = ConnectivityDetector.init();

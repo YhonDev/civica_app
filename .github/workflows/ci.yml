@@ -152,12 +152,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # .env esta en .gitignore (contiene la anon key local) pero pubspec.yaml
-      # lo declara como asset: flutter analyze falla si el archivo no existe.
-      # Se crea desde el placeholder para que analyze/test corran limpio en CI.
-      - name: Create .env asset from example (CI placeholder)
-        run: cp .env.example .env
-
       - uses: subosito/flutter-action@v2
         with:
           channel: stable

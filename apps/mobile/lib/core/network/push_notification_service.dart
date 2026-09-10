@@ -11,6 +11,33 @@ class PushNotificationService {
 
   PushNotificationService._internal();
 
+  /// Prefijos de ruta permitidos para deep links de push (fail-closed).
+  /// Cualquier enlace que no empiece por uno de estos se descarta.
+  static const List<String> kAllowedDeepLinkPrefixes = [
+    '/ticket/',
+    '/jornada',
+    '/solicitudes',
+    '/solicitud-nueva',
+    '/estado',
+    '/cartera',
+    '/mi-casa',
+    '/historial',
+    '/sync-queue',
+  ];
+
+  /// Valida un deep link entrante de push: debe ser una ruta interna
+  /// conocida. Rechaza esquemas externos (http://…), dobles slashes
+  /// (`//host`) y rutas desconocidas. Visible para tests.
+  @visibleForTesting
+  bool isAllowedDeepLink(String? deepLink) {
+    if (deepLink == null) return false;
+    final link = deepLink.trim();
+    if (link.isEmpty) return false;
+    if (!link.startsWith('/')) return false;
+    if (link.contains('//')) return false; // esquema o protocol-relative
+    return kAllowedDeepLinkPrefixes.any(link.startsWith);
+  }
+
   String? _fcmToken;
   String? get fcmToken => _fcmToken;
 
@@ -45,8 +72,13 @@ class PushNotificationService {
         return;
       }
 
-      // Fallback router navigation
-      context.push(deepLink);
+      // Fallback: solo rutas internas de la allowlist. Un payload de push
+      // nunca debe poder navegar a una pantalla arbitraria o esquema externo.
+      if (isAllowedDeepLink(deepLink)) {
+        context.push(deepLink);
+      } else {
+        debugPrint('[DeepLink] Deep link no permitido, ignorado: $deepLink');
+      }
     } catch (e) {
       debugPrint('[DeepLink] Error executing deep link navigation to $deepLink: $e');
     }
