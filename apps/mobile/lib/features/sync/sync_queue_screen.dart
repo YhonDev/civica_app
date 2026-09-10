@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/top_toast.dart';
 import '../../core/network/error_messages.dart';
 import '../../core/format/app_currency.dart';
 import '../../core/theme/app_colors.dart';
@@ -48,14 +49,16 @@ class _SyncQueueScreenState extends State<SyncQueueScreen> {
       await SyncService.instance.syncPendingPagos();
       await _loadQueue();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Proceso de sincronización ejecutado.')),
+        TopToast.showSuccess(
+          context,
+          'Proceso de sincronización ejecutado.',
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al sincronizar: ${sanitizeApiError(e)}')),
+        TopToast.showError(
+          context,
+          'Error al sincronizar: ${sanitizeApiError(e)}',
         );
       }
     } finally {
@@ -67,8 +70,9 @@ class _SyncQueueScreenState extends State<SyncQueueScreen> {
     final count = await SyncService.instance.limpiarSincronizados();
     await _loadQueue();
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Se limpiaron $count registro(s) sincronizados.')),
+      TopToast.showInfo(
+        context,
+        'Se limpiaron $count registro(s) sincronizados.',
       );
     }
   }
@@ -79,14 +83,16 @@ class _SyncQueueScreenState extends State<SyncQueueScreen> {
       await SyncService.instance.reintentarPago(id);
       await _loadQueue();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Reintento manual completado.')),
+        TopToast.showSuccess(
+          context,
+          'Reintento manual completado.',
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Reintento fallido: ${sanitizeApiError(e)}')),
+        TopToast.showError(
+          context,
+          'Reintento fallido: ${sanitizeApiError(e)}',
         );
       }
     } finally {

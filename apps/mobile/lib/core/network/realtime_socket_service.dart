@@ -101,7 +101,9 @@ class RealtimeSocketService {
       _setupEventListeners();
       _socket?.connect();
     } catch (e) {
-      debugPrint('[RealtimeSocket] Failed to initialize WebSockets: $e');
+      if (kDebugMode) {
+        debugPrint('[RealtimeSocket] Failed to initialize WebSockets: $e');
+      }
       _scheduleReconnect();
     }
   }
@@ -158,7 +160,9 @@ class RealtimeSocketService {
     });
 
     _socket?.onConnectError((error) {
-      debugPrint('[RealtimeSocket] Connection error: $error');
+      if (kDebugMode) {
+        debugPrint('[RealtimeSocket] Connection error: $error');
+      }
       _isConnected = false;
       if (!_intentionalDisconnect) {
         _scheduleReconnect();
@@ -166,7 +170,9 @@ class RealtimeSocketService {
     });
 
     _socket?.onError((error) {
-      debugPrint('[RealtimeSocket] Socket error: $error');
+      if (kDebugMode) {
+        debugPrint('[RealtimeSocket] Socket error: $error');
+      }
     });
 
     _socket?.on('auth_error', (data) {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/top_toast.dart';
 import '../../core/network/error_messages.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -486,20 +487,16 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                             residenteId: resId,
                           );
                           if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: const Text('Solicitud enviada'),
-                                backgroundColor: AppColors.success,
-                              ),
+                            TopToast.showSuccess(
+                              context,
+                              'Solicitud enviada',
                             );
                           }
                         } catch (e) {
                           if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Error al solicitar cobro: ${sanitizeApiError(e)}'),
-                                backgroundColor: AppColors.error,
-                              ),
+                            TopToast.showError(
+                              context,
+                              'Error al solicitar cobro: ${sanitizeApiError(e)}',
                             );
                           }
                         }

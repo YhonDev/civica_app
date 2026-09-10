@@ -306,10 +306,10 @@ consolidación.
 > 1. `apps/mobile/test/design_token_guard_test.dart` (incluido en `flutter test` y como
 >    paso explícito `Design token guard (test)` en CI) escanea `lib/` y falla si detecta
 >    `fontSize:` inline, `NumberFormat`, hex `Color(0x…)`, radios con literal
->    (`BorderRadius.circular(<n>)` / `Radius.circular(<n>)`) o `EdgeInsets` compuestos
->    solo de valores tokenizados {4, 8, 16, 20, 24, 32} escritos con números — todo
->    fuera de `core/theme/` y `core/format/`. El fallo incluye ruta, línea, columna y
->    la regla infringida.
+>    (`BorderRadius.circular(<n>)` / `Radius.circular(<n>)`), `EdgeInsets` compuestos
+>    solo de valores tokenizados {4, 8, 16, 20, 24, 32} escritos con números, o errores
+>    crudos interpolados en UI/logs (regla 9.7) — todo fuera de `core/theme/` y
+>    `core/format/`. El fallo incluye ruta, línea, columna y la regla infringida.
 > 2. `scripts/check_design_system.sh` (paso `Design system guard` en CI) es el espejo
 >    rápido de los patrones de texto.
 >
@@ -363,6 +363,20 @@ consolidación.
 - No fijar alturas de pantallas; usar `Expanded`/`Flexible`/`SingleChildScrollView`.
 - Textos y montos en contenedores elásticos deben protegerse con `maxLines` +
   `ellipsis` y `FittedBox` respectivamente.
+
+### 9.7 Errores: ni la UI ni los logs de release muestran el error crudo
+
+- Un SnackBar/toast **nunca** interpola el objeto de error (`'$e'`, ni siquiera
+  `'${e.message}'`); siempre pasa por `sanitizeApiError(e)`
+  (`core/network/error_messages.dart`), que decide qué es presentable.
+- En `debugPrint`, el objeto crudo (`'$e'`) solo se acepta dentro de un gate
+  `kDebugMode` (misma línea o `if (kDebugMode) {` arriba). En release el log no
+  se construye.
+- En logs, el acceso a campos acotado (`'${e.code}'`, `'${e.message}'`) es
+  divulgación deliberada y está permitido sin gate.
+- El harness de depuración `lib/debug/` está exento (no corre en release).
+- El guard (regla 9.7 en ambas capas) marca estas violaciones con ruta, línea
+  y columna.
 
 ## 10. Referencias rápidas
 

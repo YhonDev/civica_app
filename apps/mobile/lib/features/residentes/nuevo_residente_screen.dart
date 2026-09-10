@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/top_toast.dart';
 import '../../core/network/error_messages.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
@@ -66,8 +67,9 @@ class _NuevoResidenteScreenState extends State<NuevoResidenteScreen> {
   Future<void> _guardar() async {
     if (_nombreCtrl.text.trim().isEmpty || _telefonoCtrl.text.trim().isEmpty) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor, ingrese al menos el nombre y teléfono.')),
+      TopToast.showWarning(
+        context,
+        'Por favor, ingrese al menos el nombre y teléfono.',
       );
       return;
     }
@@ -95,8 +97,9 @@ class _NuevoResidenteScreenState extends State<NuevoResidenteScreen> {
       ));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al crear residente: ${sanitizeApiError(e)}')),
+      TopToast.showError(
+        context,
+        'Error al crear residente: ${sanitizeApiError(e)}',
       );
     } finally {
       if (mounted) {

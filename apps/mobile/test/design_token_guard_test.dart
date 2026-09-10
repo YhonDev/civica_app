@@ -1,8 +1,7 @@
 /// Guardian del sistema de diseño: verifica que ningún archivo fuera de los
 /// archivos de tokens vuelva a introducir los patrones prohibidos.
 ///
-/// Detecta seis tipos de regesión de tokens (reglas de guardian de
-/// doc/DESIGN_SYSTEM.md):
+/// Detecta ocho tipos de regesión (reglas de guardian de doc/DESIGN_SYSTEM.md):
 ///
 /// 1. `fontSize:` inline fuera de `lib/core/theme/` (tipografía).
 /// 2. `NumberFormat` fuera de `lib/core/format/` (la única fuente de verdad
@@ -15,6 +14,11 @@
 ///    (EdgeInsets con offsets posicionales NO tokenizados sigue permitido.)
 /// 6. `BorderRadius` construido con `lerp`/aritmética sobre literales queda
 ///    cubierto por la regla 4 vía el escaneo línea a línea.
+/// 7. Interpolación cruda de errores (`$e`) en superficies de UI (SnackBar,
+///    TopToast) sin pasar por `sanitizeApiError` — regla 9.7.
+/// 8. `debugPrint` con error crudo (`$e`) sin gate `kDebugMode` en la misma
+///    línea o en la línea anterior — regla 9.7 (los logs en release
+///    no deben construirse interpolando errores).
 ///
 /// Ejecutar con: `flutter test test/design_token_guard_test.dart`
 /// (incluido en `flutter test` y en CI). Diseñado para fallar cerrado:
@@ -78,6 +82,87 @@ final List<(RegExp, String, String)> kForbiddenPatterns = [
 final RegExp _edgeInsetsExpr =
     RegExp(r'EdgeInsets\.(all|symmetric|only|fromLTRB)\(([^()]*)\)');
 
+/// Objeto de error crudo interpolado SIN llaves: `$e`, `$err`, `$error`…
+/// Con frontera de palabra: `$extra` NO cuenta. OJO con Dart:
+/// `'$err.message'` interpola el OBJETO `err` (el `.message` es texto
+/// literal), así que una `.` tras el identificador sigue siendo fuga cruda.
+final RegExp _bareRawError =
+    RegExp(r'\$(?:e|err|error|ex|exception|failure)\b');
+
+/// Interpolación con llaves que es EXACTAMENTE el objeto de error:
+/// `${e}` / `${error}` — el toString crudo completo.
+final RegExp _bracedRawErrorExact =
+    RegExp(r'\$\{\s*(?:e|err|error|ex|exception|failure)\s*\}');
+
+/// Interpolación con llaves enraizada en el objeto de error, incluido el
+/// acceso a campos: `${e}` y también `${e.message}`. Para UI son bypass del
+/// sanitizador por igual; para logs, el acceso a campos acotado es legítimo.
+final RegExp _bracedRawErrorRoot =
+    RegExp(r'\$\{\s*(?:e|err|error|ex|exception|failure)\b');
+
+/// Marcadores de superficie de usuario donde un error crudo se mostraría.
+final RegExp _uiErrorMarker =
+    RegExp(r'\b(SnackBar|showSnackBar|TopToast|Toast)\b');
+
+/// El harness de depuración (`lib/debug/`) no corre en release.
+bool _isDebugHarness(String posixPath) => posixPath.startsWith('lib/debug/');
+
+/// Regla 9.7 (UI): un SnackBar/toast nunca interpola el error crudo; pasa
+/// por `sanitizeApiError`. Las líneas que ya lo usan están exentas.
+List<String> uiRawErrorViolations(String code, String posixPath, int lineNo) {
+  if (_isDebugHarness(posixPath)) return [];
+  if (code.contains('sanitizeApiError')) return [];
+  if (code.contains('debugPrint(')) return []; // dominio de la regla de logging
+  if (!_uiErrorMarker.hasMatch(code)) return [];
+  final bare = _bareRawError.firstMatch(code);
+  final braced = _bracedRawErrorRoot.firstMatch(code);
+  final hit = _earliest(bare, braced);
+  if (hit == null) return [];
+  return [
+    '$posixPath:$lineNo:${hit.start + 1}: '
+        'Regla 9.7 — un SnackBar/toast nunca muestra el error crudo (`\$e` '
+        'ni `\${e.message}`); usa `sanitizeApiError(e)` '
+        '(core/network/error_messages.dart)',
+  ];
+}
+
+/// Regla 9.7 (logging): `debugPrint` con error crudo solo si está gated por
+/// `kDebugMode` — en la misma línea (`if (kDebugMode) debugPrint(…)`) o en
+/// la línea de código anterior (`if (kDebugMode) {`). Límite documentado:
+/// un gate por rama `else` (o condicional multilínea) no es detectable línea
+/// a línea; en ese caso usa el gate en la misma línea.
+List<String> debugPrintRawErrorViolations(
+  String code,
+  String previousCodeLine,
+  String posixPath,
+  int lineNo,
+) {
+  if (_isDebugHarness(posixPath)) return [];
+  if (!code.contains('debugPrint(')) return [];
+  // El objeto CRUDO es la fuga (`$e` —y ojo: `$err.message` sin llaves
+  // también interpola el objeto—, o `${e}` exacto). El acceso a campos
+  // acotado (`${e.code}`, `${e.message}`) es divulgación deliberada y
+  // legítima en un log.
+  final bare = _bareRawError.firstMatch(code);
+  final braced = _bracedRawErrorExact.firstMatch(code);
+  final hit = _earliest(bare, braced);
+  if (hit == null) return [];
+  if (code.contains('kDebugMode')) return []; // gate en la misma línea
+  if (previousCodeLine.contains('kDebugMode')) return []; // gate de bloque
+  return [
+    '$posixPath:$lineNo:${hit.start + 1}: '
+        'Regla 9.7 — debugPrint con el objeto de error crudo (`\$e`) debe '
+        'estar gated por `kDebugMode` (misma línea o `if (kDebugMode) {` '
+        'arriba); en release el log no debe construirse',
+  ];
+}
+
+Match? _earliest(RegExpMatch? a, RegExpMatch? b) {
+  if (a == null) return b;
+  if (b == null) return a;
+  return a.start <= b.start ? a : b;
+}
+
 /// Devuelve las violaciones de la regla EdgeInsets tokenizada para una
 /// línea de código. Un EdgeInsets se considera "tokenizable" cuando TODOS
 /// sus literales numéricos pertenecen a [kTokenizedSpacingValues].
@@ -118,6 +203,7 @@ void main() {
     for (final file in dartFiles) {
       final posixPath = file.path.replaceAll('\\', '/');
       final lines = file.readAsLinesSync();
+      var previousCodeLine = '';
 
       for (var i = 0; i < lines.length; i++) {
         final line = lines[i];
@@ -137,6 +223,12 @@ void main() {
         }
 
         violations.addAll(edgeInsetsViolations(code, posixPath, i + 1));
+        violations.addAll(uiRawErrorViolations(code, posixPath, i + 1));
+        violations.addAll(
+          debugPrintRawErrorViolations(code, previousCodeLine, posixPath, i + 1),
+        );
+
+        previousCodeLine = code;
       }
     }
 

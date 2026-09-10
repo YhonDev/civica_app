@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -17,7 +18,9 @@ class DarkThemeNotifier extends ValueNotifier<bool> {
       final isDark = prefs.getBool(_prefKey) ?? false;
       darkThemeNotifier.value = isDark;
     } catch (e) {
-      debugPrint('Error loading saved theme preference: $e');
+      if (kDebugMode) {
+        debugPrint('Error loading saved theme preference: $e');
+      }
     }
   }
 
@@ -33,7 +36,9 @@ class DarkThemeNotifier extends ValueNotifier<bool> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_prefKey, newValue);
     } catch (e) {
-      debugPrint('Error saving theme preference: $e');
+      if (kDebugMode) {
+        debugPrint('Error saving theme preference: $e');
+      }
     }
   }
 }

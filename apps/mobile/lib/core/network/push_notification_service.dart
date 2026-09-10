@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -80,7 +81,9 @@ class PushNotificationService {
         debugPrint('[DeepLink] Deep link no permitido, ignorado: $deepLink');
       }
     } catch (e) {
-      debugPrint('[DeepLink] Error executing deep link navigation to $deepLink: $e');
+      if (kDebugMode) {
+        debugPrint('[DeepLink] Error executing deep link navigation to $deepLink: $e');
+      }
     }
   }
 }

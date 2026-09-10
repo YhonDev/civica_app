@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/top_toast.dart';
 import '../../core/network/error_messages.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
@@ -294,8 +295,9 @@ class _EditarResidenteScreenState extends State<EditarResidenteScreen> {
 
   Future<void> _guardarCambios() async {
     if (_nombreCtrl.text.isEmpty || _telefonoCtrl.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor, ingrese al menos el nombre y teléfono.')),
+      TopToast.showWarning(
+        context,
+        'Por favor, ingrese al menos el nombre y teléfono.',
       );
       return;
     }
@@ -314,20 +316,17 @@ class _EditarResidenteScreenState extends State<EditarResidenteScreen> {
       
       if (mounted) {
         if (success) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Residente actualizado con éxito.')),
-          );
+          TopToast.showSuccess(context, 'Residente actualizado con éxito.');
           context.pop(true);
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Error al actualizar residente')),
-          );
+          TopToast.showError(context, 'Error al actualizar residente');
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al actualizar residente: ${sanitizeApiError(e)}')),
+        TopToast.showError(
+          context,
+          'Error al actualizar residente: ${sanitizeApiError(e)}',
         );
       }
     } finally {

@@ -35,7 +35,9 @@ class BiometricAuthService {
       final isSupported = await _auth.isDeviceSupported();
       return canCheck || isSupported;
     } on PlatformException catch (e) {
-      debugPrint('BiometricAuthService isHardwareSupported error: $e');
+      if (kDebugMode) {
+        debugPrint('BiometricAuthService isHardwareSupported error: $e');
+      }
       return false;
     } catch (_) {
       return false;
@@ -47,7 +49,9 @@ class BiometricAuthService {
     try {
       return await _auth.getAvailableBiometrics();
     } on PlatformException catch (e) {
-      debugPrint('BiometricAuthService getAvailableBiometrics error: $e');
+      if (kDebugMode) {
+        debugPrint('BiometricAuthService getAvailableBiometrics error: $e');
+      }
       return [];
     }
   }
@@ -61,7 +65,9 @@ class BiometricAuthService {
       await _secureStorage.delete(key: _legacyBioUsernameKey);
       await _secureStorage.delete(key: _legacyBioPasswordKey);
     } catch (e) {
-      debugPrint('BiometricAuthService legacy cleanup skipped: $e');
+      if (kDebugMode) {
+        debugPrint('BiometricAuthService legacy cleanup skipped: $e');
+      }
     }
   }
 
@@ -89,7 +95,9 @@ class BiometricAuthService {
       await _secureStorage.delete(key: _legacyBioUsernameKey);
       await _secureStorage.delete(key: _legacyBioPasswordKey);
     } catch (e) {
-      debugPrint('BiometricAuthService clearBiometricCredentials skipped: $e');
+      if (kDebugMode) {
+        debugPrint('BiometricAuthService clearBiometricCredentials skipped: $e');
+      }
     }
   }
 
@@ -145,7 +153,9 @@ class BiometricAuthService {
       debugPrint('BiometricAuthService authenticate PlatformException: [${e.code}] ${e.message}');
       return false;
     } catch (e) {
-      debugPrint('BiometricAuthService authenticate unexpected error: $e');
+      if (kDebugMode) {
+        debugPrint('BiometricAuthService authenticate unexpected error: $e');
+      }
       return false;
     }
   }

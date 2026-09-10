@@ -31,11 +31,60 @@ check() {
   fi
 }
 
+# Regla 9.7 — el error crudo jamás llega a la UI ni a logs de release.
+# El árbol de decisiones fino (campos acotados permitidos en logs, exención
+# por sanitizeApiError, harness lib/debug/) vive en el guard Dart.
+check_97() {
+  local name="$1"; shift
+  local pattern="$1"; shift
+  local exceptions=("$@")
+  local violations
+  violations=$(grep -rnE "$pattern" lib --include='*.dart' || true)
+  for ex in "${exceptions[@]}"; do
+    violations=$(echo "$violations" | grep -vE "$ex" || true)
+  done
+  if [ -n "$violations" ]; then
+    echo "::error::[guardián $name] error crudo en superficie prohibida:"
+    echo "$violations"
+    fail=1
+  else
+    echo "✓ $name: 0 violaciones"
+  fi
+}
+
 check 'NumberFormat\(' 'moneda'
 check 'fontSize:' 'tipografía'
 check 'Color\(0x' 'color'
 check 'BorderRadius\.circular\(\s*[0-9]' 'radio de borde'
 check 'Radius\.circular\(\s*[0-9]' 'radio (Radius)'
+
+# 9.7a — UI: error crudo en SnackBar/toast sin sanitizeApiError
+check_97 '9.7 UI' \
+  '(SnackBar|showSnackBar|TopToast|Toast).*(\$(e|err|error|ex|exception|failure)\b|\$\{\s*(e|err|error|ex|exception|failure)\b)' \
+  'sanitizeApiError' \
+  'lib/debug/'
+
+# 9.7b — logs: objeto de error crudo en debugPrint sin gate kDebugMode
+# (gates de bloque `if (kDebugMode) {` en la línea anterior o misma línea
+# quedan cubiertos por la ventana de contexto de 1 línea del guard Dart;
+# este espejo solo detecta el caso más burdo, sin gate alguno cerca).
+violations_97b=$(grep -rnE 'debugPrint\(.*(\$e\b|\$\{\s*e\s*\})' lib --include='*.dart' \
+  | grep -v 'lib/debug/' \
+  | while IFS= read -r line; do
+      f=$(echo "$line" | cut -d: -f1)
+      n=$(echo "$line" | cut -d: -f2)
+      prev=$((n-1))
+      if ! sed -n "${prev}p;${n}p" "$f" | grep -q 'kDebugMode'; then
+        echo "$line"
+      fi
+    done || true)
+if [ -n "$violations_97b" ]; then
+  echo "::error::[guardián 9.7 logs] objeto de error crudo en debugPrint sin gate kDebugMode:"
+  echo "$violations_97b"
+  fail=1
+else
+  echo "✓ 9.7 logs: 0 violaciones"
+fi
 
 if [ "$fail" -ne 0 ]; then
   echo ""

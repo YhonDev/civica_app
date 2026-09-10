@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/top_toast.dart';
 import '../../core/network/error_messages.dart';
 import '../../core/format/app_currency.dart';
 import '../../core/theme/app_colors.dart';
@@ -45,10 +46,9 @@ class _MontosScreenState extends State<MontosScreen> {
 
   Future<void> _agregarMontoDialog() async {
     if (_montos.length >= 5) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Máximo 5 montos predefinidos permitidos.'),
-        ),
+      TopToast.showWarning(
+        context,
+        'Máximo 5 montos predefinidos permitidos.',
       );
       return;
     }
@@ -101,9 +101,10 @@ class _MontosScreenState extends State<MontosScreen> {
         _loadMontos();
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(
+          TopToast.showError(
             context,
-          ).showSnackBar(SnackBar(content: Text('Error al crear monto: ${sanitizeApiError(e)}')));
+            'Error al crear monto: ${sanitizeApiError(e)}',
+          );
         }
       }
     }
@@ -115,9 +116,10 @@ class _MontosScreenState extends State<MontosScreen> {
       _loadMontos();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
+        TopToast.showError(
           context,
-        ).showSnackBar(SnackBar(content: Text('Error al eliminar: ${sanitizeApiError(e)}')));
+          'Error al eliminar: ${sanitizeApiError(e)}',
+        );
       }
     }
   }

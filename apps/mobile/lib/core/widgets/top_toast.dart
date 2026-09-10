@@ -5,9 +5,27 @@ import '../theme/app_typography.dart';
 import '../theme/app_feedback.dart';
 import '../theme/app_colors.dart';
 
+/// Estándar global de notificaciones de la app.
+///
+/// Todo aviso no-bloqueante pasa por [TopToast]: éxito, error, información y
+/// advertencia. Estilo único (doc/DESIGN_SYSTEM.md): tarjeta superior con
+/// entrada elástica, tokenizados `AppColors.toast*`/`AppTypography` y
+/// haptics por variante. Reglas:
+///
+/// - **Un solo slot:** mostrar un nuevo toast reemplaza al anterior
+///   (nada de pilas de notificaciones).
+/// - **Tap para cerrar:** la tarjeta responde al toque; además del
+///   auto-cierre ([duration]).
+/// - **Acción opcional:** [actionLabel] + [onAction] para deshacer/ver.
+/// - Nada de `SnackBar`/`ScaffoldMessenger` fuera de este archivo
+///   (regla de guardian 9.8; lo hace cumplir el design-token guard).
 enum ToastType { success, error, info, warning }
 
 class TopToast {
+  TopToast._();
+
+  static OverlayEntry? _current;
+
   static void show(
     BuildContext context, {
     required String message,
@@ -16,6 +34,8 @@ class TopToast {
     Color? accentColor,
     ToastType type = ToastType.success,
     Duration duration = const Duration(seconds: 3),
+    String? actionLabel,
+    VoidCallback? onAction,
   }) {
     switch (type) {
       case ToastType.success:
@@ -32,6 +52,9 @@ class TopToast {
         break;
     }
 
+    // Un solo slot global: el toast anterior se retira antes de insertar.
+    dismissCurrent();
+
     final overlayState = Overlay.of(context);
     late OverlayEntry overlayEntry;
 
@@ -47,11 +70,26 @@ class TopToast {
             overlayEntry.remove();
           }
         },
+        onRemoved: () {
+          if (identical(_current, overlayEntry)) _current = null;
+        },
         duration: duration,
+        actionLabel: actionLabel,
+        onAction: onAction,
       ),
     );
 
+    _current = overlayEntry;
     overlayState.insert(overlayEntry);
+  }
+
+  /// Retira el toast visible, si lo hay, sin animación de salida.
+  static void dismissCurrent() {
+    final entry = _current;
+    if (entry != null && entry.mounted) {
+      entry.remove();
+    }
+    _current = null;
   }
 
   static void showSuccess(BuildContext context, String message, {String? title}) {
@@ -65,6 +103,10 @@ class TopToast {
   static void showInfo(BuildContext context, String message, {String? title}) {
     show(context, message: message, title: title, type: ToastType.info);
   }
+
+  static void showWarning(BuildContext context, String message, {String? title}) {
+    show(context, message: message, title: title, type: ToastType.warning);
+  }
 }
 
 class _TopToastWidget extends StatefulWidget {
@@ -74,7 +116,10 @@ class _TopToastWidget extends StatefulWidget {
   final IconData? customIcon;
   final Color? customColor;
   final VoidCallback onDismiss;
+  final VoidCallback onRemoved;
   final Duration duration;
+  final String? actionLabel;
+  final VoidCallback? onAction;
 
   const _TopToastWidget({
     this.title,
@@ -83,7 +128,10 @@ class _TopToastWidget extends StatefulWidget {
     this.customIcon,
     this.customColor,
     required this.onDismiss,
+    required this.onRemoved,
     required this.duration,
+    this.actionLabel,
+    this.onAction,
   });
 
   @override
@@ -120,6 +168,11 @@ class _TopToastWidgetState extends State<_TopToastWidget>
 
     _controller.forward();
 
+    _scheduleDismiss();
+  }
+
+  void _scheduleDismiss() {
+    _dismissTimer?.cancel();
     _dismissTimer = Timer(widget.duration, () {
       if (mounted) {
         _controller.reverse().then((_) {
@@ -128,6 +181,16 @@ class _TopToastWidgetState extends State<_TopToastWidget>
           }
         });
       }
+    });
+  }
+
+  void _handleTap() {
+    if (widget.actionLabel != null && widget.onAction != null) {
+      widget.onAction!();
+    }
+    _dismissTimer?.cancel();
+    _controller.reverse().then((_) {
+      if (mounted) widget.onDismiss();
     });
   }
 
@@ -183,59 +246,87 @@ class _TopToastWidgetState extends State<_TopToastWidget>
             bottom: false,
             child: Material(
               color: Colors.transparent,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: cardBgColor,
-                  borderRadius: BorderRadius.circular(AppSpacing.heroRadius),
-                  border: Border.all(color: borderColor, width: 1.2),
-                  boxShadow: [
-                    BoxShadow(
-                      color: shadowColor,
-                      blurRadius: 18,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: iconColor.withValues(alpha: isDark ? 0.2 : 0.12),
-                        shape: BoxShape.circle,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: _handleTap,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: cardBgColor,
+                    borderRadius: BorderRadius.circular(AppSpacing.heroRadius),
+                    border: Border.all(color: borderColor, width: 1.2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: shadowColor,
+                        blurRadius: 18,
+                        offset: const Offset(0, 8),
                       ),
-                      child: Icon(icon, color: iconColor, size: 20),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (widget.title != null) ...[
-                            Text(
-                              widget.title!,
-                              style: AppTypography.caption.copyWith(
-                                color: titleTextColor,
-                                fontWeight: FontWeight.bold,
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: iconColor.withValues(alpha: isDark ? 0.2 : 0.12),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(icon, color: iconColor, size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (widget.title != null) ...[
+                              Text(
+                                widget.title!,
+                                style: AppTypography.caption.copyWith(
+                                  color: titleTextColor,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
+                              const SizedBox(height: 2),
+                            ],
+                            Text(
+                              widget.message,
+                              style: AppTypography.label.copyWith(
+                                color: bodyTextColor,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            const SizedBox(height: 2),
                           ],
-                          Text(
-                            widget.message,
-                            style: AppTypography.label.copyWith(
-                              color: bodyTextColor,
-                              fontWeight: FontWeight.w500,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
+                        ),
                       ),
-                    ),
-                  ],
+                      if (widget.actionLabel != null) ...[
+                        const SizedBox(width: 8),
+                        TextButton(
+                          onPressed: () {
+                            widget.onAction?.call();
+                            _dismissTimer?.cancel();
+                            _controller.reverse().then((_) {
+                              if (mounted) widget.onDismiss();
+                            });
+                          },
+                          style: TextButton.styleFrom(
+                            foregroundColor: iconColor,
+                            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                            minimumSize: const Size(0, 32),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: Text(
+                            widget.actionLabel!,
+                            style: AppTypography.caption.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
               ),
             ),

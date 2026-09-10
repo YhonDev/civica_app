@@ -91,7 +91,9 @@ class AuthCubit extends Cubit<AuthState> {
         residenteId: residenteId,
       );
     } catch (e) {
-      debugPrint('[AuthCubit] RealtimeSocket init skipped: $e');
+      if (kDebugMode) {
+        debugPrint('[AuthCubit] RealtimeSocket init skipped: $e');
+      }
     }
   }
 
@@ -133,7 +135,9 @@ class AuthCubit extends Cubit<AuthState> {
             emit(AuthState.authenticated(user));
           }
         }).catchError((e) {
-          debugPrint('[AuthCubit] Background refresh after biometric unlock: $e');
+          if (kDebugMode) {
+            debugPrint('[AuthCubit] Background refresh after biometric unlock: $e');
+          }
           // Refresh token revocado/expirado: la sesión ya no es válida.
           // Cerrar sesión en vez de permanecer "autenticado" con datos locales.
           if (e is AuthException) {
@@ -195,7 +199,9 @@ class AuthCubit extends Cubit<AuthState> {
     } on ApiException catch (e) {
       emit(AuthState.error(_sanitizeErrorMessage(e.message)));
     } catch (e, stack) {
-      debugPrint('[AuthCubit] Error inesperado en login: $e\n$stack');
+      if (kDebugMode) {
+        debugPrint('[AuthCubit] Error inesperado en login: $e\n$stack');
+      }
       emit(AuthState.error(_sanitizeErrorMessage(e)));
     }
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/widgets/top_toast.dart';
 import '../../../core/network/error_messages.dart';
 import '../../../core/format/app_currency.dart';
 import '../../../core/theme/app_colors.dart';
@@ -46,8 +47,9 @@ class _ResidenteHistorialScreenState extends State<ResidenteHistorialScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al cargar historial: ${sanitizeApiError(e)}')),
+        TopToast.showError(
+          context,
+          'Error al cargar historial: ${sanitizeApiError(e)}',
         );
       }
     }
@@ -71,16 +73,18 @@ class _ResidenteHistorialScreenState extends State<ResidenteHistorialScreen> {
               final success = await _repo.deletePago(id);
               if (success) {
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Pago reversado. La deuda se ha restaurado.')),
+                  TopToast.showSuccess(
+                    context,
+                    'Pago reversado. La deuda se ha restaurado.',
                   );
                 }
                 _loadPagos();
               } else {
                 if (mounted) {
                   setState(() => _isLoading = false);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Error: No se pudo reversar el pago.')),
+                  TopToast.showError(
+                    context,
+                    'No se pudo reversar el pago.',
                   );
                 }
               }

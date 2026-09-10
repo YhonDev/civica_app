@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/widgets/top_toast.dart';
 import '../../../core/network/error_messages.dart';
 import '../../../core/format/app_currency.dart';
 import '../../../core/theme/app_colors.dart';
@@ -55,8 +56,9 @@ class _ResidenteFinanzasScreenState extends State<ResidenteFinanzasScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al cargar deudas: ${sanitizeApiError(e)}')),
+        TopToast.showError(
+          context,
+          'Error al cargar deudas: ${sanitizeApiError(e)}',
         );
       }
     }
@@ -80,16 +82,18 @@ class _ResidenteFinanzasScreenState extends State<ResidenteFinanzasScreen> {
               final success = await _repo.deleteCuota(id);
               if (success) {
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Cobro eliminado. La deuda ha desaparecido.')),
+                  TopToast.showSuccess(
+                    context,
+                    'Cobro eliminado. La deuda ha desaparecido.',
                   );
                 }
                 _loadDeudas();
               } else {
                 if (mounted) {
                   setState(() => _isLoading = false);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Error: No se pudo eliminar la cuota.')),
+                  TopToast.showError(
+                    context,
+                    'No se pudo eliminar la cuota.',
                   );
                 }
               }

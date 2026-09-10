@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../../core/format/app_currency.dart';
 import 'package:intl/intl.dart';
@@ -75,7 +76,9 @@ class _HistorialScreenState extends State<HistorialScreen> {
           }
           return;
         } catch (e) {
-          debugPrint('Error fetching cobrador pagos: $e');
+          if (kDebugMode) {
+            debugPrint('Error fetching cobrador pagos: $e');
+          }
         }
       }
 
@@ -114,7 +117,9 @@ class _HistorialScreenState extends State<HistorialScreen> {
         });
       }
     } catch (e) {
-      debugPrint('Error loading history: $e');
+      if (kDebugMode) {
+        debugPrint('Error loading history: $e');
+      }
       if (mounted && !silent) {
         setState(() {
           _loading = false;
