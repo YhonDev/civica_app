@@ -64,8 +64,6 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
   String? _selectedEtapa; // Filtro por etapa
   String? _selectedManzana; // Filtro por manzana
   Timer? _searchDebounce;
-  CarteraSearchIndex? _searchIndex;
-  String? _searchIndexSource; // firma de la lista con la que se construyó el índice
 
   @override
   void onAppResumed() {
@@ -84,17 +82,6 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
   static bool matchesSearch(CobroItem c, String query) {
     final index = CarteraSearchIndex.build([c]);
     return index.matches(c.id, query);
-  }
-
-  /// Obtiene (y cachea) el índice de búsqueda para la lista actual de cobros.
-  /// Se reconstruye solo cuando cambia la identidad de la lista (nueva carga).
-  CarteraSearchIndex _ensureSearchIndex(List<CobroItem> cobros) {
-    final source = cobros.map((c) => c.id).join('|');
-    if (_searchIndex == null || _searchIndexSource != source) {
-      _searchIndex = CarteraSearchIndex.build(cobros);
-      _searchIndexSource = source;
-    }
-    return _searchIndex!;
   }
 
   /// Debounce de 200ms: evita re-filtrar la lista en cada tecla.
@@ -326,8 +313,9 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                   final dynamicResumen = CarteraResumen.fromCobros(sectorCobros);
                   final totalSectorCount = sectorCobros.length;
 
-                  // 3. Aplicar filtro de búsqueda (índice precomputado) y filtro de estado (1-Tap)
-                  final searchIndex = _ensureSearchIndex(sectorCobros);
+                  // 3. Aplicar filtro de búsqueda (índice precomputado en el
+                  //    cubit, una vez por carga) y filtro de estado (1-Tap)
+                  final searchIndex = context.read<CarteraCubit>().searchIndex;
                   final List<CobroItem> displayCobros = sectorCobros.where((c) {
                     final matchSearch = searchIndex.matches(c.id, _searchQuery);
                     if (!matchSearch) return false;

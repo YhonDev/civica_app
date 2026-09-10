@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../../../core/network/local_cache_repository.dart';
+import '../../../core/search/cartera_search_index.dart';
 import '../cartera_repository.dart';
 import '../models/cartera_models.dart';
 
@@ -101,6 +102,23 @@ class CarteraCubit extends Cubit<CarteraState> {
   final CarteraRepository _repository;
 
   CarteraCubit(this._repository) : super(const CarteraState());
+
+  // ── Índice de búsqueda precomputado ────────────────────────
+  CarteraSearchIndex? _searchIndex;
+  List<CobroItem>? _indexedSource;
+
+  /// Índice de búsqueda para los cobros cargados. Se construye UNA vez por
+  /// lista (identidad por referencia: cada carga del repository produce una
+  /// lista nueva) y se reutiliza en cada pulsación del buscador o cambio de
+  /// filtro, evitando reconstruirlo (O(n)) en cada rebuild del widget.
+  CarteraSearchIndex get searchIndex {
+    final cobros = state.cobros;
+    if (_searchIndex == null || !identical(_indexedSource, cobros)) {
+      _searchIndex = CarteraSearchIndex.build(cobros);
+      _indexedSource = cobros;
+    }
+    return _searchIndex!;
+  }
 
   /// Carga los cobros de la cartera y calcula el resumen de forma local.
   Future<void> loadCobros({bool silent = false}) async {
