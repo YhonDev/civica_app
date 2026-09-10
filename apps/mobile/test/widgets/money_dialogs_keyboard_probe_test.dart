@@ -10,6 +10,7 @@ import 'package:civica_pago_mobile/shared/widgets/solicitud_bottom_sheet.dart';
 import 'package:civica_pago_mobile/shared/widgets/solicitud_card.dart';
 
 import 'mock_http_adapter.dart';
+import 'probe_helpers.dart';
 
 /// Sonda de teclado para los diálogos de dinero: con el teclado abierto,
 /// cada diálogo debe mantenerse sin overflow y con su campo + botón de
@@ -63,12 +64,7 @@ void main() {
       );
 
   void setViewport(WidgetTester tester, Size screen, {bool keyboard = false}) {
-    tester.view.physicalSize = screen;
-    tester.view.devicePixelRatio = 1.0;
-    tester.view.viewInsets =
-        keyboard ? const FakeViewPadding(bottom: 280) : FakeViewPadding.zero;
-    // reset() revierte physicalSize, dpr e insets de una sola vez.
-    addTearDown(tester.view.reset);
+    setProbeViewport(tester, screen, keyboard: keyboard);
   }
 
   /// Abre el sheet de solicitud vía path real de showModalBottomSheet.

@@ -7,6 +7,8 @@ import 'package:civica_pago_mobile/core/network/api_client.dart';
 import 'package:civica_pago_mobile/features/auth/auth_cubit.dart';
 import 'package:civica_pago_mobile/features/auth/login_screen.dart';
 
+import 'probe_helpers.dart';
+
 /// Sonda de diseño del Login: mide la geometría real del formulario en
 /// teléfono, tablet y desktop (ancho ≤ maxFormWidth, centrado, gutters)
 /// y verifica que, con teclado abierto, el CTA siga alcanzable con scroll.
@@ -24,13 +26,7 @@ void main() {
     required Size screen,
     bool keyboard = false,
   }) async {
-    tester.view.physicalSize = screen;
-    tester.view.devicePixelRatio = 1.0;
-    tester.view.viewInsets = keyboard
-        ? const FakeViewPadding(bottom: 280)
-        : FakeViewPadding.zero;
-    // reset() revierte physicalSize, dpr e insets de una sola vez.
-    addTearDown(tester.view.reset);
+    setProbeViewport(tester, screen, keyboard: keyboard);
 
     final authCubit = AuthCubit();
     addTearDown(authCubit.close);
@@ -65,14 +61,12 @@ void main() {
       await pumpLogin(tester, screen: screen);
 
       final form = formRect(tester);
-      expect(form.width, lessThanOrEqualTo(440.0),
-          reason: '$nombre: el formulario supera maxFormWidth');
-
-      final right = screen.width - form.right;
-      expect(form.left, closeTo(expectedLeft, 0.5),
-          reason: '$nombre: gutter izquierdo ${form.left} ≠ $expectedLeft');
-      expect(right, closeTo(form.left, 0.5),
-          reason: '$nombre: asimétrico — izq ${form.left} vs der $right');
+      expectCenteredContentGeometry(
+        form,
+        screenWidth: screen.width,
+        expectedLeft: expectedLeft,
+        label: nombre,
+      );
 
       // Elementos clave visibles (sin overflow: pumpAndSettle habría
       // propagado la excepción).

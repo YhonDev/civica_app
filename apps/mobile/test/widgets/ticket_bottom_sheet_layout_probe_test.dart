@@ -8,6 +8,8 @@ import 'package:civica_pago_mobile/core/network/api_client.dart';
 import 'package:civica_pago_mobile/features/auth/auth_cubit.dart';
 import 'package:civica_pago_mobile/shared/widgets/ticket_bottom_sheet.dart';
 
+import 'probe_helpers.dart';
+
 /// Sonda de diseño del Recibo Digital: mide la geometría real del sheet
 /// en teléfono, tablet y desktop (ancho de contenido, centrado, gutters)
 /// a través del path real de showModalBottomSheet.
@@ -27,10 +29,7 @@ void main() {
     required Size screen,
     String rol = 'COBRADOR',
   }) async {
-    tester.view.physicalSize = screen;
-    tester.view.devicePixelRatio = 1.0;
-    // reset() revierte physicalSize y dpr de una sola vez.
-    addTearDown(tester.view.reset);
+    setProbeViewport(tester, screen);
 
     final authCubit = AuthCubit();
     addTearDown(authCubit.close);
@@ -91,17 +90,12 @@ void main() {
       await pumpViaShow(tester, screen: screen);
 
       final content = contentRect(tester);
-      expect(content.width, lessThanOrEqualTo(440.0),
-          reason: '$nombre: el contenido se estira más allá de maxFormWidth');
-
-      final left = content.left;
-      final right = screen.width - content.right;
-      expect(left, closeTo(expectedLeft, 0.5),
-          reason: '$nombre: gutter izquierdo $left ≠ esperado $expectedLeft');
-      expect(right, closeTo(left, 0.5),
-          reason: '$nombre: asimétrico — izq $left vs der $right');
-      expect(left, greaterThanOrEqualTo(20.0),
-          reason: '$nombre: el modal pega el contenido al borde');
+      expectCenteredContentGeometry(
+        content,
+        screenWidth: screen.width,
+        expectedLeft: expectedLeft,
+        label: nombre,
+      );
 
       // Datos clave del ticket visibles (monto, estado, cobrador, cierre).
       expect(find.textContaining('45.000'), findsWidgets,

@@ -208,6 +208,12 @@ consolidación.
 > Fuente única del patrón responsive/adaptive. El antiguo
 > `apps/mobile/doc/RESPONSIVE_PATTERN.md` se consolidó aquí y queda como puntero —
 > edita las reglas de esta sección, no allí.
+>
+> El cumplimiento del patrón se verifica con las sondas de layout
+> (`apps/mobile/test/widgets/*_layout_probe_test.dart`, `*_keyboard_probe_test.dart`)
+> usando los helpers compartidos de `test/widgets/probe_helpers.dart`
+> (`setProbeViewport`, `expectCenteredContentGeometry`). Si agregas una pantalla
+> nueva, añade una sonda para su geometría.
 
 ### 7.1 Regla de oro
 
