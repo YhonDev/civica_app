@@ -227,7 +227,7 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 10),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : AppColors.primary.withValues(alpha: 0.06),
+        color: AppColors.cobradorHighlight,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: AppColors.primary.withValues(alpha: 0.2),
@@ -282,7 +282,7 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
 
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        color: AppColors.cobradorCard,
         borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
         border: Border.all(
           color: count > 0
@@ -842,7 +842,7 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : AppColors.surface,
+        color: AppColors.cobradorSubcard,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.border),
       ),

@@ -131,9 +131,7 @@ class _SyncQueueScreenState extends State<SyncQueueScreen> {
                       children: [
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
-                          color: Theme.of(context).brightness == Brightness.dark
-                              ? const Color(0xFF0F172A)
-                              : const Color(0xFFF8FAFC),
+                          color: AppColors.screenBackground,
                           child: Row(
                             children: [
                               Icon(Icons.info_outline_rounded, size: 16, color: AppColors.textSecondary),

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../theme/app_typography.dart';
 import '../theme/app_feedback.dart';
+import '../theme/app_colors.dart';
 
 enum ToastType { success, error, info, warning }
 
@@ -146,26 +147,26 @@ class _TopToastWidgetState extends State<_TopToastWidget>
 
     switch (widget.type) {
       case ToastType.success:
-        iconColor = widget.customColor ?? (isDark ? const Color(0xFF4ADE80) : const Color(0xFF166534));
+        iconColor = widget.customColor ?? AppColors.toastSuccess;
         icon = widget.customIcon ?? Icons.check_circle_rounded;
         break;
       case ToastType.error:
-        iconColor = widget.customColor ?? (isDark ? const Color(0xFFF87171) : const Color(0xFF991B1B));
+        iconColor = widget.customColor ?? AppColors.toastError;
         icon = widget.customIcon ?? Icons.error_rounded;
         break;
       case ToastType.warning:
-        iconColor = widget.customColor ?? (isDark ? const Color(0xFFFACC15) : const Color(0xFF854D0E));
+        iconColor = widget.customColor ?? AppColors.toastWarning;
         icon = widget.customIcon ?? Icons.warning_rounded;
         break;
       case ToastType.info:
-        iconColor = widget.customColor ?? (isDark ? const Color(0xFF38BDF8) : const Color(0xFF075985));
+        iconColor = widget.customColor ?? AppColors.toastInfo;
         icon = widget.customIcon ?? Icons.info_rounded;
         break;
     }
 
-    final cardBgColor = isDark ? const Color(0xFF1E2022) : Colors.white;
-    final titleTextColor = isDark ? Colors.white : const Color(0xFF0F172A);
-    final bodyTextColor = isDark ? Colors.white.withValues(alpha: 0.88) : const Color(0xFF334155);
+    final cardBgColor = AppColors.toastSurface;
+    final titleTextColor = AppColors.toastTitle;
+    final bodyTextColor = AppColors.toastBody;
     final shadowColor = isDark ? Colors.black.withValues(alpha: 0.5) : Colors.black.withValues(alpha: 0.12);
     final borderColor = isDark ? iconColor.withValues(alpha: 0.35) : iconColor.withValues(alpha: 0.25);
 

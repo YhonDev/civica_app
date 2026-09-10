@@ -396,13 +396,11 @@ class _JornadaViewState extends State<_JornadaView> with LifecycleObserverMixin 
       return const SizedBox.shrink();
     }
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.lg),
       padding: const EdgeInsets.all(AppSpacing.cardPadding),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        color: AppColors.cobradorCard,
         borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
         border: Border.all(
           color: AppColors.warning.withValues(alpha: 0.4),
@@ -562,14 +560,13 @@ class _JornadaViewState extends State<_JornadaView> with LifecycleObserverMixin 
   }
 
   Widget _buildCarteraDirectAccessBanner(CobradorDashboardData data) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final count = data.casas.length;
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        color: AppColors.cobradorCard,
         borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
         border: Border.all(
           color: AppColors.primary.withValues(alpha: 0.3),

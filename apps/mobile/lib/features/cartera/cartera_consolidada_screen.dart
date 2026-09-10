@@ -290,7 +290,7 @@ class CarteraConsolidadaScreen extends StatelessWidget {
     final isOverdue = item.estado == 'EN_MORA';
     final cardBorderColor = isOverdue
         ? AppColors.error.withValues(alpha: 0.4)
-        : (isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0));
+        : AppColors.track;
 
     StatusType statusType;
     if (item.estado == 'EN_MORA') {

@@ -82,4 +82,75 @@ class AppColors {
 
   // ── Dynamic Borders (Current Mode) ─────────────────
   static Color get border => _isDark ? darkBorder : lightBorder;
+
+  // ── Módulo cobrador / modo inmersivo ───────────────
+  // Tokens que reemplazan los literales dispersos (0xFF0F172A, 0xFF1E293B,
+  // 0xFFF8FAFC, 0xFF334155…). Cambiar la paleta del flujo cobrador se hace
+  // SOLO aquí — igual que AppCurrency para el dinero.
+
+  /// Fondo de pantalla del módulo cobrador (0xFF0F172A / 0xFFF8FAFC).
+  static Color get screenBackground =>
+      _isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
+
+  /// Fondo profundo del modo inmersivo (0xFF090D16 / lightBackground).
+  static Color get immersiveBackground =>
+      _isDark ? const Color(0xFF090D16) : lightBackground;
+
+  /// Tarjeta/botón circular principal del flujo cobrador
+  /// (0xFF1E293B / blanco).
+  static Color get cobradorCard =>
+      _isDark ? const Color(0xFF1E293B) : lightCard;
+
+  /// Sub-tarjeta/chip dentro de una tarjeta cobrador
+  /// (0xFF1E293B / lightSurface).
+  static Color get cobradorSubcard =>
+      _isDark ? const Color(0xFF1E293B) : lightSurface;
+
+  /// Sub-tarjeta resaltada (por selección/acción) en casas explorer
+  /// (0xFF1E293B / primary @6%).
+  static Color get cobradorHighlight => _isDark
+      ? const Color(0xFF1E293B)
+      : primary.withValues(alpha: 0.06);
+
+  /// Borde fuerte sobre fondos cobrador (0xFF334155 / 0xFFCBD5E1).
+  static Color get borderStrong =>
+      _isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1);
+
+  /// Pista de progreso / fondo suave (0xFF334155 / 0xFFE2E8F0).
+  static Color get track => _isDark ? const Color(0xFF334155) : lightSurface;
+
+  /// Texto con máximo contraste sobre fondos cobrador (blanco / 0xFF0F172A).
+  static Color get inkStrong => _isDark ? darkTextPrimary : const Color(0xFF0F172A);
+
+  /// Fondos tintados por estado (pago/mora/pendiente) en el modo inmersivo.
+  static Color get successSurface =>
+      _isDark ? const Color(0x40064E3B) : const Color(0xFFF0FDF4);
+  static Color get errorSurface =>
+      _isDark ? const Color(0x40450A0A) : const Color(0xFFFEF2F2);
+  static Color get warningSurface =>
+      _isDark ? const Color(0x73261D0C) : const Color(0xFFFFFDF0);
+
+  // ── Toast (top_toast) ──────────────────────────────
+
+  /// Superficie de la tarjeta toast (0xFF1E2022 / blanco).
+  static Color get toastSurface =>
+      _isDark ? const Color(0xFF1E2022) : lightCard;
+
+  /// Título del toast (blanco / 0xFF0F172A).
+  static Color get toastTitle => _isDark ? darkTextPrimary : const Color(0xFF0F172A);
+
+  /// Cuerpo del toast (blanco @88% / 0xFF334155).
+  static Color get toastBody => _isDark
+      ? darkTextPrimary.withValues(alpha: 0.88)
+      : const Color(0xFF334155);
+
+  /// Iconos del toast por tipo.
+  static Color get toastSuccess =>
+      _isDark ? const Color(0xFF4ADE80) : const Color(0xFF166534);
+  static Color get toastError =>
+      _isDark ? const Color(0xFFF87171) : const Color(0xFF991B1B);
+  static Color get toastWarning =>
+      _isDark ? const Color(0xFFFACC15) : const Color(0xFF854D0E);
+  static Color get toastInfo =>
+      _isDark ? const Color(0xFF38BDF8) : const Color(0xFF075985);
 }

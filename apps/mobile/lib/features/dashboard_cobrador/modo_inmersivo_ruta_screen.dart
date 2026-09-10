@@ -342,10 +342,10 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
             child: Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF0F172A).withValues(alpha: 0.95) : Colors.white.withValues(alpha: 0.95),
+                color: AppColors.screenBackground.withValues(alpha: 0.95),
                 borderRadius: BorderRadius.circular(28),
                 border: Border.all(
-                  color: isDark ? const Color(0xFF334155) : AppColors.border,
+                  color: AppColors.borderStrong,
                 ),
                 boxShadow: [
                   BoxShadow(
@@ -472,7 +472,7 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
         }
       },
       child: Scaffold(
-        backgroundColor: isDark ? const Color(0xFF090D16) : const Color(0xFFF1F5F9),
+        backgroundColor: AppColors.immersiveBackground,
         body: Stack(
           children: [
             // ── Mapa de Fondo Estilizado Dinámico (Background Pattern Animado) ───
@@ -551,7 +551,7 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
             icon: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                color: AppColors.cobradorCard,
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
@@ -598,9 +598,9 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
       margin: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B).withValues(alpha: 0.8) : Colors.white.withValues(alpha: 0.9),
+        color: AppColors.cobradorCard.withValues(alpha: isDark ? 0.8 : 0.9),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isDark ? const Color(0xFF334155) : AppColors.border),
+        border: Border.all(color: AppColors.borderStrong),
       ),
       child: Column(
         children: [
@@ -640,7 +640,7 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
             child: LinearProgressIndicator(
               value: progress,
               minHeight: 8,
-              backgroundColor: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+              backgroundColor: AppColors.track,
               valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
             ),
           ),
@@ -716,10 +716,10 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
             : AppColors.warning;
 
     final Color statusBgColor = isPagado
-        ? (isDark ? const Color(0xFF064E3B).withValues(alpha: 0.25) : const Color(0xFFF0FDF4))
+        ? AppColors.successSurface
         : isMora
-            ? (isDark ? const Color(0xFF450A0A).withValues(alpha: 0.25) : const Color(0xFFFEF2F2))
-            : (isDark ? const Color(0xFF261D0C).withValues(alpha: 0.45) : const Color(0xFFFFFDF0));
+            ? AppColors.errorSurface
+            : AppColors.warningSurface;
 
     return AnimatedScale(
       scale: isSelected ? 1.0 : 0.94,
@@ -906,9 +906,9 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
               Container(
                 padding: const EdgeInsets.all(AppSpacing.lg),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF0F172A).withValues(alpha: 0.85) : Colors.white,
+                  color: isDark ? AppColors.screenBackground.withValues(alpha: 0.85) : AppColors.cobradorCard,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: isDark ? const Color(0xFF334155) : AppColors.border),
+                  border: Border.all(color: AppColors.borderStrong),
                 ),
                 child: Row(
                   children: [
@@ -1055,11 +1055,11 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
                   height: 52,
                   decoration: BoxDecoration(
                     color: _currentIndex > 0
-                        ? (isDark ? const Color(0xFF1E293B) : Colors.white)
-                        : (isDark ? const Color(0xFF0F172A).withValues(alpha: 0.5) : const Color(0xFFE2E8F0).withValues(alpha: 0.5)),
+                        ? AppColors.cobradorCard
+                        : (isDark ? AppColors.screenBackground.withValues(alpha: 0.5) : AppColors.track.withValues(alpha: 0.5)),
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
+                      color: AppColors.borderStrong,
                       width: 1.5,
                     ),
                     boxShadow: _currentIndex > 0
@@ -1138,11 +1138,11 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
                   height: 52,
                   decoration: BoxDecoration(
                     color: _currentIndex < _items.length - 1
-                        ? (isDark ? const Color(0xFF1E293B) : Colors.white)
-                        : (isDark ? const Color(0xFF0F172A).withValues(alpha: 0.5) : const Color(0xFFE2E8F0).withValues(alpha: 0.5)),
+                        ? AppColors.cobradorCard
+                        : (isDark ? AppColors.screenBackground.withValues(alpha: 0.5) : AppColors.track.withValues(alpha: 0.5)),
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
+                      color: AppColors.borderStrong,
                       width: 1.5,
                     ),
                     boxShadow: _currentIndex < _items.length - 1
@@ -1219,7 +1219,7 @@ class _MapGridBackgroundPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final baseColor = isDark ? Colors.white : const Color(0xFF0F172A);
+    final baseColor = AppColors.inkStrong;
     final primaryGlow = AppColors.primary;
 
     // 1. Radial Glow Centrado detrás de la Tarjeta
