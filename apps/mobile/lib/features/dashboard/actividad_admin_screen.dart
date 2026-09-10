@@ -107,10 +107,26 @@ class _ActividadAdminScreenState extends State<ActividadAdminScreen> {
                               final isResidente = a.tipo.toLowerCase().contains('residente');
 
                               final contextTitle = isPago
-                                  ? 'Pago Registrado'
+                                  ? 'Pago realizado'
                                   : (isSolicitud
                                       ? 'Solicitud de Revisión'
                                       : (isResidente ? 'Residente Actualizado' : null));
+
+                              String? montoStr;
+                              int? montoInt;
+                              if (isPago) {
+                                if (a.metadata['monto'] != null) {
+                                  montoInt = AppCurrency.centsFromJson(a.metadata['monto']);
+                                  montoStr = AppCurrency.format(montoInt);
+                                } else {
+                                  montoStr = ActividadSection.formatDescripcion(a);
+                                }
+                              }
+
+                              final residente = a.metadata['residenteNombre'] as String? ??
+                                  a.metadata['residente'] as String? ??
+                                  (isPago ? null : a.usuario);
+                              final inmueble = ActividadSection.formatInmueble(a.metadata);
 
                               return TimelineItem(
                                 id: a.id,
@@ -120,6 +136,11 @@ class _ActividadAdminScreenState extends State<ActividadAdminScreen> {
                                 timestamp: a.timestamp,
                                 hace: a.hace,
                                 contexto: contextTitle,
+                                monto: montoInt,
+                                montoFormateado: montoStr,
+                                residente: residente,
+                                inmueble: inmueble.isNotEmpty ? inmueble : null,
+                                metadata: a.metadata,
                               );
                             }).toList(),
                             onItemTap: _mostrarDetalleActividad,

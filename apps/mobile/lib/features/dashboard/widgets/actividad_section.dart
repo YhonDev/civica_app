@@ -44,6 +44,29 @@ class ActividadSection extends StatelessWidget {
         .trim();
   }
 
+  /// Formatea la ubicación física (Manzana, Casa, Etapa) en un texto conciso,
+  /// por ejemplo: "Mz A Casa 4 (1era etapa)".
+  static String formatInmueble(Map<String, dynamic> metadata) {
+    final etapa = metadata['etapa'] as String?;
+    final manzana = metadata['manzana'] as String?;
+    final casa = metadata['casa'] as String? ?? metadata['inmueble'] as String?;
+
+    final parts = <String>[];
+    if (manzana != null && manzana.isNotEmpty) {
+      parts.add(manzana.startsWith('Manzana ')
+          ? manzana.replaceFirst('Manzana ', 'Mz ')
+          : (manzana.startsWith('Mz') ? manzana : 'Mz $manzana'));
+    }
+    if (casa != null && casa.isNotEmpty) {
+      parts.add(casa.startsWith('Casa ') ? casa : 'Casa $casa');
+    }
+    String base = parts.join(' ');
+    if (etapa != null && etapa.isNotEmpty) {
+      base = base.isNotEmpty ? '$base ($etapa)' : etapa;
+    }
+    return base;
+  }
+
   /// Abre el recibo digital de pago configurando con precisión los datos:
   /// monto normalizado (de centavos a pesos), residente real, ubicación formateada
   /// y cobrador real. Si falta información detallada y existe pagoId, consulta
@@ -134,10 +157,26 @@ class ActividadSection extends StatelessWidget {
       final isResidente = a.tipo.toLowerCase().contains('residente');
 
       final contextTitle = isPago
-          ? 'Pago Registrado'
+          ? 'Pago realizado'
           : (isSolicitud
               ? 'Solicitud de Revisión'
               : (isResidente ? 'Residente Actualizado' : 'Jornada / Sistema'));
+
+      String? montoStr;
+      int? montoInt;
+      if (isPago) {
+        if (a.metadata['monto'] != null) {
+          montoInt = AppCurrency.centsFromJson(a.metadata['monto']);
+          montoStr = AppCurrency.format(montoInt);
+        } else {
+          montoStr = formatDescripcion(a);
+        }
+      }
+
+      final residente = a.metadata['residenteNombre'] as String? ??
+          a.metadata['residente'] as String? ??
+          (isPago ? null : a.usuario);
+      final inmueble = formatInmueble(a.metadata);
 
       return TimelineItem(
         id: a.id,
@@ -147,6 +186,11 @@ class ActividadSection extends StatelessWidget {
         timestamp: a.timestamp,
         hace: a.hace,
         contexto: contextTitle,
+        monto: montoInt,
+        montoFormateado: montoStr,
+        residente: residente,
+        inmueble: inmueble.isNotEmpty ? inmueble : null,
+        metadata: a.metadata,
       );
     }).toList();
 
