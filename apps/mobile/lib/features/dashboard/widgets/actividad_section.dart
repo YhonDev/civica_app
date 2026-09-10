@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/format/app_currency.dart';
+import '../../../core/network/api_client.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
@@ -45,9 +46,29 @@ class ActividadSection extends StatelessWidget {
 
   /// Abre el recibo digital de pago configurando con precisión los datos:
   /// monto normalizado (de centavos a pesos), residente real, ubicación formateada
-  /// y cobrador real.
-  static void showPagoTicket(BuildContext context, ActividadItem orig, {String? itemId}) {
+  /// y cobrador real. Si falta información detallada y existe pagoId, consulta
+  /// el ticket canónico al backend.
+  static Future<void> showPagoTicket(BuildContext context, ActividadItem orig, {String? itemId}) async {
     final effectiveId = itemId ?? orig.id;
+    final pagoId = orig.metadata['pagoId'] as String?;
+
+    // Si el nombre del residente no viene en la actividad pero tenemos pagoId,
+    // consultamos el ticket canónico directo a la API (idéntico a cartera).
+    if ((orig.metadata['residenteNombre'] == null || orig.metadata['residenteNombre'] == 'Residente') && pagoId != null) {
+      try {
+        final resp = await ApiClient.instance.get('/tickets', queryParameters: {'pagoId': pagoId});
+        if (resp.data != null && resp.data is Map<String, dynamic> && context.mounted) {
+          final realTicket = TicketData.fromJson(resp.data as Map<String, dynamic>);
+          TicketBottomSheet.show(context, realTicket);
+          return;
+        }
+      } catch (_) {
+        // Fallback resiliente a metadata local
+      }
+    }
+
+    if (!context.mounted) return;
+
     final montoRaw = orig.metadata['monto'];
     int montoVal;
     if (montoRaw != null) {
@@ -88,8 +109,13 @@ class ActividadSection extends StatelessWidget {
         casa: casaVal,
         monto: montoVal,
         metodo: orig.metadata['metodo'] as String? ?? 'Efectivo',
-        estado: 'Pagado',
+        estado: 'PAGADO',
+        concepto: orig.metadata['concepto'] as String?,
         cobrador: cobradorVal,
+        etapa: etapa,
+        manzana: manzana,
+        pagoId: pagoId,
+        cobroId: orig.metadata['cobroId'] as String?,
       ),
     );
   }
