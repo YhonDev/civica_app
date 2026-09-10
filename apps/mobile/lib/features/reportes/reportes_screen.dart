@@ -92,6 +92,16 @@ class _ReportesScreenState extends State<ReportesScreen> {
   }
 
   Widget _buildChartCard() {
+    final pagadas = _data?.pagadasCount ?? 0;
+    final pendientes = _data?.pendientesCount ?? 0;
+    final vencidas = _data?.vencidasCount ?? 0;
+    final total = pagadas + pendientes + vencidas;
+
+    final pagadasPct = total > 0 ? (pagadas / total) * 100 : 0.0;
+    final pendientesPct = total > 0 ? (pendientes / total) * 100 : 0.0;
+    final vencidasPct = total > 0 ? (vencidas / total) * 100 : 0.0;
+    final pctCompletado = _data?.porcentaje ?? (total > 0 ? pagadasPct.round() : 0);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -110,21 +120,23 @@ class _ReportesScreenState extends State<ReportesScreen> {
             padding: const EdgeInsets.all(AppSpacing.md),
             child: Center(
               child: DonutChart(
+                centerText: '$pctCompletado%',
+                centerLabel: 'completado',
                 segments: [
                   DonutSegment(
-                    percentage: (_data?.pagadasCount ?? 1).toDouble(),
+                    percentage: pagadasPct,
                     color: AppColors.success,
-                    label: 'Pagadas (${_data?.pagadasCount})',
+                    label: 'Pagadas ($pagadas)',
                   ),
                   DonutSegment(
-                    percentage: (_data?.pendientesCount ?? 0).toDouble(),
+                    percentage: pendientesPct,
                     color: AppColors.warning,
-                    label: 'Pendientes (${_data?.pendientesCount})',
+                    label: 'Pendientes ($pendientes)',
                   ),
                   DonutSegment(
-                    percentage: (_data?.vencidasCount ?? 0).toDouble(),
+                    percentage: vencidasPct,
                     color: AppColors.error,
-                    label: 'Vencidas (${_data?.vencidasCount})',
+                    label: 'Vencidas ($vencidas)',
                   ),
                 ],
               ),
