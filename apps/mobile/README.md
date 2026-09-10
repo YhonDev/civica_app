@@ -2,6 +2,8 @@
 
 Aplicación cliente multiplataforma desarrollada en **Flutter** para el sistema de recaudos y gestión de cartera **Cívica Pago**. Soporta dispositivos móviles (**Android**, **iOS**) y escritorio (**Linux Desktop**, **Windows**).
 
+> 🎨 **Sistema de diseño:** la UI usa los tokens y reglas de [`doc/DESIGN_SYSTEM.md`](../../doc/DESIGN_SYSTEM.md) — moneda (`AppCurrency`), tipografía (`AppTypography`), color (`AppColors`), espaciado (`AppSpacing`), breakpoints (`AppBreakpoints`) y tarjetas (`AppCardStyles`). Nunca `NumberFormat` inline ni `fontSize:` inline.
+
 ---
 
 ## 🛠️ Requisitos del Sistema y Dependencias Nativas

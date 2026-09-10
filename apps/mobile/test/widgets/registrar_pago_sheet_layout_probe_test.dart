@@ -9,6 +9,7 @@ import 'package:civica_pago_mobile/features/cartera/models/cartera_models.dart';
 import 'package:civica_pago_mobile/features/cartera/widgets/registrar_pago_bottom_sheet.dart';
 
 import 'fake_repositories.dart';
+import 'probe_helpers.dart';
 
 /// Sonda de diseño: mide la geometría real del sheet en tablet y desktop
 /// (ancho de contenido, centrado, gutters) y verifica la máscara en vivo
@@ -43,14 +44,7 @@ void main() {
     bool keyboard = false,
     CobroItem? cobro,
   }) async {
-    tester.view.physicalSize = screen;
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.reset);
-    tester.view.viewInsets = keyboard
-        ? const FakeViewPadding(bottom: 280)
-        : FakeViewPadding.zero;
-    // reset() revierte physicalSize, dpr e insets de una sola vez.
-    addTearDown(tester.view.reset);
+    setProbeViewport(tester, screen, keyboard: keyboard);
 
     final authCubit = AuthCubit();
     addTearDown(authCubit.close);
@@ -104,24 +98,19 @@ void main() {
     ) async {
       await pumpViaShow(tester, screen: screen);
 
-      // El contenido interno (Column con header/tabs) no supera 440px.
-      final content = tester.getRect(find.descendant(
-        of: find.byType(RegistrarPagoBottomSheet),
-        matching: find.byType(Column),
-      ).first);
-      expect(content.width, lessThanOrEqualTo(440.0),
-          reason: '$nombre: el contenido se estira más allá de maxFormWidth');
-
-      // Los gutters izquierdo y derecho son simétricos (centrado real),
-      // y ≥ 20px (screenPadding) en tablet/desktop.
-      final left = content.left;
-      final right = screen.width - content.right;
-      expect(left, closeTo(expectedLeft, 0.5),
-          reason: '$nombre: gutter izquierdo $left ≠ esperado $expectedLeft');
-      expect(right, closeTo(left, 0.5),
-          reason: '$nombre: asimétrico — izq $left vs der $right');
-      expect(left, greaterThanOrEqualTo(20.0),
-          reason: '$nombre: el modal pega el contenido al borde');
+      // El contenido interno (Column con header/tabs) no supera 440px,
+      // está centrado (gutters simétricos) y respeta el gutter mínimo.
+      final content = contentRectOf(
+        tester,
+        RegistrarPagoBottomSheet,
+        Column,
+      );
+      expectCenteredContentGeometry(
+        content,
+        screenWidth: screen.width,
+        expectedLeft: expectedLeft,
+        label: nombre,
+      );
 
       // Máscara en vivo: escribir 10000 muestra 10.000.
       final field = find.byType(TextField).first;
