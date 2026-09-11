@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../core/network/error_messages.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
@@ -56,7 +55,7 @@ class _ManzanasScreenState extends State<ManzanasScreen> {
           _isLoading = false;
           _isRefreshing = false;
         });
-        TopToast.showError(context, 'Error al cargar manzanas: ${sanitizeApiError(e)}');
+        TopToast.showError(context, e, prefix: 'Error al cargar manzanas');
       }
     }
   }
@@ -73,7 +72,7 @@ class _ManzanasScreenState extends State<ManzanasScreen> {
       }
     } catch (e) {
       if (mounted) {
-        TopToast.showError(context, 'Error al crear manzana: ${sanitizeApiError(e)}');
+        TopToast.showError(context, e, prefix: 'Error al crear manzana');
       }
     }
   }
@@ -388,7 +387,7 @@ class _ManzanasScreenState extends State<ManzanasScreen> {
                 }
               } catch (e) {
                 if (mounted) {
-                  TopToast.showError(context, 'Error al eliminar: ${sanitizeApiError(e)}');
+                  TopToast.showError(context, e, prefix: 'Error al eliminar');
                 }
               }
             },

@@ -1,5 +1,6 @@
 import 'dart:async';
 import '../../core/theme/app_spacing.dart';
+import '../network/error_messages.dart';
 import 'package:flutter/material.dart';
 import '../theme/app_typography.dart';
 import '../theme/app_feedback.dart';
@@ -14,9 +15,13 @@ import '../theme/app_colors.dart';
 ///
 /// - **Un solo slot:** mostrar un nuevo toast reemplaza al anterior
 ///   (nada de pilas de notificaciones).
-/// - **Tap para cerrar:** la tarjeta responde al toque; además del
+/// - **Tap para cerrar:** tocar la tarjeta la cierra; además del
 ///   auto-cierre ([duration]).
+/// - **Swipe para descartar:** deslizar la tarjeta hacia arriba también
+///   la cierra (con umbral de distancia/velocidad; si no, regresa).
 /// - **Acción opcional:** [actionLabel] + [onAction] para deshacer/ver.
+///   La acción se dispara EXCLUSIVAMENTE desde su botón — tocar el resto
+///   de la tarjeta solo cierra, nunca dispara la acción.
 /// - Nada de `SnackBar`/`ScaffoldMessenger` fuera de este archivo
 ///   (regla de guardian 9.8; lo hace cumplir el design-token guard).
 enum ToastType { success, error, info, warning }
@@ -66,12 +71,13 @@ class TopToast {
         customIcon: icon,
         customColor: accentColor,
         onDismiss: () {
+          // Único punto de retirada (auto-cierre, tap, swipe, botón de
+          // acción y dismissCurrent): limpia el slot y saca la entrada,
+          // para que ningún camino deje el slot stale.
+          if (identical(_current, overlayEntry)) _current = null;
           if (overlayEntry.mounted) {
             overlayEntry.remove();
           }
-        },
-        onRemoved: () {
-          if (identical(_current, overlayEntry)) _current = null;
         },
         duration: duration,
         actionLabel: actionLabel,
@@ -96,8 +102,24 @@ class TopToast {
     show(context, message: message, title: title, type: ToastType.success);
   }
 
-  static void showError(BuildContext context, String message, {String? title}) {
-    show(context, message: message, title: title, type: ToastType.error);
+  /// Muestra un toast de error a partir del **objeto** de error capturado.
+  ///
+  /// La sanitización ocurre AQUÍ DENTRO (regla 9.7/9.9): el mensaje mostrado
+  /// siempre pasa por [sanitizeApiError], así que ningún call site puede
+  /// renderizar un error crudo (`$e`, stack traces, internals de Dio).
+  ///
+  /// - [error]: el objeto capturado en el `catch` (no `e.toString()`).
+  /// - [prefix]: texto de contexto opcional, compuesto como `"prefix: mensaje"`.
+  ///
+  /// También acepta un `String` ya redactado (copia autoral); se le aplica el
+  /// mismo puente de sanitización por consistencia.
+  static void showError(BuildContext context, Object error, {String? prefix}) {
+    final message = sanitizeApiError(error);
+    show(
+      context,
+      message: prefix == null ? message : '$prefix: $message',
+      type: ToastType.error,
+    );
   }
 
   static void showInfo(BuildContext context, String message, {String? title}) {
@@ -116,7 +138,6 @@ class _TopToastWidget extends StatefulWidget {
   final IconData? customIcon;
   final Color? customColor;
   final VoidCallback onDismiss;
-  final VoidCallback onRemoved;
   final Duration duration;
   final String? actionLabel;
   final VoidCallback? onAction;
@@ -128,7 +149,6 @@ class _TopToastWidget extends StatefulWidget {
     this.customIcon,
     this.customColor,
     required this.onDismiss,
-    required this.onRemoved,
     required this.duration,
     this.actionLabel,
     this.onAction,
@@ -184,10 +204,17 @@ class _TopToastWidgetState extends State<_TopToastWidget>
     });
   }
 
-  void _handleTap() {
-    if (widget.actionLabel != null && widget.onAction != null) {
-      widget.onAction!();
-    }
+  /// Arrastre vertical acumulado por el swipe (solo hacia arriba).
+  double _dragDy = 0;
+
+  /// Evita retiradas dobles (tap durante la salida, acción + tap, etc.).
+  bool _exiting = false;
+
+  /// Retirada animada compartida: tap en la tarjeta, botón de acción y
+  /// swipe hacia arriba. Idempotente.
+  void _dismissAnimated() {
+    if (_exiting) return;
+    _exiting = true;
     _dismissTimer?.cancel();
     _controller.reverse().then((_) {
       if (mounted) widget.onDismiss();
@@ -235,7 +262,9 @@ class _TopToastWidgetState extends State<_TopToastWidget>
     final borderColor = isDark ? iconColor.withValues(alpha: 0.35) : iconColor.withValues(alpha: 0.25);
 
     return Positioned(
-      top: topPadding + 8,
+      // + _dragDy: el swipe desplaza la tarjeta de verdad (layout), así el
+      // gesto sigue al dedo y el hit-test va con ella.
+      top: topPadding + 8 + _dragDy,
       left: 16,
       right: 16,
       child: SlideTransition(
@@ -248,7 +277,22 @@ class _TopToastWidgetState extends State<_TopToastWidget>
               color: Colors.transparent,
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
-                onTap: _handleTap,
+                onTap: _dismissAnimated,
+                onVerticalDragUpdate: (details) {
+                  setState(() {
+                    // Solo sigue el dedo hacia arriba (gesto natural para un
+                    // toast superior); hacia abajo se resiste.
+                    _dragDy = (_dragDy + details.delta.dy).clamp(-140.0, 0.0);
+                  });
+                },
+                onVerticalDragEnd: (details) {
+                  final velocity = details.velocity.pixelsPerSecond.dy;
+                  if (_dragDy < -48 || velocity < -500) {
+                    _dismissAnimated();
+                  } else {
+                    setState(() => _dragDy = 0); // regresa a su sitio
+                  }
+                },
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
@@ -305,11 +349,10 @@ class _TopToastWidgetState extends State<_TopToastWidget>
                         const SizedBox(width: 8),
                         TextButton(
                           onPressed: () {
+                            // La acción SOLO vive aquí: el resto de la
+                            // tarjeta cierra sin dispararla.
                             widget.onAction?.call();
-                            _dismissTimer?.cancel();
-                            _controller.reverse().then((_) {
-                              if (mounted) widget.onDismiss();
-                            });
+                            _dismissAnimated();
                           },
                           style: TextButton.styleFrom(
                             foregroundColor: iconColor,

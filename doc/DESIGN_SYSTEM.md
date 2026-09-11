@@ -386,15 +386,34 @@ consolidación.
   comparten formato y estilo (tarjeta superior, entrada elástica, tokens
   `AppColors.toast*` + `AppTypography`, haptics por variante).
 - Comportamiento común: auto-cierre, **un solo slot** (mostrar otro toast
-  reemplaza al anterior, nunca se apilan), tap para cerrar y acción opcional
-  (`actionLabel`/`onAction`).
+  reemplaza al anterior, nunca se apilan), tap para cerrar, **swipe hacia
+  arriba para descartar** (umbral de distancia/velocidad; si no, regresa) y
+  acción opcional (`actionLabel`/`onAction`).
 - Variantes: `showSuccess`, `showError`, `showInfo`, `showWarning` — se elige
   por semántica del mensaje; nada de colores ni estilos ad-hoc.
+- La acción se dispara **exclusivamente desde su botón**: tocar el resto de
+  la tarjeta solo cierra el toast, nunca ejecuta `onAction`.
 - **Prohibido** `SnackBar`/`ScaffoldMessenger`/`showSnackBar` fuera del propio
   componente `top_toast.dart`. Lo hace cumplir el guard (regla 9.8) en ambas
   capas (Dart y espejo shell).
 - Mensajes de error siempre pasan por `sanitizeApiError` antes de llegar a la
   notificación (regla 9.7).
+
+### 9.9 Errores en notificaciones: la sanitización vive dentro de showError
+
+- `TopToast.showError(context, error, {prefix})` recibe el **objeto** de error
+  capturado en el `catch` (nunca `e.toString()`) y llama a `sanitizeApiError`
+  internamente. Así ningún call site puede renderizar un error crudo: el
+  bypass es imposible por construcción.
+- `prefix` compone el contexto (`"prefix: mensaje sanitizado")` sin tocar el
+  error; sirve para reemplazar el patrón antiguo `'Error al X: $mensaje'`.
+- **Prohibido** componer en el call site:
+  `showError(ctx, 'X: ${sanitizeApiError(e)}')` queda vetado por el guard
+  (regla 9.9, capa Dart); la única forma admitida es pasar el objeto con
+  `prefix:`. También está vetado cualquier `$e` en los argumentos (regla 9.7).
+- Los Strings se admiten como copia ya redactada por el equipo; la sanitizer
+  les aplica el mismo puente (y un String que vista ropa de excepción de
+  runtime —`'DioException…'`— cae al fallback).
 
 ## 10. Referencias rápidas
 

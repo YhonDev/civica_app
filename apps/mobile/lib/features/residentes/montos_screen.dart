@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../core/widgets/top_toast.dart';
-import '../../core/network/error_messages.dart';
 import '../../core/format/app_currency.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
@@ -103,7 +102,8 @@ class _MontosScreenState extends State<MontosScreen> {
         if (mounted) {
           TopToast.showError(
             context,
-            'Error al crear monto: ${sanitizeApiError(e)}',
+            e,
+            prefix: 'Error al crear monto',
           );
         }
       }
@@ -118,7 +118,8 @@ class _MontosScreenState extends State<MontosScreen> {
       if (mounted) {
         TopToast.showError(
           context,
-          'Error al eliminar: ${sanitizeApiError(e)}',
+          e,
+          prefix: 'Error al eliminar',
         );
       }
     }

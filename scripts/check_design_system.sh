@@ -103,6 +103,24 @@ else
   echo "✓ 9.8 notificaciones: 0 violaciones"
 fi
 
+# 9.9 — showError recibe el OBJETO de error; componer con sanitizeApiError
+# en el call site está vetado (la sanitización vive dentro de showError).
+# Espejo del guard Dart: ignora comentarios y excluye top_toast.dart.
+pat99='showError\(.*sanitizeApiError'
+violations_99=$(grep -rnE "$pat99" lib --include='*.dart' \
+  | grep -v 'lib/core/widgets/top_toast.dart' \
+  | while IFS= read -r line; do
+      stripped=$(printf '%s' "$line" | sed 's|//.*||')
+      if printf '%s' "$stripped" | grep -qE "$pat99"; then printf '%s\n' "$line"; fi
+    done)
+if [ -n "$violations_99" ]; then
+  echo "::error::[guardián 9.9] showError debe recibir el objeto de error (la sanitización es interna; usa prefix: para el contexto):"
+  echo "$violations_99"
+  fail=1
+else
+  echo "✓ 9.9 showError object-error: 0 violaciones"
+fi
+
 if [ "$fail" -ne 0 ]; then
   echo ""
   echo "El sistema de diseño quedó erosionado. Corrige usando los tokens"

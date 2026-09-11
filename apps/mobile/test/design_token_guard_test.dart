@@ -201,6 +201,24 @@ List<String> snackBarViolations(String code, String posixPath, int lineNo) {
   ];
 }
 
+/// Regla 9.9 (sanitización de errores): `TopToast.showError` recibe el
+/// OBJETO de error y sanitiza internamente. Componer en el call site
+/// (`showError(ctx, 'X: ${sanitizeApiError(e)}')`) queda prohibido: es el
+/// punto de re-fuga — basta un `'$e'` en vez de `sanitizeApiError(e)`.
+List<String> showErrorViolations(String code, String posixPath, int lineNo) {
+  if (posixPath == 'lib/core/widgets/top_toast.dart') return [];
+  if (!code.contains('showError(')) return [];
+  if (!code.contains('sanitizeApiError')) return [];
+  final hit = RegExp(r'\bshowError\s*\(').firstMatch(code);
+  return [
+    '$posixPath:$lineNo:${hit!.start + 1}: '
+        'Regla 9.9 — `showError` recibe el objeto de error directamente: '
+        '`showError(context, e, prefix: \'X\')`; la sanitización interna '
+        'hace imposible el bypass — no componer con `sanitizeApiError` '
+        'en el call site',
+  ];
+}
+
 void main() {
   test('guardián de tokens: sin regesión de tipografía/moneda/color/radios/espaciado', () {
     final libDir = Directory('lib');
@@ -246,6 +264,7 @@ void main() {
           debugPrintRawErrorViolations(code, previousCodeLine, posixPath, i + 1),
         );
         violations.addAll(snackBarViolations(code, posixPath, i + 1));
+        violations.addAll(showErrorViolations(code, posixPath, i + 1));
 
         previousCodeLine = code;
       }

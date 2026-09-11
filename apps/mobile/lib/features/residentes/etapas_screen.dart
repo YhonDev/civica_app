@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../core/network/error_messages.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
@@ -59,7 +58,7 @@ class _EtapasScreenState extends State<EtapasScreen> {
           _isLoading = false;
           _isRefreshing = false;
         });
-        TopToast.showError(context, 'Error al cargar etapas: ${sanitizeApiError(e)}');
+        TopToast.showError(context, e, prefix: 'Error al cargar etapas');
       }
     }
   }
@@ -77,7 +76,7 @@ class _EtapasScreenState extends State<EtapasScreen> {
       }
     } catch (e) {
       if (mounted) {
-        TopToast.showError(context, 'Error al crear etapa: ${sanitizeApiError(e)}');
+        TopToast.showError(context, e, prefix: 'Error al crear etapa');
       }
     }
   }
@@ -378,7 +377,7 @@ class _EtapasScreenState extends State<EtapasScreen> {
               } catch (e) {
                 if (mounted) {
                   TopToast.showError(
-                      context, 'Error al eliminar etapa: ${sanitizeApiError(e)}');
+                      context, e, prefix: 'Error al eliminar etapa');
                 }
               }
             },
@@ -462,7 +461,7 @@ class _EtapasScreenState extends State<EtapasScreen> {
       }
     } catch (e) {
       if (mounted) {
-        TopToast.showError(context, 'Error al crear etapas: ${sanitizeApiError(e)}');
+        TopToast.showError(context, e, prefix: 'Error al crear etapas');
       }
     }
   }

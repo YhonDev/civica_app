@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../../core/widgets/top_toast.dart';
-import '../../../core/network/error_messages.dart';
 import '../../../core/format/app_currency.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -49,7 +48,8 @@ class _ResidenteHistorialScreenState extends State<ResidenteHistorialScreen> {
         setState(() => _isLoading = false);
         TopToast.showError(
           context,
-          'Error al cargar historial: ${sanitizeApiError(e)}',
+          e,
+          prefix: 'Error al cargar historial',
         );
       }
     }

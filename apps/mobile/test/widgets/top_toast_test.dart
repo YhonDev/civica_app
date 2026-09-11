@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:civica_pago_mobile/core/theme/app_colors.dart';
+import 'package:civica_pago_mobile/core/network/api_exceptions.dart';
 import 'package:civica_pago_mobile/core/widgets/top_toast.dart';
+import 'package:dio/dio.dart';
 
 /// Suite del estándar global de notificaciones (regla 9.8 de guardian).
 ///
@@ -193,6 +195,82 @@ void main() {
       expect(find.text('Mensaje de prueba'), findsNothing);
     });
 
+    testWidgets('tap en el CUERPO de la tarjeta NO dispara la acción',
+        (tester) async {
+      var actionFired = 0;
+      await showToast(
+        tester,
+        actionLabel: 'Deshacer',
+        onAction: () => actionFired++,
+        duration: const Duration(seconds: 30),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Mensaje de prueba'));
+      await tester.pumpAndSettle();
+
+      // El gesto de la tarjeta SOLO cierra; la acción vive en su botón.
+      expect(actionFired, 0);
+      expect(find.text('Mensaje de prueba'), findsNothing);
+    });
+
+    testWidgets('swipe hacia arriba descarta el toast', (tester) async {
+      await showToast(tester, duration: const Duration(seconds: 30));
+      await tester.pumpAndSettle();
+      expect(find.text('Mensaje de prueba'), findsOneWidget);
+
+      // Arrastre > umbral (48px) hacia arriba → descarta. En pasos: un
+      // evento único se lo come la resolución del gesture arena.
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.text('Mensaje de prueba')),
+      );
+      await gesture.moveBy(const Offset(0, -30));
+      await tester.pump();
+      await gesture.moveBy(const Offset(0, -30));
+      await tester.pump();
+      await gesture.moveBy(const Offset(0, -30));
+      await tester.pump();
+      await gesture.up();
+      await tester.pumpAndSettle();
+
+      expect(find.text('Mensaje de prueba'), findsNothing);
+    });
+
+    testWidgets('swipe corto regresa a su posición (no descarta)',
+        (tester) async {
+      await showToast(tester, duration: const Duration(seconds: 30));
+      await tester.pumpAndSettle();
+      expect(find.text('Mensaje de prueba'), findsOneWidget);
+
+      // Arrastre < umbral y lento → la tarjeta regresa.
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.text('Mensaje de prueba')),
+      );
+      await gesture.moveBy(const Offset(0, -15));
+      await tester.pump();
+      await gesture.moveBy(const Offset(0, -15));
+      await tester.pump();
+      await gesture.up();
+      await tester.pumpAndSettle();
+
+      expect(find.text('Mensaje de prueba'), findsOneWidget);
+    });
+
+    testWidgets('tap durante la salida no lanza retirada doble',
+        (tester) async {
+      await showToast(tester, duration: const Duration(seconds: 30));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Mensaje de prueba'));
+      // Sin settle: segundo tap mientras corre la animación de salida —
+      // _exiting debe absorberlo sin excepciones ni dobles retiradas.
+      await tester.tap(find.text('Mensaje de prueba'), warnIfMissed: false);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Mensaje de prueba'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('dismissCurrent retira el toast inmediatamente',
         (tester) async {
       await showToast(tester);
@@ -213,6 +291,83 @@ void main() {
       await tester.pump();
       expect(find.text('Mensaje de prueba'), findsNothing);
       expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('showError — sanitización interna (el bypass es imposible)', () {
+    // Toasts de duración corta; el assert ocurre antes del auto-cierre.
+    Future<void> showErrorVia(WidgetTester tester, Object error,
+        {String? prefix}) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => Center(
+                child: ElevatedButton(
+                  onPressed: () => TopToast.showError(context, error,
+                      prefix: prefix),
+                  child: const Text('mostrar'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('mostrar'));
+      await tester.pump();
+      await tester.pump();
+    }
+
+    const fallback = 'Ocurrió un error inesperado. Intenta de nuevo.';
+    const conexion =
+        'No se pudo conectar con el servidor. Verifica tu conexión a internet.';
+
+    testWidgets('objeto técnico (DioException) → mensaje de conexión, nunca '
+        'toString del error', (tester) async {
+      final dio = DioException(
+        requestOptions: RequestOptions(path: '/x'),
+        response: Response(
+          requestOptions: RequestOptions(path: '/x'),
+          statusCode: 500,
+          data: 'Internal Server Error: stack-trace-de-servidor',
+        ),
+      );
+      await showErrorVia(tester, dio);
+      expect(find.textContaining('Internal Server Error'), findsNothing);
+      expect(find.textContaining('DioException'), findsNothing);
+      expect(find.text(conexion), findsOneWidget);
+    });
+
+    testWidgets('objeto anónimo → fallback, nunca "Instance of"',
+        (tester) async {
+      await showErrorVia(tester, Object());
+      expect(find.textContaining('Instance of'), findsNothing);
+      expect(find.text(fallback), findsOneWidget);
+    });
+
+    testWidgets('string redactado por el equipo se muestra tal cual',
+        (tester) async {
+      await showErrorVia(tester, 'El usuario ya existe.');
+      expect(find.text('El usuario ya existe.'), findsOneWidget);
+    });
+
+    testWidgets('string que viste ropa de excepción runtime → fallback',
+        (tester) async {
+      // El accidente `TopToast.showError(context, '$e')` NO debe filtrar.
+      await showErrorVia(tester, 'DioException [bad response]: 500');
+      expect(find.textContaining('DioException'), findsNothing);
+      expect(find.text(fallback), findsOneWidget);
+    });
+
+    testWidgets('prefix se compone como "prefix: mensaje"', (tester) async {
+      await showErrorVia(tester, Object(), prefix: 'Error al crear casa');
+      expect(find.text('Error al crear casa: $fallback'), findsOneWidget);
+    });
+
+    testWidgets('ApiException del servidor llega al usuario sin alterarse',
+        (tester) async {
+      await showErrorVia(tester, const ApiException(message: 'Saldo insuficiente'));
+      expect(find.text('Saldo insuficiente'), findsOneWidget);
     });
   });
 }

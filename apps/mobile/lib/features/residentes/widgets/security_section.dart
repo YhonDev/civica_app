@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../core/network/error_messages.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/theme/app_colors.dart';
@@ -105,7 +104,7 @@ class _SecuritySectionState extends State<SecuritySection> {
       }
     } catch (e) {
       if (mounted) {
-        TopToast.showError(context, 'Error al actualizar usuario: ${sanitizeApiError(e)}');
+        TopToast.showError(context, e, prefix: 'Error al actualizar usuario');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -183,7 +182,7 @@ class _SecuritySectionState extends State<SecuritySection> {
       }
     } catch (e) {
       if (mounted) {
-        TopToast.showError(context, 'Error al actualizar contraseña: ${sanitizeApiError(e)}');
+        TopToast.showError(context, e, prefix: 'Error al actualizar contraseña');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
