@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../../core/widgets/top_toast.dart';
+import '../../../core/network/error_messages.dart';
+import '../../../core/format/app_currency.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
@@ -44,8 +47,9 @@ class _ResidenteHistorialScreenState extends State<ResidenteHistorialScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al cargar historial: $e')),
+        TopToast.showError(
+          context,
+          'Error al cargar historial: ${sanitizeApiError(e)}',
         );
       }
     }
@@ -69,16 +73,18 @@ class _ResidenteHistorialScreenState extends State<ResidenteHistorialScreen> {
               final success = await _repo.deletePago(id);
               if (success) {
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Pago reversado. La deuda se ha restaurado.')),
+                  TopToast.showSuccess(
+                    context,
+                    'Pago reversado. La deuda se ha restaurado.',
                   );
                 }
                 _loadPagos();
               } else {
                 if (mounted) {
                   setState(() => _isLoading = false);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Error: No se pudo reversar el pago.')),
+                  TopToast.showError(
+                    context,
+                    'No se pudo reversar el pago.',
                   );
                 }
               }
@@ -110,7 +116,7 @@ class _ResidenteHistorialScreenState extends State<ResidenteHistorialScreen> {
     }
 
     if (!mounted) return;
-    final monto = ((pago['monto'] ?? 0) / 100.0).round();
+    final monto = AppCurrency.centsFromJson(pago['monto']);
     TicketBottomSheet.show(
       context,
       TicketData(
@@ -170,7 +176,7 @@ class _ResidenteHistorialScreenState extends State<ResidenteHistorialScreen> {
         separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.md),
         itemBuilder: (context, index) {
           final pago = _pagos[index];
-          final monto = (pago['monto'] ?? 0) / 100.0;
+          final monto = AppCurrency.centsFromJson(pago['monto']).toDouble();
           final fechaPago = pago['fechaPago'] != null
               ? DateFormat('dd MMM yyyy', 'es').format(DateTime.parse(pago['fechaPago']))
               : '';
@@ -185,7 +191,7 @@ class _ResidenteHistorialScreenState extends State<ResidenteHistorialScreen> {
                 child: Icon(Icons.receipt_long_rounded, color: AppColors.success),
               ),
               title: Text(
-                'Pago por \$${monto.toStringAsFixed(2)}',
+                'Pago por ${AppCurrency.format(monto)}',
                 style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w700),
               ),
               subtitle: Column(

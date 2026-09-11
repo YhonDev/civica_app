@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import '../../core/format/app_currency.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
@@ -226,8 +227,8 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 10),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : AppColors.primary.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(12),
+        color: AppColors.cobradorHighlight,
+        borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
         border: Border.all(
           color: AppColors.primary.withValues(alpha: 0.2),
         ),
@@ -249,9 +250,8 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                 ),
                 Text(
                   '$startStr — $endStr',
-                  style: AppTypography.body.copyWith(
+                  style: AppTypography.caption.copyWith(
                     fontWeight: FontWeight.w600,
-                    fontSize: 13,
                   ),
                 ),
               ],
@@ -261,14 +261,12 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
               color: AppColors.primary.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
             ),
             child: Text(
               'Ruta activa',
-              style: AppTypography.caption.copyWith(
+              style: AppTypography.smallBold.copyWith(
                 color: AppColors.primary,
-                fontWeight: FontWeight.w700,
-                fontSize: 11,
               ),
             ),
           ),
@@ -284,7 +282,7 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
 
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        color: AppColors.cobradorCard,
         borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
         border: Border.all(
           color: count > 0
@@ -306,7 +304,7 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
           // Header con Contador y navegación a pantalla completa de solicitudes
           InkWell(
             onTap: () => context.push('/cobrador-solicitudes'),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -314,12 +312,12 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                   child: Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(8),
+                        padding: const EdgeInsets.all(AppSpacing.sm),
                         decoration: BoxDecoration(
                           color: count > 0
                               ? AppColors.warning.withValues(alpha: 0.12)
                               : AppColors.surface,
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                         ),
                         child: Icon(
                           Icons.mark_email_unread_rounded,
@@ -343,22 +341,20 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                 ),
                 const SizedBox(width: AppSpacing.xs),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
                   decoration: BoxDecoration(
                     color: count > 0
                         ? AppColors.warning.withValues(alpha: 0.15)
                         : AppColors.surface,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         '$count activas',
-                        style: AppTypography.caption.copyWith(
+                        style: AppTypography.smallBold.copyWith(
                           color: count > 0 ? AppColors.warning : AppColors.textSecondary,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 11,
                         ),
                       ),
                       const SizedBox(width: 4),
@@ -424,9 +420,9 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
               const SizedBox(height: 2),
               InkWell(
                 onTap: () => context.push('/cobrador-solicitudes'),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -512,9 +508,8 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
             children: [
               Text(
                 'Ruta a Cobrar',
-                style: AppTypography.title.copyWith(
+                style: AppTypography.bodyMedium.copyWith(
                   fontWeight: FontWeight.w700,
-                  fontSize: 16,
                 ),
               ),
               Text(
@@ -532,7 +527,7 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
             backgroundColor:
                 bloqueado ? AppColors.border : AppColors.primary,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusLg)),
           ),
           onPressed: () {
             if (bloqueado) {
@@ -566,7 +561,7 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
           icon: const Icon(Icons.play_arrow_rounded, size: 18),
           label: const Text(
             'Iniciar Recorrido',
-            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+            style: AppTypography.label,
           ),
         ),
       ],
@@ -609,7 +604,7 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: AppColors.warning.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
         border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
       ),
       child: Row(
@@ -669,14 +664,13 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                 }
               },
               selectedColor: AppColors.primary,
-              labelStyle: AppTypography.caption.copyWith(
+              labelStyle: AppTypography.label.copyWith(
                 color: isSelected ? Colors.white : AppColors.textSecondary,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                fontSize: 12,
               ),
               backgroundColor: AppColors.surface,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
                 side: BorderSide(
                   color: isSelected ? AppColors.primary : AppColors.border,
                 ),
@@ -723,14 +717,13 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                 }
               },
               selectedColor: AppColors.primary,
-              labelStyle: AppTypography.caption.copyWith(
+              labelStyle: AppTypography.label.copyWith(
                 color: _selectedEtapaId == 'TODAS' ? Colors.white : AppColors.textSecondary,
                 fontWeight: _selectedEtapaId == 'TODAS' ? FontWeight.w700 : FontWeight.w500,
-                fontSize: 12,
               ),
               backgroundColor: AppColors.surface,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
                 side: BorderSide(
                   color: _selectedEtapaId == 'TODAS' ? AppColors.primary : AppColors.border,
                 ),
@@ -755,14 +748,13 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                   }
                 },
                 selectedColor: AppColors.primary,
-                labelStyle: AppTypography.caption.copyWith(
+                labelStyle: AppTypography.label.copyWith(
                   color: isSelected ? Colors.white : AppColors.textSecondary,
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                  fontSize: 12,
                 ),
                 backgroundColor: AppColors.surface,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
                   side: BorderSide(
                     color: isSelected ? AppColors.primary : AppColors.border,
                   ),
@@ -848,10 +840,10 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
     }
 
     return Container(
-      padding: const EdgeInsets.all(4),
+      padding: const EdgeInsets.all(AppSpacing.xs),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
+        color: AppColors.cobradorSubcard,
+        borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
         border: Border.all(color: AppColors.border),
       ),
       child: Row(
@@ -864,12 +856,12 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                   setState(() => _sentidoInverso = false);
                 }
               },
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 8),
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
                 decoration: BoxDecoration(
                   color: !_sentidoInverso ? AppColors.primary : Colors.transparent,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -883,10 +875,8 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                     Flexible(
                       child: Text(
                         labelDirecto,
-                        style: AppTypography.caption.copyWith(
+                        style: AppTypography.smallBold.copyWith(
                           color: !_sentidoInverso ? Colors.white : AppColors.textSecondary,
-                          fontWeight: !_sentidoInverso ? FontWeight.w700 : FontWeight.w500,
-                          fontSize: 11,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -905,12 +895,12 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                   setState(() => _sentidoInverso = true);
                 }
               },
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 8),
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
                 decoration: BoxDecoration(
                   color: _sentidoInverso ? AppColors.primary : Colors.transparent,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -924,10 +914,8 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                     Flexible(
                       child: Text(
                         labelInverso,
-                        style: AppTypography.caption.copyWith(
+                        style: AppTypography.smallBold.copyWith(
                           color: _sentidoInverso ? Colors.white : AppColors.textSecondary,
-                          fontWeight: _sentidoInverso ? FontWeight.w700 : FontWeight.w500,
-                          fontSize: 11,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -965,14 +953,13 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                 }
               },
               selectedColor: AppColors.primary,
-              labelStyle: AppTypography.caption.copyWith(
+              labelStyle: AppTypography.label.copyWith(
                 color: isSelected ? Colors.white : AppColors.textSecondary,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                fontSize: 12,
               ),
               backgroundColor: AppColors.surface,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
                 side: BorderSide(
                   color: isSelected ? AppColors.primary : AppColors.border,
                 ),
@@ -1177,7 +1164,7 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
               color: AppColors.primary.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -1216,10 +1203,9 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
           const SizedBox(width: 6),
           Text(
             nombre,
-            style: AppTypography.body.copyWith(
+            style: AppTypography.bodySmall.copyWith(
               fontWeight: FontWeight.w900,
               color: AppColors.textPrimary,
-              fontSize: 14,
             ),
           ),
           const SizedBox(width: 6),
@@ -1265,11 +1251,11 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
         elevation: 0,
         color: AppColors.surface,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
           side: BorderSide(color: AppColors.border),
         ),
         child: InkWell(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
           onTap: () {
             AppFeedback.light();
             final defaultMonto = cuotaInfo.monto > 0
@@ -1319,9 +1305,9 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                   height: 36,
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(18),
+                    borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                   ),
-                  child: Center(child: Text(emoji, style: const TextStyle(fontSize: 18))),
+                  child: Center(child: Text(emoji, style: AppTypography.emoji)),
                 ),
                 const SizedBox(width: AppSpacing.md),
 
@@ -1338,14 +1324,13 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                             margin: const EdgeInsets.only(right: 6),
                             decoration: BoxDecoration(
                               color: AppColors.primary.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(6),
+                              borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                             ),
                             child: Text(
                               etapaNombre,
-                              style: AppTypography.caption.copyWith(
+                              style: AppTypography.micro.copyWith(
                                 color: AppColors.primary,
                                 fontWeight: FontWeight.w800,
-                                fontSize: 10,
                               ),
                             ),
                           ),
@@ -1423,7 +1408,7 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
                         color: color.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                       ),
                       child: Text(
                         label,
@@ -1476,8 +1461,4 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
 
 // ── Helpers ─────────────────────────────────────────────────────────
 
-String _formatPesos(int pesos) {
-  if (pesos >= 1000000) return '\$${(pesos / 1000000).toStringAsFixed(1)}M';
-  if (pesos >= 1000) return '\$${(pesos / 1000).toStringAsFixed(0)}K';
-  return '\$$pesos';
-}
+String _formatPesos(int pesos) => AppCurrency.formatCompact(pesos);

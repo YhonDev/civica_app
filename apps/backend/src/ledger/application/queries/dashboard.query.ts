@@ -141,16 +141,57 @@ export class DashboardQuery {
         .sort((a, b) => a[0] - b[0])
         .map(([semana, data]) => ({ semana, ...data }));
 
+      // Enrich PAGO activities with real ticket data if missing
+      const missingTicketPagoIds = (actividadRecords || [])
+        .filter((a: any) => a.tipo === 'PAGO' && a.metadata?.pagoId && !a.metadata?.residenteNombre)
+        .map((a: any) => a.metadata.pagoId);
+
+      const ticketsMap = new Map<string, any>();
+      if (missingTicketPagoIds.length > 0) {
+        try {
+          const tickets = await this.pagoRepo.query(
+            `SELECT pago_id, numero, residente_nombre, casa_direccion, etapa, manzana, metodo, concepto, cobrador_nombre
+             FROM tickets 
+             WHERE tenant_id = $1 AND pago_id = ANY($2)`,
+            [tenantId, missingTicketPagoIds],
+          );
+          if (Array.isArray(tickets)) {
+            for (const t of tickets) {
+              ticketsMap.set(t.pago_id, t);
+            }
+          }
+        } catch (e) {
+          this.logger.warn(`Could not enrich activities with tickets: ${e}`);
+        }
+      }
+
       const actividad: ActividadItem[] = (actividadRecords || []).map(
-        (a: any) => ({
-          id: String(a.id),
-          tipo: a.tipo,
-          descripcion: a.descripcion,
-          usuario: a.usuarioNombre,
-          timestamp: a.createdAt?.toISOString() || new Date().toISOString(),
-          hace: a.createdAt ? this.relativeTime(a.createdAt) : 'ahora',
-          metadata: a.metadata || {},
-        }),
+        (a: any) => {
+          let meta = { ...(a.metadata || {}) };
+          if (a.tipo === 'PAGO' && meta.pagoId && ticketsMap.has(meta.pagoId)) {
+            const t = ticketsMap.get(meta.pagoId);
+            meta = {
+              ...meta,
+              nroRecibo: meta.nroRecibo || t.numero,
+              residenteNombre: meta.residenteNombre || t.residente_nombre,
+              casa: meta.casa || t.casa_direccion,
+              etapa: meta.etapa || t.etapa,
+              manzana: meta.manzana || t.manzana,
+              metodo: meta.metodo || t.metodo,
+              concepto: meta.concepto || t.concepto,
+              cobradorNombre: meta.cobradorNombre || t.cobrador_nombre,
+            };
+          }
+          return {
+            id: String(a.id),
+            tipo: a.tipo,
+            descripcion: a.descripcion,
+            usuario: a.usuarioNombre,
+            timestamp: a.createdAt?.toISOString() || new Date().toISOString(),
+            hace: a.createdAt ? this.relativeTime(a.createdAt) : 'ahora',
+            metadata: meta,
+          };
+        },
       );
       // Calcular historial de los últimos 12 meses
       const historialPromesas = [];

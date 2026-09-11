@@ -101,6 +101,9 @@ void main() {
 
     expect(disponibleLlamado, isFalse);
     expect(find.text('API no disponible'), findsOneWidget);
-    expect(find.byType(SnackBar), findsOneWidget);
+    expect(
+      find.text('Sigue sin responder. Verifica que el backend esté corriendo.'),
+      findsOneWidget,
+    );
   });
 }

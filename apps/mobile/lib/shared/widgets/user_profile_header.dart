@@ -53,7 +53,7 @@ class UserProfileHeader extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           decoration: BoxDecoration(
             color: AppColors.surface,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
           ),
           child: Text(
             rolLabel,

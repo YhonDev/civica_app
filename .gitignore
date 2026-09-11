@@ -2,6 +2,9 @@
 .env
 .env.*
 !.env.example
+# Copias locales de variables de entorno (ej. .env_render con credenciales
+# de Render/Neon). Nunca se commitean: contienen contraseñas reales.
+.env_*
 *.pem
 **/signing_keys.json
 

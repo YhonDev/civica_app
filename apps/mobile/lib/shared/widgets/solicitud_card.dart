@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/theme/app_card_styles.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
@@ -135,17 +136,7 @@ class SolicitudCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 6,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
+      decoration: AppCardStyles.listCard(context),
       child: Material(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
@@ -159,10 +150,7 @@ class SolicitudCard extends StatelessWidget {
                 // Icon container
                 Container(
                   padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: _statusColor.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                  decoration: AppCardStyles.iconTile(_statusColor),
                   child: Icon(
                     Icons.description_outlined,
                     color: _statusColor,
@@ -178,9 +166,7 @@ class SolicitudCard extends StatelessWidget {
                     children: [
                       Text(
                         solicitud.displayTitle,
-                        style: AppTypography.body.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: AppCardStyles.listTitle,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -188,10 +174,7 @@ class SolicitudCard extends StatelessWidget {
                         const SizedBox(height: 2),
                         Text(
                           solicitud.displaySubtitulo!,
-                          style: AppTypography.small.copyWith(
-                            color: AppColors.textSecondary,
-                            fontWeight: FontWeight.w500,
-                          ),
+                          style: AppCardStyles.listSubtitle,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -204,10 +187,7 @@ class SolicitudCard extends StatelessWidget {
                           Flexible(
                             child: Text(
                               _statusLabel,
-                              style: AppTypography.small.copyWith(
-                                color: _statusColor,
-                                fontWeight: FontWeight.w600,
-                              ),
+                              style: AppCardStyles.statusText(_statusColor),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -216,22 +196,18 @@ class SolicitudCard extends StatelessWidget {
                             const SizedBox(width: 6),
                             Text(
                               '·',
-                              style: TextStyle(
+                              style: AppTypography.label.copyWith(
                                 color: AppColors.textDisabled,
-                                fontSize: 12,
                               ),
                             ),
                             const SizedBox(width: 6),
                             Flexible(
-                              child: Text(
-                                solicitud.nroRecibo,
-                                style: AppTypography.small.copyWith(
-                                  color: AppColors.primary,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                            child: Text(
+                              solicitud.nroRecibo,
+                              style: AppCardStyles.statusText(AppColors.primary),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                             ),
                           ],
                         ],
@@ -244,10 +220,7 @@ class SolicitudCard extends StatelessWidget {
                           Expanded(
                             child: Text(
                               DateFormat("dd/MM/yyyy · hh:mm a", 'es').format(solicitud.fecha),
-                              style: AppTypography.caption.copyWith(
-                                color: AppColors.textSecondary,
-                                fontSize: 11,
-                              ),
+                              style: AppCardStyles.listMeta,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),

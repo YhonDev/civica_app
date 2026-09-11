@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import '../../../core/format/app_currency.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
@@ -33,7 +33,7 @@ class BalanceAnualBottomSheet extends StatelessWidget {
       height: MediaQuery.of(context).size.height * 0.85,
       decoration: BoxDecoration(
         color: AppColors.background,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(AppSpacing.lg)),
       ),
       child: Column(
         children: [
@@ -45,7 +45,7 @@ class BalanceAnualBottomSheet extends StatelessWidget {
               height: 4,
               decoration: BoxDecoration(
                 color: AppColors.border,
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: BorderRadius.circular(AppSpacing.radiusProgress),
               ),
             ),
           ),
@@ -89,7 +89,7 @@ class BalanceAnualBottomSheet extends StatelessWidget {
                       ),
                       const SizedBox(height: AppSpacing.xs),
                       Text(
-                        '\$${_formatAmount(acumuladoAnual)}',
+                        AppCurrency.formatCompact(acumuladoAnual),
                         style: AppTypography.title.copyWith(
                           color: AppColors.primary,
                           fontWeight: FontWeight.w800,
@@ -106,7 +106,7 @@ class BalanceAnualBottomSheet extends StatelessWidget {
                         : porcentajeMeta >= 50
                             ? AppColors.warning.withValues(alpha: 0.1)
                             : AppColors.error.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
                   ),
                   child: Text(
                     '${porcentajeMeta.toStringAsFixed(0)}%',
@@ -142,7 +142,7 @@ class BalanceAnualBottomSheet extends StatelessWidget {
                   margin: const EdgeInsets.only(bottom: AppSpacing.sm),
                   elevation: 0,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                     side: BorderSide(
                       color: AppColors.border.withValues(alpha: 0.5),
                     ),
@@ -159,7 +159,7 @@ class BalanceAnualBottomSheet extends StatelessWidget {
                       subtitle: Row(
                         children: [
                           Text(
-                            'Recaudo: \$${_formatAmount(mes.recaudo)}',
+                            'Recaudo: ${AppCurrency.formatCompact(mes.recaudo)}',
                             style: AppTypography.body.copyWith(
                               color: AppColors.success,
                               fontWeight: FontWeight.bold,
@@ -175,7 +175,7 @@ class BalanceAnualBottomSheet extends StatelessWidget {
                               color: pctRecaudo >= 80
                                   ? AppColors.success.withValues(alpha: 0.1)
                                   : AppColors.warning.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                             ),
                             child: Text(
                               '${pctRecaudo.toStringAsFixed(0)}%',
@@ -193,13 +193,12 @@ class BalanceAnualBottomSheet extends StatelessWidget {
                       children: [
                         _buildDetailRow(
                           'Cobros Pendientes',
-                          NumberFormat.decimalPattern('es_CO')
-                              .format(mes.pendientes),
+                          '${mes.pendientes}',
                         ),
                         const SizedBox(height: AppSpacing.xs),
                         _buildDetailRow(
                           'Mora Total',
-                          '\$${_formatAmount(mes.mora)}',
+                          AppCurrency.format(mes.mora),
                           isError: mes.mora > 0,
                         ),
                       ],
@@ -238,14 +237,5 @@ class BalanceAnualBottomSheet extends StatelessWidget {
       'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
     ];
     return '${months[mes - 1]} $anio';
-  }
-
-  String _formatAmount(double amount) {
-    if (amount >= 1000000) {
-      return '${(amount / 1000000).toStringAsFixed(1)}M';
-    } else if (amount >= 1000) {
-      return '${(amount / 1000).toStringAsFixed(0)}K';
-    }
-    return amount.toStringAsFixed(0);
   }
 }

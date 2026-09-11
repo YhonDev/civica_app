@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_spacing.dart';
 
+import '../../core/format/app_currency.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 
@@ -55,7 +57,7 @@ class LineChartWidget extends StatelessWidget {
         SizedBox(
           height: height,
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
             child: CustomPaint(
               size: Size(double.infinity, height),
               painter: _LineChartPainter(points: points),
@@ -174,8 +176,8 @@ class _LineChartPainter extends CustomPainter {
       final tp = TextPainter(
         text: TextSpan(
           text: points[i].day,
-          style: TextStyle(
-            fontSize: 10,
+          style: AppTypography.micro.copyWith(
+            fontWeight: FontWeight.w400,
             color: AppColors.textDisabled,
           ),
         ),
@@ -191,8 +193,8 @@ class _LineChartPainter extends CustomPainter {
       final tp = TextPainter(
         text: TextSpan(
           text: _formatValue(maxPoint.value),
-          style: TextStyle(
-            fontSize: 10,
+          style: AppTypography.micro.copyWith(
+            fontWeight: FontWeight.w400,
             color: AppColors.textDisabled,
           ),
         ),
@@ -205,11 +207,7 @@ class _LineChartPainter extends CustomPainter {
     }
   }
 
-  String _formatValue(double value) {
-    if (value >= 1000000) return '\$${(value / 1000000).toStringAsFixed(1)}M';
-    if (value >= 1000) return '\$${(value / 1000).toStringAsFixed(0)}k';
-    return '\$${value.toStringAsFixed(0)}';
-  }
+  String _formatValue(double value) => AppCurrency.formatCompact(value);
 
   @override
   bool shouldRepaint(covariant _LineChartPainter oldDelegate) {

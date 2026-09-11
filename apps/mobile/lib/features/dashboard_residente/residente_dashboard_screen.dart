@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import '../../core/network/error_messages.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import '../../core/format/app_currency.dart';
 
 import '../../features/auth/auth_cubit.dart';
 import '../../core/theme/app_breakpoints.dart';
@@ -151,7 +153,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
         }
       },
       onError: (e) {
-        debugPrint('Error loading dashboard: $e');
+        debugPrint('Error loading dashboard: ${sanitizeApiError(e)}');
         if (mounted && !silent && LocalCacheRepository.instance.getCached('dashboard:residente') == null) {
           setState(() {
             _loading = false;
@@ -263,8 +265,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
       );
     }
 
-    final saldoFormatted = NumberFormat.decimalPattern('es_CO').format(_saldo);
-    final saldoLabelText = _saldo > 0 ? 'Deuda total: \$$saldoFormatted' : 'Deuda total: \$0';
+    final saldoLabelText = _saldo > 0 ? 'Deuda total: ${AppCurrency.format(_saldo)}' : 'Deuda total: \$ 0';
     final isWide = context.isWideScreen;
 
     final leftColumnWidgets = <Widget>[
@@ -460,8 +461,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
     final fallbackMonth = toBeginningOfSentenceCase(DateFormat('MMMM', 'es').format(dateObj));
     final monthName = item['mes'] ?? fallbackMonth;
 
-    final montoValue = NumberFormat.decimalPattern('es_CO').format(item['monto'] as int);
-    final montoStr = '\$ $montoValue';
+    final montoStr = AppCurrency.format(item['monto'] as int);
     final numeroCuota = item['numeroPago'] ?? '${index + 1}';
 
     final bool isProgramada = item['cobroId'] == null;
@@ -484,16 +484,15 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
 
     if (isProgramada) {
       rightWidget = Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
         decoration: BoxDecoration(
           color: AppColors.border.withValues(alpha: 0.2),
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
         ),
         child: Text(
           'Programada',
-          style: AppTypography.small.copyWith(
+          style: AppTypography.micro.copyWith(
             color: AppColors.textSecondary,
-            fontSize: 10.5,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -505,10 +504,10 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
       final badgeLabel = isEnCamino ? 'En camino' : 'En solicitud';
 
       rightWidget = Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
         decoration: BoxDecoration(
           color: badgeColor.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
           border: Border.all(color: badgeColor.withValues(alpha: 0.4)),
         ),
         child: Row(
@@ -518,10 +517,8 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
             const SizedBox(width: 4),
             Text(
               badgeLabel,
-              style: AppTypography.small.copyWith(
+              style: AppTypography.micro.copyWith(
                 color: badgeColor,
-                fontSize: 10.5,
-                fontWeight: FontWeight.bold,
               ),
             ),
           ],
@@ -535,7 +532,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
         icon: Icon(Icons.front_hand_outlined, size: 14, color: AppColors.success),
         label: Text(
           'Solicitar Cobro',
-          style: TextStyle(color: AppColors.success, fontSize: 11.5, fontWeight: FontWeight.bold),
+          style: AppTypography.smallBold.copyWith(color: AppColors.success),
         ),
         style: OutlinedButton.styleFrom(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -544,7 +541,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
           side: BorderSide(color: AppColors.success.withValues(alpha: 0.5)),
           foregroundColor: AppColors.success,
           backgroundColor: AppColors.success.withValues(alpha: 0.05),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusMd)),
         ),
       );
     }
@@ -560,9 +557,8 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
               children: [
                 Text(
                   '$monthName — Cuota $numeroCuota',
-                  style: AppTypography.bodyMedium.copyWith(
+                  style: AppTypography.bodySmall.copyWith(
                     fontWeight: FontWeight.bold,
-                    fontSize: 14,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -570,9 +566,8 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
                 const SizedBox(height: 2),
                 Text(
                   '$montoStr · Vence $fecha',
-                  style: AppTypography.caption.copyWith(
+                  style: AppTypography.small.copyWith(
                     color: AppColors.textSecondary,
-                    fontSize: 11.5,
                   ),
                 ),
               ],
@@ -690,7 +685,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
       }
     } catch (e) {
       if (mounted) {
-        TopToast.showError(context, 'Error al enviar solicitud: $e');
+        TopToast.showError(context, 'Error al enviar solicitud: ${sanitizeApiError(e)}');
       }
       return;
     }
@@ -700,7 +695,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
         await _loadDashboardData(silent: true);
       }
     } catch (e) {
-      debugPrint('[ResidenteDashboard] Advertencia al refrescar dashboard: $e');
+      debugPrint('[ResidenteDashboard] Advertencia al refrescar dashboard: ${sanitizeApiError(e)}');
     }
   }
 
@@ -834,12 +829,12 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
       color: Colors.transparent,
       child: InkWell(
         onTap: () => _openTicket(item),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
           ),
           child: Row(
             children: [
@@ -847,7 +842,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                 ),
                 child: Icon(icon, color: color, size: 20),
               ),
@@ -872,7 +867,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    NumberFormat.currency(locale: 'es_CO', symbol: r'$', decimalDigits: 0).format(item.monto ?? 0),
+                    AppCurrency.format(item.monto ?? 0),
                     style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 2),
@@ -907,7 +902,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
                 color: AppColors.warning.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
               ),
               child: Text(
                 '${_solicitudesPendientes.length}',
@@ -991,11 +986,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
   // ── Open detailed view for pending requests ────────────────────────
   void _mostrarDetalleSolicitud(SolicitudData solicitud) {
     final montoStr = _proximoPago != null
-        ? NumberFormat.currency(
-            locale: 'es_CO',
-            symbol: r'$',
-            decimalDigits: 0,
-          ).format(_proximoPago!['monto'] as int)
+        ? AppCurrency.format(_proximoPago!['monto'] as int)
         : '—';
 
     SolicitudBottomSheet.show(

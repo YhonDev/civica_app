@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_card_styles.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
-import '../../core/theme/app_typography.dart';
 
 /// A compact stat card used in a row of 3.
 ///
@@ -30,30 +30,19 @@ class MiniStatCard extends StatelessWidget {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(AppSpacing.cardInnerPadding),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.05),
-          border: Border.all(
-            color: color.withValues(alpha: 0.1),
-            width: 1,
-          ),
-          borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-        ),
+        decoration: AppCardStyles.tintedCard(color),
         child: Column(
           children: [
             Icon(icon, color: color, size: 22),
             const SizedBox(height: AppSpacing.xs + 2),
             Text(
               value,
-              style: AppTypography.subtitle.copyWith(
-                color: AppColors.textPrimary,
-              ),
+              style: AppCardStyles.kpiStatValue(AppColors.textPrimary),
             ),
             const SizedBox(height: 2),
             Text(
               label,
-              style: AppTypography.small.copyWith(
-                color: AppColors.textSecondary,
-              ),
+              style: AppCardStyles.kpiLabel,
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,

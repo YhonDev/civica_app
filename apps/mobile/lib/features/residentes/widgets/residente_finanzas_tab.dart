@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../../core/widgets/top_toast.dart';
+import '../../../core/network/error_messages.dart';
+import '../../../core/format/app_currency.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
@@ -53,8 +56,9 @@ class _ResidenteFinanzasScreenState extends State<ResidenteFinanzasScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al cargar deudas: $e')),
+        TopToast.showError(
+          context,
+          'Error al cargar deudas: ${sanitizeApiError(e)}',
         );
       }
     }
@@ -78,16 +82,18 @@ class _ResidenteFinanzasScreenState extends State<ResidenteFinanzasScreen> {
               final success = await _repo.deleteCuota(id);
               if (success) {
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Cobro eliminado. La deuda ha desaparecido.')),
+                  TopToast.showSuccess(
+                    context,
+                    'Cobro eliminado. La deuda ha desaparecido.',
                   );
                 }
                 _loadDeudas();
               } else {
                 if (mounted) {
                   setState(() => _isLoading = false);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Error: No se pudo eliminar la cuota.')),
+                  TopToast.showError(
+                    context,
+                    'No se pudo eliminar la cuota.',
                   );
                 }
               }
@@ -144,8 +150,8 @@ class _ResidenteFinanzasScreenState extends State<ResidenteFinanzasScreen> {
         itemBuilder: (context, index) {
           final cuota = _cuotas[index];
           final estado = cuota['estado'] as String;
-          final monto = (cuota['monto'] ?? 0) / 100.0;
-          final montoPagado = (cuota['montoPagado'] ?? 0) / 100.0;
+          final monto = AppCurrency.centsFromJson(cuota['monto']).toDouble();
+          final montoPagado = AppCurrency.centsFromJson(cuota['montoPagado']).toDouble();
           final saldo = monto - montoPagado;
           final concepto = cuota['concepto'] ?? 'Cobro';
           final mesStr = cuota['periodoInicio'] != null 
@@ -170,20 +176,20 @@ class _ResidenteFinanzasScreenState extends State<ResidenteFinanzasScreen> {
                 children: [
                   const SizedBox(height: 4),
                   Text(
-                    'Valor: \$${monto.toStringAsFixed(2)}',
+                    'Valor: ${AppCurrency.format(monto)}',
                     style: AppTypography.caption,
                   ),
                   if (saldo > 0 && saldo < monto)
                     Text(
-                      'Saldo: \$${saldo.toStringAsFixed(2)}',
+                      'Saldo: ${AppCurrency.format(saldo)}',
                       style: AppTypography.caption.copyWith(color: AppColors.error, fontWeight: FontWeight.w600),
                     ),
                   const SizedBox(height: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
                     decoration: BoxDecoration(
                       color: estadoColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                     ),
                     child: Text(
                       estado,

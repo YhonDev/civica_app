@@ -50,10 +50,8 @@ class _CobradorSolicitudesScreenState extends State<CobradorSolicitudesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+      backgroundColor: AppColors.screenBackground,
       appBar: AppBar(
         title: const Text('Solicitudes de Cobro'),
         leading: IconButton(
@@ -140,8 +138,8 @@ class _CobradorSolicitudesScreenState extends State<CobradorSolicitudesScreen> {
                 // Barra de búsqueda rápida
                 Container(
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF1E293B) : Colors.white,
-                    borderRadius: BorderRadius.circular(12),
+                    color: AppColors.cobradorCard,
+                    borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                     border: Border.all(color: AppColors.border),
                   ),
                   child: TextField(
@@ -197,10 +195,9 @@ class _CobradorSolicitudesScreenState extends State<CobradorSolicitudesScreen> {
                     ),
                     Text(
                       'La más antigua arriba',
-                      style: AppTypography.caption.copyWith(
+                      style: AppTypography.small.copyWith(
                         color: AppColors.primary,
                         fontStyle: FontStyle.italic,
-                        fontSize: 11,
                       ),
                     ),
                   ],
@@ -289,7 +286,7 @@ class _CobradorSolicitudesScreenState extends State<CobradorSolicitudesScreen> {
       side: BorderSide(
         color: isSelected ? AppColors.primary : AppColors.border,
       ),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusMd)),
       visualDensity: VisualDensity.compact,
     );
   }

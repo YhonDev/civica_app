@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/network/error_messages.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
@@ -55,7 +56,7 @@ class _ManzanasScreenState extends State<ManzanasScreen> {
           _isLoading = false;
           _isRefreshing = false;
         });
-        TopToast.showError(context, 'Error al cargar manzanas: $e');
+        TopToast.showError(context, 'Error al cargar manzanas: ${sanitizeApiError(e)}');
       }
     }
   }
@@ -72,7 +73,7 @@ class _ManzanasScreenState extends State<ManzanasScreen> {
       }
     } catch (e) {
       if (mounted) {
-        TopToast.showError(context, 'Error al crear manzana: $e');
+        TopToast.showError(context, 'Error al crear manzana: ${sanitizeApiError(e)}');
       }
     }
   }
@@ -198,10 +199,8 @@ class _ManzanasScreenState extends State<ManzanasScreen> {
                         }
                       },
                       selectedColor: AppColors.primary,
-                      labelStyle: AppTypography.caption.copyWith(
+                      labelStyle: AppTypography.smallBold.copyWith(
                         color: isSelected ? Colors.white : AppColors.textSecondary,
-                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                        fontSize: 11,
                       ),
                       backgroundColor: AppColors.surface,
                       shape: RoundedRectangleBorder(
@@ -224,9 +223,9 @@ class _ManzanasScreenState extends State<ManzanasScreen> {
                 child: FilledButton.tonalIcon(
                   onPressed: () => _crearManzanaAutomatica(_selectedEtapaId, activeManzanas),
                   icon: const Icon(Icons.add_rounded, size: 18),
-                  label: const Text(
+                  label: Text(
                     'Nueva Manzana',
-                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                    style: AppTypography.smallBold,
                   ),
                   style: FilledButton.styleFrom(
                     visualDensity: VisualDensity.compact,
@@ -262,7 +261,7 @@ class _ManzanasScreenState extends State<ManzanasScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
                       color: AppColors.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                     ),
                     child: Text(
                       '${activeManzanas.length} registradas',
@@ -324,7 +323,7 @@ class _ManzanasScreenState extends State<ManzanasScreen> {
                               height: 38,
                               decoration: BoxDecoration(
                                 color: AppColors.primary.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                               ),
                               child: Icon(
                                 Icons.grid_view_rounded,
@@ -389,7 +388,7 @@ class _ManzanasScreenState extends State<ManzanasScreen> {
                 }
               } catch (e) {
                 if (mounted) {
-                  TopToast.showError(context, 'Error al eliminar: $e');
+                  TopToast.showError(context, 'Error al eliminar: ${sanitizeApiError(e)}');
                 }
               }
             },

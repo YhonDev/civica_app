@@ -84,7 +84,9 @@ class LocalCacheRepository {
       try {
         onData(cached as T, true);
       } catch (e) {
-        debugPrint('[SWR] Error rendering cached data for key $key: $e');
+        if (kDebugMode) {
+          debugPrint('[SWR] Error rendering cached data for key $key: $e');
+        }
       }
     }
 
@@ -93,7 +95,9 @@ class LocalCacheRepository {
       setCache(key, fresh);
       onData(fresh, false);
     } catch (e) {
-      debugPrint('[SWR] Background fetch failed for key $key: $e');
+      if (kDebugMode) {
+        debugPrint('[SWR] Background fetch failed for key $key: $e');
+      }
       if (!hasCached && onError != null) {
         onError(e);
       }

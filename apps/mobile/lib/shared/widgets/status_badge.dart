@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_card_styles.dart';
 import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_typography.dart';
 
 /// Semantic status types used across the app.
 ///
@@ -82,10 +82,7 @@ class StatusBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: _color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(20),
-      ),
+      decoration: AppCardStyles.badge(_color, alpha: 0.12, radius: 20, withBorder: false),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -93,7 +90,7 @@ class StatusBadge extends StatelessWidget {
           const SizedBox(width: 5),
           Text(
             _label,
-            style: (textStyle ?? AppTypography.small).copyWith(
+            style: (textStyle ?? AppCardStyles.badgePillText).copyWith(
               color: _color,
               fontWeight: FontWeight.w600,
             ),

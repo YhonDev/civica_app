@@ -18,6 +18,12 @@ class AppBreakpoints {
 
   /// Maximum content width to prevent extreme horizontal stretching on 4K/Ultrawide displays.
   static const double maxContentWidth = 1200.0;
+
+  /// Escala máxima de texto de sistema que la UI soporta sin recortes.
+  /// MaterialApp acota el textScaler a [1.0, maxTextScale] (ver main.dart);
+  /// las alturas fijas que dependen de texto deben multiplicarse por
+  /// `context.scaleForText` en lugar de quedarse fijas.
+  static const double maxTextScale = 1.3;
 }
 
 /// Convenience extensions on [BuildContext] for responsive layout checks.
@@ -46,5 +52,14 @@ extension ResponsiveContext on BuildContext {
     if (screenWidth >= AppBreakpoints.medium) return 3;
     if (screenWidth >= AppBreakpoints.compact) return 2;
     return 1;
+  }
+
+  /// Factor de escala efectivo del texto del sistema, acotado al rango que
+  /// la UI soporta ([AppBreakpoints.maxTextScale]). Úsalo SOLO para escalar
+  /// alturas fijas que contienen texto (extents de grid, tamaños de filas);
+  /// los tamaños de fuente nunca se escalan a mano — van por AppTypography.
+  double get scaleForText {
+    final raw = MediaQuery.textScalerOf(this).scale(14) / 14;
+    return raw.clamp(1.0, AppBreakpoints.maxTextScale);
   }
 }

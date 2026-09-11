@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import '../../core/widgets/top_toast.dart';
+import '../../core/network/error_messages.dart';
+import '../../core/format/app_currency.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
@@ -47,14 +49,16 @@ class _SyncQueueScreenState extends State<SyncQueueScreen> {
       await SyncService.instance.syncPendingPagos();
       await _loadQueue();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Proceso de sincronización ejecutado.')),
+        TopToast.showSuccess(
+          context,
+          'Proceso de sincronización ejecutado.',
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al sincronizar: $e')),
+        TopToast.showError(
+          context,
+          'Error al sincronizar: ${sanitizeApiError(e)}',
         );
       }
     } finally {
@@ -66,8 +70,9 @@ class _SyncQueueScreenState extends State<SyncQueueScreen> {
     final count = await SyncService.instance.limpiarSincronizados();
     await _loadQueue();
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Se limpiaron $count registro(s) sincronizados.')),
+      TopToast.showInfo(
+        context,
+        'Se limpiaron $count registro(s) sincronizados.',
       );
     }
   }
@@ -78,22 +83,22 @@ class _SyncQueueScreenState extends State<SyncQueueScreen> {
       await SyncService.instance.reintentarPago(id);
       await _loadQueue();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Reintento manual completado.')),
+        TopToast.showSuccess(
+          context,
+          'Reintento manual completado.',
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Reintento fallido: $e')),
+        TopToast.showError(
+          context,
+          'Reintento fallido: ${sanitizeApiError(e)}',
         );
       }
     } finally {
       if (mounted) setState(() => _syncing = false);
     }
   }
-
-  final currencyFormat = NumberFormat.currency(symbol: '\$', decimalDigits: 0, locale: 'es_CO');
 
   @override
   Widget build(BuildContext context) {
@@ -133,9 +138,7 @@ class _SyncQueueScreenState extends State<SyncQueueScreen> {
                       children: [
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
-                          color: Theme.of(context).brightness == Brightness.dark
-                              ? const Color(0xFF0F172A)
-                              : const Color(0xFFF8FAFC),
+                          color: AppColors.screenBackground,
                           child: Row(
                             children: [
                               Icon(Icons.info_outline_rounded, size: 16, color: AppColors.textSecondary),
@@ -159,7 +162,7 @@ class _SyncQueueScreenState extends State<SyncQueueScreen> {
                               final id = item['id'] as String;
                               final clientPaymentId = item['clientPaymentId'] as String? ?? 'ID Local';
                               final montoCents = (item['monto'] as num?)?.toInt() ?? 0;
-                              final montoCop = (montoCents / 100).round();
+                              final montoCop = AppCurrency.centsToPesos(montoCents);
                               final fecha = item['fechaPago'] as String? ?? '';
                               final syncStatus = item['syncStatus'] as String? ?? 'PENDIENTE_SYNC';
 
@@ -187,7 +190,7 @@ class _SyncQueueScreenState extends State<SyncQueueScreen> {
                               return Card(
                                 elevation: 0,
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
+                                  borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
                                   side: BorderSide(color: statusColor.withValues(alpha: 0.3)),
                                 ),
                                 child: Padding(
@@ -208,7 +211,7 @@ class _SyncQueueScreenState extends State<SyncQueueScreen> {
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
                                             Text(
-                                              currencyFormat.format(montoCop),
+                                              AppCurrency.format(montoCop),
                                               style: AppTypography.subtitle.copyWith(fontWeight: FontWeight.bold),
                                             ),
                                             const SizedBox(height: 2),
@@ -230,14 +233,12 @@ class _SyncQueueScreenState extends State<SyncQueueScreen> {
                                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                             decoration: BoxDecoration(
                                               color: statusColor.withValues(alpha: 0.15),
-                                              borderRadius: BorderRadius.circular(12),
+                                              borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                                             ),
                                             child: Text(
                                               statusLabel,
-                                              style: AppTypography.caption.copyWith(
+                                              style: AppTypography.smallBold.copyWith(
                                                 color: statusColor,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 11,
                                               ),
                                             ),
                                           ),
@@ -245,22 +246,22 @@ class _SyncQueueScreenState extends State<SyncQueueScreen> {
                                             const SizedBox(height: 6),
                                             InkWell(
                                               onTap: _syncing ? null : () => _reintentarItem(id),
-                                              borderRadius: BorderRadius.circular(8),
+                                              borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                                               child: Container(
                                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                                 decoration: BoxDecoration(
                                                   color: AppColors.error.withValues(alpha: 0.1),
-                                                  borderRadius: BorderRadius.circular(8),
+                                                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                                                   border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
                                                 ),
                                                 child: Row(
                                                   mainAxisSize: MainAxisSize.min,
-                                                  children: const [
+                                                  children: [
                                                     Icon(Icons.refresh_rounded, size: 12, color: Colors.red),
                                                     SizedBox(width: 4),
                                                     Text(
                                                       'Reintentar',
-                                                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.red),
+                                                      style: AppTypography.smallBold.copyWith(color: Colors.red),
                                                     ),
                                                   ],
                                                 ),

@@ -54,7 +54,7 @@ class ActionCard extends StatelessWidget {
                   height: 36,
                   decoration: BoxDecoration(
                     color: AppColors.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                   ),
                   child: Icon(
                     icon,

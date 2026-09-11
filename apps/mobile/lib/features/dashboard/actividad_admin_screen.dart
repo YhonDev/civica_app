@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/format/app_currency.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
@@ -9,9 +10,9 @@ import 'models/dashboard_data.dart';
 
 import '../../shared/widgets/screen_header.dart';
 import '../../shared/widgets/empty_state.dart';
-import '../../shared/widgets/ticket_bottom_sheet.dart';
 import '../../shared/widgets/solicitud_bottom_sheet.dart';
 import '../../shared/widgets/solicitud_card.dart';
+import 'widgets/actividad_section.dart';
 
 class ActividadAdminScreen extends StatefulWidget {
   const ActividadAdminScreen({super.key});
@@ -100,14 +101,48 @@ class _ActividadAdminScreenState extends State<ActividadAdminScreen> {
                       : SingleChildScrollView(
                           padding: const EdgeInsets.all(AppSpacing.screenPadding),
                           child: TimelineWidget(
-                            items: _filteredItems.map((a) => TimelineItem(
-                              id: a.id,
-                              tipo: a.tipo,
-                              descripcion: a.descripcion.replaceAll(': undefined', ''),
-                              usuario: a.usuario,
-                              timestamp: a.timestamp,
-                              hace: a.hace,
-                            )).toList(),
+                            items: _filteredItems.map((a) {
+                              final isPago = a.tipo.toLowerCase().contains('pago') || a.tipo.toLowerCase().contains('cobro');
+                              final isSolicitud = a.tipo.toLowerCase().contains('solicitud');
+                              final isResidente = a.tipo.toLowerCase().contains('residente');
+
+                              final contextTitle = isPago
+                                  ? 'Pago realizado'
+                                  : (isSolicitud
+                                      ? 'Solicitud de Revisión'
+                                      : (isResidente ? 'Residente Actualizado' : null));
+
+                              String? montoStr;
+                              int? montoInt;
+                              if (isPago) {
+                                if (a.metadata['monto'] != null) {
+                                  montoInt = AppCurrency.centsFromJson(a.metadata['monto']);
+                                  montoStr = AppCurrency.format(montoInt);
+                                } else {
+                                  montoStr = ActividadSection.formatDescripcion(a);
+                                }
+                              }
+
+                              final residente = a.metadata['residenteNombre'] as String? ??
+                                  a.metadata['residente'] as String? ??
+                                  (isPago ? null : a.usuario);
+                              final inmueble = ActividadSection.formatInmueble(a.metadata);
+
+                              return TimelineItem(
+                                id: a.id,
+                                tipo: a.tipo,
+                                descripcion: ActividadSection.formatDescripcion(a),
+                                usuario: a.usuario,
+                                timestamp: a.timestamp,
+                                hace: a.hace,
+                                contexto: contextTitle,
+                                monto: montoInt,
+                                montoFormateado: montoStr,
+                                residente: residente,
+                                inmueble: inmueble.isNotEmpty ? inmueble : null,
+                                metadata: a.metadata,
+                              );
+                            }).toList(),
                             onItemTap: _mostrarDetalleActividad,
                           ),
                         ),
@@ -170,24 +205,7 @@ class _ActividadAdminScreenState extends State<ActividadAdminScreen> {
     final isJornada = item.tipo.toLowerCase().contains('jornada') || item.tipo.toLowerCase().contains('ruta');
 
     if (isPago) {
-      final meta = orig.metadata;
-      final parsedMonto = meta['monto'] is int
-          ? meta['monto'] as int
-          : (meta['monto'] is double ? (meta['monto'] as double).toInt() : 2000000);
-
-      TicketBottomSheet.show(
-        context,
-        TicketData(
-          numero: meta['clientPaymentId'] as String? ?? 'REC-${item.id.substring(0, 8).toUpperCase()}',
-          fecha: item.timestamp,
-          residente: orig.usuario,
-          casa: orig.descripcion.replaceAll(': undefined', ''),
-          monto: parsedMonto,
-          metodo: 'Efectivo',
-          estado: 'Pagado',
-          cobrador: meta['cobradorNombre'] as String? ?? orig.usuario,
-        ),
-      );
+      ActividadSection.showPagoTicket(context, orig, itemId: item.id);
       return;
     }
 
@@ -220,7 +238,7 @@ class _ActividadAdminScreenState extends State<ActividadAdminScreen> {
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.chipRadius)),
       ),
       builder: (context) => Padding(
         padding: const EdgeInsets.all(AppSpacing.cardPadding),
@@ -253,7 +271,7 @@ class _ActividadAdminScreenState extends State<ActividadAdminScreen> {
                     children: [
                       Text(
                         isJornada ? 'Resumen de Jornada de Cobro' : 'Solicitud de Revisión',
-                        style: AppTypography.title.copyWith(fontSize: 16, fontWeight: FontWeight.bold),
+                        style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.bold),
                       ),
                       Text(
                         'Cobrador / Usuario: ${item.usuario}',
@@ -272,7 +290,7 @@ class _ActividadAdminScreenState extends State<ActividadAdminScreen> {
                 builder: (context) {
                   final meta = orig.metadata;
                   final rec = meta['totalRecaudado'] as num?;
-                  final recStr = rec != null ? '\$ ${(rec / 100).toStringAsFixed(0)}' : 'Recaudo de Jornada';
+                  final recStr = rec != null ? AppCurrency.formatCents(rec.round()) : 'Recaudo de Jornada';
                   final hInicio = meta['horaInicio'] as String?;
                   final hFin = meta['horaFin'] as String?;
                   final horarioStr = (hInicio != null && hFin != null) ? '$hInicio - $hFin' : item.hace;
@@ -287,7 +305,7 @@ class _ActividadAdminScreenState extends State<ActividadAdminScreen> {
                         padding: const EdgeInsets.all(AppSpacing.md),
                         decoration: BoxDecoration(
                           color: AppColors.success.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                           border: Border.all(color: AppColors.success.withValues(alpha: 0.2)),
                         ),
                         child: Column(
@@ -304,10 +322,9 @@ class _ActividadAdminScreenState extends State<ActividadAdminScreen> {
                             const SizedBox(height: 4),
                             Text(
                               recStr,
-                              style: AppTypography.title.copyWith(
+                              style: AppTypography.stat.copyWith(
                                 color: AppColors.success,
                                 fontWeight: FontWeight.w900,
-                                fontSize: 22,
                               ),
                             ),
                           ],
@@ -371,7 +388,7 @@ class _ActividadAdminScreenState extends State<ActividadAdminScreen> {
       padding: const EdgeInsets.all(AppSpacing.sm),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
         border: Border.all(color: AppColors.border),
       ),
       child: Column(
@@ -384,7 +401,7 @@ class _ActividadAdminScreenState extends State<ActividadAdminScreen> {
               Expanded(
                 child: Text(
                   label,
-                  style: AppTypography.caption.copyWith(color: AppColors.textSecondary, fontSize: 11),
+                  style: AppTypography.small.copyWith(color: AppColors.textSecondary),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
