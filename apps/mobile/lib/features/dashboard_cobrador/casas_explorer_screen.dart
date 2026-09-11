@@ -1309,135 +1309,269 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
           },
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.cardInnerPadding),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 1. Fila de Cabecera: Semáforo + Dirección (Etapa + Mz/Casa) + Badge de Estado
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    // Semáforo Indicator
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: color.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
-                      ),
-                      child: Center(child: Text(emoji, style: AppTypography.emoji)),
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isCompact = constraints.maxWidth < 350;
 
-                    // Etapa badge + Manzana — Casa
-                    Expanded(
-                      child: Row(
+                if (isCompact) {
+                  // ── MODO COMPACTO (< 350dp: Poco X7 Pro y pantallas angostas) ──
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // 1. Fila de Cabecera: Semáforo + Dirección (Etapa + Mz/Casa) + Badge de Estado
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            margin: const EdgeInsets.only(right: 6),
+                            width: 32,
+                            height: 32,
                             decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                              color: color.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
+                            ),
+                            child: Center(child: Text(emoji, style: AppTypography.emoji)),
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          Expanded(
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  margin: const EdgeInsets.only(right: 6),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                                  ),
+                                  child: Text(
+                                    etapaNombre,
+                                    style: AppTypography.micro.copyWith(
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    alignment: Alignment.centerLeft,
+                                    child: Text(
+                                      direccionCompleta,
+                                      style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w700),
+                                      maxLines: 1,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: color.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                             ),
                             child: Text(
-                              etapaNombre,
-                              style: AppTypography.micro.copyWith(
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.w800,
+                              label,
+                              style: AppTypography.small.copyWith(
+                                color: color,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ),
-                          Expanded(
-                            child: Text(
-                              direccionCompleta,
-                              style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w700),
+                        ],
+                      ),
+                      const SizedBox(height: 5),
+
+                      // 2. Residente (a todo lo ancho)
+                      Text(
+                        casa.residenteNombre,
+                        style: AppTypography.small.copyWith(
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+
+                      // 3. Cuota (a todo lo ancho)
+                      if (cuotaInfo.nombre != null && cuotaInfo.nombre!.isNotEmpty) ...[
+                        const SizedBox(height: 3),
+                        Text(
+                          cuotaInfo.nombre!,
+                          style: AppTypography.small.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+
+                      // 4. Pie de tarjeta: Vence a la izquierda, Saldo a la derecha
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          if (cuotaInfo.fechaVencimiento != null &&
+                              cuotaInfo.fechaVencimiento!.isNotEmpty)
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.event_rounded, size: 13, color: AppColors.textSecondary),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Vence: ${_formatFechaCorta(cuotaInfo.fechaVencimiento)}',
+                                  style: AppTypography.small.copyWith(
+                                    color: AppColors.textSecondary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            )
+                          else
+                            const SizedBox.shrink(),
+                          if (casa.saldo > 0)
+                            Text(
+                              _formatPesos(casa.saldo),
+                              style: AppTypography.bodyMedium.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
+                  );
+                } else {
+                  // ── MODO ESTÁNDAR (>= 350dp: Poco X3 Pro, Tablets, Web) ──
+                  return Row(
+                    children: [
+                      // Semáforo Indicator
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: color.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
+                        ),
+                        child: Center(child: Text(emoji, style: AppTypography.emoji)),
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+
+                      // Info de Casa y Residente — 4 filas estructuradas
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Fila 1: Etapa badge + Manzana — Casa
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  margin: const EdgeInsets.only(right: 6),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                                  ),
+                                  child: Text(
+                                    etapaNombre,
+                                    style: AppTypography.micro.copyWith(
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Text(
+                                    direccionCompleta,
+                                    style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w700),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 2),
+                            // Fila 2: Residente
+                            Text(
+                              casa.residenteNombre,
+                              style: AppTypography.small.copyWith(
+                                color: AppColors.textSecondary,
+                                fontWeight: FontWeight.w600,
+                              ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-
-                    // Badge de Estado
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: color.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-                      ),
-                      child: Text(
-                        label,
-                        style: AppTypography.small.copyWith(
-                          color: color,
-                          fontWeight: FontWeight.w600,
+                            // Fila 3: Cuota (según el sábado seleccionado o mora)
+                            if (cuotaInfo.nombre != null && cuotaInfo.nombre!.isNotEmpty) ...[
+                              const SizedBox(height: 3),
+                              Text(
+                                cuotaInfo.nombre!,
+                                style: AppTypography.small.copyWith(
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                            // Fila 4: Fecha de vencimiento (según el sábado seleccionado o mora)
+                            if (cuotaInfo.fechaVencimiento != null &&
+                                cuotaInfo.fechaVencimiento!.isNotEmpty) ...[
+                              const SizedBox(height: 2),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.event_rounded, size: 12, color: AppColors.textSecondary),
+                                  const SizedBox(width: 3),
+                                  Text(
+                                    'Vence: ${_formatFechaCorta(cuotaInfo.fechaVencimiento)}',
+                                    style: AppTypography.small.copyWith(
+                                      color: AppColors.textSecondary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ],
                         ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 5),
 
-                // 2. Residente (a todo lo ancho)
-                Text(
-                  casa.residenteNombre,
-                  style: AppTypography.small.copyWith(
-                    color: AppColors.textSecondary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-
-                // 3. Cuota (a todo lo ancho)
-                if (cuotaInfo.nombre != null && cuotaInfo.nombre!.isNotEmpty) ...[
-                  const SizedBox(height: 3),
-                  Text(
-                    cuotaInfo.nombre!,
-                    style: AppTypography.small.copyWith(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w700,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-
-                // 4. Pie de tarjeta: Vence a la izquierda, Saldo a la derecha
-                const SizedBox(height: 4),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    if (cuotaInfo.fechaVencimiento != null &&
-                        cuotaInfo.fechaVencimiento!.isNotEmpty)
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
+                      // Estado + Saldo
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          Icon(Icons.event_rounded, size: 13, color: AppColors.textSecondary),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Vence: ${_formatFechaCorta(cuotaInfo.fechaVencimiento)}',
-                            style: AppTypography.small.copyWith(
-                              color: AppColors.textSecondary,
-                              fontWeight: FontWeight.w600,
+                          if (casa.saldo > 0)
+                            Text(
+                              _formatPesos(casa.saldo),
+                              style: AppTypography.bodyMedium.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                          const SizedBox(height: 3),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: color.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+                            ),
+                            child: Text(
+                              label,
+                              style: AppTypography.small.copyWith(
+                                color: color,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ],
-                      )
-                    else
-                      const SizedBox.shrink(),
-                    if (casa.saldo > 0)
-                      Text(
-                        _formatPesos(casa.saldo),
-                        style: AppTypography.bodyMedium.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
-                        ),
                       ),
-                  ],
-                ),
-              ],
+                    ],
+                  );
+                }
+              },
             ),
           ),
         ),
