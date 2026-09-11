@@ -90,16 +90,26 @@ class ModuleSummaryCard extends StatelessWidget {
                           final content = Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                item.value,
-                                style: AppCardStyles.bigStat(
-                                  item.color ?? AppColors.textPrimary,
+                              FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  item.value,
+                                  style: AppCardStyles.bigStat(
+                                    item.color ?? AppColors.textPrimary,
+                                  ),
+                                  maxLines: 1,
                                 ),
                               ),
                               const SizedBox(height: 2),
-                              Text(
-                                item.label,
-                                style: AppCardStyles.kpiLabel,
+                              FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  item.label,
+                                  style: AppCardStyles.kpiLabel,
+                                  maxLines: 1,
+                                ),
                               ),
                             ],
                           );

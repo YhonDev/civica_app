@@ -223,9 +223,14 @@ class _HistorialScreenState extends State<HistorialScreen> {
                                               Row(
                                                 children: [
                                                   Expanded(
-                                                    child: Text(
-                                                      '$manzana $casa',
-                                                      style: AppTypography.cardTitle,
+                                                    child: FittedBox(
+                                                      fit: BoxFit.scaleDown,
+                                                      alignment: Alignment.centerLeft,
+                                                      child: Text(
+                                                        '$manzana $casa',
+                                                        style: AppTypography.cardTitle,
+                                                        maxLines: 1,
+                                                      ),
                                                     ),
                                                   ),
                                                   if (esViaSolicitud)
@@ -265,11 +270,15 @@ class _HistorialScreenState extends State<HistorialScreen> {
                                           ),
                                         ),
                                         const SizedBox(width: 8),
-                                        Text(
-                                          AppCurrency.format(monto),
-                                          style: AppTypography.cardValue.copyWith(
-                                            fontWeight: FontWeight.w900,
-                                            color: AppColors.success,
+                                        FittedBox(
+                                          fit: BoxFit.scaleDown,
+                                          alignment: Alignment.centerRight,
+                                          child: Text(
+                                            AppCurrency.format(monto),
+                                            style: AppTypography.cardValue.copyWith(
+                                              fontWeight: FontWeight.w900,
+                                              color: AppColors.success,
+                                            ),
                                           ),
                                         ),
                                       ],
