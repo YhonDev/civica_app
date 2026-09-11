@@ -191,9 +191,7 @@ class CarteraRepository {
         'offline': true,
         'clientPaymentId': clientPaymentId,
         'status': isFallback ? 'OFFLINE_FALLBACK' : 'OFFLINE_QUEUED',
-        'message': isFallback
-            ? 'Conexión inestable. El recaudo fue salvaguardado de forma segura en la cola local.'
-            : 'Recaudo guardado en la cola local sin conexión. Se sincronizará automáticamente.',
+        'message': 'Cobro realizado.',
       };
     } catch (dbError) {
       throw Exception('Fallo crítico al guardar pago en cola local: $dbError');

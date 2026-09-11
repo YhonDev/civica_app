@@ -20,6 +20,7 @@ import '../core/theme/app_theme.dart';
 import '../features/auth/auth_cubit.dart';
 import '../features/auth/login_screen.dart';
 import '../features/cartera/cartera_screen.dart';
+import '../core/widgets/top_toast.dart';
 import 'fake_cartera_data.dart';
 
 void main() {
@@ -42,6 +43,7 @@ class _VisualGalleryAppState extends State<VisualGalleryApp> {
   bool _dark = false;
   double _scale = 1.0;
   String _vp = 'phone';
+  String? _toast;
 
   double get _vpWidth {
     switch (_vp) {
@@ -77,6 +79,7 @@ class _VisualGalleryAppState extends State<VisualGalleryApp> {
     _dark = q['dark'] == '1';
     _scale = double.tryParse(q['scale'] ?? '') ?? _scale;
     _vp = q['vp'] ?? _vp;
+    _toast = q['toast']; // ?toast=success|error|info|warning dispara el toast
     AppColors.setDarkMode(_dark);
 
     // Cubit fresco (estado initial): CarteraScreen resuelve la vista admin
@@ -112,34 +115,53 @@ class _VisualGalleryAppState extends State<VisualGalleryApp> {
             isDark ? AppColors.darkBackground : AppColors.lightBackground,
         // Layout apilado: panel arriba, host debajo con todo el ancho
         // disponible (evita recortes cuando la ventana de preview es angosta).
-        body: Column(
+        body: Stack(
           children: [
-            _GalleryPanel(
-              screen: _screen,
-              dark: isDark,
-              scale: _scale,
-              vp: _vp,
-              onScreen: (s) => setState(() => _screen = s),
-              onDark: (d) {
-                setState(() {
-                  _dark = d;
-                  // AppColors es estático: sincronizar el modo para los
-                  // widgets que leen tokens dinámicos fuera del Theme.
-                  AppColors.setDarkMode(d);
-                });
-              },
-              onScale: (s) => setState(() => _scale = s),
-              onVp: (v) => setState(() => _vp = v),
+            Column(
+              children: [
+                _GalleryPanel(
+                  screen: _screen,
+                  dark: isDark,
+                  scale: _scale,
+                  vp: _vp,
+                  toast: _toast,
+                  onScreen: (s) => setState(() => _screen = s),
+                  onDark: (d) {
+                    setState(() {
+                      _dark = d;
+                      // AppColors es estático: sincronizar el modo para los
+                      // widgets que leen tokens dinámicos fuera del Theme.
+                      AppColors.setDarkMode(d);
+                    });
+                  },
+                  onScale: (s) => setState(() => _scale = s),
+                  onVp: (v) => setState(() => _vp = v),
+                  onToast: (t) => setState(
+                      () => _toast = (_toast == t) ? null : t),
+                ),
+                Expanded(
+                  child: _GalleryHost(
+                    key: ValueKey('$_screen-$_dark-$_scale-$_vp'),
+                    screen: _screen,
+                    vpWidth: _vpWidth,
+                    vpHeight: _vpHeight,
+                    authCubit: _authCubit!,
+                  ),
+                ),
+              ],
             ),
-            Expanded(
-              child: _GalleryHost(
-                key: ValueKey('$_screen-$_dark-$_scale-$_vp'),
-                screen: _screen,
-                vpWidth: _vpWidth,
-                vpHeight: _vpHeight,
-                authCubit: _authCubit!,
+            // Disparador del toast estándar (si se pidió por panel o URL).
+            // Duración larga: la galería es para inspección visual.
+            if (_toast != null)
+              _ToastAutoShow(
+                key: ValueKey('toast-$_toast-$_dark'),
+                type: switch (_toast) {
+                  'error' => ToastType.error,
+                  'info' => ToastType.info,
+                  'warning' => ToastType.warning,
+                  _ => ToastType.success,
+                },
               ),
-            ),
           ],
         ),
       ),
@@ -153,20 +175,24 @@ class _GalleryPanel extends StatelessWidget {
   final bool dark;
   final double scale;
   final String vp;
+  final String? toast;
   final ValueChanged<String> onScreen;
   final ValueChanged<bool> onDark;
   final ValueChanged<double> onScale;
   final ValueChanged<String> onVp;
+  final ValueChanged<String> onToast;
 
   const _GalleryPanel({
     required this.screen,
     required this.dark,
     required this.scale,
     required this.vp,
+    required this.toast,
     required this.onScreen,
     required this.onDark,
     required this.onScale,
     required this.onVp,
+    required this.onToast,
   });
 
   @override
@@ -236,6 +262,19 @@ class _GalleryPanel extends StatelessWidget {
                   ),
               ],
             ),
+            const SizedBox(width: 18),
+            const Text('Toast'),
+            Wrap(
+              spacing: 6,
+              children: [
+                for (final t in const ['success', 'error', 'info', 'warning'])
+                  ChoiceChip(
+                    label: Text(t),
+                    selected: toast == t,
+                    onSelected: (_) => onToast(t),
+                  ),
+              ],
+            ),
             const SizedBox(width: 14),
             Text(
               'Con el clamp de producción (§7.6), x1.6 se ve igual a x1.3.',
@@ -246,6 +285,51 @@ class _GalleryPanel extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Dispara el toast estándar una vez por combinación (panel/URL).
+/// Muestra título + mensaje para ejercitar ambos textos del estándar.
+class _ToastAutoShow extends StatefulWidget {
+  final ToastType type;
+
+  const _ToastAutoShow({super.key, required this.type});
+
+  @override
+  State<_ToastAutoShow> createState() => _ToastAutoShowState();
+}
+
+class _ToastAutoShowState extends State<_ToastAutoShow> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      TopToast.show(
+        context,
+        type: widget.type,
+        duration: const Duration(seconds: 60),
+        title: switch (widget.type) {
+          ToastType.success => 'Pago registrado',
+          ToastType.error => 'Error',
+          ToastType.info => 'En segundo plano',
+          ToastType.warning => 'Atención',
+        },
+        message: switch (widget.type) {
+          ToastType.success =>
+            'El cobro quedó registrado y sincronizado.',
+          ToastType.error =>
+            'No se pudo sincronizar. Intenta de nuevo.',
+          ToastType.info =>
+            'La sincronización continúa en segundo plano.',
+          ToastType.warning =>
+            'Quedan pocos reintentos disponibles.',
+        },
+      );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.shrink();
 }
 
 /// Host: simula el viewport elegido y monta la pantalla real.

@@ -197,7 +197,7 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
         setState(() {
           _enviando = false;
         });
-        TopToast.showError(context, 'Error al enviar la solicitud: ${sanitizeApiError(e)}');
+        TopToast.showError(context, e, prefix: 'Error al enviar la solicitud');
       }
     }
   }

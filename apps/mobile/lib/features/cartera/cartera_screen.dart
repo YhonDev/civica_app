@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../core/widgets/top_toast.dart';
-import '../../core/network/error_messages.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
@@ -405,7 +404,7 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
         ),
         sliver: SliverToBoxAdapter(
           child: Text(
-            'Cuotas de Recaudo',
+            'Cuotas',
             style: AppTypography.bodyMedium.copyWith(
               fontWeight: FontWeight.w600,
               color: AppColors.primary,
@@ -496,7 +495,8 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                           if (context.mounted) {
                             TopToast.showError(
                               context,
-                              'Error al solicitar cobro: ${sanitizeApiError(e)}',
+                              e,
+                              prefix: 'Error al solicitar cobro',
                             );
                           }
                         }

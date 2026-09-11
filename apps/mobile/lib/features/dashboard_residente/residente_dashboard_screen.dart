@@ -685,7 +685,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
       }
     } catch (e) {
       if (mounted) {
-        TopToast.showError(context, 'Error al enviar solicitud: ${sanitizeApiError(e)}');
+        TopToast.showError(context, e, prefix: 'Error al enviar solicitud');
       }
       return;
     }

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../core/network/error_messages.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/network/api_client.dart';
 import '../../core/theme/app_colors.dart';
@@ -101,7 +100,7 @@ class _CobradorDetailScreenState extends State<CobradorDetailScreen> {
       }
     } catch (e) {
       if (mounted) {
-        TopToast.showError(context, 'Error al eliminar cobrador: ${sanitizeApiError(e)}');
+        TopToast.showError(context, e, prefix: 'Error al eliminar cobrador');
         setState(() => _isDeleting = false);
       }
     }
