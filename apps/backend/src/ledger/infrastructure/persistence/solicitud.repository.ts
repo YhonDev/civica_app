@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, ILike } from 'typeorm';
 import { Solicitud, SolicitudEstado } from '../../domain/solicitud.entity';
 import { BaseTenantRepository } from '../../../shared/common/infrastructure/base-tenant.repository';
 
@@ -34,8 +34,20 @@ export class SolicitudRepository extends BaseTenantRepository<Solicitud> {
     tenantId: string,
     limit?: number,
     offset?: number,
+    tipo?: string,
   ): Promise<Solicitud[]> {
+    const where: any = {};
+    if (tipo) {
+      const tipoLower = tipo.toLowerCase();
+      if (tipoLower.includes('revision') || tipoLower === 'sr') {
+        where.tipo = ILike('%revision%');
+      } else if (tipoLower.includes('cobro') || tipoLower === 'sc') {
+        where.tipo = ILike('%cobro%');
+      }
+    }
+
     return super.findByTenant(tenantId, {
+      where,
       relations: { usuario: true, cobro: true },
       order: { fecha: 'DESC' },
       take: limit ? Math.min(Number(limit), 100) : undefined,
@@ -56,8 +68,22 @@ export class SolicitudRepository extends BaseTenantRepository<Solicitud> {
     });
   }
 
-  async findPendingByTenant(tenantId: string): Promise<Solicitud[]> {
+  async findPendingByTenant(
+    tenantId: string,
+    tipo?: string,
+  ): Promise<Solicitud[]> {
+    const where: any = {};
+    if (tipo) {
+      const tipoLower = tipo.toLowerCase();
+      if (tipoLower.includes('revision') || tipoLower === 'sr') {
+        where.tipo = ILike('%revision%');
+      } else if (tipoLower.includes('cobro') || tipoLower === 'sc') {
+        where.tipo = ILike('%cobro%');
+      }
+    }
+
     const results = await super.findByTenant(tenantId, {
+      where,
       relations: { usuario: true, cobro: true },
       order: { fecha: 'DESC' },
     });

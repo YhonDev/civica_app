@@ -131,15 +131,19 @@ export class SolicitudesController {
     @CurrentTenant() tenantId: string,
     @Query('limit') limit?: number,
     @Query('offset') offset?: number,
+    @Query('tipo') tipo?: string,
   ) {
-    return this.solicitudRepo.findByTenant(tenantId, limit, offset);
+    return this.solicitudRepo.findByTenant(tenantId, limit, offset, tipo);
   }
 
   @Get('admin/pendientes')
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN, RolUsuario.COBRADOR)
-  async listarPendientesAdmin(@CurrentTenant() tenantId: string) {
-    return this.solicitudRepo.findPendingByTenant(tenantId);
+  async listarPendientesAdmin(
+    @CurrentTenant() tenantId: string,
+    @Query('tipo') tipo?: string,
+  ) {
+    return this.solicitudRepo.findPendingByTenant(tenantId, tipo);
   }
 
   @Patch(':id/en-camino')

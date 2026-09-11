@@ -161,15 +161,16 @@ describe('SolicitudesController', () => {
   });
 
   describe('listarAdmin', () => {
-    it('should call findByTenant with tenant id and optional pagination', async () => {
+    it('should call findByTenant with tenant id and optional pagination and tipo', async () => {
       mockSolicitudRepo.findByTenant.mockResolvedValue([]);
 
-      await controller.listarAdmin('tenant-123', 50, 0);
+      await controller.listarAdmin('tenant-123', 50, 0, 'revision');
 
       expect(mockSolicitudRepo.findByTenant).toHaveBeenCalledWith(
         'tenant-123',
         50,
         0,
+        'revision',
       );
     });
   });
