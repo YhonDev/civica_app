@@ -246,7 +246,7 @@ class _UrbanizacionScreenState extends State<UrbanizacionScreen> {
                       color: isActive ? AppColors.primary : AppColors.textPrimary,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: AppSpacing.xs),
                   Row(
                     children: [
                       Container(
@@ -264,9 +264,16 @@ class _UrbanizacionScreenState extends State<UrbanizacionScreen> {
                         ),
                       ),
                       const SizedBox(width: AppSpacing.sm),
-                      Text(
-                        '$etapas Etapas • $manzanas Mz • $casas Lotes',
-                        style: AppTypography.small.copyWith(color: AppColors.textSecondary),
+                      Flexible(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            '$etapas Etapas • $manzanas Mz • $casas Lotes',
+                            style: AppTypography.small.copyWith(color: AppColors.textSecondary),
+                            maxLines: 1,
+                          ),
+                        ),
                       ),
                     ],
                   ),

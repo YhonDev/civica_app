@@ -276,12 +276,16 @@ class _TarifasScreenState extends State<TarifasScreen> {
                                     ),
                                     const SizedBox(width: AppSpacing.sm),
                                     Flexible(
-                                      child: Text(
-                                        'Tarifa General Mensual',
-                                        style: AppTypography.subtitle.copyWith(
-                                          fontWeight: FontWeight.bold,
+                                      child: FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        alignment: Alignment.centerLeft,
+                                        child: Text(
+                                          'Tarifa General',
+                                          style: AppTypography.subtitle.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                          maxLines: 1,
                                         ),
-                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
                                   ],
@@ -333,15 +337,15 @@ class _TarifasScreenState extends State<TarifasScreen> {
                           ),
                           const SizedBox(height: AppSpacing.xs),
                           _buildDesgloseRow(
-                            'Modalidad Semanal (4 cuotas):',
+                            'Semanal (4 cuotas):',
                             '${AppCurrency.format(montoSemanalCalculado)} / cuota',
                           ),
                           _buildDesgloseRow(
-                            'Modalidad Quincenal (2 cuotas):',
+                            'Quincenal (2 cuotas):',
                             '${AppCurrency.format(montoQuincenalCalculado)} / cuota',
                           ),
                           _buildDesgloseRow(
-                            'Modalidad Mensual (1 cuota):',
+                            'Mensual (1 cuota):',
                             '${AppCurrency.format(montoMensual)} / cuota',
                           ),
                         ],
@@ -402,15 +406,24 @@ class _TarifasScreenState extends State<TarifasScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: AppTypography.caption.copyWith(
-              color: AppColors.textSecondary,
+          Expanded(
+            child: Text(
+              label,
+              style: AppTypography.caption.copyWith(
+                color: AppColors.textSecondary,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
-          Text(
-            value,
-            style: AppTypography.caption.copyWith(fontWeight: FontWeight.w600),
+          const SizedBox(width: AppSpacing.xs),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerRight,
+            child: Text(
+              value,
+              style: AppTypography.caption.copyWith(fontWeight: FontWeight.w600),
+            ),
           ),
         ],
       ),
