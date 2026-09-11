@@ -111,11 +111,11 @@ class AsignarEtapasScreen extends StatelessWidget {
                         ? const SizedBox(
                             height: 20,
                             width: 20,
-                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                            child: CircularProgressIndicator(color: AppColors.onPrimary, strokeWidth: 2),
                           )
                         : const Text(
                             'Guardar Asignación',
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                            style: TextStyle(color: AppColors.onPrimary, fontWeight: FontWeight.bold),
                           ),
                   ),
                 ),

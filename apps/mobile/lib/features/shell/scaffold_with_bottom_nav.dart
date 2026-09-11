@@ -290,6 +290,7 @@ class DesktopSidebar extends StatelessWidget {
                           borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                           child: Image.asset(
                             'img/logo.png',
+                            semanticLabel: 'Logo de Cuentiva',
                             width: 24,
                             height: 24,
                             fit: BoxFit.contain,

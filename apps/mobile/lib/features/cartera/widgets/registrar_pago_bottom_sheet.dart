@@ -426,7 +426,7 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
                         Icon(
                           Icons.bolt_rounded,
                           size: 16,
-                          color: _isQuickMode ? Colors.white : AppColors.textSecondary,
+                          color: _isQuickMode ? AppColors.onPrimary : AppColors.textSecondary,
                         ),                            const SizedBox(width: 6),
                             // Flexible: el label se ajusta sin desbordar el
                             // tab en pantallas estrechas o textos largos.
@@ -436,7 +436,7 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
                                 style: AppTypography.caption.copyWith(
                                   fontWeight: FontWeight.w700,
                                   color: _isQuickMode
-                                      ? Colors.white
+                                      ? AppColors.onPrimary
                                       : AppColors.textSecondary,
                                 ),
                               ),
@@ -485,7 +485,7 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
                         Icon(
                           Icons.account_balance_wallet_rounded,
                           size: 16,
-                          color: !_isQuickMode ? Colors.white : AppColors.textSecondary,
+                          color: !_isQuickMode ? AppColors.onPrimary : AppColors.textSecondary,
                         ),                            const SizedBox(width: 6),
                             Flexible(
                               child: Text(
@@ -493,7 +493,7 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
                                 style: AppTypography.caption.copyWith(
                                   fontWeight: FontWeight.w700,
                                   color: !_isQuickMode
-                                      ? Colors.white
+                                      ? AppColors.onPrimary
                                       : AppColors.textSecondary,
                                 ),
                               ),
@@ -721,7 +721,7 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
                       height: 20,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: Colors.white,
+                        color: AppColors.onPrimary,
                       ),
                     )
                   : const Icon(Icons.account_balance_wallet_rounded),

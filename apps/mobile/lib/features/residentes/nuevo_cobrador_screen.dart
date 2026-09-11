@@ -125,6 +125,7 @@ class _NuevoCobradorScreenState extends State<NuevoCobradorScreen> {
       appBar: AppBar(
         title: const Text('Nuevo Cobrador'),
         leading: IconButton(
+          tooltip: 'Volver',
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.pop(),
         ),
@@ -193,7 +194,7 @@ class _NuevoCobradorScreenState extends State<NuevoCobradorScreen> {
                               width: 20,
                               height: 20,
                               child: CircularProgressIndicator(
-                                color: Colors.white,
+                                color: AppColors.onPrimary,
                                 strokeWidth: 2,
                               ),
                             )

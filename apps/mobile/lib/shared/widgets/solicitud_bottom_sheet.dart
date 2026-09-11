@@ -916,7 +916,7 @@ class _SolicitudBottomSheetState extends State<SolicitudBottomSheet> {
                                 height: 16,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  color: Colors.white,
+                                  color: AppColors.onPrimary,
                                 ),
                               )
                             : const Icon(Icons.check_circle_outlined),

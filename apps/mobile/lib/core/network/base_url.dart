@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
+import 'package:flutter/foundation.dart' show kDebugMode;
 
 /// URL de la API en builds **debug**: backend local.
 const _debugDefaultUrl = 'http://127.0.0.1:3000/api';
@@ -22,9 +22,9 @@ String detectBaseUrl() {
   const envUrl = String.fromEnvironment('API_BASE_URL');
   if (envUrl.isNotEmpty) return envUrl;
 
-  // Web en debug apunta al local: el navegador corre en el PC, donde el
-  // backend de desarrollo es alcanzable directamente.
-  if (kDebugMode || kIsWeb) return _debugDefaultUrl;
+  // Debug apunta al backend local (127.0.0.1:3000/api).
+  // Release (incluido Web en producción) apunta a Render.
+  if (kDebugMode) return _debugDefaultUrl;
 
   return _releaseDefaultUrl;
 }

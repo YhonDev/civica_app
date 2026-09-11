@@ -428,7 +428,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
             border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.03),
+                color: AppColors.shadow.withValues(alpha: 0.03),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -778,7 +778,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
         border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: AppColors.shadow.withValues(alpha: 0.04),
             blurRadius: 6,
             offset: const Offset(0, 1),
           ),

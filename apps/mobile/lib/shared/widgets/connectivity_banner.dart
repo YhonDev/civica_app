@@ -29,12 +29,12 @@ class ConnectivityBanner extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.wifi_off_rounded, color: Colors.white, size: 18),
+                const Icon(Icons.wifi_off_rounded, color: AppColors.onPrimary, size: 18),
                 const SizedBox(width: AppSpacing.xs),
                 Text(
                   'Modo Offline — Los cobros se guardarán en cola local',
                   style: AppTypography.caption.copyWith(
-                    color: Colors.white,
+                    color: AppColors.onPrimary,
                     fontWeight: FontWeight.bold,
                   ),
                 ),

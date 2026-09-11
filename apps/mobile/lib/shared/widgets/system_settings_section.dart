@@ -158,7 +158,7 @@ class _SystemSettingsSectionState extends State<SystemSettingsSection> {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.02),
+                    color: AppColors.shadow.withValues(alpha: isDark ? 0.2 : 0.02),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),

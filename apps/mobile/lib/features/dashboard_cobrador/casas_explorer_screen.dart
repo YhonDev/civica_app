@@ -292,7 +292,7 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: AppColors.shadow.withValues(alpha: 0.04),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -665,7 +665,7 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
               },
               selectedColor: AppColors.primary,
               labelStyle: AppTypography.label.copyWith(
-                color: isSelected ? Colors.white : AppColors.textSecondary,
+                color: isSelected ? AppColors.onPrimary : AppColors.textSecondary,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
               ),
               backgroundColor: AppColors.surface,
@@ -718,7 +718,7 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
               },
               selectedColor: AppColors.primary,
               labelStyle: AppTypography.label.copyWith(
-                color: _selectedEtapaId == 'TODAS' ? Colors.white : AppColors.textSecondary,
+                color: _selectedEtapaId == 'TODAS' ? AppColors.onPrimary : AppColors.textSecondary,
                 fontWeight: _selectedEtapaId == 'TODAS' ? FontWeight.w700 : FontWeight.w500,
               ),
               backgroundColor: AppColors.surface,
@@ -749,7 +749,7 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                 },
                 selectedColor: AppColors.primary,
                 labelStyle: AppTypography.label.copyWith(
-                  color: isSelected ? Colors.white : AppColors.textSecondary,
+                  color: isSelected ? AppColors.onPrimary : AppColors.textSecondary,
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 ),
                 backgroundColor: AppColors.surface,
@@ -869,14 +869,14 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                     Icon(
                       Icons.arrow_downward_rounded,
                       size: 15,
-                      color: !_sentidoInverso ? Colors.white : AppColors.textSecondary,
+                      color: !_sentidoInverso ? AppColors.onPrimary : AppColors.textSecondary,
                     ),
                     const SizedBox(width: 4),
                     Flexible(
                       child: Text(
                         labelDirecto,
                         style: AppTypography.smallBold.copyWith(
-                          color: !_sentidoInverso ? Colors.white : AppColors.textSecondary,
+                          color: !_sentidoInverso ? AppColors.onPrimary : AppColors.textSecondary,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -908,14 +908,14 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                     Icon(
                       Icons.arrow_upward_rounded,
                       size: 15,
-                      color: _sentidoInverso ? Colors.white : AppColors.textSecondary,
+                      color: _sentidoInverso ? AppColors.onPrimary : AppColors.textSecondary,
                     ),
                     const SizedBox(width: 4),
                     Flexible(
                       child: Text(
                         labelInverso,
                         style: AppTypography.smallBold.copyWith(
-                          color: _sentidoInverso ? Colors.white : AppColors.textSecondary,
+                          color: _sentidoInverso ? AppColors.onPrimary : AppColors.textSecondary,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -954,7 +954,7 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
               },
               selectedColor: AppColors.primary,
               labelStyle: AppTypography.label.copyWith(
-                color: isSelected ? Colors.white : AppColors.textSecondary,
+                color: isSelected ? AppColors.onPrimary : AppColors.textSecondary,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
               ),
               backgroundColor: AppColors.surface,

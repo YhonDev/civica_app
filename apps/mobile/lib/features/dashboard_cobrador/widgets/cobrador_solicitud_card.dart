@@ -155,7 +155,7 @@ class CobradorSolicitudCard extends StatelessWidget {
                 style: ElevatedButton.styleFrom(
                   visualDensity: VisualDensity.compact,
                   backgroundColor: AppColors.success,
-                  foregroundColor: Colors.white,
+                  foregroundColor: AppColors.onPrimary,
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusMd)),
                 ),
@@ -178,7 +178,7 @@ class CobradorSolicitudCard extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
+            color: AppColors.shadow.withValues(alpha: 0.03),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -281,7 +281,7 @@ class CobradorSolicitudCard extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: isDark ? Colors.black.withValues(alpha: 0.2) : AppColors.screenBackground,
+                color: isDark ? AppColors.shadow.withValues(alpha: 0.2) : AppColors.screenBackground,
                 borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                 border: Border.all(color: AppColors.border.withValues(alpha: 0.6)),
               ),
@@ -338,7 +338,7 @@ class CobradorSolicitudCard extends StatelessWidget {
                   style: ElevatedButton.styleFrom(
                     visualDensity: VisualDensity.compact,
                     backgroundColor: AppColors.success,
-                    foregroundColor: Colors.white,
+                    foregroundColor: AppColors.onPrimary,
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusMd)),
                   ),

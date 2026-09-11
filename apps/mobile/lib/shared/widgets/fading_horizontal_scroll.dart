@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:civica_pago_mobile/core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 
 /// Un contenedor de scroll horizontal con desvanecimiento suave (fade) en los bordes.
@@ -44,8 +45,8 @@ class FadingHorizontalScroll extends StatelessWidget {
               end: Alignment.centerRight,
               colors: const [
                 Colors.transparent,
-                Colors.white,
-                Colors.white,
+                AppColors.onPrimary,
+                AppColors.onPrimary,
                 Colors.transparent,
               ],
               stops: [

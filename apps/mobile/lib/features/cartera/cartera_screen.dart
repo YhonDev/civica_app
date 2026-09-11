@@ -129,7 +129,7 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                 }),
                 selectedColor: AppColors.primary,
                 labelStyle: AppTypography.smallBold.copyWith(
-                  color: _selectedEtapa == null ? Colors.white : AppColors.textSecondary,
+                  color: _selectedEtapa == null ? AppColors.onPrimary : AppColors.textSecondary,
                 ),
                 backgroundColor: AppColors.surface,
                 shape: RoundedRectangleBorder(
@@ -153,7 +153,7 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                   }),
                   selectedColor: AppColors.primary,
                   labelStyle: AppTypography.smallBold.copyWith(
-                    color: isSelected ? Colors.white : AppColors.textSecondary,
+                    color: isSelected ? AppColors.onPrimary : AppColors.textSecondary,
                   ),
                   backgroundColor: AppColors.surface,
                   shape: RoundedRectangleBorder(
@@ -190,7 +190,7 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                 onSelected: (_) => setState(() => _selectedManzana = null),
                 selectedColor: AppColors.accentTeal,
                 labelStyle: AppTypography.smallBold.copyWith(
-                  color: _selectedManzana == null ? Colors.white : AppColors.textSecondary,
+                  color: _selectedManzana == null ? AppColors.onPrimary : AppColors.textSecondary,
                 ),
                 backgroundColor: AppColors.surface,
                 shape: RoundedRectangleBorder(
@@ -211,7 +211,7 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                   onSelected: (_) => setState(() => _selectedManzana = manzana),
                   selectedColor: AppColors.accentTeal,
                   labelStyle: AppTypography.smallBold.copyWith(
-                    color: isSelected ? Colors.white : AppColors.textSecondary,
+                    color: isSelected ? AppColors.onPrimary : AppColors.textSecondary,
                   ),
                   backgroundColor: AppColors.surface,
                   shape: RoundedRectangleBorder(
@@ -245,7 +245,7 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
         },
         selectedColor: activeColor,
         labelStyle: AppTypography.smallBold.copyWith(
-          color: isSelected ? Colors.white : AppColors.textSecondary,
+          color: isSelected ? AppColors.onPrimary : AppColors.textSecondary,
         ),
         backgroundColor: AppColors.surface,
         shape: RoundedRectangleBorder(
@@ -818,6 +818,7 @@ class _CarteraSharedLayout extends StatelessWidget {
                         prefixIcon: const Icon(Icons.search_rounded, size: 20),
                         suffixIcon: searchQuery.isNotEmpty
                             ? IconButton(
+                                tooltip: 'Limpiar búsqueda',
                                 icon: const Icon(Icons.clear_rounded, size: 18),
                                 onPressed: () {
                                   searchController.clear();

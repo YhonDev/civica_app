@@ -334,12 +334,12 @@ class _JornadaViewState extends State<_JornadaView> with LifecycleObserverMixin 
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.near_me_rounded, color: Colors.white, size: 18),
+                      const Icon(Icons.near_me_rounded, color: AppColors.onPrimary, size: 18),
                       const SizedBox(width: AppSpacing.sm),
                       Text(
                         'Próxima vivienda a visitar',
                         style: AppTypography.caption.copyWith(
-                          color: Colors.white.withValues(alpha: 0.9),
+                          color: AppColors.onPrimary.withValues(alpha: 0.9),
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -348,13 +348,13 @@ class _JornadaViewState extends State<_JornadaView> with LifecycleObserverMixin 
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
+                      color: AppColors.onPrimary.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                     ),
                     child: Text(
                       'Tocar para cobrar',
                       style: AppTypography.smallBold.copyWith(
-                        color: Colors.white,
+                        color: AppColors.onPrimary,
                       ),
                     ),
                   ),
@@ -364,7 +364,7 @@ class _JornadaViewState extends State<_JornadaView> with LifecycleObserverMixin 
               Text(
                 '${vivienda['etapaNombre'] ?? ''}',
                 style: AppTypography.body.copyWith(
-                  color: Colors.white.withValues(alpha: 0.8),
+                  color: AppColors.onPrimary.withValues(alpha: 0.8),
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -372,7 +372,7 @@ class _JornadaViewState extends State<_JornadaView> with LifecycleObserverMixin 
               Text(
                 '${vivienda['manzanaNombre'] ?? ''} — ${vivienda['casaDireccion'] ?? ''}',
                 style: AppTypography.subtitle.copyWith(
-                  color: Colors.white,
+                  color: AppColors.onPrimary,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -381,7 +381,7 @@ class _JornadaViewState extends State<_JornadaView> with LifecycleObserverMixin 
                 Text(
                   'Residente: ${vivienda['residenteNombre']}',
                   style: AppTypography.caption.copyWith(
-                    color: Colors.white.withValues(alpha: 0.9),
+                    color: AppColors.onPrimary.withValues(alpha: 0.9),
                   ),
                 ),
               ],
@@ -408,7 +408,7 @@ class _JornadaViewState extends State<_JornadaView> with LifecycleObserverMixin 
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: AppColors.shadow.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -574,7 +574,7 @@ class _JornadaViewState extends State<_JornadaView> with LifecycleObserverMixin 
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: AppColors.shadow.withValues(alpha: 0.04),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),

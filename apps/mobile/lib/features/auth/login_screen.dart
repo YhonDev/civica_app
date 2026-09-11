@@ -3,6 +3,7 @@ import '../../core/theme/app_spacing.dart';
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
 import 'package:flutter/material.dart';
+import 'package:civica_pago_mobile/core/theme/app_colors.dart';
 import 'package:flutter/services.dart' show TextInput;
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -167,6 +168,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
                                     child: Image.asset(
                                       'img/logo.png',
+                                      semanticLabel: 'Logo de Cuentiva',
                                       fit: BoxFit.contain,
                                       errorBuilder: (_, _, _) => Icon(
                                         Icons.payments_rounded,
@@ -181,6 +183,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 // Nombre / Marca
                                 Image.asset(
                                   'img/nombre1.png',
+                                  semanticLabel: 'Cuentiva',
                                   height: 38,
                                   fit: BoxFit.contain,
                                   errorBuilder: (_, _, _) => Text(
@@ -240,6 +243,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                           prefixIcon: const Icon(Icons.lock_outlined),
                                           border: const OutlineInputBorder(),
                                           suffixIcon: IconButton(
+                                            tooltip: _obscurePassword
+                                                ? 'Mostrar contraseña'
+                                                : 'Ocultar contraseña',
                                             icon: Icon(
                                               _obscurePassword
                                                   ? Icons.visibility_off_outlined
@@ -320,7 +326,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                               height: 20,
                                               child: CircularProgressIndicator(
                                                 strokeWidth: 2,
-                                                color: Colors.white,
+                                                color: AppColors.onPrimary,
                                               ),
                                             )
                                           : const Icon(Icons.login_rounded),

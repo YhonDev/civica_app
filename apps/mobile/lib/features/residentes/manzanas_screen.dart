@@ -112,6 +112,7 @@ class _ManzanasScreenState extends State<ManzanasScreen> {
         appBar: AppBar(
           title: const Text('Gestión de Manzanas'),
           leading: IconButton(
+            tooltip: 'Volver',
             icon: const Icon(Icons.arrow_back_rounded),
             onPressed: () => context.pop(),
           ),
@@ -125,6 +126,7 @@ class _ManzanasScreenState extends State<ManzanasScreen> {
         appBar: AppBar(
           title: const Text('Gestión de Manzanas'),
           leading: IconButton(
+            tooltip: 'Volver',
             icon: const Icon(Icons.arrow_back_rounded),
             onPressed: () => context.pop(),
           ),
@@ -148,6 +150,7 @@ class _ManzanasScreenState extends State<ManzanasScreen> {
       appBar: AppBar(
         title: const Text('Gestión de Manzanas'),
         leading: IconButton(
+          tooltip: 'Volver',
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.pop(),
         ),
@@ -199,7 +202,7 @@ class _ManzanasScreenState extends State<ManzanasScreen> {
                       },
                       selectedColor: AppColors.primary,
                       labelStyle: AppTypography.smallBold.copyWith(
-                        color: isSelected ? Colors.white : AppColors.textSecondary,
+                        color: isSelected ? AppColors.onPrimary : AppColors.textSecondary,
                       ),
                       backgroundColor: AppColors.surface,
                       shape: RoundedRectangleBorder(

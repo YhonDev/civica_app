@@ -200,6 +200,7 @@ class _SolicitudesScreenState extends State<SolicitudesScreen>
       appBar: AppBar(
         title: Text(_isAdmin ? 'Gestión de Solicitudes' : 'Mis Solicitudes'),
         leading: IconButton(
+          tooltip: 'Volver',
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.pop(),
         ),
@@ -355,7 +356,7 @@ class _SolicitudesScreenState extends State<SolicitudesScreen>
                 if (result == true) _loadSolicitudes();
               },
               backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
+              foregroundColor: AppColors.onPrimary,
               shape: const CircleBorder(),
               child: const Icon(Icons.add_rounded, size: 24),
             ),
@@ -376,7 +377,7 @@ class _SolicitudesScreenState extends State<SolicitudesScreen>
       },
       selectedColor: AppColors.primary,
       labelStyle: TextStyle(
-        color: isSelected ? Colors.white : AppColors.textPrimary,
+        color: isSelected ? AppColors.onPrimary : AppColors.textPrimary,
         fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
       ),
       backgroundColor: AppColors.surface,

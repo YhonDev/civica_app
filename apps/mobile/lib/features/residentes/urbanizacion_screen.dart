@@ -70,6 +70,7 @@ class _UrbanizacionScreenState extends State<UrbanizacionScreen> {
                 children: [
                   Text('Nuevo Proyecto', style: AppTypography.subtitle),
                   IconButton(
+                    tooltip: 'Cerrar',
                     icon: const Icon(Icons.close_rounded),
                     onPressed: () => Navigator.pop(ctx),
                   ),
@@ -127,6 +128,7 @@ class _UrbanizacionScreenState extends State<UrbanizacionScreen> {
       appBar: AppBar(
         title: const Text('Proyectos'),
         leading: IconButton(
+          tooltip: 'Volver',
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.pop(),
         ),
@@ -182,10 +184,10 @@ class _UrbanizacionScreenState extends State<UrbanizacionScreen> {
       floatingActionButton: _proyectos.isEmpty ? null : FloatingActionButton.extended(
         onPressed: _mostrarCrearProyecto,
         backgroundColor: AppColors.primary,
-        icon: const Icon(Icons.add_rounded, color: Colors.white),
+        icon: const Icon(Icons.add_rounded, color: AppColors.onPrimary),
         label: const Text(
           'Nuevo Proyecto',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+          style: TextStyle(color: AppColors.onPrimary, fontWeight: FontWeight.w600),
         ),
       ),
     );
@@ -220,7 +222,7 @@ class _UrbanizacionScreenState extends State<UrbanizacionScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: isActive ? Colors.white : AppColors.background,
+                color: isActive ? AppColors.onPrimary : AppColors.background,
                 shape: BoxShape.circle,
                 border: Border.all(
                   color: isActive ? AppColors.primary.withValues(alpha: 0.3) : AppColors.border,

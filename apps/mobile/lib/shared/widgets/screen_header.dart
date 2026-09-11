@@ -42,7 +42,7 @@ class ScreenHeader extends StatelessWidget {
                   title,
                   style: AppTypography.sectionHeader.copyWith(
                     fontWeight: FontWeight.w900,
-                    color: isDark ? Colors.white : AppColors.textPrimary,
+                    color: AppColors.textPrimary,
                     height: 1.15,
                   ),
                 ),
@@ -51,7 +51,7 @@ class ScreenHeader extends StatelessWidget {
                   Text(
                     subtitle!,
                     style: AppTypography.caption.copyWith(
-                      color: isDark ? Colors.white60 : AppColors.textSecondary,
+                      color: isDark ? AppColors.onPrimary.withValues(alpha: 0.6) : AppColors.textSecondary,
                     ),
                   ),
                 ],
