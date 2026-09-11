@@ -200,85 +200,104 @@ class _HistorialScreenState extends State<HistorialScreen> {
                                     );
                                   },
                                   child: Padding(
-                                    padding: const EdgeInsets.all(AppSpacing.md),
-                                    child: Row(
+                                    padding: const EdgeInsets.all(AppSpacing.cardPadding),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Container(
-                                          padding: const EdgeInsets.all(10),
-                                          decoration: BoxDecoration(
-                                            color: AppColors.success.withValues(alpha: 0.12),
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: Icon(
-                                            Icons.check_circle_rounded,
-                                            color: AppColors.success,
-                                            size: 22,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 14),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Row(
-                                                children: [
-                                                  Expanded(
-                                                    child: FittedBox(
-                                                      fit: BoxFit.scaleDown,
-                                                      alignment: Alignment.centerLeft,
-                                                      child: Text(
-                                                        '$manzana $casa',
-                                                        style: AppTypography.cardTitle,
-                                                        maxLines: 1,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  if (esViaSolicitud)
-                                                    Container(
-                                                      margin: const EdgeInsets.only(left: 6),
-                                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                                      decoration: BoxDecoration(
-                                                        color: AppColors.primary.withValues(alpha: 0.12),
-                                                        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                                                        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
-                                                      ),
-                                                      child: Text(
-                                                        '📩 Vía Solicitud',
-                                                        style: AppTypography.micro.copyWith(
-                                                          fontWeight: FontWeight.w800,
-                                                          color: AppColors.primary,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                ],
+                                        // Fila 1: Check en la esquina superior + Manzana/Casa + Badge vía solicitud
+                                        Row(
+                                          children: [
+                                            Container(
+                                              padding: const EdgeInsets.all(AppSpacing.xs),
+                                              decoration: BoxDecoration(
+                                                color: AppColors.success.withValues(alpha: 0.12),
+                                                shape: BoxShape.circle,
                                               ),
-                                              const SizedBox(height: 2),
-                                              Text(
-                                                residente,
-                                                style: AppTypography.caption.copyWith(
-                                                  color: AppColors.textSecondary,
+                                              child: const Icon(
+                                                Icons.check_circle_rounded,
+                                                color: AppColors.success,
+                                                size: 18,
+                                              ),
+                                            ),
+                                            const SizedBox(width: AppSpacing.sm),
+                                            Expanded(
+                                              child: FittedBox(
+                                                fit: BoxFit.scaleDown,
+                                                alignment: Alignment.centerLeft,
+                                                child: Text(
+                                                  '$manzana $casa',
+                                                  style: AppTypography.cardTitle,
+                                                  maxLines: 1,
                                                 ),
                                               ),
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                '$dateFormatted • $nroRecibo',
-                                                style: AppTypography.small.copyWith(
-                                                  color: AppColors.textSecondary.withValues(alpha: 0.8),
+                                            ),
+                                            if (esViaSolicitud)
+                                              Container(
+                                                margin: const EdgeInsets.only(left: 6),
+                                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                                decoration: BoxDecoration(
+                                                  color: AppColors.primary.withValues(alpha: 0.12),
+                                                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                                                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                                                ),
+                                                child: Text(
+                                                  '📩 Vía Solicitud',
+                                                  style: AppTypography.micro.copyWith(
+                                                    fontWeight: FontWeight.w800,
+                                                    color: AppColors.primary,
+                                                  ),
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 6),
+
+                                        // Fila 2: Nombre del residente
+                                        Padding(
+                                          padding: const EdgeInsets.only(left: 26),
+                                          child: Text(
+                                            residente,
+                                            style: AppTypography.bodySmall.copyWith(
+                                              color: AppColors.textPrimary,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 6),
+
+                                        // Fila 3: Fecha y hora a la izquierda, Monto a la derecha
+                                        Padding(
+                                          padding: const EdgeInsets.only(left: 26),
+                                          child: Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            crossAxisAlignment: CrossAxisAlignment.center,
+                                            children: [
+                                              Expanded(
+                                                child: Text(
+                                                  dateFormatted,
+                                                  style: AppTypography.small.copyWith(
+                                                    color: AppColors.textSecondary.withValues(alpha: 0.8),
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                              const SizedBox(width: AppSpacing.sm),
+                                              FittedBox(
+                                                fit: BoxFit.scaleDown,
+                                                alignment: Alignment.centerRight,
+                                                child: Text(
+                                                  AppCurrency.format(monto),
+                                                  style: AppTypography.cardValue.copyWith(
+                                                    fontWeight: FontWeight.w900,
+                                                    color: AppColors.success,
+                                                  ),
                                                 ),
                                               ),
                                             ],
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        FittedBox(
-                                          fit: BoxFit.scaleDown,
-                                          alignment: Alignment.centerRight,
-                                          child: Text(
-                                            AppCurrency.format(monto),
-                                            style: AppTypography.cardValue.copyWith(
-                                              fontWeight: FontWeight.w900,
-                                              color: AppColors.success,
-                                            ),
                                           ),
                                         ),
                                       ],

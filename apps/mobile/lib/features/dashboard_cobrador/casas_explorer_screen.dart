@@ -159,10 +159,11 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
 
                   const SizedBox(height: AppSpacing.lg),
 
-                  // ── SECCIÓN 1: Solicitudes de Cobro ──────────────────────
-                  _buildSolicitudesSection(solicitudes, isDark),
-
-                  const SizedBox(height: AppSpacing.lg),
+                  // ── SECCIÓN 1: Solicitudes de Cobro (Global: sólo si hay activas) ─
+                  if (solicitudes.isNotEmpty) ...[
+                    _buildSolicitudesSection(solicitudes, isDark),
+                    const SizedBox(height: AppSpacing.lg),
+                  ],
 
                   // ── SECCIÓN 2: Recorrido Programado por Territorio ───────
                   _buildRecorridoHeader(etapas, solicitudes, recorridoSeleccionado),
@@ -278,6 +279,9 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
   // ── SECCIÓN 1: Solicitudes de Cobro ────────────────────────────────
 
   Widget _buildSolicitudesSection(List<Map<String, dynamic>> solicitudes, bool isDark) {
+    if (solicitudes.isEmpty) {
+      return const SizedBox.shrink();
+    }
     final count = solicitudes.length;
 
     return Container(
@@ -1383,63 +1387,72 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                       ),
                       const SizedBox(height: 5),
 
-                      // 2. Residente (a todo lo ancho)
-                      Text(
-                        casa.residenteNombre,
-                        style: AppTypography.small.copyWith(
-                          color: AppColors.textSecondary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-
-                      // 3. Cuota (a todo lo ancho)
-                      if (cuotaInfo.nombre != null && cuotaInfo.nombre!.isNotEmpty) ...[
-                        const SizedBox(height: 3),
-                        Text(
-                          cuotaInfo.nombre!,
-                          style: AppTypography.small.copyWith(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w700,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-
-                      // 4. Pie de tarjeta: Vence a la izquierda, Saldo a la derecha
-                      const SizedBox(height: 4),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          if (cuotaInfo.fechaVencimiento != null &&
-                              cuotaInfo.fechaVencimiento!.isNotEmpty)
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.event_rounded, size: 13, color: AppColors.textSecondary),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'Vence: ${_formatFechaCorta(cuotaInfo.fechaVencimiento)}',
-                                  style: AppTypography.small.copyWith(
-                                    color: AppColors.textSecondary,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            )
-                          else
-                            const SizedBox.shrink(),
-                          if (casa.saldo > 0)
+                      // 2, 3 y 4. Residente, Cuota y Pie alineados bajo la dirección (tras el semáforo de 32dp + 8dp)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 40),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // 2. Residente
                             Text(
-                              _formatPesos(casa.saldo),
-                              style: AppTypography.bodyMedium.copyWith(
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.textPrimary,
+                              casa.residenteNombre,
+                              style: AppTypography.small.copyWith(
+                                color: AppColors.textSecondary,
+                                fontWeight: FontWeight.w600,
                               ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                        ],
+
+                            // 3. Cuota
+                            if (cuotaInfo.nombre != null && cuotaInfo.nombre!.isNotEmpty) ...[
+                              const SizedBox(height: 3),
+                              Text(
+                                cuotaInfo.nombre!,
+                                style: AppTypography.small.copyWith(
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+
+                            // 4. Pie de tarjeta: Vence a la izquierda, Saldo a la derecha
+                            const SizedBox(height: 4),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                if (cuotaInfo.fechaVencimiento != null &&
+                                    cuotaInfo.fechaVencimiento!.isNotEmpty)
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.event_rounded, size: 13, color: AppColors.textSecondary),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'Vence: ${_formatFechaCorta(cuotaInfo.fechaVencimiento)}',
+                                        style: AppTypography.small.copyWith(
+                                          color: AppColors.textSecondary,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                else
+                                  const SizedBox.shrink(),
+                                if (casa.saldo > 0)
+                                  Text(
+                                    _formatPesos(casa.saldo),
+                                    style: AppTypography.bodyMedium.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   );
