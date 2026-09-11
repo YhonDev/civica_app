@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/format/app_currency.dart';
+
+import '../../core/theme/app_breakpoints.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/widgets/responsive_builder.dart';
 import '../../features/auth/auth_cubit.dart';
 
 /// Data model for a ticket / payment receipt.
@@ -53,7 +57,7 @@ class TicketData {
       final numVal = (rawMonto is num) ? rawMonto.toDouble() : double.tryParse(rawMonto.toString()) ?? 0.0;
       // El backend entrega monto en CENTAVOS (ticket.mapper), siempre convertir a pesos.
       // La heurística anterior (>1000000) mostraba $800.000 para un ticket de $8.000.
-      montoPesos = (numVal / 100).round();
+      montoPesos = AppCurrency.centsFromJson(numVal);
     }
 
     final rawFecha = json['fecha'];
@@ -114,7 +118,7 @@ class TicketBottomSheet extends StatelessWidget {
     final localFecha = ticket.fecha.toLocal();
     final dateStr = DateFormat('dd/MM/yyyy').format(localFecha);
     final timeStr = DateFormat('hh:mm a', 'es').format(localFecha);
-    final montoStr = r'$ ' + NumberFormat('#,##0', 'es_CO').format(ticket.monto);
+    final montoStr = AppCurrency.format(ticket.monto);
 
     return Padding(
       padding: EdgeInsets.only(
@@ -123,7 +127,10 @@ class TicketBottomSheet extends StatelessWidget {
         bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.xl,
         top: AppSpacing.sm,
       ),
-      child: Column(
+      // En tablet/desktop el sheet no debe estirarse a todo el ancho.
+      child: ContentConstrainedBox(
+        maxWidth: AppBreakpoints.maxFormWidth,
+        child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           // ── Header ──────────────────────────────────────────
@@ -133,7 +140,7 @@ class TicketBottomSheet extends StatelessWidget {
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: AppColors.success.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                 ),
                 child: Icon(
                   Icons.receipt_long_outlined,
@@ -169,10 +176,7 @@ class TicketBottomSheet extends StatelessWidget {
           // ── Amount (protagonist) ────────────────────────────
           Text(
             montoStr,
-            style: AppTypography.title.copyWith(
-              fontSize: 32,
-              fontWeight: FontWeight.w700,
-            ),
+            style: AppTypography.display,
           ),
           const SizedBox(height: AppSpacing.xs),
           _buildStatusChip(ticket.estado),
@@ -253,6 +257,7 @@ class TicketBottomSheet extends StatelessWidget {
             ),
           ],
         ],
+        ),
       ),
     );
   }
@@ -269,7 +274,7 @@ class TicketBottomSheet extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

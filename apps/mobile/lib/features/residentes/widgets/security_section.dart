@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/network/error_messages.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/theme/app_colors.dart';
@@ -104,7 +105,7 @@ class _SecuritySectionState extends State<SecuritySection> {
       }
     } catch (e) {
       if (mounted) {
-        TopToast.showError(context, 'Error al actualizar usuario: $e');
+        TopToast.showError(context, 'Error al actualizar usuario: ${sanitizeApiError(e)}');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -182,7 +183,7 @@ class _SecuritySectionState extends State<SecuritySection> {
       }
     } catch (e) {
       if (mounted) {
-        TopToast.showError(context, 'Error al actualizar contraseña: $e');
+        TopToast.showError(context, 'Error al actualizar contraseña: ${sanitizeApiError(e)}');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -195,7 +196,7 @@ class _SecuritySectionState extends State<SecuritySection> {
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: AppColors.card,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
         border: Border.all(color: AppColors.border),
       ),
       child: Column(
@@ -229,7 +230,7 @@ class _SecuritySectionState extends State<SecuritySection> {
       padding: const EdgeInsets.all(AppSpacing.sm),
       decoration: BoxDecoration(
         color: AppColors.background,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
         border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
       ),
       child: Column(
@@ -274,11 +275,11 @@ class _SecuritySectionState extends State<SecuritySection> {
                       hintStyle: AppTypography.body.copyWith(color: AppColors.textDisabled),
                       isDense: true,
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                         borderSide: BorderSide(color: AppColors.border),
                       ),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                         borderSide: BorderSide(color: AppColors.border),
                       ),
                       filled: true,
@@ -327,7 +328,7 @@ class _SecuritySectionState extends State<SecuritySection> {
       padding: const EdgeInsets.all(AppSpacing.sm),
       decoration: BoxDecoration(
         color: AppColors.background,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
         border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
       ),
       child: Column(
@@ -346,7 +347,7 @@ class _SecuritySectionState extends State<SecuritySection> {
                   onPressed: () => setState(() => _isChangingPassword = true),
                   style: TextButton.styleFrom(
                     visualDensity: VisualDensity.compact,
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
                   ),
                 ),
               ],
@@ -371,11 +372,11 @@ class _SecuritySectionState extends State<SecuritySection> {
                     onPressed: () => setState(() => _obscureCurrent = !_obscureCurrent),
                   ),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                     borderSide: BorderSide(color: AppColors.border),
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                     borderSide: BorderSide(color: AppColors.border),
                   ),
                   filled: true,
@@ -390,7 +391,7 @@ class _SecuritySectionState extends State<SecuritySection> {
               obscureText: _obscureNew,
               decoration: InputDecoration(
                 hintText: 'Nueva contraseña (mín. 8 chars, 1 Mayús, 1 Núm, 1 Símbolo)',
-                hintStyle: AppTypography.body.copyWith(color: AppColors.textDisabled, fontSize: 12),
+                hintStyle: AppTypography.label.copyWith(color: AppColors.textDisabled, fontWeight: FontWeight.w400),
                 isDense: true,
                 suffixIcon: IconButton(
                   icon: Icon(
@@ -401,11 +402,11 @@ class _SecuritySectionState extends State<SecuritySection> {
                   onPressed: () => setState(() => _obscureNew = !_obscureNew),
                 ),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                   borderSide: BorderSide(color: AppColors.border),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                   borderSide: BorderSide(color: AppColors.border),
                 ),
                 filled: true,
@@ -419,7 +420,7 @@ class _SecuritySectionState extends State<SecuritySection> {
               obscureText: _obscureConfirm,
               decoration: InputDecoration(
                 hintText: 'Confirmar nueva contraseña',
-                hintStyle: AppTypography.body.copyWith(color: AppColors.textDisabled, fontSize: 12),
+                hintStyle: AppTypography.label.copyWith(color: AppColors.textDisabled, fontWeight: FontWeight.w400),
                 isDense: true,
                 suffixIcon: IconButton(
                   icon: Icon(
@@ -430,11 +431,11 @@ class _SecuritySectionState extends State<SecuritySection> {
                   onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
                 ),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                   borderSide: BorderSide(color: AppColors.border),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                   borderSide: BorderSide(color: AppColors.border),
                 ),
                 filled: true,

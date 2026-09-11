@@ -40,9 +40,8 @@ class ScreenHeader extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: AppTypography.title.copyWith(
+                  style: AppTypography.sectionHeader.copyWith(
                     fontWeight: FontWeight.w900,
-                    fontSize: 26,
                     color: isDark ? Colors.white : AppColors.textPrimary,
                     height: 1.15,
                   ),
@@ -51,9 +50,8 @@ class ScreenHeader extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     subtitle!,
-                    style: AppTypography.body.copyWith(
+                    style: AppTypography.caption.copyWith(
                       color: isDark ? Colors.white60 : AppColors.textSecondary,
-                      fontSize: 13,
                     ),
                   ),
                 ],

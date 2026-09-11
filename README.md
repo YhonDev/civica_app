@@ -223,6 +223,21 @@ El archivo [.github/workflows/ci.yml](.github/workflows/ci.yml) se ejecuta autom
 
 ---
 
+## Documentación
+
+- **Sistema de diseño (UI móvil):** [doc/DESIGN_SYSTEM.md](doc/DESIGN_SYSTEM.md) — tokens de moneda, tipografía, color, espaciado, breakpoints y tarjetas, con las reglas de guardian para contribuyentes. Sus archivos fuente de tokens:
+  - Moneda: [`AppCurrency`](apps/mobile/lib/core/format/app_currency.dart) — formato canónico `$ 10.000` (COP); nunca `NumberFormat` inline.
+  - Tipografía: [`AppTypography`](apps/mobile/lib/core/theme/app_typography.dart) — nunca `fontSize:` inline.
+  - Color: [`AppColors`](apps/mobile/lib/core/theme/app_colors.dart) — paletas light/dark y tokens del módulo cobrador.
+  - Espaciado: [`AppSpacing`](apps/mobile/lib/core/theme/app_spacing.dart).
+  - Breakpoints: [`AppBreakpoints`](apps/mobile/lib/core/theme/app_breakpoints.dart).
+  - Tarjetas: [`AppCardStyles`](apps/mobile/lib/core/theme/app_card_styles.dart).
+- **Patrón responsive/adaptive:** consolidado en [doc/DESIGN_SYSTEM.md](doc/DESIGN_SYSTEM.md) §7 (`apps/mobile/doc/RESPONSIVE_PATTERN.md` queda como puntero).
+- **Checklist post-despliegue:** [docs/post-deploy-checklist.md](docs/post-deploy-checklist.md).
+- **Backend:** [apps/backend/README.md](apps/backend/README.md) · **Móvil/Desktop:** [apps/mobile/README.md](apps/mobile/README.md).
+
+---
+
 ## Guía Maestra de Ingeniería y Estándar de Contribución
 
 Para garantizar la estabilidad en producción y la trazabilidad del código, todo el equipo y agentes automatizados siguen rigurosamente este protocolo:

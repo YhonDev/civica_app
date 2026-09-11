@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
 
+import '../../../core/format/app_currency.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
@@ -108,13 +108,13 @@ class CarteraResumenHeader extends StatelessWidget {
     required Color badgeColor,
     required IconData icon,
   }) {
-    final amountFormatted = r'$ ' + NumberFormat('#,##0', 'es_CO').format(amount.round());
+    final amountFormatted = AppCurrency.format(amount.round());
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
       decoration: BoxDecoration(
         color: badgeColor.withValues(alpha: 0.03),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
         border: Border.all(color: badgeColor.withValues(alpha: 0.12)),
       ),
       child: Column(
@@ -129,7 +129,6 @@ class CarteraResumenHeader extends StatelessWidget {
                   label,
                   style: AppTypography.smallBold.copyWith(
                     color: badgeColor,
-                    fontSize: 10.5,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -143,19 +142,16 @@ class CarteraResumenHeader extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: Text(
               amountFormatted,
-              style: AppTypography.bodyMedium.copyWith(
+              style: AppTypography.cardTitle.copyWith(
                 color: AppColors.textPrimary,
-                fontWeight: FontWeight.bold,
-                fontSize: 15,
               ),
             ),
           ),
           const SizedBox(height: 2),
           Text(
             '$count $unitLabel',
-            style: AppTypography.small.copyWith(
+            style: AppTypography.micro.copyWith(
               color: AppColors.textSecondary,
-              fontSize: 10,
             ),
           ),
         ],

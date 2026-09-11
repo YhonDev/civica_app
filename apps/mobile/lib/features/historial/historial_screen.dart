@@ -1,6 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import '../../../core/format/app_currency.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/theme/app_breakpoints.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
@@ -11,6 +14,7 @@ import '../../features/auth/auth_cubit.dart';
 import '../../core/network/api_client.dart';
 import '../solicitudes/solicitudes_repository.dart';
 import '../../shared/widgets/solicitud_card.dart';
+import '../../core/widgets/responsive_builder.dart';
 import '../../shared/widgets/screen_header.dart';
 import '../cartera/widgets/cobro_card.dart';
 import '../cartera/models/cartera_models.dart';
@@ -72,7 +76,9 @@ class _HistorialScreenState extends State<HistorialScreen> {
           }
           return;
         } catch (e) {
-          debugPrint('Error fetching cobrador pagos: $e');
+          if (kDebugMode) {
+            debugPrint('Error fetching cobrador pagos: $e');
+          }
         }
       }
 
@@ -111,7 +117,9 @@ class _HistorialScreenState extends State<HistorialScreen> {
         });
       }
     } catch (e) {
-      debugPrint('Error loading history: $e');
+      if (kDebugMode) {
+        debugPrint('Error loading history: $e');
+      }
       if (mounted && !silent) {
         setState(() {
           _loading = false;
@@ -127,7 +135,9 @@ class _HistorialScreenState extends State<HistorialScreen> {
 
     return Scaffold(
       body: SafeArea(
-        child: Column(
+        // En tablet/desktop el contenido no debe estirarse a todo el ancho.
+        child: ContentConstrainedBox(
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ScreenHeader(title: isCobrador ? 'Actividad' : 'Historial'),
@@ -142,27 +152,21 @@ class _HistorialScreenState extends State<HistorialScreen> {
                           title: 'Sin movimientos',
                           description: 'Aún no tienes cuotas ni pagos registrados.',
                         )
-                      : ListView.separated(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.screenPadding,
-                            vertical: AppSpacing.sm,
-                          ),
-                          itemCount: _itemCount,
-                          separatorBuilder: (_, _) =>
-                              const SizedBox(height: AppSpacing.sm),
-                          itemBuilder: (context, index) {
-                            if (index == _visibleCount &&
-                                _visibleCount < _cuotasDb.length) {
-                              return _buildVerMas();
-                            }
+                      : Builder(
+                          builder: (context) {
+                            final isWide = context.isWideScreen;
 
-                            if (isCobrador) {
+                            // Constructor compartido por lista (móvil) y grid (tablet/desktop).
+                            Widget buildItem(int index) {
+                              if (isCobrador) {
                               final c = _cuotasDb[index];
                               final fechaStr = c['fechaPago'] as String? ?? c['createdAt'] as String? ?? '';
                               final fecha = DateTime.tryParse(fechaStr) ?? DateTime.now();
                               final dateFormatted = DateFormat('dd/MM/yyyy - hh:mm a').format(fecha);
                               final rawMonto = c['monto'] as int? ?? 0;
-                              final monto = rawMonto > 1000 ? (rawMonto / 100).round() : rawMonto;
+                              // El backend entrega SIEMPRE centavos (convención única:
+                              // ver AppCurrency.centsToPesos). Sin heurísticas por umbral.
+                              final monto = AppCurrency.centsToPesos(rawMonto);
                               final residente = c['residenteNombre'] as String? ?? 'Residente';
                               final casa = c['casaDireccion'] as String? ?? 'Inmueble';
                               final manzana = c['manzanaNombre'] as String? ?? '';
@@ -173,15 +177,13 @@ class _HistorialScreenState extends State<HistorialScreen> {
                               return Card(
                                 margin: const EdgeInsets.only(bottom: AppSpacing.sm),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
+                                  borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
                                   side: BorderSide(color: AppColors.success.withValues(alpha: 0.3)),
                                 ),
-                                color: Theme.of(context).brightness == Brightness.dark
-                                    ? const Color(0xFF0F172A)
-                                    : Colors.white,
+                                color: AppColors.elevatedCard,
                                 elevation: 1,
                                 child: InkWell(
-                                  borderRadius: BorderRadius.circular(16),
+                                  borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
                                   onTap: () {
                                     TicketBottomSheet.show(
                                       context,
@@ -198,7 +200,7 @@ class _HistorialScreenState extends State<HistorialScreen> {
                                     );
                                   },
                                   child: Padding(
-                                    padding: const EdgeInsets.all(16),
+                                    padding: const EdgeInsets.all(AppSpacing.md),
                                     child: Row(
                                       children: [
                                         Container(
@@ -223,10 +225,7 @@ class _HistorialScreenState extends State<HistorialScreen> {
                                                   Expanded(
                                                     child: Text(
                                                       '$manzana $casa',
-                                                      style: AppTypography.subtitle.copyWith(
-                                                        fontWeight: FontWeight.w700,
-                                                        fontSize: 15,
-                                                      ),
+                                                      style: AppTypography.cardTitle,
                                                     ),
                                                   ),
                                                   if (esViaSolicitud)
@@ -235,13 +234,12 @@ class _HistorialScreenState extends State<HistorialScreen> {
                                                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                                       decoration: BoxDecoration(
                                                         color: AppColors.primary.withValues(alpha: 0.12),
-                                                        borderRadius: BorderRadius.circular(8),
+                                                        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                                                         border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
                                                       ),
                                                       child: Text(
                                                         '📩 Vía Solicitud',
-                                                        style: TextStyle(
-                                                          fontSize: 10,
+                                                        style: AppTypography.micro.copyWith(
                                                           fontWeight: FontWeight.w800,
                                                           color: AppColors.primary,
                                                         ),
@@ -259,8 +257,7 @@ class _HistorialScreenState extends State<HistorialScreen> {
                                               const SizedBox(height: 4),
                                               Text(
                                                 '$dateFormatted • $nroRecibo',
-                                                style: TextStyle(
-                                                  fontSize: 11,
+                                                style: AppTypography.small.copyWith(
                                                   color: AppColors.textSecondary.withValues(alpha: 0.8),
                                                 ),
                                               ),
@@ -269,11 +266,10 @@ class _HistorialScreenState extends State<HistorialScreen> {
                                         ),
                                         const SizedBox(width: 8),
                                         Text(
-                                          '\$$monto',
-                                          style: AppTypography.subtitle.copyWith(
+                                          AppCurrency.format(monto),
+                                          style: AppTypography.cardValue.copyWith(
                                             fontWeight: FontWeight.w900,
                                             color: AppColors.success,
-                                            fontSize: 16,
                                           ),
                                         ),
                                       ],
@@ -289,8 +285,8 @@ class _HistorialScreenState extends State<HistorialScreen> {
                             final rawPeriod = DateFormat.yMMMM('es').format(date);
                             final period = rawPeriod[0].toUpperCase() + rawPeriod.substring(1);
 
-                            final monto = (c['monto'] as int? ?? 0) ~/ 100;
-                            final montoPagado = (c['montoPagado'] as int? ?? 0) ~/ 100;
+                            final monto = AppCurrency.centsToPesos(c['monto'] as int? ?? 0);
+                            final montoPagado = AppCurrency.centsToPesos(c['montoPagado'] as int? ?? 0);
                             final cobroItem = CobroItem(
                               id: (c['id'] ?? '').toString(),
                               residenteId: (c['residenteId'] ?? '').toString(),
@@ -313,10 +309,62 @@ class _HistorialScreenState extends State<HistorialScreen> {
                               cobro: cobroItem,
                               onTap: () => _handleCuotaTap(c),
                             );
+                            }
+
+                            // ── Tablet/desktop: grid de N columnas ──
+                            final hasMore = _visibleCount < _cuotasDb.length;
+                            if (isWide) {
+                              final cols = context.gridColumns;
+                              return CustomScrollView(
+                                slivers: [
+                                  SliverPadding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: AppSpacing.screenPadding,
+                                      vertical: AppSpacing.sm,
+                                    ),
+                                    sliver: SliverGrid(
+                                      gridDelegate:
+                                          SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: cols,
+                                        mainAxisExtent: 195,
+                                        crossAxisSpacing: 14,
+                                        mainAxisSpacing: 14,
+                                      ),
+                                      delegate: SliverChildBuilderDelegate(
+                                        (context, index) => buildItem(index),
+                                        childCount: _visibleCount,
+                                      ),
+                                    ),
+                                  ),
+                                  // "Ver más" a ancho completo bajo el grid.
+                                  if (hasMore)
+                                    SliverToBoxAdapter(child: _buildVerMas()),
+                                ],
+                              );
+                            }
+
+                            // ── Móvil: lista con "Ver más" intercalado ──
+                            return ListView.separated(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.screenPadding,
+                                vertical: AppSpacing.sm,
+                              ),
+                              itemCount: _itemCount,
+                              separatorBuilder: (_, _) =>
+                                  const SizedBox(height: AppSpacing.sm),
+                              itemBuilder: (context, index) {
+                                if (index == _visibleCount &&
+                                    _visibleCount < _cuotasDb.length) {
+                                  return _buildVerMas();
+                                }
+                                return buildItem(index);
+                              },
+                            );
                           },
                         ),
             ),
           ],
+          ),
         ),
       ),
     );
@@ -359,7 +407,7 @@ class _HistorialScreenState extends State<HistorialScreen> {
     } else if (c['estado'] == 'PAGADA') {
       final rawDate = c['fechaPago'] ?? c['updatedAt'] ?? c['createdAt'];
       final date = (DateTime.tryParse(rawDate?.toString() ?? '') ?? DateTime.now()).toLocal();
-      final monto = ((c['monto'] as int) / 100).round();
+      final monto = AppCurrency.centsToPesos(c['monto'] as int? ?? 0);
       TicketBottomSheet.show(
         context,
         TicketData(
@@ -413,7 +461,7 @@ class _HistorialScreenState extends State<HistorialScreen> {
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
                       color: statusColor.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                     ),
                     child: Icon(
                       Icons.description_outlined,

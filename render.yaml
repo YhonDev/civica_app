@@ -30,13 +30,12 @@ services:
       - key: DATABASE_PASSWORD
         sync: false
       - key: DATABASE_NAME
-        value: postgres
+        value: neondb
       - key: DATABASE_SSL
         value: require
-      # SSL autenticado: verifica la CA del servidor Postgres (previene MITM).
-      # Si Supabase sirve un certificado no reconocido, bajar temporalmente a 'false'.
+      # SSL para Neon Serverless Postgres
       - key: DATABASE_SSL_REJECT_UNAUTHORIZED
-        value: 'true'
+        value: 'false'
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_REFRESH_SECRET

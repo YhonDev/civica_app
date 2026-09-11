@@ -55,7 +55,7 @@ class TerritoryHierarchyCard extends StatelessWidget {
                 height: 44,
                 decoration: BoxDecoration(
                   color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                 ),
                 child: Icon(
                   Icons.home_work_outlined,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/format/app_currency.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
@@ -14,10 +15,14 @@ class TimelineItem {
   final String hace;
   final String? contexto;
   final int? monto;
+  final String? montoFormateado;
   final String? nroRecibo;
   final String? cobrador;
   final String? cobroId;
   final String? pagoId;
+  final String? residente;
+  final String? inmueble;
+  final Map<String, dynamic>? metadata;
 
   const TimelineItem({
     required this.id,
@@ -28,10 +33,14 @@ class TimelineItem {
     required this.hace,
     this.contexto,
     this.monto,
+    this.montoFormateado,
     this.nroRecibo,
     this.cobrador,
     this.cobroId,
     this.pagoId,
+    this.residente,
+    this.inmueble,
+    this.metadata,
   });
 }
 
@@ -154,11 +163,18 @@ class _TimelineRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isPago = item.tipo.toLowerCase().contains('pago') || item.tipo.toLowerCase().contains('cobro');
+    final title = item.contexto ?? (isPago ? 'Pago realizado' : item.usuario);
+    final montoStr = item.montoFormateado ??
+        (item.monto != null && item.monto! > 0 ? AppCurrency.format(item.monto!) : null);
+    final residenteText = item.residente ?? (isPago ? item.usuario : null);
+    final inmuebleText = item.inmueble;
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
         child: IntrinsicHeight(
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -200,42 +216,90 @@ class _TimelineRow extends StatelessWidget {
                     bottom: isLast ? 0 : AppSpacing.md,
                   ),
                   child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Context (Manzana/Casa) or fallback to User
-                            Text(
-                              item.contexto ?? item.usuario,
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: AppColors.textPrimary,
-                                fontWeight: FontWeight.w600,
-                                height: 1.4,
-                              ),
-                            ),
-                            
-                            // Description
-                            if (item.descripcion.isNotEmpty)
-                              Text(
-                                item.descripcion.replaceAll(': undefined', '').replaceAll(': null', ''),
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: AppColors.textPrimary,
-                                  height: 1.4,
+                            // Fila 1: Título (Pago realizado) a la izquierda, Monto ($ 10.000) a la derecha
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    title,
+                                    style: AppTypography.bodySmall.copyWith(
+                                      color: AppColors.textPrimary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
-                              ),
+                                if (montoStr != null) ...[
+                                  const SizedBox(width: AppSpacing.xs),
+                                  Text(
+                                    montoStr,
+                                    style: AppTypography.bodySmall.copyWith(
+                                      color: isPago ? AppColors.success : AppColors.textPrimary,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
                             const SizedBox(height: 2),
 
-                            // User + timestamp
-                            Text(
-                              item.contexto != null 
-                                ? '${item.usuario} • ${item.hace}'
-                                : item.hace,
-                              style: AppTypography.small.copyWith(
-                                color: AppColors.textSecondary,
+                            // Fila 2: Residente (o descripción si no hay residente específico)
+                            if (residenteText != null && residenteText.isNotEmpty)
+                              Text(
+                                residenteText,
+                                style: AppTypography.caption.copyWith(
+                                  color: AppColors.textPrimary,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              )
+                            else if (item.descripcion.isNotEmpty && item.descripcion != montoStr)
+                              Text(
+                                item.descripcion.replaceAll(': undefined', '').replaceAll(': null', ''),
+                                style: AppTypography.caption.copyWith(
+                                  color: AppColors.textSecondary,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
+
+                            const SizedBox(height: 2),
+
+                            // Fila 3: Inmueble a la izquierda, Fecha / Hace a la derecha
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                if (inmuebleText != null && inmuebleText.isNotEmpty)
+                                  Expanded(
+                                    child: Text(
+                                      inmuebleText,
+                                      style: AppTypography.small.copyWith(
+                                        color: AppColors.textSecondary,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  )
+                                else
+                                  const Spacer(),
+                                const SizedBox(width: AppSpacing.xs),
+                                Text(
+                                  item.hace,
+                                  style: AppTypography.small.copyWith(
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
@@ -244,7 +308,7 @@ class _TimelineRow extends StatelessWidget {
                       // Chevron hint for tap
                       if (onTap != null)
                         Padding(
-                          padding: const EdgeInsets.only(left: 4),
+                          padding: const EdgeInsets.only(left: 6),
                           child: Icon(
                             Icons.chevron_right_rounded,
                             color: AppColors.textDisabled,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/format/app_currency.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
@@ -58,7 +59,7 @@ class RecaudoTimelineWidget extends StatelessWidget {
                 padding: const EdgeInsets.all(AppSpacing.sm),
                 decoration: BoxDecoration(
                   color: statusColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                 ),
                 child: Icon(
                   isCompleto ? Icons.check_circle_rounded : Icons.donut_large_rounded,
@@ -93,7 +94,7 @@ class RecaudoTimelineWidget extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: statusColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
                   border: Border.all(color: statusColor.withValues(alpha: 0.3)),
                 ),
                 child: Text(
@@ -111,7 +112,7 @@ class RecaudoTimelineWidget extends StatelessWidget {
 
           // ── Progress Bar ───────────────────────────────
           ClipRRect(
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
             child: LinearProgressIndicator(
               value: porcentaje,
               minHeight: 8,
@@ -128,7 +129,7 @@ class RecaudoTimelineWidget extends StatelessWidget {
             children: [
               _buildStatItem(
                 label: 'Abonado este mes',
-                val: '\$${montoPagado.toStringAsFixed(0)}',
+                val: AppCurrency.format(montoPagado),
                 color: AppColors.success,
               ),
               Container(
@@ -138,7 +139,7 @@ class RecaudoTimelineWidget extends StatelessWidget {
               ),
               _buildStatItem(
                 label: 'Saldo pendiente',
-                val: '\$${saldoPendiente.toStringAsFixed(0)}',
+                val: AppCurrency.format(saldoPendiente),
                 color: saldoPendiente > 0 ? AppColors.error : AppColors.textSecondary,
               ),
             ],

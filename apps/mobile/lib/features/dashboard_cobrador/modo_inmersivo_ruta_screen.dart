@@ -338,14 +338,14 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
           filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
           child: Dialog(
             backgroundColor: Colors.transparent,
-            insetPadding: const EdgeInsets.all(24),
+            insetPadding: const EdgeInsets.all(AppSpacing.lg),
             child: Container(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF0F172A).withValues(alpha: 0.95) : Colors.white.withValues(alpha: 0.95),
-                borderRadius: BorderRadius.circular(28),
+                color: AppColors.screenBackground.withValues(alpha: 0.95),
+                borderRadius: BorderRadius.circular(AppSpacing.heroRadius),
                 border: Border.all(
-                  color: isDark ? const Color(0xFF334155) : AppColors.border,
+                  color: AppColors.borderStrong,
                 ),
                 boxShadow: [
                   BoxShadow(
@@ -360,7 +360,7 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
                 children: [
                   // Icono de advertencia circular en rojo
                   Container(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(AppSpacing.md),
                     decoration: BoxDecoration(
                       color: AppColors.error.withValues(alpha: 0.15),
                       shape: BoxShape.circle,
@@ -378,8 +378,7 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
                   Text(
                     '¿Cancelar Ruta en Curso?',
                     textAlign: TextAlign.center,
-                    style: AppTypography.title.copyWith(
-                      fontSize: 20,
+                    style: AppTypography.subtitle.copyWith(
                       fontWeight: FontWeight.w900,
                       color: isDark ? Colors.white : AppColors.textPrimary,
                     ),
@@ -390,8 +389,7 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
                   Text(
                     'Tené en cuenta que al salir de la caminata, el progreso actual se consolidará y deberás reanudar la ruta desde el dashboard.',
                     textAlign: TextAlign.center,
-                    style: AppTypography.body.copyWith(
-                      fontSize: 13,
+                    style: AppTypography.caption.copyWith(
                       height: 1.4,
                       color: isDark ? Colors.white70 : AppColors.textSecondary,
                     ),
@@ -404,18 +402,18 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
                     child: FilledButton.icon(
                       style: FilledButton.styleFrom(
                         backgroundColor: AppColors.primary,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
                         elevation: 4,
                         shadowColor: AppColors.primary.withValues(alpha: 0.35),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(18),
+                          borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                         ),
                       ),
                       onPressed: () => Navigator.of(dialogContext).pop(false),
                       icon: const Icon(Icons.directions_walk_rounded, size: 22),
-                      label: const Text(
+                      label: Text(
                         'CONTINUAR RUTA DE RECAUDO',
-                        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, letterSpacing: 0.5),
+                        style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w900, letterSpacing: 0.5),
                       ),
                     ),
                   ),
@@ -431,14 +429,14 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
                           side: BorderSide(color: AppColors.error.withValues(alpha: 0.6), width: 1.2),
                           padding: const EdgeInsets.symmetric(vertical: 9),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                           ),
                         ),
                         onPressed: () => Navigator.of(dialogContext).pop(true),
                         icon: const Icon(Icons.exit_to_app_rounded, size: 15),
                         label: const Text(
                           'Cancelar ruta y salir',
-                          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+                          style: AppTypography.label,
                         ),
                       ),
                     ),
@@ -474,7 +472,7 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
         }
       },
       child: Scaffold(
-        backgroundColor: isDark ? const Color(0xFF090D16) : const Color(0xFFF1F5F9),
+        backgroundColor: AppColors.immersiveBackground,
         body: Stack(
           children: [
             // ── Mapa de Fondo Estilizado Dinámico (Background Pattern Animado) ───
@@ -551,9 +549,9 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
         children: [
           IconButton(
             icon: Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(AppSpacing.sm),
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                color: AppColors.cobradorCard,
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
@@ -570,9 +568,8 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
             children: [
               Text(
                 'Ruta Iniciada',
-                style: AppTypography.title.copyWith(
+                style: AppTypography.subtitle.copyWith(
                   fontWeight: FontWeight.w800,
-                  fontSize: 20,
                   color: isDark ? Colors.white : AppColors.textPrimary,
                 ),
               ),
@@ -601,9 +598,9 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
       margin: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B).withValues(alpha: 0.8) : Colors.white.withValues(alpha: 0.9),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isDark ? const Color(0xFF334155) : AppColors.border),
+        color: AppColors.cobradorCard.withValues(alpha: isDark ? 0.8 : 0.9),
+        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+        border: Border.all(color: AppColors.borderStrong),
       ),
       child: Column(
         children: [
@@ -639,11 +636,11 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
           ),
           const SizedBox(height: 8),
           ClipRRect(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
             child: LinearProgressIndicator(
               value: progress,
               minHeight: 8,
-              backgroundColor: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+              backgroundColor: AppColors.track,
               valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
             ),
           ),
@@ -678,7 +675,7 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 250),
-                margin: const EdgeInsets.symmetric(horizontal: 4),
+                margin: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
                 height: 8,
                 width: isCurrent ? 24 : 8,
                 decoration: BoxDecoration(
@@ -687,7 +684,7 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
                       : isPassed || isPagado
                           ? AppColors.success
                           : (isDark ? Colors.white24 : AppColors.border),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                   boxShadow: isCurrent
                       ? [
                           BoxShadow(
@@ -719,10 +716,10 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
             : AppColors.warning;
 
     final Color statusBgColor = isPagado
-        ? (isDark ? const Color(0xFF064E3B).withValues(alpha: 0.25) : const Color(0xFFF0FDF4))
+        ? AppColors.successSurface
         : isMora
-            ? (isDark ? const Color(0xFF450A0A).withValues(alpha: 0.25) : const Color(0xFFFEF2F2))
-            : (isDark ? const Color(0xFF261D0C).withValues(alpha: 0.45) : const Color(0xFFFFFDF0));
+            ? AppColors.errorSurface
+            : AppColors.warningSurface;
 
     return AnimatedScale(
       scale: isSelected ? 1.0 : 0.94,
@@ -736,7 +733,7 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
           padding: const EdgeInsets.all(AppSpacing.lg),
           decoration: BoxDecoration(
             color: statusBgColor,
-            borderRadius: BorderRadius.circular(28),
+            borderRadius: BorderRadius.circular(AppSpacing.heroRadius),
             border: Border.all(
               color: isSelected ? statusBorderColor : statusBorderColor.withValues(alpha: 0.5),
               width: isSelected ? 2.5 : 1.2,
@@ -762,15 +759,14 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
                       color: AppColors.primary.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                       border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
                     ),
                     child: Text(
                       item.etapaNombre.toUpperCase(),
-                      style: AppTypography.caption.copyWith(
+                      style: AppTypography.bodySmall.copyWith(
                         color: AppColors.primary,
                         fontWeight: FontWeight.w900,
-                        fontSize: 14,
                         letterSpacing: 0.8,
                       ),
                     ),
@@ -781,7 +777,7 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: statusBorderColor.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                       border: Border.all(color: statusBorderColor.withValues(alpha: 0.3)),
                     ),
                     child: Row(
@@ -819,7 +815,6 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
               Text(
                 '${item.manzanaNombre} • ${item.casaNombre}',
                 style: AppTypography.title.copyWith(
-                  fontSize: 28,
                   fontWeight: FontWeight.w900,
                   color: isDark ? Colors.white : AppColors.textPrimary,
                 ),
@@ -852,9 +847,8 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
                         const SizedBox(height: 2),
                         Text(
                           item.residenteNombre,
-                          style: AppTypography.title.copyWith(
+                          style: AppTypography.stat.copyWith(
                             fontWeight: FontWeight.w900,
-                            fontSize: 22,
                             color: isDark ? Colors.white : AppColors.textPrimary,
                           ),
                         ),
@@ -880,7 +874,7 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
                   padding: const EdgeInsets.all(AppSpacing.md),
                   decoration: BoxDecoration(
                     color: AppColors.warning.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                     border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
                   ),
                   child: Column(
@@ -896,9 +890,8 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
                       const SizedBox(height: 2),
                       Text(
                         '"${item.solicitudNota}"',
-                        style: AppTypography.body.copyWith(
+                        style: AppTypography.caption.copyWith(
                           fontStyle: FontStyle.italic,
-                          fontSize: 13,
                           color: isDark ? Colors.white70 : AppColors.textPrimary,
                         ),
                       ),
@@ -913,9 +906,9 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
               Container(
                 padding: const EdgeInsets.all(AppSpacing.lg),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF0F172A).withValues(alpha: 0.85) : Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: isDark ? const Color(0xFF334155) : AppColors.border),
+                  color: isDark ? AppColors.screenBackground.withValues(alpha: 0.85) : AppColors.cobradorCard,
+                  borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
+                  border: Border.all(color: AppColors.borderStrong),
                 ),
                 child: Row(
                   children: [
@@ -974,10 +967,9 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
                         const SizedBox(height: 4),
                         Text(
                           isPagado ? '\$0' : '\$${item.saldo.toInt()}',
-                          style: AppTypography.title.copyWith(
+                          style: AppTypography.stat.copyWith(
                             color: isPagado ? AppColors.success : AppColors.primary,
                             fontWeight: FontWeight.w900,
-                            fontSize: 22,
                           ),
                         ),
                       ],
@@ -999,7 +991,7 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
                       width: 1.5,
                     ),
                     padding: const EdgeInsets.symmetric(vertical: 13),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.cardRadius)),
                   ),
                   onPressed: () {
                     if (isMora) {
@@ -1017,7 +1009,7 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
                   ),
                   label: Text(
                     isMora ? 'Restablecer a Pendiente' : 'Marcar en Mora',
-                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+                    style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w800),
                   ),
                 ),
               ),
@@ -1048,7 +1040,7 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
             Material(
               color: Colors.transparent,
               child: InkWell(
-                borderRadius: BorderRadius.circular(26),
+                borderRadius: BorderRadius.circular(AppSpacing.heroRadius),
                 onTap: _currentIndex > 0
                     ? () {
                         _pageController.previousPage(
@@ -1063,11 +1055,11 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
                   height: 52,
                   decoration: BoxDecoration(
                     color: _currentIndex > 0
-                        ? (isDark ? const Color(0xFF1E293B) : Colors.white)
-                        : (isDark ? const Color(0xFF0F172A).withValues(alpha: 0.5) : const Color(0xFFE2E8F0).withValues(alpha: 0.5)),
+                        ? AppColors.cobradorCard
+                        : (isDark ? AppColors.screenBackground.withValues(alpha: 0.5) : AppColors.track.withValues(alpha: 0.5)),
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
+                      color: AppColors.borderStrong,
                       width: 1.5,
                     ),
                     boxShadow: _currentIndex > 0
@@ -1098,7 +1090,7 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
               child: Container(
                 height: 56,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
                   boxShadow: [
                     BoxShadow(
                       color: AppColors.primary.withValues(alpha: 0.45),
@@ -1112,14 +1104,14 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
                     backgroundColor: AppColors.primary,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
                     ),
                   ),
                   onPressed: () => _abrirCobroRapido(item),
                   icon: const Icon(Icons.payments_rounded, size: 22),
-                  label: const Text(
+                  label: Text(
                     'REGISTRAR COBRO',
-                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, letterSpacing: 0.5),
+                    style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w900, letterSpacing: 0.5),
                   ),
                 ),
               ),
@@ -1131,7 +1123,7 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
             Material(
               color: Colors.transparent,
               child: InkWell(
-                borderRadius: BorderRadius.circular(26),
+                borderRadius: BorderRadius.circular(AppSpacing.heroRadius),
                 onTap: _currentIndex < _items.length - 1
                     ? () {
                         _pageController.nextPage(
@@ -1146,11 +1138,11 @@ class _ModoInmersivoRutaScreenState extends State<ModoInmersivoRutaScreen> with 
                   height: 52,
                   decoration: BoxDecoration(
                     color: _currentIndex < _items.length - 1
-                        ? (isDark ? const Color(0xFF1E293B) : Colors.white)
-                        : (isDark ? const Color(0xFF0F172A).withValues(alpha: 0.5) : const Color(0xFFE2E8F0).withValues(alpha: 0.5)),
+                        ? AppColors.cobradorCard
+                        : (isDark ? AppColors.screenBackground.withValues(alpha: 0.5) : AppColors.track.withValues(alpha: 0.5)),
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
+                      color: AppColors.borderStrong,
                       width: 1.5,
                     ),
                     boxShadow: _currentIndex < _items.length - 1
@@ -1227,7 +1219,7 @@ class _MapGridBackgroundPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final baseColor = isDark ? Colors.white : const Color(0xFF0F172A);
+    final baseColor = AppColors.inkStrong;
     final primaryGlow = AppColors.primary;
 
     // 1. Radial Glow Centrado detrás de la Tarjeta
@@ -1270,7 +1262,7 @@ class _MapGridBackgroundPainter extends CustomPainter {
       for (double x = -size.width * 0.5; x < size.width * 2.0; x += blockW + 28) {
         final rect = RRect.fromRectAndRadius(
           Rect.fromLTWH(x, y, blockW, blockH),
-          const Radius.circular(8),
+          const Radius.circular(AppSpacing.radiusMd),
         );
         canvas.drawRRect(rect, blockPaint);
         canvas.drawRRect(rect, blockBorderPaint);

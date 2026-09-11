@@ -70,7 +70,7 @@ class BasicInformationSection extends StatelessWidget {
         Container(
           decoration: BoxDecoration(
             color: AppColors.card,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
             border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
             boxShadow: [
               BoxShadow(
@@ -219,10 +219,10 @@ class _InfoTileWidget extends StatelessWidget {
         vertical: 4,
       ),
       leading: Container(
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(AppSpacing.sm),
         decoration: BoxDecoration(
           color: themeColor.withValues(alpha: 0.10),
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
         ),
         child: Icon(item.icon, color: themeColor, size: 20),
       ),

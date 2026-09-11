@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
+import '../../core/format/app_currency.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
@@ -49,8 +49,6 @@ class CarteraConsolidadaScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final currencyFormat = NumberFormat.currency(symbol: '\$ ', decimalDigits: 0, locale: 'es_CO');
-
     return BlocProvider(
       create: (context) => ConsolidatedCubit()..load(),
       child: Scaffold(
@@ -186,7 +184,7 @@ class CarteraConsolidadaScreen extends StatelessWidget {
                                     itemCount: state.filteredItems.length,
                                     itemBuilder: (context, index) {
                                       final item = state.filteredItems[index];
-                                      return _buildResidentCobroCard(context, item, currencyFormat);
+                                      return _buildResidentCobroCard(context, item);
                                     },
                                   ),
                           ),
@@ -210,13 +208,13 @@ class CarteraConsolidadaScreen extends StatelessWidget {
     required Color badgeColor,
     required IconData icon,
   }) {
-    final amountFormatted = r'$ ' + NumberFormat('#,##0', 'es_CO').format(amount.round());
+    final amountFormatted = AppCurrency.format(amount.round());
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
       decoration: BoxDecoration(
         color: badgeColor.withValues(alpha: 0.03),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
         border: Border.all(color: badgeColor.withValues(alpha: 0.12)),
       ),
       child: Column(
@@ -231,7 +229,6 @@ class CarteraConsolidadaScreen extends StatelessWidget {
                   label,
                   style: AppTypography.smallBold.copyWith(
                     color: badgeColor,
-                    fontSize: 10.5,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -245,19 +242,16 @@ class CarteraConsolidadaScreen extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: Text(
               amountFormatted,
-              style: AppTypography.bodyMedium.copyWith(
+              style: AppTypography.cardTitle.copyWith(
                 color: AppColors.textPrimary,
-                fontWeight: FontWeight.bold,
-                fontSize: 15,
               ),
             ),
           ),
           const SizedBox(height: 2),
           Text(
             '$count casas',
-            style: AppTypography.small.copyWith(
+            style: AppTypography.micro.copyWith(
               color: AppColors.textSecondary,
-              fontSize: 10,
             ),
           ),
         ],
@@ -274,10 +268,9 @@ class CarteraConsolidadaScreen extends StatelessWidget {
       labelPadding: EdgeInsets.zero,
       label: Text(
         label,
-        style: AppTypography.caption.copyWith(
+        style: AppTypography.label.copyWith(
           color: isSelected ? Colors.white : AppColors.textPrimary,
           fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-          fontSize: 12,
         ),
       ),
       selectedColor: activeColor,
@@ -285,19 +278,19 @@ class CarteraConsolidadaScreen extends StatelessWidget {
       side: BorderSide(
         color: isSelected ? activeColor : AppColors.border.withValues(alpha: 0.5),
       ),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.chipRadius)),
       onSelected: (_) {
         context.read<ConsolidatedCubit>().setFilter(key);
       },
     );
   }
 
-  Widget _buildResidentCobroCard(BuildContext context, ResidentConsolidadoItem item, NumberFormat currencyFormat) {
+  Widget _buildResidentCobroCard(BuildContext context, ResidentConsolidadoItem item) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isOverdue = item.estado == 'EN_MORA';
     final cardBorderColor = isOverdue
         ? AppColors.error.withValues(alpha: 0.4)
-        : (isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0));
+        : AppColors.track;
 
     StatusType statusType;
     if (item.estado == 'EN_MORA') {
@@ -312,7 +305,7 @@ class CarteraConsolidadaScreen extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
       decoration: BoxDecoration(
         color: isDark ? AppColors.elevatedCard : Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
         border: Border.all(
           color: cardBorderColor,
           width: isOverdue ? 1.5 : 1.0,
@@ -337,7 +330,7 @@ class CarteraConsolidadaScreen extends StatelessWidget {
                 color: isOverdue
                     ? AppColors.error.withValues(alpha: 0.1)
                     : AppColors.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
               ),
               child: Icon(
                 isOverdue ? Icons.home_work_outlined : Icons.person_outline_rounded,
@@ -352,19 +345,16 @@ class CarteraConsolidadaScreen extends StatelessWidget {
                 children: [
                   Text(
                     item.nombre,
-                    style: AppTypography.subtitle.copyWith(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
-                    ),
+                    style: AppTypography.cardTitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 2),
                   Text(
                     item.email ?? item.telefono ?? 'Sin contacto asignado',
-                    style: AppTypography.caption.copyWith(
+                    style: AppTypography.label.copyWith(
                       color: AppColors.textSecondary,
-                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -381,19 +371,17 @@ class CarteraConsolidadaScreen extends StatelessWidget {
                 const SizedBox(height: 6),
                 if (item.totalAdeudado > 0)
                   Text(
-                    currencyFormat.format(item.totalAdeudado),
+                    AppCurrency.format(item.totalAdeudado),
                     style: AppTypography.caption.copyWith(
                       fontWeight: FontWeight.bold,
-                      fontSize: 13,
                       color: isOverdue ? AppColors.error : AppColors.warning,
                     ),
                   )
                 else
                   Text(
                     'Al día',
-                    style: AppTypography.caption.copyWith(
+                    style: AppTypography.label.copyWith(
                       fontWeight: FontWeight.w600,
-                      fontSize: 12,
                       color: AppColors.success,
                     ),
                   ),

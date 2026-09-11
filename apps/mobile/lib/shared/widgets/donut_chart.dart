@@ -25,16 +25,24 @@ class DonutChart extends StatelessWidget {
   final List<DonutSegment> segments;
   final double size;
   final double strokeWidth;
+  final String? centerText;
+  final String? centerLabel;
 
   const DonutChart({
     super.key,
     required this.segments,
     this.size = 180,
     this.strokeWidth = 28,
+    this.centerText,
+    this.centerLabel,
   });
 
   @override
   Widget build(BuildContext context) {
+    final displayText = centerText ??
+        '${segments.fold<double>(0, (sum, s) => sum + s.percentage).toStringAsFixed(0)}%';
+    final displayLabel = centerLabel ?? 'completado';
+
     return SizedBox(
       width: size,
       height: size,
@@ -53,17 +61,19 @@ class DonutChart extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                '${segments.fold<double>(0, (sum, s) => sum + s.percentage).toStringAsFixed(0)}%',
+                displayText,
                 style: AppTypography.subtitle.copyWith(
                   color: AppColors.textPrimary,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-              Text(
-                'completado',
-                style: AppTypography.small.copyWith(
-                  color: AppColors.textSecondary,
+              if (displayLabel.isNotEmpty)
+                Text(
+                  displayLabel,
+                  style: AppTypography.small.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
                 ),
-              ),
             ],
           ),
         ],
@@ -92,17 +102,21 @@ class _DonutPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round;
     canvas.drawCircle(center, radius, bgPaint);
 
+    final totalPercentage = segments.fold<double>(0, (sum, s) => sum + (s.percentage > 0 ? s.percentage : 0));
+    if (totalPercentage <= 0) return;
+
     // Arc segments
     double startAngle = -math.pi / 2; // Start from top
     for (final segment in segments) {
       if (segment.percentage <= 0) continue;
 
-      final sweepAngle = (segment.percentage / 100) * 2 * math.pi;
+      final normalizedPct = totalPercentage > 0 ? (segment.percentage / (totalPercentage > 100 ? totalPercentage : 100)) : 0;
+      final sweepAngle = normalizedPct * 2 * math.pi;
       final paint = Paint()
         ..color = segment.color
         ..style = PaintingStyle.stroke
         ..strokeWidth = strokeWidth
-        ..strokeCap = StrokeCap.round;
+        ..strokeCap = StrokeCap.butt;
 
       canvas.drawArc(rect, startAngle, sweepAngle, false, paint);
       startAngle += sweepAngle;

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
 
+import '../../../core/format/app_currency.dart';
+import '../../../core/theme/app_breakpoints.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/responsive_builder.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/top_toast.dart';
@@ -113,6 +115,13 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
     _selectedIndices.add(initialIdx);
 
     _recalcularMonto();
+    // Rebuild en vivo para que los chips 1x/2x/3x/4x/Total reflejen el
+    // monto mientras el usuario escribe, no solo al presionar un chip.
+    _montoController.addListener(_onMontoChanged);
+  }
+
+  void _onMontoChanged() {
+    if (mounted) setState(() {});
   }
 
   void _recalcularMonto() {
@@ -123,10 +132,10 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
           total += (_cuotasList[idx]['monto'] as num? ?? 20000).toInt();
         }
       }
-      _montoController.text = total.toString();
+      _montoController.text = AppCurrency.formatInput(total);
     } else {
       final suggestedAmount = widget.cobro.monto > 0 ? widget.cobro.monto : widget.cobro.saldo;
-      _montoController.text = suggestedAmount.toInt().toString();
+      _montoController.text = AppCurrency.formatInput(suggestedAmount.toInt());
     }
   }
 
@@ -207,13 +216,14 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
 
   @override
   void dispose() {
+    _montoController.removeListener(_onMontoChanged);
     _montoController.dispose();
     super.dispose();
   }
 
   Future<void> _registrarPago() async {
-    final montoText = _montoController.text.trim().replaceAll(',', '').replaceAll('.', '');
-    final monto = int.tryParse(montoText) ?? 0;
+    // El campo muestra "10.000" (agrupado); se parsea quitando separadores.
+    final monto = AppCurrency.parse(_montoController.text).round();
 
     if (monto <= 0) {
       TopToast.show(
@@ -237,7 +247,7 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
 
       final res = await _repo.registrarPago(
         residenteId: widget.cobro.residenteId,
-        montoCentavos: monto * 100, // Convert to centavos
+        montoCentavos: AppCurrency.pesosToCents(monto),
         cobroId: widget.cobro.id,
         cobradorId: cobradorId,
         tenantId: tenantId,
@@ -261,7 +271,7 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
           title: isOffline ? 'Recaudo guardado en cola local' : '¡Recaudo registrado con éxito!',
           message: isOffline
               ? (res['message'] as String? ?? 'Pago guardado de forma segura en cola local.')
-              : 'Pago de \$${NumberFormat.decimalPattern('es_CO').format(monto)} procesado. Cartera actualizada.',
+              : 'Pago de ${AppCurrency.format(monto)} procesado. Cartera actualizada.',
           icon: isOffline ? Icons.cloud_off_rounded : Icons.check_circle_rounded,
           accentColor: isOffline ? AppColors.warning : AppColors.success,
         );
@@ -295,8 +305,7 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
       totalAdeudado = widget.cobro.saldo > 0 ? widget.cobro.saldo : widget.cobro.monto;
     }
 
-    final saldoStr =
-        '\$ ${NumberFormat.decimalPattern('es_CO').format(totalAdeudado.toInt())}';
+    final saldoStr = AppCurrency.format(totalAdeudado.toInt());
 
     return Padding(
       padding: EdgeInsets.only(
@@ -305,7 +314,13 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
         bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.xl,
         top: AppSpacing.sm,
       ),
-      child: Column(
+      // En tablet/desktop el sheet no debe estirarse a todo el ancho.
+      child: ContentConstrainedBox(
+        maxWidth: AppBreakpoints.maxFormWidth,
+        // Scroll interno: con el teclado abierto el espacio se reduce y el
+        // contenido debe desplazarse, no desbordar (alto dinámico).
+        child: SingleChildScrollView(
+        child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -317,7 +332,7 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
               margin: const EdgeInsets.only(bottom: AppSpacing.md),
               decoration: BoxDecoration(
                 color: AppColors.border,
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: BorderRadius.circular(AppSpacing.radiusProgress),
               ),
             ),
           ),
@@ -386,14 +401,14 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
                       });
                     }
                   },
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     padding: const EdgeInsets.symmetric(vertical: 9),
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: _isQuickMode ? AppColors.primary : AppColors.surface,
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                       border: Border.all(
                         color: _isQuickMode ? AppColors.primary : AppColors.border,
                         width: 1.2,
@@ -415,15 +430,20 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
                           Icons.bolt_rounded,
                           size: 16,
                           color: _isQuickMode ? Colors.white : AppColors.textSecondary,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          'Cuota Actual',
-                          style: AppTypography.caption.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: _isQuickMode ? Colors.white : AppColors.textSecondary,
-                          ),
-                        ),
+                        ),                            const SizedBox(width: 6),
+                            // Flexible: el label se ajusta sin desbordar el
+                            // tab en pantallas estrechas o textos largos.
+                            Flexible(
+                              child: Text(
+                                'Cuota Actual',
+                                style: AppTypography.caption.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: _isQuickMode
+                                      ? Colors.white
+                                      : AppColors.textSecondary,
+                                ),
+                              ),
+                            ),
                       ],
                     ),
                   ),
@@ -440,14 +460,14 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
                       });
                     }
                   },
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     padding: const EdgeInsets.symmetric(vertical: 9),
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: !_isQuickMode ? AppColors.primaryDark : AppColors.surface,
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                       border: Border.all(
                         color: !_isQuickMode ? AppColors.primaryDark : AppColors.border,
                         width: 1.2,
@@ -469,15 +489,18 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
                           Icons.account_balance_wallet_rounded,
                           size: 16,
                           color: !_isQuickMode ? Colors.white : AppColors.textSecondary,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          'Ver Deuda',
-                          style: AppTypography.caption.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: !_isQuickMode ? Colors.white : AppColors.textSecondary,
-                          ),
-                        ),
+                        ),                            const SizedBox(width: 6),
+                            Flexible(
+                              child: Text(
+                                'Ver Deuda',
+                                style: AppTypography.caption.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: !_isQuickMode
+                                      ? Colors.white
+                                      : AppColors.textSecondary,
+                                ),
+                              ),
+                            ),
                       ],
                     ),
                   ),
@@ -496,17 +519,20 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
               borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
             ),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  _isQuickMode ? 'Valor cuota actual' : 'Saldo total adeudado',
-                  style: AppTypography.body.copyWith(
-                    color: AppColors.textSecondary,
+                // Expanded: en pantallas estrechas el label envuelve en vez
+                // de empujar el monto fuera del Row (contenido dinámico).
+                Expanded(
+                  child: Text(
+                    _isQuickMode ? 'Valor cuota actual' : 'Saldo total adeudado',
+                    style: AppTypography.body.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ),
                 Text(
                   _isQuickMode && _cuotasList.isNotEmpty
-                      ? '\$ ${NumberFormat.decimalPattern('es_CO').format((_cuotasList.first['monto'] as num? ?? 20000).toInt())}'
+                      ? AppCurrency.format((_cuotasList.first['monto'] as num? ?? 20000).toInt())
                       : saldoStr,
                   style: AppTypography.subtitle.copyWith(
                     fontWeight: FontWeight.w700,
@@ -548,39 +574,45 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
 
                   final titleStr = _formatCuotaTitle(Map<String, dynamic>.from(cuota as Map), idx);
 
-                  return CheckboxListTile(
-                    dense: true,
-                    value: isSelected,
-                    title: Text(
-                      '$titleStr — \$${NumberFormat.decimalPattern('es_CO').format(montoCuota)}',
-                      style: AppTypography.bodyMedium.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: isSelected ? AppColors.primary : AppColors.textPrimary,
+                  // Material transparente: el ink splash del tile se pinta
+                  // en el Material más cercano; sin esto la decoración del
+                  // contenedor lo oculta (warning de ListTile).
+                  return Material(
+                    type: MaterialType.transparency,
+                    child: CheckboxListTile(
+                      dense: true,
+                      value: isSelected,
+                      title: Text(
+                        '$titleStr — ${AppCurrency.format(montoCuota)}',
+                        style: AppTypography.bodyMedium.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: isSelected ? AppColors.primary : AppColors.textPrimary,
+                        ),
                       ),
-                    ),
-                    subtitle: Text(
-                      'Estado: $estadoCuota',
-                      style: AppTypography.small.copyWith(
-                        color: estadoCuota == 'VENCIDA' ? AppColors.error : AppColors.textSecondary,
+                      subtitle: Text(
+                        'Estado: $estadoCuota',
+                        style: AppTypography.small.copyWith(
+                          color: estadoCuota == 'VENCIDA' ? AppColors.error : AppColors.textSecondary,
+                        ),
                       ),
-                    ),
-                    activeColor: AppColors.primary,
-                    onChanged: (val) {
-                      setState(() {
-                        if (val == true) {
-                          _selectedIndices.add(idx);
-                        } else {
-                          if (_selectedIndices.length > 1) {
-                            _selectedIndices.remove(idx);
+                      activeColor: AppColors.primary,
+                      onChanged: (val) {
+                        setState(() {
+                          if (val == true) {
+                            _selectedIndices.add(idx);
+                          } else {
+                            if (_selectedIndices.length > 1) {
+                              _selectedIndices.remove(idx);
+                            }
                           }
-                        }
-                        int sum = 0;
-                        for (final i in _selectedIndices) {
-                          sum += (_cuotasList[i]['monto'] as num? ?? 20000).toInt();
-                        }
-                        _montoController.text = sum.toString();
-                      });
-                    },
+                          int sum = 0;
+                          for (final i in _selectedIndices) {
+                            sum += (_cuotasList[i]['monto'] as num? ?? 20000).toInt();
+                          }
+                          _montoController.text = AppCurrency.formatInput(sum);
+                        });
+                      },
+                    ),
                   );
                 },
               ),
@@ -600,6 +632,10 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
           TextFormField(
             controller: _montoController,
             keyboardType: TextInputType.number,
+            inputFormatters: [
+              // Formato en vivo: el usuario ve $ 10.000 mientras escribe.
+              AppCurrencyInputFormatter(),
+            ],
             style: AppTypography.subtitle.copyWith(
               fontWeight: FontWeight.w700,
             ),
@@ -627,13 +663,13 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
                           padding: const EdgeInsets.only(right: 6),
                           child: ChoiceChip(
                             label: Text(
-                              '$n ${n == 1 ? 'Cuota' : 'Cuotas'} (\$${NumberFormat.decimalPattern('es_CO').format((widget.cobro.monto * n).toInt())})',
-                              style: AppTypography.small.copyWith(fontSize: 11),
+                              '$n ${n == 1 ? 'Cuota' : 'Cuotas'} (${AppCurrency.format((widget.cobro.monto * n).toInt())})',
+                              style: AppTypography.small,
                             ),
-                            selected: _montoController.text == (widget.cobro.monto * n).toInt().toString(),
+                            selected: AppCurrency.parse(_montoController.text) == (widget.cobro.monto * n).toInt(),
                             onSelected: (_) {
                               setState(() {
-                                _montoController.text = (widget.cobro.monto * n).toInt().toString();
+                                _montoController.text = AppCurrency.formatInput((widget.cobro.monto * n).toInt());
                               });
                             },
                           ),
@@ -642,13 +678,13 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
                   ],
                   ChoiceChip(
                     label: Text(
-                      'Total (\$${NumberFormat.decimalPattern('es_CO').format(widget.cobro.saldo.toInt())})',
-                      style: AppTypography.small.copyWith(fontSize: 11),
+                      'Total (${AppCurrency.format(widget.cobro.saldo.toInt())})',
+                      style: AppTypography.small,
                     ),
-                    selected: _montoController.text == widget.cobro.saldo.toInt().toString(),
+                    selected: AppCurrency.parse(_montoController.text) == widget.cobro.saldo.toInt(),
                     onSelected: (_) {
                       setState(() {
-                        _montoController.text = widget.cobro.saldo.toInt().toString();
+                        _montoController.text = AppCurrency.formatInput(widget.cobro.saldo.toInt());
                       });
                     },
                   ),
@@ -670,7 +706,6 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
                       : 'El dinero ingresado se aplicará primero a la cuota más antigua en mora para sanearla.',
                   style: AppTypography.small.copyWith(
                     color: AppColors.textSecondary,
-                    fontSize: 11,
                   ),
                 ),
               ),
@@ -699,6 +734,8 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
             ),
           ),
         ],
+        ),
+        ),
       ),
     );
   }

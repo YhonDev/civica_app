@@ -172,7 +172,7 @@ class _CobradoresScreenState extends State<CobradoresScreen> {
                   filled: true,
                   fillColor: AppColors.card,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                     borderSide: BorderSide.none,
                   ),
                   contentPadding: const EdgeInsets.symmetric(vertical: 12),
@@ -268,7 +268,7 @@ class _CobradoresScreenState extends State<CobradoresScreen> {
       padding: const EdgeInsets.all(AppSpacing.cardPadding),
       decoration: BoxDecoration(
         color: AppColors.card,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
         border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
       ),
       child: Column(
@@ -346,7 +346,7 @@ class _CobradoresScreenState extends State<CobradoresScreen> {
               selectedColor: AppColors.info,
               checkmarkColor: Colors.white,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
                 side: BorderSide(
                   color: isSelected ? AppColors.info : AppColors.border,
                 ),

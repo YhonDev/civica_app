@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart' show debugPrint, visibleForTesting;
+import 'package:flutter/foundation.dart' show debugPrint, kDebugMode, visibleForTesting;
 import 'package:dio/dio.dart';
 
 import '../database/app_database.dart';
@@ -269,7 +269,9 @@ class SyncService {
             }
           } else {
             errors++;
-            debugPrint('[SyncService] Error inesperado en pago ${pago.id}: $e');
+            if (kDebugMode) {
+              debugPrint('[SyncService] Error inesperado en pago ${pago.id}: $e');
+            }
           }
         }
       }
@@ -278,7 +280,9 @@ class SyncService {
       try {
         await _syncDao.limpiarDatosAntiguos();
       } catch (e) {
-        debugPrint('[SyncService] Error al limpiar datos antiguos: $e');
+        if (kDebugMode) {
+          debugPrint('[SyncService] Error al limpiar datos antiguos: $e');
+        }
       }
 
       final result = SyncResult(
@@ -300,7 +304,9 @@ class SyncService {
 
       return result;
     } catch (e) {
-      debugPrint('[SyncService] Error en sync: $e');
+      if (kDebugMode) {
+        debugPrint('[SyncService] Error en sync: $e');
+      }
       _setStatus(SyncStatus.networkError);
       return const SyncResult(synced: 0, conflicts: 0, errors: 1);
     } finally {

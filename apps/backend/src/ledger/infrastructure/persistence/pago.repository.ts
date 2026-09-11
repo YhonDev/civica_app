@@ -13,6 +13,10 @@ export class PagoRepository extends BaseTenantRepository<Pago> {
     super(repo);
   }
 
+  async query(sql: string, params?: any[]): Promise<any> {
+    return this.repo.query(sql, params);
+  }
+
   async findById(id: string, tenantId: string): Promise<Pago | null> {
     return this.repo.findOne({ where: { id, tenantId } });
   }

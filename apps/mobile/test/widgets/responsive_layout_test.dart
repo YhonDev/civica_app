@@ -14,6 +14,7 @@ import 'package:civica_pago_mobile/features/cartera/cartera_screen.dart';
 import 'package:civica_pago_mobile/features/shell/scaffold_with_bottom_nav.dart';
 import 'package:civica_pago_mobile/shared/widgets/system_settings_section.dart';
 import 'fake_repositories.dart';
+import 'probe_helpers.dart';
 
 void main() {
   setUp(() {
@@ -24,9 +25,7 @@ void main() {
 
   group('ResponsiveBuilder & Breakpoints Unit Tests', () {
     testWidgets('ResponsiveBuilder renders compact on narrow width (<600px)', (tester) async {
-      tester.view.physicalSize = const Size(400, 800);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
+      setProbeViewport(tester, const Size(400, 800));
 
       await tester.pumpWidget(
         MaterialApp(
@@ -46,9 +45,7 @@ void main() {
     });
 
     testWidgets('ResponsiveBuilder renders medium on tablet width (600px - 1023px)', (tester) async {
-      tester.view.physicalSize = const Size(800, 800);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
+      setProbeViewport(tester, const Size(800, 800));
 
       await tester.pumpWidget(
         MaterialApp(
@@ -68,9 +65,7 @@ void main() {
     });
 
     testWidgets('ResponsiveBuilder renders expanded on desktop width (>=1024px)', (tester) async {
-      tester.view.physicalSize = const Size(1280, 800);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
+      setProbeViewport(tester, const Size(1280, 800));
 
       await tester.pumpWidget(
         MaterialApp(
@@ -125,9 +120,7 @@ void main() {
     }
 
     testWidgets('Renders BottomNavigationBar on mobile width (<600px)', (tester) async {
-      tester.view.physicalSize = const Size(400, 800);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
+      setProbeViewport(tester, const Size(400, 800));
 
       await tester.pumpWidget(createShellApp(size: const Size(400, 800)));
       await tester.pumpAndSettle();
@@ -138,9 +131,7 @@ void main() {
     });
 
     testWidgets('Renders DesktopSidebar on wide width (>=600px)', (tester) async {
-      tester.view.physicalSize = const Size(1200, 800);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
+      setProbeViewport(tester, const Size(1200, 800));
 
       await tester.pumpWidget(createShellApp(size: const Size(1200, 800)));
       await tester.pumpAndSettle();
@@ -154,9 +145,7 @@ void main() {
 
   group('LoginScreen Responsive Constraints Tests', () {
     testWidgets('Constrains Form width to maxFormWidth on wide screen', (tester) async {
-      tester.view.physicalSize = const Size(1920, 1080);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
+      setProbeViewport(tester, const Size(1920, 1080));
 
       final authCubit = AuthCubit();
 
@@ -178,9 +167,7 @@ void main() {
     });
 
     testWidgets('Does not display biometrics button on non-mobile platforms/viewports', (tester) async {
-      tester.view.physicalSize = const Size(1280, 800);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
+      setProbeViewport(tester, const Size(1280, 800));
 
       final authCubit = AuthCubit();
 
@@ -201,9 +188,7 @@ void main() {
 
   group('CarteraScreen Responsive Grid Tests', () {
     testWidgets('Renders SliverGrid with 3 columns on desktop width (>= 1024px)', (tester) async {
-      tester.view.physicalSize = const Size(1280, 800);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
+      setProbeViewport(tester, const Size(1280, 800));
 
       final authCubit = AuthCubit();
       authCubit.emit(AuthState.authenticated({
@@ -234,9 +219,7 @@ void main() {
     });
 
     testWidgets('Renders SliverGrid with 2 columns on tablet width (600px - 1023px)', (tester) async {
-      tester.view.physicalSize = const Size(800, 1000);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
+      setProbeViewport(tester, const Size(800, 1000));
 
       final authCubit = AuthCubit();
       authCubit.emit(AuthState.authenticated({

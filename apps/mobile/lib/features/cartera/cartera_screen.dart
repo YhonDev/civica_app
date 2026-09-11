@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/top_toast.dart';
+import '../../core/network/error_messages.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
@@ -64,8 +66,6 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
   String? _selectedEtapa; // Filtro por etapa
   String? _selectedManzana; // Filtro por manzana
   Timer? _searchDebounce;
-  CarteraSearchIndex? _searchIndex;
-  String? _searchIndexSource; // firma de la lista con la que se construyó el índice
 
   @override
   void onAppResumed() {
@@ -84,17 +84,6 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
   static bool matchesSearch(CobroItem c, String query) {
     final index = CarteraSearchIndex.build([c]);
     return index.matches(c.id, query);
-  }
-
-  /// Obtiene (y cachea) el índice de búsqueda para la lista actual de cobros.
-  /// Se reconstruye solo cuando cambia la identidad de la lista (nueva carga).
-  CarteraSearchIndex _ensureSearchIndex(List<CobroItem> cobros) {
-    final source = cobros.map((c) => c.id).join('|');
-    if (_searchIndex == null || _searchIndexSource != source) {
-      _searchIndex = CarteraSearchIndex.build(cobros);
-      _searchIndexSource = source;
-    }
-    return _searchIndex!;
   }
 
   /// Debounce de 200ms: evita re-filtrar la lista en cada tecla.
@@ -124,7 +113,8 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
     if (etapas.isEmpty) return const SizedBox.shrink();
 
     return SizedBox(
-      height: 34,
+      // Escala con la fuente de sistema (clamp 1.0–1.3) para no recortar chips.
+      height: 34 * context.scaleForText,
       child: FadingHorizontalScroll(
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
         child: Row(
@@ -139,14 +129,12 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                   _selectedManzana = null;
                 }),
                 selectedColor: AppColors.primary,
-                labelStyle: AppTypography.caption.copyWith(
+                labelStyle: AppTypography.smallBold.copyWith(
                   color: _selectedEtapa == null ? Colors.white : AppColors.textSecondary,
-                  fontWeight: _selectedEtapa == null ? FontWeight.w700 : FontWeight.w500,
-                  fontSize: 11.5,
                 ),
                 backgroundColor: AppColors.surface,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
                   side: BorderSide(
                     color: _selectedEtapa == null ? AppColors.primary : AppColors.border,
                   ),
@@ -165,14 +153,12 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                     _selectedManzana = null; // Reinicia manzana al alternar etapa
                   }),
                   selectedColor: AppColors.primary,
-                  labelStyle: AppTypography.caption.copyWith(
+                  labelStyle: AppTypography.smallBold.copyWith(
                     color: isSelected ? Colors.white : AppColors.textSecondary,
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                    fontSize: 11.5,
                   ),
                   backgroundColor: AppColors.surface,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
                     side: BorderSide(
                       color: isSelected ? AppColors.primary : AppColors.border,
                     ),
@@ -191,7 +177,8 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
     if (manzanas.isEmpty) return const SizedBox.shrink();
 
     return SizedBox(
-      height: 32,
+      // Escala con la fuente de sistema (clamp 1.0–1.3) para no recortar chips.
+      height: 32 * context.scaleForText,
       child: FadingHorizontalScroll(
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
         child: Row(
@@ -203,14 +190,12 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                 selected: _selectedManzana == null,
                 onSelected: (_) => setState(() => _selectedManzana = null),
                 selectedColor: AppColors.accentTeal,
-                labelStyle: AppTypography.caption.copyWith(
+                labelStyle: AppTypography.smallBold.copyWith(
                   color: _selectedManzana == null ? Colors.white : AppColors.textSecondary,
-                  fontWeight: _selectedManzana == null ? FontWeight.w700 : FontWeight.w500,
-                  fontSize: 11,
                 ),
                 backgroundColor: AppColors.surface,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
                   side: BorderSide(
                     color: _selectedManzana == null ? AppColors.accentTeal : AppColors.border,
                   ),
@@ -226,14 +211,12 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                   selected: isSelected,
                   onSelected: (_) => setState(() => _selectedManzana = manzana),
                   selectedColor: AppColors.accentTeal,
-                  labelStyle: AppTypography.caption.copyWith(
+                  labelStyle: AppTypography.smallBold.copyWith(
                     color: isSelected ? Colors.white : AppColors.textSecondary,
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                    fontSize: 11,
                   ),
                   backgroundColor: AppColors.surface,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
                     side: BorderSide(
                       color: isSelected ? AppColors.accentTeal : AppColors.border,
                     ),
@@ -249,36 +232,30 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
 
   Widget _buildFilterChip(String key, String label, Color activeColor) {
     final isSelected = _selectedStatusFilter == key;
-    return FilterChip(
-      key: Key('filter_chip_$key'),
-      selected: isSelected,
-      showCheckmark: false,
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-      labelPadding: EdgeInsets.zero,
-      label: Center(
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text(
-            label,
-            style: AppTypography.caption.copyWith(
-              color: isSelected ? Colors.white : AppColors.textPrimary,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-              fontSize: 11.5,
-            ),
+    return Padding(
+      padding: const EdgeInsets.only(right: 6),
+      child: ChoiceChip(
+        key: Key('filter_chip_$key'),
+        label: Text(label),
+        selected: isSelected,
+        showCheckmark: false,
+        onSelected: (_) {
+          setState(() {
+            _selectedStatusFilter = key;
+          });
+        },
+        selectedColor: activeColor,
+        labelStyle: AppTypography.smallBold.copyWith(
+          color: isSelected ? Colors.white : AppColors.textSecondary,
+        ),
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
+          side: BorderSide(
+            color: isSelected ? activeColor : AppColors.border,
           ),
         ),
       ),
-      selectedColor: activeColor,
-      backgroundColor: AppColors.card,
-      side: BorderSide(
-        color: isSelected ? activeColor : AppColors.border.withValues(alpha: 0.5),
-      ),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      onSelected: (_) {
-        setState(() {
-          _selectedStatusFilter = key;
-        });
-      },
     );
   }
 
@@ -340,8 +317,9 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                   final dynamicResumen = CarteraResumen.fromCobros(sectorCobros);
                   final totalSectorCount = sectorCobros.length;
 
-                  // 3. Aplicar filtro de búsqueda (índice precomputado) y filtro de estado (1-Tap)
-                  final searchIndex = _ensureSearchIndex(sectorCobros);
+                  // 3. Aplicar filtro de búsqueda (índice precomputado en el
+                  //    cubit, una vez por carga) y filtro de estado (1-Tap)
+                  final searchIndex = context.read<CarteraCubit>().searchIndex;
                   final List<CobroItem> displayCobros = sectorCobros.where((c) {
                     final matchSearch = searchIndex.matches(c.id, _searchQuery);
                     if (!matchSearch) return false;
@@ -509,20 +487,16 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                             residenteId: resId,
                           );
                           if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: const Text('Solicitud enviada'),
-                                backgroundColor: AppColors.success,
-                              ),
+                            TopToast.showSuccess(
+                              context,
+                              'Solicitud enviada',
                             );
                           }
                         } catch (e) {
                           if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Error al solicitar cobro: $e'),
-                                backgroundColor: AppColors.error,
-                              ),
+                            TopToast.showError(
+                              context,
+                              'Error al solicitar cobro: ${sanitizeApiError(e)}',
                             );
                           }
                         }
@@ -560,7 +534,9 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
               return SliverGrid(
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: cols,
-                  mainAxisExtent: 195,
+                  // Escala con la fuente de sistema para que las tarjetas
+                  // no recorten su contenido con texto grande.
+                  mainAxisExtent: 195 * context.scaleForText,
                   crossAxisSpacing: 14,
                   mainAxisSpacing: 14,
                 ),
@@ -853,7 +829,7 @@ class _CarteraSharedLayout extends StatelessWidget {
                         fillColor: AppColors.searchField,
                         contentPadding: const EdgeInsets.symmetric(vertical: 12),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                           borderSide: BorderSide.none,
                         ),
                       ),
@@ -863,7 +839,7 @@ class _CarteraSharedLayout extends StatelessWidget {
                   Container(
                     decoration: BoxDecoration(
                       color: AppColors.searchField,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                     ),
                     child: IconButton(
                       tooltip: state.showCalendar ? 'Ver Lista' : 'Ver Calendario',
@@ -901,20 +877,21 @@ class _CarteraSharedLayout extends StatelessWidget {
               ),
             ),
 
-          // Chips de Filtro Rápido en 1-Tap con Contadores Dinámicos del Sector
+          // Chips de Filtro de Estado: horizontal unificado con scroll suave y bordes desvanecidos
           SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
-              child: Row(
-                children: [
-                  Expanded(child: buildFilterChip('TODOS', 'Todas ($totalSectorCount)', AppColors.primary)),
-                  const SizedBox(width: 4),
-                  Expanded(child: buildFilterChip('PENDIENTE', 'Pendientes (${dynamicResumen.cantidadPendientes})', AppColors.warning)),
-                  const SizedBox(width: 4),
-                  Expanded(child: buildFilterChip('MORA', 'Mora (${dynamicResumen.cantidadMora})', AppColors.error)),
-                  const SizedBox(width: 4),
-                  Expanded(child: buildFilterChip('PAGADO', 'Pagadas (${dynamicResumen.cantidadPagados})', AppColors.success)),
-                ],
+            child: SizedBox(
+              // Escala con la fuente de sistema (clamp 1.0–1.3).
+              height: 32 * context.scaleForText,
+              child: FadingHorizontalScroll(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
+                child: Row(
+                  children: [
+                    buildFilterChip('TODOS', 'Todas ($totalSectorCount)', AppColors.primary),
+                    buildFilterChip('PENDIENTE', 'Pendientes (${dynamicResumen.cantidadPendientes})', AppColors.warning),
+                    buildFilterChip('MORA', 'Mora (${dynamicResumen.cantidadMora})', AppColors.error),
+                    buildFilterChip('PAGADO', 'Pagadas (${dynamicResumen.cantidadPagados})', AppColors.success),
+                  ],
+                ),
               ),
             ),
           ),

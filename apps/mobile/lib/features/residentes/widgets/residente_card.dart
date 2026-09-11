@@ -34,7 +34,7 @@ class ResidenteCard extends StatelessWidget {
       elevation: 0,
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
         side: BorderSide(color: AppColors.border.withValues(alpha: 0.5)),
       ),
       child: InkWell(
@@ -47,7 +47,7 @@ class ResidenteCard extends StatelessWidget {
             onUpdate!();
           }
         },
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.cardPadding),
           child: Row(
@@ -91,10 +91,10 @@ class ResidenteCard extends StatelessWidget {
               ),
               // Status indicator
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
                 decoration: BoxDecoration(
                   color: _statusColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                 ),
                 child: Text(
                   residente.estadoFinanciero,

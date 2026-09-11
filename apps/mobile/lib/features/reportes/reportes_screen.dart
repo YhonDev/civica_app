@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import '../../core/theme/app_breakpoints.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/format/app_currency.dart';
 import '../../shared/widgets/mini_stat_card.dart';
 import '../../shared/widgets/donut_chart.dart';
 import '../../shared/widgets/month_selector.dart';
@@ -43,8 +43,6 @@ class _ReportesScreenState extends State<ReportesScreen> {
     }
   }
 
-  final currencyFormat = NumberFormat.currency(symbol: '\$', decimalDigits: 0, locale: 'es_CO');
-
   Widget _buildKpisGrid() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -58,14 +56,14 @@ class _ReportesScreenState extends State<ReportesScreen> {
           children: [
             MiniStatCard(
               label: 'Total Recaudado',
-              value: currencyFormat.format(_data?.totalRecaudado ?? 0),
+              value: AppCurrency.format(_data?.totalRecaudado ?? 0),
               icon: Icons.monetization_on_rounded,
               color: AppColors.success,
             ),
             const SizedBox(width: AppSpacing.xs),
             MiniStatCard(
               label: 'Pendiente',
-              value: currencyFormat.format(_data?.totalPendiente ?? 0),
+              value: AppCurrency.format(_data?.totalPendiente ?? 0),
               icon: Icons.pending_actions_rounded,
               color: AppColors.warning,
             ),
@@ -76,7 +74,7 @@ class _ReportesScreenState extends State<ReportesScreen> {
           children: [
             MiniStatCard(
               label: 'En Mora',
-              value: currencyFormat.format(_data?.totalVencido ?? 0),
+              value: AppCurrency.format(_data?.totalVencido ?? 0),
               icon: Icons.error_outline_rounded,
               color: AppColors.error,
             ),
@@ -94,6 +92,16 @@ class _ReportesScreenState extends State<ReportesScreen> {
   }
 
   Widget _buildChartCard() {
+    final pagadas = _data?.pagadasCount ?? 0;
+    final pendientes = _data?.pendientesCount ?? 0;
+    final vencidas = _data?.vencidasCount ?? 0;
+    final total = pagadas + pendientes + vencidas;
+
+    final pagadasPct = total > 0 ? (pagadas / total) * 100 : 0.0;
+    final pendientesPct = total > 0 ? (pendientes / total) * 100 : 0.0;
+    final vencidasPct = total > 0 ? (vencidas / total) * 100 : 0.0;
+    final pctCompletado = _data?.porcentaje ?? (total > 0 ? pagadasPct.round() : 0);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -105,28 +113,30 @@ class _ReportesScreenState extends State<ReportesScreen> {
         Card(
           elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
             side: BorderSide(color: AppColors.border),
           ),
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.md),
             child: Center(
               child: DonutChart(
+                centerText: '$pctCompletado%',
+                centerLabel: 'completado',
                 segments: [
                   DonutSegment(
-                    percentage: (_data?.pagadasCount ?? 1).toDouble(),
+                    percentage: pagadasPct,
                     color: AppColors.success,
-                    label: 'Pagadas (${_data?.pagadasCount})',
+                    label: 'Pagadas ($pagadas)',
                   ),
                   DonutSegment(
-                    percentage: (_data?.pendientesCount ?? 0).toDouble(),
+                    percentage: pendientesPct,
                     color: AppColors.warning,
-                    label: 'Pendientes (${_data?.pendientesCount})',
+                    label: 'Pendientes ($pendientes)',
                   ),
                   DonutSegment(
-                    percentage: (_data?.vencidasCount ?? 0).toDouble(),
+                    percentage: vencidasPct,
                     color: AppColors.error,
-                    label: 'Vencidas (${_data?.vencidasCount})',
+                    label: 'Vencidas ($vencidas)',
                   ),
                 ],
               ),
@@ -149,7 +159,7 @@ class _ReportesScreenState extends State<ReportesScreen> {
         Card(
           elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
             side: BorderSide(color: AppColors.border),
           ),
           child: Column(
@@ -158,7 +168,7 @@ class _ReportesScreenState extends State<ReportesScreen> {
                 leading: Icon(Icons.flag_rounded, color: AppColors.primary),
                 title: const Text('Meta del Mes'),
                 trailing: Text(
-                  currencyFormat.format(_data?.meta ?? 0),
+                  AppCurrency.format(_data?.meta ?? 0),
                   style: AppTypography.body.copyWith(fontWeight: FontWeight.bold),
                 ),
               ),
@@ -167,7 +177,7 @@ class _ReportesScreenState extends State<ReportesScreen> {
                 leading: Icon(Icons.check_circle_rounded, color: AppColors.success),
                 title: const Text('Recaudado Real'),
                 trailing: Text(
-                  currencyFormat.format(_data?.totalRecaudado ?? 0),
+                  AppCurrency.format(_data?.totalRecaudado ?? 0),
                   style: AppTypography.body.copyWith(
                     fontWeight: FontWeight.bold,
                     color: AppColors.success,
@@ -179,7 +189,7 @@ class _ReportesScreenState extends State<ReportesScreen> {
                 leading: Icon(Icons.warning_rounded, color: AppColors.error),
                 title: const Text('Saldo en Riesgo (Mora)'),
                 trailing: Text(
-                  currencyFormat.format(_data?.totalVencido ?? 0),
+                  AppCurrency.format(_data?.totalVencido ?? 0),
                   style: AppTypography.body.copyWith(
                     fontWeight: FontWeight.bold,
                     color: AppColors.error,

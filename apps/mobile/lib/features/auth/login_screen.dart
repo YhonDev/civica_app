@@ -1,7 +1,9 @@
 import 'dart:async';
+import '../../core/theme/app_spacing.dart';
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show TextInput;
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'auth_cubit.dart';
@@ -83,23 +85,17 @@ class _LoginScreenState extends State<LoginScreen> {
     final authCubit = context.read<AuthCubit>();
     final hasSession = await ApiClient.instance.isLoggedIn();
     if (hasSession) {
+      // Desbloqueo passwordless: restaura la sesión con el refresh token.
       await authCubit.checkSession(forceRestore: true);
       return;
     }
 
-    final creds = await BiometricAuthService.instance.getBiometricCredentials();
-    if (creds != null && creds['username'] != null && creds['password'] != null) {
-      await authCubit.login(
-        username: creds['username']!,
-        password: creds['password']!,
+    // Ya no se guardan contraseñas (security: nunca persistir la clave real).
+    if (mounted) {
+      TopToast.showInfo(
+        context,
+        'Inicia sesión con tu contraseña para activar el desbloqueo con huella',
       );
-    } else {
-      if (mounted) {
-        TopToast.showInfo(
-          context,
-          'Inicia sesión con tu contraseña una vez para sincronizar tu huella',
-        );
-      }
     }
   }
 
@@ -134,7 +130,7 @@ class _LoginScreenState extends State<LoginScreen> {
             child: LayoutBuilder(
               builder: (context, constraints) {
                 return SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.lg),
                   child: ConstrainedBox(
                     constraints: BoxConstraints(
                       minHeight: (constraints.maxHeight - 48).clamp(0.0, double.infinity),
@@ -158,7 +154,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   padding: const EdgeInsets.all(6),
                                   decoration: BoxDecoration(
                                     color: colorScheme.surface,
-                                    borderRadius: BorderRadius.circular(22),
+                                    borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
                                     boxShadow: [
                                       BoxShadow(
                                         color: colorScheme.primary.withValues(alpha: 0.12),
@@ -168,7 +164,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ],
                                   ),
                                   child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(16),
+                                    borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
                                     child: Image.asset(
                                       'img/logo.png',
                                       fit: BoxFit.contain,
@@ -205,53 +201,67 @@ class _LoginScreenState extends State<LoginScreen> {
                                 const SizedBox(height: 36),
 
                                 // Email / Username
-                                TextFormField(
-                                  controller: _emailCtrl,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Nombre de usuario',
-                                    prefixIcon: Icon(Icons.person_outlined),
-                                    border: OutlineInputBorder(),
-                                  ),
-                                  keyboardType: TextInputType.text,
-                                  textCapitalization: TextCapitalization.none,
-                                  onChanged: (_) => _onFieldChanged(),
-                                  validator: (v) {
-                                    if (v == null || v.trim().isEmpty) {
-                                      return 'Ingresa tu usuario';
-                                    }
-                                    return null;
-                                  },
-                                  textInputAction: TextInputAction.next,
-                                ),
-                                const SizedBox(height: 16),
-
-                                // Contraseña
-                                TextFormField(
-                                  controller: _passwordCtrl,
-                                  decoration: InputDecoration(
-                                    labelText: 'Contraseña',
-                                    prefixIcon: const Icon(Icons.lock_outlined),
-                                    border: const OutlineInputBorder(),
-                                    suffixIcon: IconButton(
-                                      icon: Icon(
-                                        _obscurePassword
-                                            ? Icons.visibility_off_outlined
-                                            : Icons.visibility_outlined,
+                                AutofillGroup(
+                                  child: Column(
+                                    children: [
+                                      TextFormField(
+                                        controller: _emailCtrl,
+                                        autofillHints: const [AutofillHints.username],
+                                        decoration: const InputDecoration(
+                                          labelText: 'Nombre de usuario',
+                                          prefixIcon: Icon(Icons.person_outlined),
+                                          border: OutlineInputBorder(),
+                                        ),
+                                        keyboardType: TextInputType.text,
+                                        textCapitalization: TextCapitalization.none,
+                                        onChanged: (_) => _onFieldChanged(),
+                                        validator: (v) {
+                                          if (v == null || v.trim().isEmpty) {
+                                            return 'Ingresa tu usuario';
+                                          }
+                                          return null;
+                                        },
+                                        textInputAction: TextInputAction.next,
                                       ),
-                                      onPressed: () => setState(
-                                          () => _obscurePassword = !_obscurePassword),
-                                    ),
+                                      const SizedBox(height: 16),
+
+                                      // Contraseña
+                                      TextFormField(
+                                        controller: _passwordCtrl,
+                                        autofillHints: const [AutofillHints.password],
+                                        onEditingComplete: () {
+                                          // Cierra el grupo de autofill al terminar
+                                          // (permite al gestor guardar/llenar). El login
+                                          // real lo dispara onFieldSubmitted.
+                                          TextInput.finishAutofillContext();
+                                        },
+                                        decoration: InputDecoration(
+                                          labelText: 'Contraseña',
+                                          prefixIcon: const Icon(Icons.lock_outlined),
+                                          border: const OutlineInputBorder(),
+                                          suffixIcon: IconButton(
+                                            icon: Icon(
+                                              _obscurePassword
+                                                  ? Icons.visibility_off_outlined
+                                                  : Icons.visibility_outlined,
+                                            ),
+                                            onPressed: () => setState(
+                                                () => _obscurePassword = !_obscurePassword),
+                                          ),
+                                        ),
+                                        obscureText: _obscurePassword,
+                                        onChanged: (_) => _onFieldChanged(),
+                                        validator: (v) {
+                                          if (v == null || v.isEmpty) {
+                                            return 'Ingresa tu contraseña';
+                                          }
+                                          return null;
+                                        },
+                                        textInputAction: TextInputAction.done,
+                                        onFieldSubmitted: (_) => _handleLogin(context),
+                                      ),
+                                    ],
                                   ),
-                                  obscureText: _obscurePassword,
-                                  onChanged: (_) => _onFieldChanged(),
-                                  validator: (v) {
-                                    if (v == null || v.isEmpty) {
-                                      return 'Ingresa tu contraseña';
-                                    }
-                                    return null;
-                                  },
-                                  textInputAction: TextInputAction.done,
-                                  onFieldSubmitted: (_) => _handleLogin(context),
                                 ),
                                 const SizedBox(height: 8),
 
@@ -285,7 +295,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 // Error message
                                 if (state.errorMessage != null)
                                   Padding(
-                                    padding: const EdgeInsets.only(bottom: 8),
+                                    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                                     child: Text(
                                       state.errorMessage!,
                                       style: TextStyle(color: colorScheme.error),
@@ -325,7 +335,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                           vertical: 12,
                                         ),
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(12),
+                                          borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                                         ),
                                       ),
                                     ),
@@ -347,7 +357,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                             vertical: 12,
                                           ),
                                           shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(12),
+                                            borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                                           ),
                                         ),
                                       ),
@@ -383,15 +393,8 @@ class _LoginScreenState extends State<LoginScreen> {
       username: username,
     );
 
-    // Guardar credenciales cifradas en Keystore SOLO si la biometría está
-    // activada: nunca almacenar la contraseña (aunque cifrada) sin el
-    // consentimiento explícito del flujo de activación de huella.
-    final biometricsEnabled =
-        await BiometricAuthService.instance.isBiometricsEnabled();
-    if (biometricsEnabled) {
-      await BiometricAuthService.instance
-          .saveBiometricCredentials(username, password);
-    }
+    // Nota de seguridad: la contraseña NUNCA se persiste. El re-login
+    // biométrico restaura la sesión con el refresh token almacenado.
 
     if (!context.mounted) return;
     context.read<AuthCubit>().login(

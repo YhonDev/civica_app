@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/network/error_messages.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/network/api_client.dart';
 import '../../core/theme/app_colors.dart';
@@ -100,7 +101,7 @@ class _NuevoCobradorScreenState extends State<NuevoCobradorScreen> {
       ));
     } catch (e) {
       if (!mounted) return;
-      TopToast.showError(context, 'Error al crear cobrador: $e');
+      TopToast.showError(context, 'Error al crear cobrador: ${sanitizeApiError(e)}');
     } finally {
       if (mounted) {
         setState(() => _isSaving = false);

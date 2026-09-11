@@ -59,7 +59,9 @@ class ConnectivityDetector {
       // Escuchar cambios
       _connectivity.onConnectivityChanged.listen(_updateStatus);
     } catch (e) {
-      debugPrint('[ConnectivityDetector] Error al inicializar: $e');
+      if (kDebugMode) {
+        debugPrint('[ConnectivityDetector] Error al inicializar: $e');
+      }
       // Si falla, asumimos online para no bloquear la app
       _isOnline = true;
     }

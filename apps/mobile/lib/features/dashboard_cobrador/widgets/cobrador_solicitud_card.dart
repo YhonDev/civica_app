@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import '../../../core/format/app_currency.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -49,8 +49,8 @@ class CobradorSolicitudCard extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: AppSpacing.sm),
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.sm),
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E293B) : AppColors.surface,
-          borderRadius: BorderRadius.circular(10),
+          color: AppColors.cobradorSubcard,
+          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
           border: Border.all(
             color: enCamino ? AppColors.info.withValues(alpha: 0.6) : AppColors.border,
             width: enCamino ? 1.4 : 1.0,
@@ -64,7 +64,7 @@ class CobradorSolicitudCard extends StatelessWidget {
                 color: enCamino
                     ? AppColors.info.withValues(alpha: 0.12)
                     : AppColors.primary.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
               ),
               child: Icon(
                 enCamino ? Icons.directions_car_rounded : Icons.home_outlined,
@@ -83,9 +83,8 @@ class CobradorSolicitudCard extends StatelessWidget {
                       Flexible(
                         child: Text(
                           nombreResidente,
-                          style: AppTypography.body.copyWith(
+                          style: AppTypography.caption.copyWith(
                             fontWeight: FontWeight.w600,
-                            fontSize: 13,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -98,14 +97,12 @@ class CobradorSolicitudCard extends StatelessWidget {
                           color: enCamino
                               ? AppColors.info.withValues(alpha: 0.15)
                               : AppColors.warning.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.circular(AppSpacing.radiusProgress),
                         ),
                         child: Text(
                           enCamino ? 'En camino' : 'En espera',
-                          style: AppTypography.caption.copyWith(
+                          style: AppTypography.displayMicro.copyWith(
                             color: enCamino ? AppColors.info : AppColors.warning,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 9.5,
                           ),
                         ),
                       ),
@@ -114,9 +111,8 @@ class CobradorSolicitudCard extends StatelessWidget {
                   const SizedBox(height: 1),
                   Text(
                     casaInfo,
-                    style: AppTypography.caption.copyWith(
+                    style: AppTypography.small.copyWith(
                       color: AppColors.textSecondary,
-                      fontSize: 11,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -125,10 +121,9 @@ class CobradorSolicitudCard extends StatelessWidget {
                     const SizedBox(height: 1),
                     Text(
                       '"$nota"',
-                      style: AppTypography.caption.copyWith(
+                      style: AppTypography.small.copyWith(
                         fontStyle: FontStyle.italic,
                         color: AppColors.textSecondary,
-                        fontSize: 10.5,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -143,26 +138,26 @@ class CobradorSolicitudCard extends StatelessWidget {
               OutlinedButton.icon(
                 onPressed: onMarcarEnCamino,
                 icon: const Icon(Icons.near_me_rounded, size: 12),
-                label: const Text('En camino', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+                label: const Text('En camino', style: AppTypography.smallBold),
                 style: OutlinedButton.styleFrom(
                   visualDensity: VisualDensity.compact,
                   foregroundColor: AppColors.info,
                   side: BorderSide(color: AppColors.info.withValues(alpha: 0.5)),
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusMd)),
                 ),
               )
             else
               ElevatedButton.icon(
                 onPressed: onCobrar,
                 icon: const Icon(Icons.flash_on_rounded, size: 13),
-                label: const Text('Cobrar', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                label: const Text('Cobrar', style: AppTypography.smallBold),
                 style: ElevatedButton.styleFrom(
                   visualDensity: VisualDensity.compact,
                   backgroundColor: AppColors.success,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusMd)),
                 ),
               ),
           ],
@@ -175,8 +170,8 @@ class CobradorSolicitudCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
+        color: AppColors.cobradorSubcard,
+        borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
         border: Border.all(
           color: enCamino ? AppColors.info.withValues(alpha: 0.6) : AppColors.border,
           width: enCamino ? 1.5 : 1.0,
@@ -205,14 +200,13 @@ class CobradorSolicitudCard extends StatelessWidget {
                         margin: const EdgeInsets.only(right: 6),
                         decoration: BoxDecoration(
                           color: AppColors.primary.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                         ),
                         child: Text(
                           '#$ordenFifo',
-                          style: AppTypography.caption.copyWith(
+                          style: AppTypography.micro.copyWith(
                             color: AppColors.primary,
                             fontWeight: FontWeight.w800,
-                            fontSize: 10,
                           ),
                         ),
                       ),
@@ -220,9 +214,8 @@ class CobradorSolicitudCard extends StatelessWidget {
                     Flexible(
                       child: Text(
                         nombreResidente,
-                        style: AppTypography.subtitle.copyWith(
+                        style: AppTypography.bodySmall.copyWith(
                           fontWeight: FontWeight.w700,
-                          fontSize: 14,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -238,14 +231,12 @@ class CobradorSolicitudCard extends StatelessWidget {
                   color: enCamino
                       ? AppColors.info.withValues(alpha: 0.15)
                       : AppColors.warning.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                 ),
                 child: Text(
                   enCamino ? '🚀 En camino' : '⏳ En espera',
-                  style: AppTypography.caption.copyWith(
+                  style: AppTypography.smallBold.copyWith(
                     color: enCamino ? AppColors.info : AppColors.warning,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 11,
                   ),
                 ),
               ),
@@ -276,9 +267,8 @@ class CobradorSolicitudCard extends StatelessWidget {
                 const SizedBox(width: 3),
                 Text(
                   telefono,
-                  style: AppTypography.caption.copyWith(
+                  style: AppTypography.small.copyWith(
                     color: AppColors.textSecondary,
-                    fontSize: 11,
                   ),
                 ),
               ],
@@ -291,16 +281,15 @@ class CobradorSolicitudCard extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: isDark ? Colors.black.withValues(alpha: 0.2) : const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(8),
+                color: isDark ? Colors.black.withValues(alpha: 0.2) : AppColors.screenBackground,
+                borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                 border: Border.all(color: AppColors.border.withValues(alpha: 0.6)),
               ),
               child: Text(
                 '"$nota"',
-                style: AppTypography.caption.copyWith(
+                style: AppTypography.small.copyWith(
                   fontStyle: FontStyle.italic,
                   color: AppColors.textPrimary,
-                  fontSize: 11.5,
                 ),
               ),
             ),
@@ -316,10 +305,10 @@ class CobradorSolicitudCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                 ),
                 child: Text(
-                  '\$${NumberFormat('#,###', 'es_CO').format(saldo.toInt())} COP',
+                  AppCurrency.formatCOP(saldo.toInt()),
                   style: AppTypography.caption.copyWith(
                     fontWeight: FontWeight.w700,
                     color: AppColors.primary,
@@ -338,7 +327,7 @@ class CobradorSolicitudCard extends StatelessWidget {
                     foregroundColor: AppColors.info,
                     side: BorderSide(color: AppColors.info.withValues(alpha: 0.6)),
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusMd)),
                   ),
                 )
               else
@@ -351,7 +340,7 @@ class CobradorSolicitudCard extends StatelessWidget {
                     backgroundColor: AppColors.success,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusMd)),
                   ),
                 ),
             ],

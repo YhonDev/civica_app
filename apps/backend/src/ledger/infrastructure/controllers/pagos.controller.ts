@@ -53,13 +53,19 @@ export class PagosController {
   @RegistrarActividad({
     tipo: 'PAGO',
     descripcionFn: (result) =>
-      `Pago registrado: $${((result.pago?.monto ?? 0) / 100).toFixed(0)} COP (${result.cobrosAfectados?.length ?? result.cuotasAfectadas?.length ?? 0} cuota(s))`,
+      `Pago registrado: $${((result.pago?.monto ?? 0) / 100).toFixed(0)} COP`,
     metadataFn: (result) => ({
       pagoId: result.pago?.id,
       monto: result.pago?.monto,
+      nroRecibo: result.ticket?.numero,
       residenteId: result.pago?.residenteId,
+      residenteNombre: result.ticket?.residenteNombre,
+      casa: result.ticket?.casaDireccion,
+      etapa: result.ticket?.etapa,
+      manzana: result.ticket?.manzana,
+      metodo: result.ticket?.metodo,
       cobradorId: result.pago?.cobradorId,
-      cobradorNombre: result.pago?.cobradorNombre,
+      cobradorNombre: result.pago?.cobradorNombre ?? result.ticket?.cobradorNombre,
       clientPaymentId: result.pago?.clientPaymentId,
       solicitudId: result.pago?.solicitudId,
     }),

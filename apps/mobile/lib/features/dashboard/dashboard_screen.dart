@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
+import '../../core/format/app_currency.dart';
 import '../../features/auth/auth_cubit.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_breakpoints.dart';
@@ -143,9 +143,8 @@ class _DashboardHeader extends StatelessWidget {
                   children: [
                     Text(
                       nombre,
-                      style: AppTypography.title.copyWith(
+                      style: AppTypography.stat.copyWith(
                         fontWeight: FontWeight.w900,
-                        fontSize: 22,
                       ),
                     ),
                     Text(
@@ -157,11 +156,11 @@ class _DashboardHeader extends StatelessWidget {
                   ],
                 ),
               ),
-              // Notificaciones
+              // Notificaciones → centro de atención (solicitudes y revisiones)
               IconButton(
                 icon: const Icon(Icons.notifications_outlined),
                 color: AppColors.textSecondary,
-                onPressed: () {},
+                onPressed: () => context.push('/solicitudes'),
                 tooltip: 'Notificaciones',
               ),
             ],
@@ -298,8 +297,7 @@ class _DashboardContentState extends State<_DashboardContent>
             child: Builder(
               builder: (context) {
                 final recaudo = widget.data.recaudoMes;
-                final amountStr =
-                    '\$ ${NumberFormat.decimalPattern('es_CO').format(recaudo.toInt())}';
+                final amountStr = AppCurrency.format(recaudo.toInt());
                 return KPICard.progress(
                   title: 'Recaudo del Mes',
                   amount: amountStr,
@@ -382,7 +380,7 @@ class _DashboardContentState extends State<_DashboardContent>
                         const SizedBox(height: AppSpacing.sm),
                         ...widget.data.cobrosPorSemana.map((semana) {
                           return Padding(
-                            padding: const EdgeInsets.only(bottom: 4),
+                            padding: const EdgeInsets.only(bottom: AppSpacing.xs),
                             child: Row(
                               children: [
                                 SizedBox(

@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/format/app_currency.dart';
 import '../../features/auth/auth_cubit.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
@@ -143,7 +144,7 @@ class _JornadaViewState extends State<_JornadaView> with LifecycleObserverMixin 
       height: height,
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusProgress),
       ),
     );
   }
@@ -166,9 +167,8 @@ class _JornadaViewState extends State<_JornadaView> with LifecycleObserverMixin 
               // ── Header ──────────────────────────────────────────────
               Text(
                 nombre,
-                style: AppTypography.title.copyWith(
+                style: AppTypography.sectionHeader.copyWith(
                   fontWeight: FontWeight.w900,
-                  fontSize: 26,
                 ),
               ),
               const SizedBox(height: 4),
@@ -346,17 +346,15 @@ class _JornadaViewState extends State<_JornadaView> with LifecycleObserverMixin 
                     ],
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                     ),
                     child: Text(
                       'Tocar para cobrar',
-                      style: AppTypography.small.copyWith(
+                      style: AppTypography.smallBold.copyWith(
                         color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 11,
                       ),
                     ),
                   ),
@@ -398,13 +396,11 @@ class _JornadaViewState extends State<_JornadaView> with LifecycleObserverMixin 
       return const SizedBox.shrink();
     }
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.lg),
       padding: const EdgeInsets.all(AppSpacing.cardPadding),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        color: AppColors.cobradorCard,
         borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
         border: Border.all(
           color: AppColors.warning.withValues(alpha: 0.4),
@@ -424,7 +420,7 @@ class _JornadaViewState extends State<_JornadaView> with LifecycleObserverMixin 
           // Header con navegación a la pantalla completa de solicitudes (sin overflow)
           InkWell(
             onTap: () => context.push('/cobrador-solicitudes'),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -432,10 +428,10 @@ class _JornadaViewState extends State<_JornadaView> with LifecycleObserverMixin 
                   child: Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(8),
+                        padding: const EdgeInsets.all(AppSpacing.sm),
                         decoration: BoxDecoration(
                           color: AppColors.warning.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                         ),
                         child: Icon(
                           Icons.mark_email_unread_rounded,
@@ -459,20 +455,18 @@ class _JornadaViewState extends State<_JornadaView> with LifecycleObserverMixin 
                 ),
                 const SizedBox(width: AppSpacing.xs),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
                   decoration: BoxDecoration(
                     color: AppColors.warning.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         '${data.solicitudes.length} activas',
-                        style: AppTypography.caption.copyWith(
+                        style: AppTypography.smallBold.copyWith(
                           color: AppColors.warning,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 11,
                         ),
                       ),
                       const SizedBox(width: 4),
@@ -503,9 +497,9 @@ class _JornadaViewState extends State<_JornadaView> with LifecycleObserverMixin 
             const SizedBox(height: 2),
             InkWell(
               onTap: () => context.push('/cobrador-solicitudes'),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
               child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -566,14 +560,13 @@ class _JornadaViewState extends State<_JornadaView> with LifecycleObserverMixin 
   }
 
   Widget _buildCarteraDirectAccessBanner(CobradorDashboardData data) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final count = data.casas.length;
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        color: AppColors.cobradorCard,
         borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
         border: Border.all(
           color: AppColors.primary.withValues(alpha: 0.3),
@@ -593,7 +586,7 @@ class _JornadaViewState extends State<_JornadaView> with LifecycleObserverMixin 
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: AppColors.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
             ),
             child: Icon(
               Icons.directions_walk_rounded,
@@ -630,7 +623,7 @@ class _JornadaViewState extends State<_JornadaView> with LifecycleObserverMixin 
               foregroundColor: AppColors.primary,
               side: BorderSide(color: AppColors.primary.withValues(alpha: 0.5)),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
               ),
             ),
           ),
@@ -682,12 +675,4 @@ class _JornadaViewState extends State<_JornadaView> with LifecycleObserverMixin 
 // HELPERS
 // ═══════════════════════════════════════════════════════════════════
 
-String _formatPesos(int pesos) {
-  if (pesos >= 1000000) {
-    return '\$${(pesos / 1000000).toStringAsFixed(1)}M';
-  }
-  if (pesos >= 1000) {
-    return '\$${(pesos / 1000).toStringAsFixed(0)}K';
-  }
-  return '\$$pesos';
-}
+String _formatPesos(int pesos) => AppCurrency.formatCompact(pesos);

@@ -64,7 +64,7 @@ class AsignarEtapasScreen extends StatelessWidget {
                             return Card(
                               elevation: 0,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                                 side: BorderSide(
                                   color: isChecked ? AppColors.primary : AppColors.border,
                                   width: isChecked ? 2 : 1,
@@ -104,7 +104,7 @@ class AsignarEtapasScreen extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
                       backgroundColor: AppColors.primary,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                       ),
                     ),
                     child: state.isSaving

@@ -16,8 +16,12 @@ class BiometricAuthService {
   static const String _biometricEnabledKey = 'civica_biometrics_enabled';
   static const String _rememberUsernameKey = 'civica_remember_username';
   static const String _savedUsernameKey = 'civica_saved_username';
-  static const String _bioUsernameKey = 'civica_bio_user';
-  static const String _bioPasswordKey = 'civica_bio_password';
+
+  // Claves legacy (v1): guardaban la CONTRASEÑA en claro para re-login biométrico.
+  // Ya no se escriben; solo se limpian una vez para instalaciones que actualizan.
+  static const String _legacyBioUsernameKey = 'civica_bio_user';
+  static const String _legacyBioPasswordKey = 'civica_bio_password';
+  static bool _legacyCleaned = false;
 
   /// Checks if device supports biometric hardware authentication
   Future<bool> isHardwareSupported() async {
@@ -31,7 +35,9 @@ class BiometricAuthService {
       final isSupported = await _auth.isDeviceSupported();
       return canCheck || isSupported;
     } on PlatformException catch (e) {
-      debugPrint('BiometricAuthService isHardwareSupported error: $e');
+      if (kDebugMode) {
+        debugPrint('BiometricAuthService isHardwareSupported error: $e');
+      }
       return false;
     } catch (_) {
       return false;
@@ -43,13 +49,31 @@ class BiometricAuthService {
     try {
       return await _auth.getAvailableBiometrics();
     } on PlatformException catch (e) {
-      debugPrint('BiometricAuthService getAvailableBiometrics error: $e');
+      if (kDebugMode) {
+        debugPrint('BiometricAuthService getAvailableBiometrics error: $e');
+      }
       return [];
+    }
+  }
+
+  /// One-time migration: borra credenciales legacy (contraseña guardada)
+  /// de instalaciones que actualizaron desde v1. Idempotente.
+  Future<void> _cleanupLegacyCredentials() async {
+    if (_legacyCleaned) return;
+    _legacyCleaned = true;
+    try {
+      await _secureStorage.delete(key: _legacyBioUsernameKey);
+      await _secureStorage.delete(key: _legacyBioPasswordKey);
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('BiometricAuthService legacy cleanup skipped: $e');
+      }
     }
   }
 
   /// Checks if user has enabled biometric login preference
   Future<bool> isBiometricsEnabled() async {
+    await _cleanupLegacyCredentials();
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool(_biometricEnabledKey) ?? false;
   }
@@ -63,26 +87,18 @@ class BiometricAuthService {
     }
   }
 
-  /// Saves encrypted credentials for fast biometric re-login
-  Future<void> saveBiometricCredentials(String username, String password) async {
-    await _secureStorage.write(key: _bioUsernameKey, value: username);
-    await _secureStorage.write(key: _bioPasswordKey, value: password);
-  }
-
-  /// Retrieves encrypted credentials for fast biometric re-login
-  Future<Map<String, String>?> getBiometricCredentials() async {
-    final user = await _secureStorage.read(key: _bioUsernameKey);
-    final pass = await _secureStorage.read(key: _bioPasswordKey);
-    if (user != null && pass != null && user.isNotEmpty && pass.isNotEmpty) {
-      return {'username': user, 'password': pass};
-    }
-    return null;
-  }
-
-  /// Clears stored biometric credentials
+  /// Clears stored biometric credentials (legacy: ya no se guardan contraseñas).
+  /// Se conserva para limpiar instalaciones antiguas al cerrar sesión.
+  /// No lanza: un fallo de storage nunca debe romper un logout.
   Future<void> clearBiometricCredentials() async {
-    await _secureStorage.delete(key: _bioUsernameKey);
-    await _secureStorage.delete(key: _bioPasswordKey);
+    try {
+      await _secureStorage.delete(key: _legacyBioUsernameKey);
+      await _secureStorage.delete(key: _legacyBioPasswordKey);
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('BiometricAuthService clearBiometricCredentials skipped: $e');
+      }
+    }
   }
 
   /// Checks if "Recordar usuario" is active
@@ -137,7 +153,9 @@ class BiometricAuthService {
       debugPrint('BiometricAuthService authenticate PlatformException: [${e.code}] ${e.message}');
       return false;
     } catch (e) {
-      debugPrint('BiometricAuthService authenticate unexpected error: $e');
+      if (kDebugMode) {
+        debugPrint('BiometricAuthService authenticate unexpected error: $e');
+      }
       return false;
     }
   }

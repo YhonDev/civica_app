@@ -77,7 +77,7 @@ class ConfiguracionScreen extends StatelessWidget {
                           side: BorderSide(
                             color: AppColors.error.withValues(alpha: 0.3),
                           ),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
                         ),
                       ),
                     ),
