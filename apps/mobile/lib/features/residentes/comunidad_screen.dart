@@ -137,7 +137,7 @@ class _ComunidadHubCard extends StatelessWidget {
                 final isCompact = constraints.maxWidth < 350;
                 if (isCompact) {
                   return Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Container(
                         width: 44,
@@ -155,13 +155,13 @@ class _ComunidadHubCard extends StatelessWidget {
                       const SizedBox(height: AppSpacing.sm),
                       FittedBox(
                         fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
                         child: Text(
                           title,
                           style: AppTypography.bodyMedium.copyWith(
                             fontWeight: FontWeight.w700,
                             color: AppColors.textPrimary,
                           ),
-                          textAlign: TextAlign.center,
                           maxLines: 1,
                         ),
                       ),
@@ -172,7 +172,6 @@ class _ComunidadHubCard extends StatelessWidget {
                           color: AppColors.textSecondary,
                           height: 1.3,
                         ),
-                        textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: AppSpacing.sm),
                       Container(
