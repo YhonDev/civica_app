@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../core/widgets/top_toast.dart';
-import '../../core/network/error_messages.dart';
 import '../../core/format/app_currency.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
@@ -58,7 +57,8 @@ class _SyncQueueScreenState extends State<SyncQueueScreen> {
       if (mounted) {
         TopToast.showError(
           context,
-          'Error al sincronizar: ${sanitizeApiError(e)}',
+          e,
+          prefix: 'Error al sincronizar',
         );
       }
     } finally {
@@ -92,7 +92,8 @@ class _SyncQueueScreenState extends State<SyncQueueScreen> {
       if (mounted) {
         TopToast.showError(
           context,
-          'Reintento fallido: ${sanitizeApiError(e)}',
+          e,
+          prefix: 'Reintento fallido',
         );
       }
     } finally {

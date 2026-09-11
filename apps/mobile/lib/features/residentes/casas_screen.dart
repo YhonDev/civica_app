@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../core/network/error_messages.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
@@ -109,7 +108,7 @@ class _CasasScreenState extends State<CasasScreen> {
           _isLoading = false;
           _isRefreshing = false;
         });
-        TopToast.showError(context, 'Error al cargar casas: ${sanitizeApiError(e)}');
+        TopToast.showError(context, e, prefix: 'Error al cargar casas');
       }
     }
   }
@@ -163,7 +162,7 @@ class _CasasScreenState extends State<CasasScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _isRefreshing = false);
-        TopToast.showError(context, 'Error al crear casa: ${sanitizeApiError(e)}');
+        TopToast.showError(context, e, prefix: 'Error al crear casa');
       }
     }
   }
@@ -183,7 +182,7 @@ class _CasasScreenState extends State<CasasScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _isRefreshing = false);
-        TopToast.showError(context, 'Error al crear casas: ${sanitizeApiError(e)}');
+        TopToast.showError(context, e, prefix: 'Error al crear casas');
       }
     }
   }
@@ -199,7 +198,7 @@ class _CasasScreenState extends State<CasasScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _isRefreshing = false);
-        TopToast.showError(context, 'Error al eliminar casa: ${sanitizeApiError(e)}');
+        TopToast.showError(context, e, prefix: 'Error al eliminar casa');
       }
     }
   }

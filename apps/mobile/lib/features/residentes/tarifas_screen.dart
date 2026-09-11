@@ -142,7 +142,7 @@ class _TarifasScreenState extends State<TarifasScreen> {
         debugPrint('Error guardando tarifa: ${sanitizeApiError(e)}');
         setState(() => _loading = false);
         if (mounted) {
-          TopToast.showError(context, 'Error al guardar la tarifa: ${sanitizeApiError(e)}');
+          TopToast.showError(context, e, prefix: 'Error al guardar la tarifa');
         }
       }
     }
@@ -182,7 +182,7 @@ class _TarifasScreenState extends State<TarifasScreen> {
         debugPrint('Error desactivando tarifa: ${sanitizeApiError(e)}');
         setState(() => _loading = false);
         if (mounted) {
-          TopToast.showError(context, 'Error al eliminar tarifa: ${sanitizeApiError(e)}');
+          TopToast.showError(context, e, prefix: 'Error al eliminar tarifa');
         }
       }
     }

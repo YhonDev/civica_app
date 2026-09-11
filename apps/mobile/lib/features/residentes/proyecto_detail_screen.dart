@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../core/network/error_messages.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
@@ -501,7 +500,7 @@ class _GeneradorEstructuraSheetState extends State<_GeneradorEstructuraSheet> {
           _isSubmitting = false;
           _progresoTexto = '';
         });
-        TopToast.showError(context, 'Error al generar estructura: ${sanitizeApiError(e)}');
+        TopToast.showError(context, e, prefix: 'Error al generar estructura');
       }
     }
   }

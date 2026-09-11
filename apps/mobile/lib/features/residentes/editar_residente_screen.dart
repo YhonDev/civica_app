@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../core/widgets/top_toast.dart';
-import '../../core/network/error_messages.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
@@ -326,7 +325,8 @@ class _EditarResidenteScreenState extends State<EditarResidenteScreen> {
       if (mounted) {
         TopToast.showError(
           context,
-          'Error al actualizar residente: ${sanitizeApiError(e)}',
+          e,
+          prefix: 'Error al actualizar residente',
         );
       }
     } finally {

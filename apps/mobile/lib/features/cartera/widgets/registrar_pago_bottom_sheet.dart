@@ -245,7 +245,7 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
       final cobradorId = (user?['id'] as String?) ?? '';
       final tenantId = (user?['tenantId'] as String?) ?? '';
 
-      final res = await _repo.registrarPago(
+      await _repo.registrarPago(
         residenteId: widget.cobro.residenteId,
         montoCentavos: AppCurrency.pesosToCents(monto),
         cobroId: widget.cobro.id,
@@ -265,22 +265,19 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
         widget.onSuccess();
 
         // 2. Mostrar la notificación según el resultado (online vs offline)
-        final isOffline = res['offline'] == true;
         TopToast.show(
           context,
-          title: isOffline ? 'Recaudo guardado en cola local' : '¡Recaudo registrado con éxito!',
-          message: isOffline
-              ? (res['message'] as String? ?? 'Pago guardado de forma segura en cola local.')
-              : 'Pago de ${AppCurrency.format(monto)} procesado. Cartera actualizada.',
-          icon: isOffline ? Icons.cloud_off_rounded : Icons.check_circle_rounded,
-          accentColor: isOffline ? AppColors.warning : AppColors.success,
+          title: 'Cobro realizado',
+          message: 'Pago de ${AppCurrency.format(monto)} realizado con éxito.',
+          icon: Icons.check_circle_rounded,
+          accentColor: AppColors.success,
         );
       }
     } catch (e) {
       if (mounted) {
         TopToast.showError(
           context,
-          'Error al registrar recaudo: ${e.toString().replaceAll('Exception: ', '')}',
+          'No se pudo registrar el cobro. Intenta de nuevo.',
         );
       }
     } finally {
@@ -729,7 +726,7 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
                     )
                   : const Icon(Icons.account_balance_wallet_rounded),
               label: Text(
-                _enviando ? 'Procesando recaudo...' : 'Registrar Cobro',
+                _enviando ? 'Registrando...' : 'Registrar Cobro',
               ),
             ),
           ),

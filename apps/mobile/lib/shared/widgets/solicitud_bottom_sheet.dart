@@ -284,7 +284,7 @@ class _SolicitudBottomSheetState extends State<SolicitudBottomSheet> {
         AppFeedback.error();
         if (mounted) {
           setState(() => _enviando = false);
-          TopToast.showError(context, 'Error al corregir pago: ${sanitizeApiError(e)}');
+          TopToast.showError(context, e, prefix: 'Error al corregir pago');
         }
       }
     }
@@ -379,7 +379,7 @@ class _SolicitudBottomSheetState extends State<SolicitudBottomSheet> {
         AppFeedback.error();
         if (mounted) {
           setState(() => _enviando = false);
-          TopToast.showError(context, 'Error al revertir pago: ${sanitizeApiError(e)}');
+          TopToast.showError(context, e, prefix: 'Error al revertir pago');
         }
       }
     }
@@ -426,7 +426,7 @@ class _SolicitudBottomSheetState extends State<SolicitudBottomSheet> {
       AppFeedback.error();
       if (mounted) {
         setState(() => _enviando = false);
-        TopToast.showError(context, 'Error al rechazar solicitud: ${sanitizeApiError(e)}');
+        TopToast.showError(context, e, prefix: 'Error al rechazar solicitud');
       }
     }
   }
@@ -469,7 +469,7 @@ class _SolicitudBottomSheetState extends State<SolicitudBottomSheet> {
       AppFeedback.error();
       if (mounted) {
         setState(() => _enviando = false);
-        TopToast.showError(context, 'Error: ${sanitizeApiError(e)}');
+        TopToast.showError(context, e, prefix: 'Error');
       }
     }
   }

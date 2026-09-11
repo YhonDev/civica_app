@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../core/network/error_messages.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
@@ -37,7 +36,7 @@ class _UrbanizacionScreenState extends State<UrbanizacionScreen> {
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
-        TopToast.showError(context, 'Error al cargar proyectos: ${sanitizeApiError(e)}');
+        TopToast.showError(context, e, prefix: 'Error al cargar proyectos');
       }
     }
   }
@@ -106,7 +105,7 @@ class _UrbanizacionScreenState extends State<UrbanizacionScreen> {
                       } catch (e) {
                         setState(() => _isLoading = false);
                         if (mounted) {
-                          TopToast.showError(context, 'Error al crear proyecto: ${sanitizeApiError(e)}');
+                          TopToast.showError(context, e, prefix: 'Error al crear proyecto');
                         }
                       }
                     }
