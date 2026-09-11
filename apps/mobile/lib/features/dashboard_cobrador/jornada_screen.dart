@@ -9,6 +9,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/lifecycle_observer_mixin.dart';
+import '../../shared/widgets/donut_chart.dart';
 import '../../shared/widgets/kpi_card.dart';
 
 import '../cartera/models/cartera_models.dart';
@@ -268,10 +269,40 @@ class _JornadaViewState extends State<_JornadaView> with LifecycleObserverMixin 
   // ── Progreso de la Jornada (Mini widget de reporte) ───────────────
 
   Widget _buildProgresoJornada(CobradorDashboardData data) {
-    final total = data.totalViviendas;
-    final cobradas = data.cobradosHoy;
-    final ratio = total > 0 ? (cobradas / total).clamp(0.0, 1.0) : 0.0;
-    final porcentaje = (ratio * 100).round();
+    final pagadas = data.cobradosHoy;
+    final pendientes = data.pendientes;
+    final vencidas = data.vencidas;
+    final totalCasas = (data.totalViviendas > 0)
+        ? data.totalViviendas
+        : (pagadas + pendientes + vencidas);
+
+    final totalEstados = pagadas + pendientes + vencidas;
+    final denom = totalEstados > 0 ? totalEstados : (totalCasas > 0 ? totalCasas : 1);
+
+    final pagadasPct = (pagadas / denom) * 100;
+    final pendientesPct = (pendientes / denom) * 100;
+    final vencidasPct = (vencidas / denom) * 100;
+
+    final ratioCompletado = totalCasas > 0 ? (pagadas / totalCasas).clamp(0.0, 1.0) : 0.0;
+    final pctCompletado = (ratioCompletado * 100).round();
+
+    final segments = <DonutSegment>[
+      DonutSegment(
+        percentage: pagadasPct,
+        color: AppColors.success,
+        label: 'Cobradas hoy ($pagadas)',
+      ),
+      DonutSegment(
+        percentage: pendientesPct,
+        color: AppColors.warning,
+        label: 'Pendientes ($pendientes)',
+      ),
+      DonutSegment(
+        percentage: vencidasPct,
+        color: AppColors.error,
+        label: 'Vencidas ($vencidas)',
+      ),
+    ];
 
     return Container(
       width: double.infinity,
@@ -291,89 +322,160 @@ class _JornadaViewState extends State<_JornadaView> with LifecycleObserverMixin 
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header: Icono + Título + Porcentaje
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isCompact = constraints.maxWidth < 350;
+
+          final header = Row(
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(AppSpacing.xs),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-                    ),
-                    child: const Icon(
-                      Icons.insights_rounded,
-                      color: AppColors.primary,
-                      size: 18,
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  Text(
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.xs),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                ),
+                child: const Icon(
+                  Icons.donut_large_rounded,
+                  color: AppColors.primary,
+                  size: 18,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
                     'Progreso de la Jornada',
                     style: AppTypography.subtitle.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
+                    maxLines: 1,
                   ),
-                ],
+                ),
               ),
+              const SizedBox(width: AppSpacing.sm),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: AppSpacing.xs),
                 decoration: BoxDecoration(
-                  color: (ratio >= 1.0 ? AppColors.success : AppColors.primary).withValues(alpha: 0.12),
+                  color: AppColors.primary.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                 ),
                 child: Text(
-                  '$porcentaje%',
+                  '$totalCasas casas',
                   style: AppTypography.smallBold.copyWith(
-                    color: ratio >= 1.0 ? AppColors.success : AppColors.primary,
+                    color: AppColors.primary,
                   ),
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: AppSpacing.md),
+          );
 
-          // Barra de Progreso lineal
-          ClipRRect(
-            borderRadius: BorderRadius.circular(AppSpacing.radiusProgress),
-            child: LinearProgressIndicator(
-              value: ratio,
-              minHeight: 8,
-              backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-              valueColor: AlwaysStoppedAnimation<Color>(
-                ratio >= 1.0 ? AppColors.success : AppColors.primary,
-              ),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
+          Widget buildLegendItem(Color color, String label, String value) {
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  '$label: ',
+                  style: AppTypography.caption.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                Text(
+                  value,
+                  style: AppTypography.caption.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: color,
+                  ),
+                ),
+              ],
+            );
+          }
 
-          // Desglose métrico inferior
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          if (isCompact) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                header,
+                const SizedBox(height: AppSpacing.md),
+                Center(
+                  child: DonutChart(
+                    size: 130,
+                    strokeWidth: 16,
+                    centerText: '$pctCompletado%',
+                    centerLabel: 'cobrado',
+                    segments: segments,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Wrap(
+                  spacing: AppSpacing.md,
+                  runSpacing: AppSpacing.xs,
+                  alignment: WrapAlignment.center,
+                  children: [
+                    buildLegendItem(AppColors.success, 'Cobradas', '$pagadas'),
+                    buildLegendItem(AppColors.warning, 'Pendientes', '$pendientes'),
+                    buildLegendItem(AppColors.error, 'Vencidas', '$vencidas'),
+                  ],
+                ),
+              ],
+            );
+          }
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                '$cobradas de $total casas cobradas',
-                style: AppTypography.caption.copyWith(
-                  color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              Text(
-                '${data.pendientes} pendientes',
-                style: AppTypography.caption.copyWith(
-                  color: data.pendientes > 0 ? AppColors.warning : AppColors.success,
-                  fontWeight: FontWeight.w600,
-                ),
+              header,
+              const SizedBox(height: AppSpacing.md),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  DonutChart(
+                    size: 120,
+                    strokeWidth: 16,
+                    centerText: '$pctCompletado%',
+                    centerLabel: 'cobrado',
+                    segments: segments,
+                  ),
+                  const SizedBox(width: AppSpacing.lg),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        buildLegendItem(AppColors.success, 'Cobradas hoy', '$pagadas casas'),
+                        const SizedBox(height: AppSpacing.xs),
+                        buildLegendItem(AppColors.warning, 'Pendientes', '$pendientes casas'),
+                        const SizedBox(height: AppSpacing.xs),
+                        buildLegendItem(AppColors.error, 'Vencidas / Mora', '$vencidas casas'),
+                        if (data.montoEsperado > 0) ...[
+                          const SizedBox(height: AppSpacing.sm),
+                          const Divider(height: 1),
+                          const SizedBox(height: AppSpacing.xs),
+                          Text(
+                            'Recaudado hoy: ${AppCurrency.format(data.montoCobradoHoy)}',
+                            style: AppTypography.micro.copyWith(
+                              color: AppColors.textSecondary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ],
-          ),
-        ],
+          );
+        },
       ),
     );
   }

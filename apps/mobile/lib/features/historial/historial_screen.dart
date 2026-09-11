@@ -216,7 +216,7 @@ class _HistorialScreenState extends State<HistorialScreen> {
                                               child: const Icon(
                                                 Icons.check_circle_rounded,
                                                 color: AppColors.success,
-                                                size: 18,
+                                                size: 22,
                                               ),
                                             ),
                                             const SizedBox(width: AppSpacing.sm),
@@ -250,11 +250,11 @@ class _HistorialScreenState extends State<HistorialScreen> {
                                               ),
                                           ],
                                         ),
-                                        const SizedBox(height: 6),
+                                        const SizedBox(height: AppSpacing.xs),
 
                                         // Fila 2: Nombre del residente
                                         Padding(
-                                          padding: const EdgeInsets.only(left: 26),
+                                          padding: const EdgeInsets.only(left: 38),
                                           child: Text(
                                             residente,
                                             style: AppTypography.bodySmall.copyWith(
@@ -265,15 +265,19 @@ class _HistorialScreenState extends State<HistorialScreen> {
                                             overflow: TextOverflow.ellipsis,
                                           ),
                                         ),
-                                        const SizedBox(height: 6),
+                                        const SizedBox(height: AppSpacing.xs),
 
-                                        // Fila 3: Fecha y hora a la izquierda, Monto a la derecha
+                                        // Fila 3: Fecha y hora
                                         Padding(
-                                          padding: const EdgeInsets.only(left: 26),
+                                          padding: const EdgeInsets.only(left: 38),
                                           child: Row(
-                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                            crossAxisAlignment: CrossAxisAlignment.center,
                                             children: [
+                                              Icon(
+                                                Icons.calendar_today_outlined,
+                                                size: 13,
+                                                color: AppColors.textSecondary.withValues(alpha: 0.7),
+                                              ),
+                                              const SizedBox(width: AppSpacing.xs),
                                               Expanded(
                                                 child: Text(
                                                   dateFormatted,
@@ -285,19 +289,20 @@ class _HistorialScreenState extends State<HistorialScreen> {
                                                   overflow: TextOverflow.ellipsis,
                                                 ),
                                               ),
-                                              const SizedBox(width: AppSpacing.sm),
-                                              FittedBox(
-                                                fit: BoxFit.scaleDown,
-                                                alignment: Alignment.centerRight,
-                                                child: Text(
-                                                  AppCurrency.format(monto),
-                                                  style: AppTypography.cardValue.copyWith(
-                                                    fontWeight: FontWeight.w900,
-                                                    color: AppColors.success,
-                                                  ),
-                                                ),
-                                              ),
                                             ],
+                                          ),
+                                        ),
+                                        const SizedBox(height: AppSpacing.xs),
+
+                                        // Fila 4: Monto destacado abajo con presencia
+                                        Padding(
+                                          padding: const EdgeInsets.only(left: 38),
+                                          child: Text(
+                                            AppCurrency.format(monto),
+                                            style: AppTypography.title.copyWith(
+                                              fontWeight: FontWeight.w900,
+                                              color: AppColors.success,
+                                            ),
                                           ),
                                         ),
                                       ],
