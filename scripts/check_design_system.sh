@@ -86,6 +86,23 @@ else
   echo "✓ 9.7 logs: 0 violaciones"
 fi
 
+# 9.8 — notificaciones: estándar único TopToast
+# (espejo del guard Dart: ignora el texto de comentarios al evaluar)
+pat98='\b(SnackBar|ScaffoldMessenger|showSnackBar)\b'
+violations_98=$(grep -rnE "$pat98" lib --include='*.dart' \
+  | grep -v 'lib/core/widgets/top_toast.dart' \
+  | while IFS= read -r line; do
+      stripped=$(printf '%s' "$line" | sed 's|//.*||')
+      if printf '%s' "$stripped" | grep -qE "$pat98"; then printf '%s\n' "$line"; fi
+    done)
+if [ -n "$violations_98" ]; then
+  echo "::error::[guardián 9.8] notificaciones fuera del estándar TopToast:"
+  echo "$violations_98"
+  fail=1
+else
+  echo "✓ 9.8 notificaciones: 0 violaciones"
+fi
+
 if [ "$fail" -ne 0 ]; then
   echo ""
   echo "El sistema de diseño quedó erosionado. Corrige usando los tokens"

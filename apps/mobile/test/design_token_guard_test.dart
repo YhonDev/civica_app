@@ -19,6 +19,8 @@
 /// 8. `debugPrint` con error crudo (`$e`) sin gate `kDebugMode` en la misma
 ///    línea o en la línea anterior — regla 9.7 (los logs en release
 ///    no deben construirse interpolando errores).
+/// 9. `SnackBar`/`ScaffoldMessenger` fuera de `lib/core/widgets/top_toast.dart`
+///    — regla 9.8: el estándar único de notificaciones es `TopToast`.
 ///
 /// Ejecutar con: `flutter test test/design_token_guard_test.dart`
 /// (incluido en `flutter test` y en CI). Diseñado para fallar cerrado:
@@ -183,6 +185,22 @@ List<String> edgeInsetsViolations(String code, String posixPath, int lineNo) {
   return violations;
 }
 
+/// Regla 9.8 (notificaciones): el único estándar de notificación es
+/// `TopToast`. `SnackBar`/`ScaffoldMessenger` solo pueden existir dentro
+/// del propio componente (`lib/core/widgets/top_toast.dart`).
+List<String> snackBarViolations(String code, String posixPath, int lineNo) {
+  if (posixPath == 'lib/core/widgets/top_toast.dart') return [];
+  final pattern = RegExp(r'\b(SnackBar|ScaffoldMessenger|showSnackBar)\b');
+  final hit = pattern.firstMatch(code);
+  if (hit == null) return [];
+  return [
+    '$posixPath:$lineNo:${hit.start + 1}: '
+        'Regla 9.8 — notificaciones solo con `TopToast` '
+        '(core/widgets/top_toast.dart); `SnackBar`/`ScaffoldMessenger` '
+        'están prohibidos fuera del propio componente',
+  ];
+}
+
 void main() {
   test('guardián de tokens: sin regesión de tipografía/moneda/color/radios/espaciado', () {
     final libDir = Directory('lib');
@@ -227,6 +245,7 @@ void main() {
         violations.addAll(
           debugPrintRawErrorViolations(code, previousCodeLine, posixPath, i + 1),
         );
+        violations.addAll(snackBarViolations(code, posixPath, i + 1));
 
         previousCodeLine = code;
       }

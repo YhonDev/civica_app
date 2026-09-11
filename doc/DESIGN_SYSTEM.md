@@ -307,9 +307,10 @@ consolidación.
 >    paso explícito `Design token guard (test)` en CI) escanea `lib/` y falla si detecta
 >    `fontSize:` inline, `NumberFormat`, hex `Color(0x…)`, radios con literal
 >    (`BorderRadius.circular(<n>)` / `Radius.circular(<n>)`), `EdgeInsets` compuestos
->    solo de valores tokenizados {4, 8, 16, 20, 24, 32} escritos con números, o errores
->    crudos interpolados en UI/logs (regla 9.7) — todo fuera de `core/theme/` y
->    `core/format/`. El fallo incluye ruta, línea, columna y la regla infringida.
+>    solo de valores tokenizados {4, 8, 16, 20, 24, 32} escritos con números, errores
+>    crudos interpolados en UI/logs (regla 9.7) o notificaciones fuera del estándar
+>    `TopToast` (regla 9.8) — todo fuera de `core/theme/` y `core/format/`. El fallo
+>    incluye ruta, línea, columna y la regla infringida.
 > 2. `scripts/check_design_system.sh` (paso `Design system guard` en CI) es el espejo
 >    rápido de los patrones de texto.
 >
@@ -377,6 +378,23 @@ consolidación.
 - El harness de depuración `lib/debug/` está exento (no corre en release).
 - El guard (regla 9.7 en ambas capas) marca estas violaciones con ruta, línea
   y columna.
+
+### 9.8 Notificaciones
+
+- El estándar único de notificaciones es `TopToast`
+  (`lib/core/widgets/top_toast.dart`): éxito, error, información y advertencia
+  comparten formato y estilo (tarjeta superior, entrada elástica, tokens
+  `AppColors.toast*` + `AppTypography`, haptics por variante).
+- Comportamiento común: auto-cierre, **un solo slot** (mostrar otro toast
+  reemplaza al anterior, nunca se apilan), tap para cerrar y acción opcional
+  (`actionLabel`/`onAction`).
+- Variantes: `showSuccess`, `showError`, `showInfo`, `showWarning` — se elige
+  por semántica del mensaje; nada de colores ni estilos ad-hoc.
+- **Prohibido** `SnackBar`/`ScaffoldMessenger`/`showSnackBar` fuera del propio
+  componente `top_toast.dart`. Lo hace cumplir el guard (regla 9.8) en ambas
+  capas (Dart y espejo shell).
+- Mensajes de error siempre pasan por `sanitizeApiError` antes de llegar a la
+  notificación (regla 9.7).
 
 ## 10. Referencias rápidas
 
