@@ -113,7 +113,9 @@ class _SolicitudesScreenState extends State<SolicitudesScreen>
 
   Future<void> _loadSolicitudes() async {
     try {
-      final list = await _repo.getSolicitudes();
+      final list = _isAdmin
+          ? await _repo.getSolicitudes(tipo: 'revision')
+          : await _repo.getMisSolicitudes();
       if (mounted) {
         setState(() {
           _solicitudes = list;
@@ -152,7 +154,8 @@ class _SolicitudesScreenState extends State<SolicitudesScreen>
   int get _pendientes => _solicitudes
       .where((s) =>
           s.estado == SolicitudEstado.pendiente ||
-          s.estado == SolicitudEstado.enRevision)
+          s.estado == SolicitudEstado.enRevision ||
+          s.estado == SolicitudEstado.enEspera)
       .length;
   int get _resueltas =>
       _solicitudes.where((s) => s.estado == SolicitudEstado.resuelta).length;
@@ -165,7 +168,8 @@ class _SolicitudesScreenState extends State<SolicitudesScreen>
         return _solicitudes
             .where((s) =>
                 s.estado == SolicitudEstado.pendiente ||
-                s.estado == SolicitudEstado.enRevision)
+                s.estado == SolicitudEstado.enRevision ||
+                s.estado == SolicitudEstado.enEspera)
             .toList();
       case 'RESUELTAS':
         return _solicitudes

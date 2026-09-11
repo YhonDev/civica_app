@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/widgets/top_toast.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -422,7 +423,7 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
               final cobro = filteredCobros[index];
               return CobroCard(
                 cobro: cobro,
-                onTap: () {
+                onTap: () async {
                   if (cobro.isPaid) {
                     DateTime fecha = DateTime.now();
                     if (cobro.fechaPago.isNotEmpty) {
@@ -433,7 +434,7 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                     final ticketNum = cobro.nroRecibo.isNotEmpty
                         ? cobro.nroRecibo
                         : 'TK-${cobro.id.replaceAll("-", "").substring(0, 6).toUpperCase()}';
-                    TicketBottomSheet.show(
+                    final result = await TicketBottomSheet.show(
                       context,
                       TicketData(
                         numero: ticketNum,
@@ -449,8 +450,25 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                         cobrador: cobro.cobradorNombre.isNotEmpty ? cobro.cobradorNombre : 'Administración',
                         etapa: cobro.etapa,
                         manzana: cobro.manzana,
+                        cobroId: cobro.id,
                       ),
                     );
+
+                    if (result is TicketData && context.mounted) {
+                      final created = await context.push<bool>(
+                        '/solicitud-nueva',
+                        extra: {
+                          'cobroId': result.cobroId,
+                          'pagoId': result.pagoId,
+                          'concepto': result.concepto,
+                          'nroRecibo': result.numero,
+                          'monto': result.monto,
+                        },
+                      );
+                      if (created == true && context.mounted) {
+                        context.read<CarteraCubit>().loadCobros();
+                      }
+                    }
                   } else if (canRegisterPago) {
                     final cuotasDelResidente = state.cobros
                         .where((c) => c.residenteId == cobro.residenteId && !c.isPaid)

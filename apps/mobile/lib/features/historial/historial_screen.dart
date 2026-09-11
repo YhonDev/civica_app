@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/format/app_currency.dart';
 import 'package:intl/intl.dart';
 
@@ -107,7 +108,7 @@ class _HistorialScreenState extends State<HistorialScreen> {
         return 0;
       });
 
-      final listSolicitudes = await _solicitudesRepo.getSolicitudes();
+      final listSolicitudes = await _solicitudesRepo.getMisSolicitudes();
 
       if (mounted) {
         setState(() {
@@ -431,7 +432,7 @@ class _HistorialScreenState extends State<HistorialScreen> {
     );
   }
 
-  void _handleCuotaTap(Map<String, dynamic> c) {
+  Future<void> _handleCuotaTap(Map<String, dynamic> c) async {
     final matchingList = _solicitudes.where((s) => s.cobroId == c['id']).toList();
     final SolicitudData? matchingSolicitud = matchingList.isNotEmpty ? matchingList.first : null;
 
@@ -441,19 +442,44 @@ class _HistorialScreenState extends State<HistorialScreen> {
       final rawDate = c['fechaPago'] ?? c['updatedAt'] ?? c['createdAt'];
       final date = (DateTime.tryParse(rawDate?.toString() ?? '') ?? DateTime.now()).toLocal();
       final monto = AppCurrency.centsToPesos(c['monto'] as int? ?? 0);
-      TicketBottomSheet.show(
+      final ticketNum = (c['nroRecibo'] as String?)?.isNotEmpty == true
+          ? c['nroRecibo'] as String
+          : ((c['ticketNumero'] as String?)?.isNotEmpty == true
+              ? c['ticketNumero'] as String
+              : 'TK-${c['id'].hashCode.abs().toString().padLeft(6, '0')}');
+
+      final result = await TicketBottomSheet.show(
         context,
         TicketData(
-          numero: 'TK-${c['id'].hashCode.abs().toString().padLeft(6, '0')}',
+          numero: ticketNum,
           fecha: date,
           residente: context.read<AuthCubit>().state.usuario?['nombre'] as String? ?? 'Residente',
-          casa: 'Mi Casa',
+          casa: [c['etapaNombre'], c['manzanaNombre'], c['casaDireccion'] ?? 'Mi Casa'].where((s) => s != null && s.toString().isNotEmpty).join(' · '),
           monto: monto,
-          metodo: 'Efectivo',
-          estado: 'Pagado',
-          cobrador: 'Administración',
+          metodo: c['metodo'] as String? ?? 'Efectivo',
+          estado: 'PAGADO',
+          cobrador: c['cobradorNombre'] as String? ?? 'Administración',
+          concepto: c['concepto'] as String?,
+          cobroId: c['id'] as String?,
+          pagoId: c['pagoId'] as String?,
         ),
       );
+
+      if (result is TicketData && mounted) {
+        final created = await context.push<bool>(
+          '/solicitud-nueva',
+          extra: {
+            'cobroId': result.cobroId,
+            'pagoId': result.pagoId,
+            'concepto': result.concepto,
+            'nroRecibo': result.numero,
+            'monto': result.monto,
+          },
+        );
+        if (created == true && mounted) {
+          _loadHistorial(silent: true);
+        }
+      }
     }
   }
 
