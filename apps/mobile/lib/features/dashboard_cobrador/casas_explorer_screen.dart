@@ -503,76 +503,92 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
     RecorridoExplorer? recorridoSeleccionado,
   ) {
     final bloqueado = _inicioDeRutaBloqueado(recorridoSeleccionado);
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Ruta a Cobrar',
-                style: AppTypography.bodyMedium.copyWith(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isCompact = constraints.maxWidth < 350;
+
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Ruta a Cobrar',
+                    style: AppTypography.bodyMedium.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      _subtituloRuta(recorridoSeleccionado),
+                      style: AppTypography.caption.copyWith(
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 1,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            FilledButton.icon(
+              style: FilledButton.styleFrom(
+                backgroundColor:
+                    bloqueado ? AppColors.border : AppColors.primary,
+                padding: EdgeInsets.symmetric(
+                  horizontal: isCompact ? 8 : 10,
+                  vertical: isCompact ? 4 : 6,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+                ),
+              ),
+              onPressed: () {
+                if (bloqueado) {
+                  TopToast.show(
+                    context,
+                    type: ToastType.warning,
+                    title: 'Ruta no disponible',
+                    message:
+                        'La ruta de pendientes solo puede iniciarse el ${recorridoSeleccionado?.fechaLegible.toLowerCase() ?? 'sábado'}. La mora puedes cobrarla cualquier día.',
+                  );
+                  return;
+                }
+                AppFeedback.medium();
+                context.push(
+                  '/modo-inmersivo-ruta',
+                  extra: {
+                    'etapas': etapas,
+                    'solicitudes': solicitudes,
+                    'selectedEtapaId': _selectedEtapaId,
+                    'selectedEstadoFiltro': _filtroEstado,
+                    'sentidoInverso': _sentidoInverso,
+                    if (recorridoSeleccionado != null)
+                      'selectedRecorrido': {
+                        'numero': recorridoSeleccionado.numero,
+                        'fecha': recorridoSeleccionado.fecha,
+                        'fechaLegible': recorridoSeleccionado.fechaLegible,
+                      },
+                  },
+                );
+              },
+              icon: Icon(Icons.play_arrow_rounded, size: isCompact ? 14 : 16),
+              label: Text(
+                'Iniciar Recorrido',
+                style: (isCompact ? AppTypography.micro : AppTypography.caption).copyWith(
+                  color: AppColors.onPrimary,
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              Text(
-                _subtituloRuta(recorridoSeleccionado),
-                style: AppTypography.caption.copyWith(
-                  color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        FilledButton.icon(
-          style: FilledButton.styleFrom(
-            backgroundColor:
-                bloqueado ? AppColors.border : AppColors.primary,
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusLg)),
-          ),
-          onPressed: () {
-            if (bloqueado) {
-              TopToast.show(
-                context,
-                type: ToastType.warning,
-                title: 'Ruta no disponible',
-                message:
-                    'La ruta de pendientes solo puede iniciarse el ${recorridoSeleccionado?.fechaLegible.toLowerCase() ?? 'sábado'}. La mora puedes cobrarla cualquier día.',
-              );
-              return;
-            }
-            AppFeedback.medium();
-            context.push(
-              '/modo-inmersivo-ruta',
-              extra: {
-                'etapas': etapas,
-                'solicitudes': solicitudes,
-                'selectedEtapaId': _selectedEtapaId,
-                'selectedEstadoFiltro': _filtroEstado,
-                'sentidoInverso': _sentidoInverso,
-                if (recorridoSeleccionado != null)
-                  'selectedRecorrido': {
-                    'numero': recorridoSeleccionado.numero,
-                    'fecha': recorridoSeleccionado.fecha,
-                    'fechaLegible': recorridoSeleccionado.fechaLegible,
-                  },
-              },
-            );
-          },
-          icon: const Icon(Icons.play_arrow_rounded, size: 16),
-          label: Text(
-            'Iniciar Recorrido',
-            style: AppTypography.caption.copyWith(
-              color: AppColors.onPrimary,
-              fontWeight: FontWeight.w700,
             ),
-          ),
-        ),
-      ],
+          ],
+        );
+      },
     );
   }
 

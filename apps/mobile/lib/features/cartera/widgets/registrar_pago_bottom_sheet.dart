@@ -314,6 +314,8 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
       // En tablet/desktop el sheet no debe estirarse a todo el ancho.
       child: ContentConstrainedBox(
         maxWidth: AppBreakpoints.maxFormWidth,
+        alignment: Alignment.bottomCenter,
+        heightFactor: 1.0,
         // Scroll interno: con el teclado abierto el espacio se reduce y el
         // contenido debe desplazarse, no desbordar (alto dinámico).
         child: SingleChildScrollView(
@@ -365,7 +367,11 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
                       ),
                     ),
                     Text(
-                      '${widget.cobro.casa} · ${widget.cobro.etapa}',
+                      [
+                        if (widget.cobro.manzana.isNotEmpty) widget.cobro.manzana,
+                        widget.cobro.casa,
+                        if (widget.cobro.etapa.isNotEmpty) widget.cobro.etapa,
+                      ].join(' · '),
                       style: AppTypography.caption.copyWith(
                         color: AppColors.textSecondary,
                       ),
