@@ -75,8 +75,15 @@ async function bootstrap() {
   }
 
   // ─── Security Middleware ─────────────────────────────
-  // Helmet: protege contra vulnerabilidades HTTP comunes
-  app.use(helmet());
+  // Helmet: protege contra vulnerabilidades HTTP comunes.
+  // Permitimos cross-origin para que clientes web (Flutter Web en localhost o
+  // dominios de frontend autorizados por CORS) puedan leer respuestas de la API.
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+      crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
+    }),
+  );
 
   // CORS: orígenes permitidos (en desarrollo admite cualquier puerto localhost/127.0.0.1 para Flutter Web)
   const isDev = process.env.NODE_ENV !== 'production';

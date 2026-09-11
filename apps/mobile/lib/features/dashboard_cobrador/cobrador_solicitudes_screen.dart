@@ -208,12 +208,14 @@ class _CobradorSolicitudesScreenState extends State<CobradorSolicitudesScreen> {
 
                 if (filtered.isEmpty) ...[
                   const SizedBox(height: AppSpacing.xl),
-                  EmptyState(
-                    title: totalCount == 0 ? 'Sin solicitudes activas' : 'Sin coincidencias',
-                    description: totalCount == 0
-                        ? 'No hay solicitudes de residentes pendientes por cobro en tu ruta.'
-                        : 'No encontramos solicitudes para el filtro seleccionado.',
-                    icon: Icons.mark_email_read_rounded,
+                  Center(
+                    child: EmptyState(
+                      title: totalCount == 0 ? 'Sin solicitudes activas' : 'Sin coincidencias',
+                      description: totalCount == 0
+                          ? 'No hay solicitudes de residentes pendientes por cobro en tu ruta.'
+                          : 'No encontramos solicitudes para el filtro seleccionado.',
+                      icon: Icons.mark_email_read_rounded,
+                    ),
                   ),
                 ] else if (context.isWideScreen) ...[
                   GridView.builder(

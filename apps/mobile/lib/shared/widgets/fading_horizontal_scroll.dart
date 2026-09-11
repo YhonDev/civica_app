@@ -3,9 +3,10 @@ import 'package:civica_pago_mobile/core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 
 /// Un contenedor de scroll horizontal con desvanecimiento suave (fade) en los bordes.
-/// Evita que los elementos parezcan "cortarse" bruscamente o salirse de la pantalla,
-/// desvaneciéndolos con un degradado en la zona de margen exterior.
-class FadingHorizontalScroll extends StatelessWidget {
+/// Es adaptativo: cuando el scroll está en el inicio (offset 0), el borde izquierdo
+/// se muestra 100% nítido sin difuminación. Solo aplica desvanecimiento en el borde
+/// que realmente tiene contenido oculto para scrollear.
+class FadingHorizontalScroll extends StatefulWidget {
   final Widget child;
   final ScrollController? controller;
   final ScrollPhysics physics;
@@ -22,48 +23,114 @@ class FadingHorizontalScroll extends StatelessWidget {
   });
 
   @override
+  State<FadingHorizontalScroll> createState() => _FadingHorizontalScrollState();
+}
+
+class _FadingHorizontalScrollState extends State<FadingHorizontalScroll> {
+  ScrollController? _internalController;
+  ScrollController get _effectiveController =>
+      widget.controller ?? (_internalController ??= ScrollController());
+
+  bool _canScrollLeft = false;
+  bool _canScrollRight = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _effectiveController.addListener(_checkScroll);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkScroll());
+  }
+
+  @override
+  void dispose() {
+    if (widget.controller == null) {
+      _internalController?.dispose();
+    } else {
+      widget.controller?.removeListener(_checkScroll);
+    }
+    super.dispose();
+  }
+
+  void _checkScroll() {
+    if (!mounted || !_effectiveController.hasClients) return;
+    final pos = _effectiveController.position;
+    final canLeft = pos.pixels > 1.0;
+    final canRight =
+        pos.maxScrollExtent > 1.0 && pos.pixels < (pos.maxScrollExtent - 1.0);
+
+    if (canLeft != _canScrollLeft || canRight != _canScrollRight) {
+      setState(() {
+        _canScrollLeft = canLeft;
+        _canScrollRight = canRight;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final totalWidth = constraints.maxWidth;
         if (totalWidth <= 0 || totalWidth.isInfinite) {
           return SingleChildScrollView(
-            controller: controller,
+            controller: _effectiveController,
             scrollDirection: Axis.horizontal,
-            physics: physics,
-            padding: padding,
-            child: child,
+            physics: widget.physics,
+            padding: widget.padding,
+            child: widget.child,
           );
         }
 
-        final fadeFraction = (fadeWidth / totalWidth).clamp(0.01, 0.2);
+        if (!_canScrollLeft && !_canScrollRight) {
+          return NotificationListener<ScrollNotification>(
+            onNotification: (notif) {
+              _checkScroll();
+              return false;
+            },
+            child: SingleChildScrollView(
+              controller: _effectiveController,
+              scrollDirection: Axis.horizontal,
+              physics: widget.physics,
+              padding: widget.padding,
+              child: widget.child,
+            ),
+          );
+        }
 
-        return ShaderMask(
-          shaderCallback: (Rect bounds) {
-            return LinearGradient(
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-              colors: const [
-                Colors.transparent,
-                AppColors.onPrimary,
-                AppColors.onPrimary,
-                Colors.transparent,
-              ],
-              stops: [
-                0.0,
-                fadeFraction,
-                1.0 - fadeFraction,
-                1.0,
-              ],
-            ).createShader(bounds);
+        final fadeFraction = (widget.fadeWidth / totalWidth).clamp(0.01, 0.2);
+
+        return NotificationListener<ScrollNotification>(
+          onNotification: (notif) {
+            _checkScroll();
+            return false;
           },
-          blendMode: BlendMode.dstIn,
-          child: SingleChildScrollView(
-            controller: controller,
-            scrollDirection: Axis.horizontal,
-            physics: physics,
-            padding: padding,
-            child: child,
+          child: ShaderMask(
+            shaderCallback: (Rect bounds) {
+              return LinearGradient(
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+                colors: [
+                  _canScrollLeft ? Colors.transparent : AppColors.onPrimary,
+                  AppColors.onPrimary,
+                  AppColors.onPrimary,
+                  _canScrollRight ? Colors.transparent : AppColors.onPrimary,
+                ],
+                stops: [
+                  0.0,
+                  fadeFraction,
+                  1.0 - fadeFraction,
+                  1.0,
+                ],
+              ).createShader(bounds);
+            },
+            blendMode: BlendMode.dstIn,
+            child: SingleChildScrollView(
+              controller: _effectiveController,
+              scrollDirection: Axis.horizontal,
+              physics: widget.physics,
+              padding: widget.padding,
+              child: widget.child,
+            ),
           ),
         );
       },

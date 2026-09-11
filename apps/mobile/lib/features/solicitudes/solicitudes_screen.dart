@@ -285,11 +285,13 @@ class _SolicitudesScreenState extends State<SolicitudesScreen>
                           index: 2,
                           child: const Padding(
                             padding: EdgeInsets.only(top: AppSpacing.xl),
-                            child: EmptyState(
-                              icon: Icons.description_outlined,
-                              title: 'No hay solicitudes',
-                              description:
-                                  'No se encontraron solicitudes con este filtro.',
+                            child: Center(
+                              child: EmptyState(
+                                icon: Icons.description_outlined,
+                                title: 'No hay solicitudes',
+                                description:
+                                    'No se encontraron solicitudes con este filtro.',
+                              ),
                             ),
                           ),
                         ),

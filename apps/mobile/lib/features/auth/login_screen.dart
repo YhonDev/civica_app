@@ -144,6 +144,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: IntrinsicHeight(
                           child: Form(
                             key: _formKey,
+                            autovalidateMode: AutovalidateMode.onUserInteraction,
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [

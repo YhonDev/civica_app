@@ -522,11 +522,12 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
             ],
           ),
         ),
+        const SizedBox(width: AppSpacing.sm),
         FilledButton.icon(
           style: FilledButton.styleFrom(
             backgroundColor:
                 bloqueado ? AppColors.border : AppColors.primary,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusLg)),
           ),
           onPressed: () {
@@ -558,10 +559,13 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
               },
             );
           },
-          icon: const Icon(Icons.play_arrow_rounded, size: 18),
-          label: const Text(
+          icon: const Icon(Icons.play_arrow_rounded, size: 16),
+          label: Text(
             'Iniciar Recorrido',
-            style: AppTypography.label,
+            style: AppTypography.caption.copyWith(
+              color: AppColors.onPrimary,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ),
       ],
@@ -873,12 +877,16 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                     ),
                     const SizedBox(width: 4),
                     Flexible(
-                      child: Text(
-                        labelDirecto,
-                        style: AppTypography.smallBold.copyWith(
-                          color: !_sentidoInverso ? AppColors.onPrimary : AppColors.textSecondary,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          labelDirecto,
+                          style: AppTypography.smallBold.copyWith(
+                            color: !_sentidoInverso ? AppColors.onPrimary : AppColors.textSecondary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
@@ -912,12 +920,16 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                     ),
                     const SizedBox(width: 4),
                     Flexible(
-                      child: Text(
-                        labelInverso,
-                        style: AppTypography.smallBold.copyWith(
-                          color: _sentidoInverso ? AppColors.onPrimary : AppColors.textSecondary,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          labelInverso,
+                          style: AppTypography.smallBold.copyWith(
+                            color: _sentidoInverso ? AppColors.onPrimary : AppColors.textSecondary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
