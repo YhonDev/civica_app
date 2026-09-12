@@ -11,6 +11,7 @@ import {
   UseInterceptors,
   BadRequestException,
   NotFoundException,
+  ConflictException,
   HttpException,
   InternalServerErrorException,
 } from '@nestjs/common';
@@ -88,6 +89,43 @@ export class SolicitudesController {
         `No existe un cobro válido asignado para el id ${targetCobroId}`,
       );
     }
+
+    const tipoNormalized = (dto.tipo || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+
+    const isRevision =
+      Boolean(dto.pagoId) ||
+      tipoNormalized.includes('revision') ||
+      tipoNormalized.includes('solicitud_revision');
+
+    if (isRevision) {
+      const activeRevision =
+        await this.solicitudRepo.findActiveRevisionByPagoOrCobro(
+          tenantId,
+          dto.pagoId,
+          targetCobroId,
+        );
+      if (activeRevision) {
+        throw new ConflictException(
+          'Ya existe una solicitud de revisión en proceso para este pago o cuota.',
+        );
+      }
+    } else {
+      const activeCobro = await this.solicitudRepo.findActiveCobroByResidente(
+        tenantId,
+        user.id,
+        user.residenteId ?? undefined,
+        targetCobroId,
+      );
+      if (activeCobro) {
+        throw new ConflictException(
+          'Ya tienes una solicitud de cobro activa en curso para tu domicilio.',
+        );
+      }
+    }
+
     const solicitud = Solicitud.crear(
       tenantId,
       user.id,
