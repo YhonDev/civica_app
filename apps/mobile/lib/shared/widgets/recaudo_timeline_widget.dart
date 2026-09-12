@@ -125,22 +125,26 @@ class RecaudoTimelineWidget extends StatelessWidget {
 
           // ── Sub-stats Row ──────────────────────────────
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildStatItem(
-                label: 'Abonado este mes',
-                val: AppCurrency.format(montoPagado),
-                color: AppColors.success,
+              Expanded(
+                child: _buildStatItem(
+                  label: 'Abonado este mes',
+                  val: AppCurrency.format(montoPagado),
+                  color: AppColors.success,
+                ),
               ),
               Container(
                 height: 24,
                 width: 1,
+                margin: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
                 color: AppColors.border.withValues(alpha: 0.5),
               ),
-              _buildStatItem(
-                label: 'Saldo pendiente',
-                val: AppCurrency.format(saldoPendiente),
-                color: saldoPendiente > 0 ? AppColors.error : AppColors.textSecondary,
+              Expanded(
+                child: _buildStatItem(
+                  label: 'Saldo pendiente',
+                  val: AppCurrency.format(saldoPendiente),
+                  color: saldoPendiente > 0 ? AppColors.error : AppColors.textSecondary,
+                ),
               ),
             ],
           ),
