@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../../core/format/app_currency.dart';
+import '../../../core/theme/app_breakpoints.dart';
 import '../../../core/theme/app_card_styles.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -99,7 +100,7 @@ class CobroCard extends StatelessWidget {
             padding: const EdgeInsets.all(AppSpacing.cardInnerPadding),
             child: LayoutBuilder(
               builder: (context, constraints) {
-                final isCompact = constraints.maxWidth < 350;
+                final isCompact = constraints.maxWidth < AppBreakpoints.compactCardContent;
                 final titleText = isCobrador
                     ? (ubicacion.isNotEmpty ? ubicacion : cobro.tituloCuota)
                     : cobro.tituloCuota;

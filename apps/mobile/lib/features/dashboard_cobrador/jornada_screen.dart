@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../core/format/app_currency.dart';
 import '../../features/auth/auth_cubit.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_breakpoints.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/lifecycle_observer_mixin.dart';
@@ -324,7 +325,7 @@ class _JornadaViewState extends State<_JornadaView> with LifecycleObserverMixin 
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final isCompact = constraints.maxWidth < 350;
+          final isCompact = constraints.maxWidth < AppBreakpoints.compactCardContent;
 
           final header = Row(
             children: [
@@ -489,10 +490,10 @@ class _JornadaViewState extends State<_JornadaView> with LifecycleObserverMixin 
       margin: const EdgeInsets.only(bottom: AppSpacing.lg),
       padding: const EdgeInsets.all(AppSpacing.cardPadding),
       decoration: BoxDecoration(
-        color: AppColors.cobradorCard,
+        color: AppColors.screenBackground,
         borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
         border: Border.all(
-          color: AppColors.warning.withValues(alpha: 0.4),
+          color: AppColors.primary.withValues(alpha: 0.3),
           width: 1.2,
         ),
         boxShadow: [
@@ -519,19 +520,19 @@ class _JornadaViewState extends State<_JornadaView> with LifecycleObserverMixin 
                       Container(
                         padding: const EdgeInsets.all(AppSpacing.sm),
                         decoration: BoxDecoration(
-                          color: AppColors.warning.withValues(alpha: 0.12),
+                          color: AppColors.primary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                         ),
-                        child: Icon(
+                        child: const Icon(
                           Icons.mark_email_unread_rounded,
-                          color: AppColors.warning,
+                          color: AppColors.primary,
                           size: 20,
                         ),
                       ),
                       const SizedBox(width: AppSpacing.sm),
                       Expanded(
                         child: Text(
-                          'Solicitudes en Domicilio',
+                          'Solicitudes',
                           style: AppTypography.subtitle.copyWith(
                             fontWeight: FontWeight.w700,
                           ),
@@ -546,7 +547,7 @@ class _JornadaViewState extends State<_JornadaView> with LifecycleObserverMixin 
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
                   decoration: BoxDecoration(
-                    color: AppColors.warning.withValues(alpha: 0.15),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                   ),
                   child: Row(
@@ -555,11 +556,11 @@ class _JornadaViewState extends State<_JornadaView> with LifecycleObserverMixin 
                       Text(
                         '${data.solicitudes.length} activas',
                         style: AppTypography.smallBold.copyWith(
-                          color: AppColors.warning,
+                          color: AppColors.primary,
                         ),
                       ),
                       const SizedBox(width: 4),
-                      Icon(Icons.arrow_forward_ios_rounded, size: 10, color: AppColors.warning),
+                      const Icon(Icons.arrow_forward_ios_rounded, size: 10, color: AppColors.primary),
                     ],
                   ),
                 ),

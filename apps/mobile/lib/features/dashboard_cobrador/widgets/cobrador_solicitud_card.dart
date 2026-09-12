@@ -49,7 +49,7 @@ class CobradorSolicitudCard extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: AppSpacing.sm),
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.sm),
         decoration: BoxDecoration(
-          color: AppColors.cobradorSubcard,
+          color: AppColors.card,
           borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
           border: Border.all(
             color: enCamino ? AppColors.info.withValues(alpha: 0.6) : AppColors.border,
@@ -178,7 +178,7 @@ class CobradorSolicitudCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: AppColors.cobradorSubcard,
+        color: AppColors.card,
         borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
         border: Border.all(
           color: enCamino ? AppColors.info.withValues(alpha: 0.6) : AppColors.border,

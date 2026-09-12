@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/theme/app_breakpoints.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
@@ -134,7 +135,7 @@ class _ComunidadHubCard extends StatelessWidget {
             padding: const EdgeInsets.all(AppSpacing.cardInnerPadding),
             child: LayoutBuilder(
               builder: (context, constraints) {
-                final isCompact = constraints.maxWidth < 350;
+                final isCompact = constraints.maxWidth < AppBreakpoints.compactCardContent;
                 if (isCompact) {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

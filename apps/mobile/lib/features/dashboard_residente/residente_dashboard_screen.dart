@@ -795,7 +795,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
         children: [
           LayoutBuilder(
             builder: (context, constraints) {
-              final isNarrow = constraints.maxWidth < 350;
+              final isNarrow = constraints.maxWidth < AppBreakpoints.compactCardContent;
               if (isNarrow) {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

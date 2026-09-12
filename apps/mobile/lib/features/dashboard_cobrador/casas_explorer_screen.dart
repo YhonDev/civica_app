@@ -286,13 +286,11 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
 
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.cobradorCard,
+        color: AppColors.screenBackground,
         borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
         border: Border.all(
-          color: count > 0
-              ? AppColors.warning.withValues(alpha: 0.5)
-              : AppColors.border,
-          width: count > 0 ? 1.4 : 1.0,
+          color: AppColors.primary.withValues(alpha: 0.3),
+          width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
@@ -318,21 +316,19 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                       Container(
                         padding: const EdgeInsets.all(AppSpacing.sm),
                         decoration: BoxDecoration(
-                          color: count > 0
-                              ? AppColors.warning.withValues(alpha: 0.12)
-                              : AppColors.surface,
+                          color: AppColors.primary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                         ),
-                        child: Icon(
+                        child: const Icon(
                           Icons.mark_email_unread_rounded,
-                          color: count > 0 ? AppColors.warning : AppColors.textSecondary,
+                          color: AppColors.primary,
                           size: 20,
                         ),
                       ),
                       const SizedBox(width: AppSpacing.sm),
                       Expanded(
                         child: Text(
-                          'Solicitudes de Cobro',
+                          'Solicitudes',
                           style: AppTypography.subtitle.copyWith(
                             fontWeight: FontWeight.w700,
                           ),
@@ -347,9 +343,7 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
                   decoration: BoxDecoration(
-                    color: count > 0
-                        ? AppColors.warning.withValues(alpha: 0.15)
-                        : AppColors.surface,
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                   ),
                   child: Row(
@@ -358,14 +352,14 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                       Text(
                         '$count activas',
                         style: AppTypography.smallBold.copyWith(
-                          color: count > 0 ? AppColors.warning : AppColors.textSecondary,
+                          color: AppColors.primary,
                         ),
                       ),
                       const SizedBox(width: 4),
-                      Icon(
+                      const Icon(
                         Icons.arrow_forward_ios_rounded,
                         size: 10,
-                        color: count > 0 ? AppColors.warning : AppColors.textSecondary,
+                        color: AppColors.primary,
                       ),
                     ],
                   ),
@@ -505,7 +499,7 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
     final bloqueado = _inicioDeRutaBloqueado(recorridoSeleccionado);
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isCompact = constraints.maxWidth < 350;
+        final isCompact = constraints.maxWidth < AppBreakpoints.compactCardContent;
 
         return Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1331,7 +1325,7 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
             padding: const EdgeInsets.all(AppSpacing.cardInnerPadding),
             child: LayoutBuilder(
               builder: (context, constraints) {
-                final isCompact = constraints.maxWidth < 350;
+                final isCompact = constraints.maxWidth < AppBreakpoints.compactCardContent;
 
                 if (isCompact) {
                   // ── MODO COMPACTO (< 350dp: Poco X7 Pro y pantallas angostas) ──
