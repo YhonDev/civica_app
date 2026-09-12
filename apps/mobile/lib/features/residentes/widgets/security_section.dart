@@ -363,6 +363,9 @@ class _SecuritySectionState extends State<SecuritySection> {
                   hintStyle: AppTypography.body.copyWith(color: AppColors.textDisabled),
                   isDense: true,
                   suffixIcon: IconButton(
+                    tooltip: _obscureCurrent
+                        ? 'Mostrar contraseña actual'
+                        : 'Ocultar contraseña actual',
                     icon: Icon(
                       _obscureCurrent ? Icons.visibility_off_outlined : Icons.visibility_outlined,
                       color: AppColors.textSecondary,
@@ -393,6 +396,9 @@ class _SecuritySectionState extends State<SecuritySection> {
                 hintStyle: AppTypography.label.copyWith(color: AppColors.textDisabled, fontWeight: FontWeight.w400),
                 isDense: true,
                 suffixIcon: IconButton(
+                  tooltip: _obscureNew
+                      ? 'Mostrar nueva contraseña'
+                      : 'Ocultar nueva contraseña',
                   icon: Icon(
                     _obscureNew ? Icons.visibility_off_outlined : Icons.visibility_outlined,
                     color: AppColors.textSecondary,
@@ -422,6 +428,9 @@ class _SecuritySectionState extends State<SecuritySection> {
                 hintStyle: AppTypography.label.copyWith(color: AppColors.textDisabled, fontWeight: FontWeight.w400),
                 isDense: true,
                 suffixIcon: IconButton(
+                  tooltip: _obscureConfirm
+                      ? 'Mostrar confirmación de contraseña'
+                      : 'Ocultar confirmación de contraseña',
                   icon: Icon(
                     _obscureConfirm ? Icons.visibility_off_outlined : Icons.visibility_outlined,
                     color: AppColors.textSecondary,
@@ -463,7 +472,7 @@ class _SecuritySectionState extends State<SecuritySection> {
                 FilledButton.icon(
                   onPressed: _isLoading ? null : _updatePassword,
                   icon: _isLoading
-                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.onPrimary))
                       : const Icon(Icons.save_rounded, size: 18),
                   label: const Text('Guardar'),
                   style: FilledButton.styleFrom(backgroundColor: AppColors.primary),

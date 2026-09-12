@@ -24,6 +24,15 @@ class AppBreakpoints {
   /// las alturas fijas que dependen de texto deben multiplicarse por
   /// `context.scaleForText` en lugar de quedarse fijas.
   static const double maxTextScale = 1.3;
+
+  /// Umbral de ancho interno útil de tarjeta (constraints.maxWidth dentro de padding).
+  /// Si el ancho interno es menor a este valor (< 315dp, típicamente pantallas
+  /// con ancho total < 370dp como Poco X7 Pro o teléfonos compactos de 320–350dp),
+  /// las tarjetas activan el modo compacto apilado para evitar desbordamientos.
+  /// En pantallas estándar o amplias (>= 370dp como Poco X3 Pro, Tablets, Web),
+  /// el ancho interno supera los 315dp y las tarjetas conservan su disposición
+  /// horizontal original espaciosa.
+  static const double compactCardContent = 315.0;
 }
 
 /// Convenience extensions on [BuildContext] for responsive layout checks.

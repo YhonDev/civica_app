@@ -115,6 +115,7 @@ class _EditarResidenteScreenState extends State<EditarResidenteScreen> {
       appBar: AppBar(
         title: const Text('Editar Residente'),
         leading: IconButton(
+          tooltip: 'Volver',
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.pop(),
         ),
@@ -282,7 +283,7 @@ class _EditarResidenteScreenState extends State<EditarResidenteScreen> {
               child: FilledButton(
                 onPressed: _isSaving ? null : _guardarCambios,
                 child: _isSaving 
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: AppColors.onPrimary, strokeWidth: 2))
                   : const Text('Guardar Cambios'),
               ),
             ),

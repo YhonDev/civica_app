@@ -141,4 +141,56 @@ void main() {
       expect(find.text('Reintentar'), findsOneWidget);
     });
   });
+
+  group('PropietarioDashboardScreen — solicitar cobro bottom sheet', () {
+    testWidgets('abre el bottom sheet con nota y botones al pulsar Solicitar Cobro', (tester) async {
+      mockAdapter.onGet('/solicitudes', []);
+      mockAdapter.onGet('/dashboard/residente', {
+        'saldo': 40000,
+        'status': 'PENDIENTE',
+        'proximoCobro': '2026-09-01T00:00:00.000Z',
+        'proximoPago': {
+          'total': 40000,
+          'desglose': [
+            {
+              'id': 'cobro-1',
+              'cobroId': 'cobro-1-0000-0000-000000000000',
+              'monto': 40000,
+              'fechaVencimiento': '2026-09-01T00:00:00.000Z',
+              'numeroCuota': 1,
+              'periodoInicio': '2026-09-01T00:00:00.000Z',
+              'estado': 'PENDIENTE',
+            }
+          ]
+        },
+        'tarifaActual': {'cuotaMensual': 40000, 'montoSegunFrecuencia': 40000, 'modalidad': 'MENSUAL'},
+        'movimientos': [],
+      });
+
+      await tester.pumpWidget(buildTestScreen());
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 3));
+
+      final solicitarBtn = find.text('Solicitar Cobro');
+      expect(solicitarBtn, findsOneWidget);
+
+      await tester.ensureVisible(solicitarBtn);
+      await tester.pumpAndSettle();
+
+      await tester.tap(solicitarBtn);
+      await tester.pumpAndSettle();
+
+      // Verifica que el bottom sheet está abierto
+      expect(find.text('¿Deseas que un cobrador pase a recolectar este pago a tu domicilio?'), findsOneWidget);
+      expect(find.text('Nota para el cobrador (Opcional)'), findsOneWidget);
+      expect(find.text('Enviar Solicitud'), findsOneWidget);
+      expect(find.text('Cancelar'), findsOneWidget);
+
+      // Cerrar modal
+      await tester.tap(find.text('Cancelar'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('¿Deseas que un cobrador pase a recolectar este pago a tu domicilio?'), findsNothing);
+    });
+  });
 }

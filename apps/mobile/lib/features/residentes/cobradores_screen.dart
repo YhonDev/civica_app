@@ -83,6 +83,7 @@ class _CobradoresScreenState extends State<CobradoresScreen> {
       appBar: AppBar(
         title: const Text('Gestión de Cobradores'),
         leading: IconButton(
+          tooltip: 'Volver',
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.pop(),
         ),
@@ -333,7 +334,7 @@ class _CobradoresScreenState extends State<CobradoresScreen> {
                 filter,
                 style: AppTypography.small.copyWith(
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                  color: isSelected ? Colors.white : AppColors.textPrimary,
+                  color: isSelected ? AppColors.onPrimary : AppColors.textPrimary,
                 ),
               ),
               selected: isSelected,
@@ -344,7 +345,7 @@ class _CobradoresScreenState extends State<CobradoresScreen> {
               },
               backgroundColor: AppColors.surface,
               selectedColor: AppColors.info,
-              checkmarkColor: Colors.white,
+              checkmarkColor: AppColors.onPrimary,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
                 side: BorderSide(

@@ -151,6 +151,7 @@ class _CobradorSolicitudesScreenState extends State<CobradorSolicitudesScreen> {
                       prefixIcon: Icon(Icons.search_rounded, size: 20, color: AppColors.textSecondary),
                       suffixIcon: _searchQuery.isNotEmpty
                           ? IconButton(
+                              tooltip: 'Limpiar búsqueda',
                               icon: const Icon(Icons.clear_rounded, size: 18),
                               onPressed: () {
                                 _searchCtrl.clear();
@@ -207,12 +208,14 @@ class _CobradorSolicitudesScreenState extends State<CobradorSolicitudesScreen> {
 
                 if (filtered.isEmpty) ...[
                   const SizedBox(height: AppSpacing.xl),
-                  EmptyState(
-                    title: totalCount == 0 ? 'Sin solicitudes activas' : 'Sin coincidencias',
-                    description: totalCount == 0
-                        ? 'No hay solicitudes de residentes pendientes por cobro en tu ruta.'
-                        : 'No encontramos solicitudes para el filtro seleccionado.',
-                    icon: Icons.mark_email_read_rounded,
+                  Center(
+                    child: EmptyState(
+                      title: totalCount == 0 ? 'Sin solicitudes activas' : 'Sin coincidencias',
+                      description: totalCount == 0
+                          ? 'No hay solicitudes de residentes pendientes por cobro en tu ruta.'
+                          : 'No encontramos solicitudes para el filtro seleccionado.',
+                      icon: Icons.mark_email_read_rounded,
+                    ),
                   ),
                 ] else if (context.isWideScreen) ...[
                   GridView.builder(
@@ -243,24 +246,28 @@ class _CobradorSolicitudesScreenState extends State<CobradorSolicitudesScreen> {
                     },
                   ),
                 ] else ...[
-                  ...filtered.asMap().entries.map((entry) {
-                    final index = entry.key;
-                    final solicitud = entry.value;
-                    final id = solicitud['id'] as String? ?? '';
+                  ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: filtered.length,
+                    itemBuilder: (context, index) {
+                      final solicitud = filtered[index];
+                      final id = solicitud['id'] as String? ?? '';
 
-                    return CobradorSolicitudCard(
-                      solicitud: solicitud,
-                      compact: false,
-                      ordenFifo: index + 1,
-                      onMarcarEnCamino: () {
-                        context.read<CasasCubit>().cambiarEstadoSolicitud(id, 'EN_CAMINO');
-                        try {
-                          context.read<DashboardCobradorCubit>().cambiarEstadoSolicitud(id, 'EN_CAMINO');
-                        } catch (_) {}
-                      },
-                      onCobrar: () => _abrirCobroBottomSheet(context, solicitud),
-                    );
-                  }),
+                      return CobradorSolicitudCard(
+                        solicitud: solicitud,
+                        compact: false,
+                        ordenFifo: index + 1,
+                        onMarcarEnCamino: () {
+                          context.read<CasasCubit>().cambiarEstadoSolicitud(id, 'EN_CAMINO');
+                          try {
+                            context.read<DashboardCobradorCubit>().cambiarEstadoSolicitud(id, 'EN_CAMINO');
+                          } catch (_) {}
+                        },
+                        onCobrar: () => _abrirCobroBottomSheet(context, solicitud),
+                      );
+                    },
+                  ),
                 ],
               ],
             ),

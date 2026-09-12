@@ -298,6 +298,7 @@ class _CasasScreenState extends State<CasasScreen> {
         appBar: AppBar(
           title: const Text('Gestión de Casas / Lotes'),
           leading: IconButton(
+            tooltip: 'Volver',
             icon: const Icon(Icons.arrow_back_rounded),
             onPressed: () => context.pop(),
           ),
@@ -311,6 +312,7 @@ class _CasasScreenState extends State<CasasScreen> {
         appBar: AppBar(
           title: const Text('Gestión de Casas / Lotes'),
           leading: IconButton(
+            tooltip: 'Volver',
             icon: const Icon(Icons.arrow_back_rounded),
             onPressed: () => context.pop(),
           ),
@@ -343,6 +345,7 @@ class _CasasScreenState extends State<CasasScreen> {
       appBar: AppBar(
         title: const Text('Gestión de Casas / Lotes'),
         leading: IconButton(
+          tooltip: 'Volver',
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.pop(),
         ),
@@ -403,7 +406,7 @@ class _CasasScreenState extends State<CasasScreen> {
                       },
                       selectedColor: AppColors.primary,
                       labelStyle: AppTypography.smallBold.copyWith(
-                        color: isSelected ? Colors.white : AppColors.textSecondary,
+                        color: isSelected ? AppColors.onPrimary : AppColors.textSecondary,
                       ),
                       backgroundColor: AppColors.surface,
                       shape: RoundedRectangleBorder(
@@ -482,7 +485,7 @@ class _CasasScreenState extends State<CasasScreen> {
                         },
                         selectedColor: AppColors.accentTeal,
                         labelStyle: AppTypography.smallBold.copyWith(
-                          color: isSelected ? Colors.white : AppColors.textSecondary,
+                          color: isSelected ? AppColors.onPrimary : AppColors.textSecondary,
                         ),
                         backgroundColor: AppColors.surface,
                         shape: RoundedRectangleBorder(

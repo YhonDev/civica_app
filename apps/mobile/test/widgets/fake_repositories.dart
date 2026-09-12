@@ -87,8 +87,11 @@ class FakeSolicitudesRepository extends SolicitudesRepository {
   FakeSolicitudesRepository({this.solicitudes = const [], this.shouldThrow = false});
 
   @override
-  Future<List<SolicitudData>> getSolicitudes() async {
+  Future<List<SolicitudData>> getSolicitudes({String? tipo}) async {
     if (shouldThrow) throw Exception('Fake error');
+    if (tipo != null) {
+      return solicitudes.where((s) => s.tipo.toLowerCase().contains(tipo.toLowerCase())).toList();
+    }
     return solicitudes;
   }
 

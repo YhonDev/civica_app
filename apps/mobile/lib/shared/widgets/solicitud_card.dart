@@ -164,11 +164,14 @@ class SolicitudCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        solicitud.displayTitle,
-                        style: AppCardStyles.listTitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          solicitud.displayTitle,
+                          style: AppCardStyles.listTitle,
+                          maxLines: 1,
+                        ),
                       ),
                       if (solicitud.displaySubtitulo != null) ...[
                         const SizedBox(height: 2),
@@ -185,11 +188,14 @@ class SolicitudCard extends StatelessWidget {
                           Icon(_statusIcon, color: _statusColor, size: 12),
                           const SizedBox(width: 4),
                           Flexible(
-                            child: Text(
-                              _statusLabel,
-                              style: AppCardStyles.statusText(_statusColor),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                _statusLabel,
+                                style: AppCardStyles.statusText(_statusColor),
+                                maxLines: 1,
+                              ),
                             ),
                           ),
                           if (solicitud.nroRecibo.isNotEmpty) ...[
@@ -202,12 +208,15 @@ class SolicitudCard extends StatelessWidget {
                             ),
                             const SizedBox(width: 6),
                             Flexible(
-                            child: Text(
-                              solicitud.nroRecibo,
-                              style: AppCardStyles.statusText(AppColors.primary),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  solicitud.nroRecibo,
+                                  style: AppCardStyles.statusText(AppColors.primary),
+                                  maxLines: 1,
+                                ),
+                              ),
                             ),
                           ],
                         ],

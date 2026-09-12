@@ -36,7 +36,7 @@ class CarteraResumenHeader extends StatelessWidget {
         border: Border.all(color: AppColors.border.withValues(alpha: 0.6)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: AppColors.shadow.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -125,13 +125,16 @@ class CarteraResumenHeader extends StatelessWidget {
               Icon(icon, size: 14, color: badgeColor),
               const SizedBox(width: 4),
               Expanded(
-                child: Text(
-                  label,
-                  style: AppTypography.smallBold.copyWith(
-                    color: badgeColor,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    label,
+                    style: AppTypography.smallBold.copyWith(
+                      color: badgeColor,
+                    ),
+                    maxLines: 1,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],

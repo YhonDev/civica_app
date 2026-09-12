@@ -49,7 +49,7 @@ class CobradorSolicitudCard extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: AppSpacing.sm),
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.sm),
         decoration: BoxDecoration(
-          color: AppColors.cobradorSubcard,
+          color: AppColors.card,
           borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
           border: Border.all(
             color: enCamino ? AppColors.info.withValues(alpha: 0.6) : AppColors.border,
@@ -81,13 +81,16 @@ class CobradorSolicitudCard extends StatelessWidget {
                   Row(
                     children: [
                       Flexible(
-                        child: Text(
-                          nombreResidente,
-                          style: AppTypography.caption.copyWith(
-                            fontWeight: FontWeight.w600,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            nombreResidente,
+                            style: AppTypography.caption.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                            maxLines: 1,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       const SizedBox(width: 6),
@@ -109,13 +112,16 @@ class CobradorSolicitudCard extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 1),
-                  Text(
-                    casaInfo,
-                    style: AppTypography.small.copyWith(
-                      color: AppColors.textSecondary,
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      casaInfo,
+                      style: AppTypography.small.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                      maxLines: 1,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
                   if (nota.isNotEmpty) ...[
                     const SizedBox(height: 1),
@@ -134,32 +140,34 @@ class CobradorSolicitudCard extends StatelessWidget {
             ),
             const SizedBox(width: AppSpacing.xs),
             // Action button: En camino or Cobrar
-            if (!enCamino)
-              OutlinedButton.icon(
-                onPressed: onMarcarEnCamino,
-                icon: const Icon(Icons.near_me_rounded, size: 12),
-                label: const Text('En camino', style: AppTypography.smallBold),
-                style: OutlinedButton.styleFrom(
-                  visualDensity: VisualDensity.compact,
-                  foregroundColor: AppColors.info,
-                  side: BorderSide(color: AppColors.info.withValues(alpha: 0.5)),
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusMd)),
-                ),
-              )
-            else
-              ElevatedButton.icon(
-                onPressed: onCobrar,
-                icon: const Icon(Icons.flash_on_rounded, size: 13),
-                label: const Text('Cobrar', style: AppTypography.smallBold),
-                style: ElevatedButton.styleFrom(
-                  visualDensity: VisualDensity.compact,
-                  backgroundColor: AppColors.success,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusMd)),
-                ),
-              ),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: !enCamino
+                  ? OutlinedButton.icon(
+                      onPressed: onMarcarEnCamino,
+                      icon: const Icon(Icons.near_me_rounded, size: 12),
+                      label: const Text('En camino', style: AppTypography.smallBold),
+                      style: OutlinedButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        foregroundColor: AppColors.info,
+                        side: BorderSide(color: AppColors.info.withValues(alpha: 0.5)),
+                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusMd)),
+                      ),
+                    )
+                  : ElevatedButton.icon(
+                      onPressed: onCobrar,
+                      icon: const Icon(Icons.flash_on_rounded, size: 13),
+                      label: const Text('Cobrar', style: AppTypography.smallBold),
+                      style: ElevatedButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        backgroundColor: AppColors.success,
+                        foregroundColor: AppColors.onPrimary,
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusMd)),
+                      ),
+                    ),
+            ),
           ],
         ),
       );
@@ -170,7 +178,7 @@ class CobradorSolicitudCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: AppColors.cobradorSubcard,
+        color: AppColors.card,
         borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
         border: Border.all(
           color: enCamino ? AppColors.info.withValues(alpha: 0.6) : AppColors.border,
@@ -178,7 +186,7 @@ class CobradorSolicitudCard extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
+            color: AppColors.shadow.withValues(alpha: 0.03),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -212,13 +220,16 @@ class CobradorSolicitudCard extends StatelessWidget {
                       ),
                     ],
                     Flexible(
-                      child: Text(
-                        nombreResidente,
-                        style: AppTypography.bodySmall.copyWith(
-                          fontWeight: FontWeight.w700,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          nombreResidente,
+                          style: AppTypography.bodySmall.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                          maxLines: 1,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
@@ -281,7 +292,7 @@ class CobradorSolicitudCard extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: isDark ? Colors.black.withValues(alpha: 0.2) : AppColors.screenBackground,
+                color: isDark ? AppColors.shadow.withValues(alpha: 0.2) : AppColors.screenBackground,
                 borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                 border: Border.all(color: AppColors.border.withValues(alpha: 0.6)),
               ),
@@ -301,48 +312,56 @@ class CobradorSolicitudCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-                ),
-                child: Text(
-                  AppCurrency.formatCOP(saldo.toInt()),
-                  style: AppTypography.caption.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.primary,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                  ),
+                  child: Text(
+                    AppCurrency.formatCOP(saldo.toInt()),
+                    style: AppTypography.caption.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primary,
+                    ),
                   ),
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
               // Botón de acción con tamaño óptimo
-              if (!enCamino)
-                OutlinedButton.icon(
-                  onPressed: onMarcarEnCamino,
-                  icon: const Icon(Icons.directions_car_rounded, size: 14),
-                  label: const Text('En camino'),
-                  style: OutlinedButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                    foregroundColor: AppColors.info,
-                    side: BorderSide(color: AppColors.info.withValues(alpha: 0.6)),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusMd)),
-                  ),
-                )
-              else
-                ElevatedButton.icon(
-                  onPressed: onCobrar,
-                  icon: const Icon(Icons.flash_on_rounded, size: 15),
-                  label: const Text('Cobrar'),
-                  style: ElevatedButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                    backgroundColor: AppColors.success,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusMd)),
-                  ),
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: !enCamino
+                      ? OutlinedButton.icon(
+                          onPressed: onMarcarEnCamino,
+                          icon: const Icon(Icons.directions_car_rounded, size: 14),
+                          label: const Text('En camino'),
+                          style: OutlinedButton.styleFrom(
+                            visualDensity: VisualDensity.compact,
+                            foregroundColor: AppColors.info,
+                            side: BorderSide(color: AppColors.info.withValues(alpha: 0.6)),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusMd)),
+                          ),
+                        )
+                      : ElevatedButton.icon(
+                          onPressed: onCobrar,
+                          icon: const Icon(Icons.flash_on_rounded, size: 15),
+                          label: const Text('Cobrar'),
+                          style: ElevatedButton.styleFrom(
+                            visualDensity: VisualDensity.compact,
+                            backgroundColor: AppColors.success,
+                            foregroundColor: AppColors.onPrimary,
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusMd)),
+                          ),
+                        ),
                 ),
+              ),
             ],
           ),
         ],

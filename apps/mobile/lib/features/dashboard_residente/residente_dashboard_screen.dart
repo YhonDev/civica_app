@@ -66,6 +66,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
   List<TimelineItem> _movimientos = [];
   List<SolicitudData> _solicitudesPendientes = [];
   Map<String, dynamic>? _tarifaActual;
+  int _dashboardRequestId = 0;
 
   final _solicitudesRepo = SolicitudesRepository();
 
@@ -84,6 +85,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
   }
 
   Future<void> _loadDashboardData({bool silent = false}) async {
+    final currentRequestId = ++_dashboardRequestId;
     if (!silent && LocalCacheRepository.instance.getCached('dashboard:residente') == null) {
       setState(() => _loading = true);
     }
@@ -96,6 +98,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
       },
       onData: (data, isStale) async {
         final listMisSolicitudes = await _solicitudesRepo.getMisSolicitudes();
+        if (currentRequestId != _dashboardRequestId) return;
         // Solo solicitudes activas/pendientes deben mostrarse en el widget y marcar cuotas como en proceso
         final listPendientes = listMisSolicitudes.where((s) =>
           s.estado == SolicitudEstado.pendiente ||
@@ -104,7 +107,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
           s.estado == SolicitudEstado.enRevision
         ).toList();
 
-        if (mounted) {
+        if (mounted && currentRequestId == _dashboardRequestId) {
           setState(() {
             _saldo = data['saldo'] as int;
 
@@ -334,7 +337,10 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
     return Scaffold(
       body: SafeArea(
         child: RefreshIndicator(
-          onRefresh: () => _loadDashboardData(silent: true),
+          onRefresh: () async {
+            LocalCacheRepository.instance.invalidate('dashboard:residente');
+            await _loadDashboardData(silent: true);
+          },
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.symmetric(
@@ -428,7 +434,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
             border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.03),
+                color: AppColors.shadow.withValues(alpha: 0.03),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -455,13 +461,14 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
   }
 
   Widget _buildDesgloseRow(dynamic item, int index) {
-    final rawFecha = item['fecha'] as String;
-    final fecha = _formatFecha(rawFecha) ?? 'Fecha no disp.';
+    final rawFecha = (item['fecha'] ?? item['fechaVencimiento'] ?? item['periodoInicio'] ?? '').toString();
+    final fecha = rawFecha.isNotEmpty ? (_formatFecha(rawFecha) ?? 'Fecha no disp.') : 'Fecha no disp.';
     final dateObj = DateTime.tryParse(rawFecha) ?? DateTime.now();
     final fallbackMonth = toBeginningOfSentenceCase(DateFormat('MMMM', 'es').format(dateObj));
     final monthName = item['mes'] ?? fallbackMonth;
 
-    final montoStr = AppCurrency.format(item['monto'] as int);
+    final monto = (item['monto'] as num?)?.toInt() ?? 0;
+    final montoStr = AppCurrency.format(monto);
     final numeroCuota = item['numeroPago'] ?? '${index + 1}';
 
     final bool isProgramada = item['cobroId'] == null;
@@ -585,47 +592,139 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
     if (user == null) return;
     final controller = TextEditingController();
 
-    final result = await showDialog<String>(
+    final result = await showModalBottomSheet<String>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Solicitar Cobro'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '¿Deseas que un cobrador pase a recolectar este pago?',
-              style: AppTypography.body,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            TextField(
-              controller: controller,
-              decoration: const InputDecoration(
-                labelText: 'Nota para el cobrador (Opcional)',
-                hintText: 'Ej. Pasen después de las 4 PM',
-              ),
-              maxLines: 2,
-            ),
-          ],
+      isScrollControlled: true,
+      backgroundColor: AppColors.card,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppSpacing.bottomSheetRadius),
         ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              FocusManager.instance.primaryFocus?.unfocus();
-              Navigator.of(dialogContext).pop();
-            },
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () {
-              FocusManager.instance.primaryFocus?.unfocus();
-              final text = controller.text;
-              Navigator.of(dialogContext).pop(text);
-            },
-            child: const Text('Enviar Solicitud'),
-          ),
-        ],
       ),
+      builder: (sheetContext) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.viewInsetsOf(sheetContext).bottom,
+          ),
+          child: SafeArea(
+            top: false,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.screenPadding,
+                vertical: AppSpacing.md,
+              ),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxWidth: AppBreakpoints.maxFormWidth,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 36,
+                          height: 4,
+                          margin: const EdgeInsets.only(bottom: AppSpacing.md),
+                          decoration: BoxDecoration(
+                            color: AppColors.border,
+                            borderRadius: BorderRadius.circular(AppSpacing.radiusProgress),
+                          ),
+                        ),
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Solicitar Cobro',
+                            style: AppTypography.subtitle.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          IconButton(
+                            tooltip: 'Cerrar',
+                            icon: const Icon(Icons.close_rounded, size: 20),
+                            onPressed: () {
+                              FocusManager.instance.primaryFocus?.unfocus();
+                              Navigator.of(sheetContext).pop();
+                            },
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        '¿Deseas que un cobrador pase a recolectar este pago a tu domicilio?',
+                        style: AppTypography.bodySmall.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      TextField(
+                        controller: controller,
+                        autofocus: false,
+                        decoration: InputDecoration(
+                          labelText: 'Nota para el cobrador (Opcional)',
+                          hintText: 'Ej. Pasen después de las 4 PM',
+                          filled: true,
+                          fillColor: AppColors.surface,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
+                            borderSide: BorderSide(color: AppColors.border),
+                          ),
+                        ),
+                        maxLines: 2,
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final isCompact = constraints.maxWidth < AppBreakpoints.compactCardContent;
+                          final cancelBtn = TextButton(
+                            onPressed: () {
+                              FocusManager.instance.primaryFocus?.unfocus();
+                              Navigator.of(sheetContext).pop();
+                            },
+                            child: const Text('Cancelar'),
+                          );
+                          final submitBtn = FilledButton(
+                            onPressed: () {
+                              FocusManager.instance.primaryFocus?.unfocus();
+                              final text = controller.text;
+                              Navigator.of(sheetContext).pop(text);
+                            },
+                            child: const Text('Enviar Solicitud'),
+                          );
+
+                          if (isCompact) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                submitBtn,
+                                const SizedBox(height: AppSpacing.xs),
+                                cancelBtn,
+                              ],
+                            );
+                          }
+
+                          return Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              cancelBtn,
+                              const SizedBox(width: AppSpacing.sm),
+                              submitBtn,
+                            ],
+                          );
+                        },
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -778,7 +877,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
         border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: AppColors.shadow.withValues(alpha: 0.04),
             blurRadius: 6,
             offset: const Offset(0, 1),
           ),
@@ -787,26 +886,58 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Últimos movimientos',
-                style: AppTypography.bodyMedium.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              InkWell(
-                onTap: () => context.push('/historial'),
-                child: Text(
-                  'Ver historial →',
-                  style: AppTypography.caption.copyWith(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.bold,
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isNarrow = constraints.maxWidth < AppBreakpoints.compactCardContent;
+              if (isNarrow) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Últimos movimientos',
+                      style: AppTypography.bodyMedium.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: InkWell(
+                        onTap: () => context.push('/historial'),
+                        child: Text(
+                          'Ver historial →',
+                          style: AppTypography.caption.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              }
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Últimos movimientos',
+                    style: AppTypography.bodyMedium.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-              ),
-            ],
+                  InkWell(
+                    onTap: () => context.push('/historial'),
+                    child: Text(
+                      'Ver historial →',
+                      style: AppTypography.caption.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
           const SizedBox(height: AppSpacing.md),
 

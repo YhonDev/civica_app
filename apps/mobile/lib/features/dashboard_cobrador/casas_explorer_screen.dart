@@ -159,10 +159,11 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
 
                   const SizedBox(height: AppSpacing.lg),
 
-                  // ── SECCIÓN 1: Solicitudes de Cobro ──────────────────────
-                  _buildSolicitudesSection(solicitudes, isDark),
-
-                  const SizedBox(height: AppSpacing.lg),
+                  // ── SECCIÓN 1: Solicitudes de Cobro (Global: sólo si hay activas) ─
+                  if (solicitudes.isNotEmpty) ...[
+                    _buildSolicitudesSection(solicitudes, isDark),
+                    const SizedBox(height: AppSpacing.lg),
+                  ],
 
                   // ── SECCIÓN 2: Recorrido Programado por Territorio ───────
                   _buildRecorridoHeader(etapas, solicitudes, recorridoSeleccionado),
@@ -278,21 +279,22 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
   // ── SECCIÓN 1: Solicitudes de Cobro ────────────────────────────────
 
   Widget _buildSolicitudesSection(List<Map<String, dynamic>> solicitudes, bool isDark) {
+    if (solicitudes.isEmpty) {
+      return const SizedBox.shrink();
+    }
     final count = solicitudes.length;
 
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.cobradorCard,
+        color: AppColors.screenBackground,
         borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
         border: Border.all(
-          color: count > 0
-              ? AppColors.warning.withValues(alpha: 0.5)
-              : AppColors.border,
-          width: count > 0 ? 1.4 : 1.0,
+          color: AppColors.primary.withValues(alpha: 0.3),
+          width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: AppColors.shadow.withValues(alpha: 0.04),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -314,21 +316,19 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                       Container(
                         padding: const EdgeInsets.all(AppSpacing.sm),
                         decoration: BoxDecoration(
-                          color: count > 0
-                              ? AppColors.warning.withValues(alpha: 0.12)
-                              : AppColors.surface,
+                          color: AppColors.primary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                         ),
-                        child: Icon(
+                        child: const Icon(
                           Icons.mark_email_unread_rounded,
-                          color: count > 0 ? AppColors.warning : AppColors.textSecondary,
+                          color: AppColors.primary,
                           size: 20,
                         ),
                       ),
                       const SizedBox(width: AppSpacing.sm),
                       Expanded(
                         child: Text(
-                          'Solicitudes de Cobro',
+                          'Solicitudes',
                           style: AppTypography.subtitle.copyWith(
                             fontWeight: FontWeight.w700,
                           ),
@@ -343,9 +343,7 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
                   decoration: BoxDecoration(
-                    color: count > 0
-                        ? AppColors.warning.withValues(alpha: 0.15)
-                        : AppColors.surface,
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                   ),
                   child: Row(
@@ -354,14 +352,14 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                       Text(
                         '$count activas',
                         style: AppTypography.smallBold.copyWith(
-                          color: count > 0 ? AppColors.warning : AppColors.textSecondary,
+                          color: AppColors.primary,
                         ),
                       ),
                       const SizedBox(width: 4),
-                      Icon(
+                      const Icon(
                         Icons.arrow_forward_ios_rounded,
                         size: 10,
-                        color: count > 0 ? AppColors.warning : AppColors.textSecondary,
+                        color: AppColors.primary,
                       ),
                     ],
                   ),
@@ -499,72 +497,92 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
     RecorridoExplorer? recorridoSeleccionado,
   ) {
     final bloqueado = _inicioDeRutaBloqueado(recorridoSeleccionado);
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Ruta a Cobrar',
-                style: AppTypography.bodyMedium.copyWith(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isCompact = constraints.maxWidth < AppBreakpoints.compactCardContent;
+
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Ruta a Cobrar',
+                    style: AppTypography.bodyMedium.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      _subtituloRuta(recorridoSeleccionado),
+                      style: AppTypography.caption.copyWith(
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 1,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            FilledButton.icon(
+              style: FilledButton.styleFrom(
+                backgroundColor:
+                    bloqueado ? AppColors.border : AppColors.primary,
+                padding: EdgeInsets.symmetric(
+                  horizontal: isCompact ? 8 : 10,
+                  vertical: isCompact ? 4 : 6,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+                ),
+              ),
+              onPressed: () {
+                if (bloqueado) {
+                  TopToast.show(
+                    context,
+                    type: ToastType.warning,
+                    title: 'Ruta no disponible',
+                    message:
+                        'La ruta de pendientes solo puede iniciarse el ${recorridoSeleccionado?.fechaLegible.toLowerCase() ?? 'sábado'}. La mora puedes cobrarla cualquier día.',
+                  );
+                  return;
+                }
+                AppFeedback.medium();
+                context.push(
+                  '/modo-inmersivo-ruta',
+                  extra: {
+                    'etapas': etapas,
+                    'solicitudes': solicitudes,
+                    'selectedEtapaId': _selectedEtapaId,
+                    'selectedEstadoFiltro': _filtroEstado,
+                    'sentidoInverso': _sentidoInverso,
+                    if (recorridoSeleccionado != null)
+                      'selectedRecorrido': {
+                        'numero': recorridoSeleccionado.numero,
+                        'fecha': recorridoSeleccionado.fecha,
+                        'fechaLegible': recorridoSeleccionado.fechaLegible,
+                      },
+                  },
+                );
+              },
+              icon: Icon(Icons.play_arrow_rounded, size: isCompact ? 14 : 16),
+              label: Text(
+                'Iniciar Recorrido',
+                style: (isCompact ? AppTypography.micro : AppTypography.caption).copyWith(
+                  color: AppColors.onPrimary,
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              Text(
-                _subtituloRuta(recorridoSeleccionado),
-                style: AppTypography.caption.copyWith(
-                  color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-        FilledButton.icon(
-          style: FilledButton.styleFrom(
-            backgroundColor:
-                bloqueado ? AppColors.border : AppColors.primary,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusLg)),
-          ),
-          onPressed: () {
-            if (bloqueado) {
-              TopToast.show(
-                context,
-                type: ToastType.warning,
-                title: 'Ruta no disponible',
-                message:
-                    'La ruta de pendientes solo puede iniciarse el ${recorridoSeleccionado?.fechaLegible.toLowerCase() ?? 'sábado'}. La mora puedes cobrarla cualquier día.',
-              );
-              return;
-            }
-            AppFeedback.medium();
-            context.push(
-              '/modo-inmersivo-ruta',
-              extra: {
-                'etapas': etapas,
-                'solicitudes': solicitudes,
-                'selectedEtapaId': _selectedEtapaId,
-                'selectedEstadoFiltro': _filtroEstado,
-                'sentidoInverso': _sentidoInverso,
-                if (recorridoSeleccionado != null)
-                  'selectedRecorrido': {
-                    'numero': recorridoSeleccionado.numero,
-                    'fecha': recorridoSeleccionado.fecha,
-                    'fechaLegible': recorridoSeleccionado.fechaLegible,
-                  },
-              },
-            );
-          },
-          icon: const Icon(Icons.play_arrow_rounded, size: 18),
-          label: const Text(
-            'Iniciar Recorrido',
-            style: AppTypography.label,
-          ),
-        ),
-      ],
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -665,7 +683,7 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
               },
               selectedColor: AppColors.primary,
               labelStyle: AppTypography.label.copyWith(
-                color: isSelected ? Colors.white : AppColors.textSecondary,
+                color: isSelected ? AppColors.onPrimary : AppColors.textSecondary,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
               ),
               backgroundColor: AppColors.surface,
@@ -718,7 +736,7 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
               },
               selectedColor: AppColors.primary,
               labelStyle: AppTypography.label.copyWith(
-                color: _selectedEtapaId == 'TODAS' ? Colors.white : AppColors.textSecondary,
+                color: _selectedEtapaId == 'TODAS' ? AppColors.onPrimary : AppColors.textSecondary,
                 fontWeight: _selectedEtapaId == 'TODAS' ? FontWeight.w700 : FontWeight.w500,
               ),
               backgroundColor: AppColors.surface,
@@ -749,7 +767,7 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                 },
                 selectedColor: AppColors.primary,
                 labelStyle: AppTypography.label.copyWith(
-                  color: isSelected ? Colors.white : AppColors.textSecondary,
+                  color: isSelected ? AppColors.onPrimary : AppColors.textSecondary,
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 ),
                 backgroundColor: AppColors.surface,
@@ -869,16 +887,20 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                     Icon(
                       Icons.arrow_downward_rounded,
                       size: 15,
-                      color: !_sentidoInverso ? Colors.white : AppColors.textSecondary,
+                      color: !_sentidoInverso ? AppColors.onPrimary : AppColors.textSecondary,
                     ),
                     const SizedBox(width: 4),
                     Flexible(
-                      child: Text(
-                        labelDirecto,
-                        style: AppTypography.smallBold.copyWith(
-                          color: !_sentidoInverso ? Colors.white : AppColors.textSecondary,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          labelDirecto,
+                          style: AppTypography.smallBold.copyWith(
+                            color: !_sentidoInverso ? AppColors.onPrimary : AppColors.textSecondary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
@@ -908,16 +930,20 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
                     Icon(
                       Icons.arrow_upward_rounded,
                       size: 15,
-                      color: _sentidoInverso ? Colors.white : AppColors.textSecondary,
+                      color: _sentidoInverso ? AppColors.onPrimary : AppColors.textSecondary,
                     ),
                     const SizedBox(width: 4),
                     Flexible(
-                      child: Text(
-                        labelInverso,
-                        style: AppTypography.smallBold.copyWith(
-                          color: _sentidoInverso ? Colors.white : AppColors.textSecondary,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          labelInverso,
+                          style: AppTypography.smallBold.copyWith(
+                            color: _sentidoInverso ? AppColors.onPrimary : AppColors.textSecondary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
@@ -954,7 +980,7 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
               },
               selectedColor: AppColors.primary,
               labelStyle: AppTypography.label.copyWith(
-                color: isSelected ? Colors.white : AppColors.textSecondary,
+                color: isSelected ? AppColors.onPrimary : AppColors.textSecondary,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
               ),
               backgroundColor: AppColors.surface,
@@ -1297,130 +1323,278 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
           },
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.cardInnerPadding),
-            child: Row(
-              children: [
-                // Semáforo Indicator
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
-                  ),
-                  child: Center(child: Text(emoji, style: AppTypography.emoji)),
-                ),
-                const SizedBox(width: AppSpacing.md),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isCompact = constraints.maxWidth < AppBreakpoints.compactCardContent;
 
-                // Info de Casa y Residente — 4 filas estructuradas
-                Expanded(
-                  child: Column(
+                if (isCompact) {
+                  // ── MODO COMPACTO (< 350dp: Poco X7 Pro y pantallas angostas) ──
+                  return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Fila 1: Etapa badge + Manzana — Casa
+                      // 1. Fila de Cabecera: Semáforo + Dirección (Etapa + Mz/Casa) + Badge de Estado
                       Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            margin: const EdgeInsets.only(right: 6),
+                            width: 32,
+                            height: 32,
                             decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                              color: color.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                             ),
-                            child: Text(
-                              etapaNombre,
-                              style: AppTypography.micro.copyWith(
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.w800,
-                              ),
+                            child: Center(child: Text(emoji, style: AppTypography.emoji)),
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          Expanded(
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  margin: const EdgeInsets.only(right: 6),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                                  ),
+                                  child: Text(
+                                    etapaNombre,
+                                    style: AppTypography.micro.copyWith(
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    alignment: Alignment.centerLeft,
+                                    child: Text(
+                                      direccionCompleta,
+                                      style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w700),
+                                      maxLines: 1,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          Expanded(
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: color.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+                            ),
                             child: Text(
-                              direccionCompleta,
-                              style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w700),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                              label,
+                              style: AppTypography.small.copyWith(
+                                color: color,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 2),
-                      // Fila 2: Residente
-                      Text(
-                        casa.residenteNombre,
-                        style: AppTypography.small.copyWith(
-                          color: AppColors.textSecondary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      // Fila 3: Cuota (según el sábado seleccionado o mora)
-                      if (cuotaInfo.nombre != null && cuotaInfo.nombre!.isNotEmpty) ...[
-                        const SizedBox(height: 3),
-                        Text(
-                          cuotaInfo.nombre!,
-                          style: AppTypography.small.copyWith(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w700,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                      // Fila 4: Fecha de vencimiento (según el sábado seleccionado o mora)
-                      if (cuotaInfo.fechaVencimiento != null &&
-                          cuotaInfo.fechaVencimiento!.isNotEmpty) ...[
-                        const SizedBox(height: 2),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
+                      const SizedBox(height: 5),
+
+                      // 2, 3 y 4. Residente, Cuota y Pie alineados bajo la dirección (tras el semáforo de 32dp + 8dp)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 40),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(Icons.event_rounded, size: 12, color: AppColors.textSecondary),
-                            const SizedBox(width: 3),
+                            // 2. Residente
                             Text(
-                              'Vence: ${_formatFechaCorta(cuotaInfo.fechaVencimiento)}',
+                              casa.residenteNombre,
                               style: AppTypography.small.copyWith(
                                 color: AppColors.textSecondary,
                                 fontWeight: FontWeight.w600,
                               ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+
+                            // 3. Cuota
+                            if (cuotaInfo.nombre != null && cuotaInfo.nombre!.isNotEmpty) ...[
+                              const SizedBox(height: 3),
+                              Text(
+                                cuotaInfo.nombre!,
+                                style: AppTypography.small.copyWith(
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+
+                            // 4. Pie de tarjeta: Vence a la izquierda, Saldo a la derecha
+                            const SizedBox(height: 4),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                if (cuotaInfo.fechaVencimiento != null &&
+                                    cuotaInfo.fechaVencimiento!.isNotEmpty)
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.event_rounded, size: 13, color: AppColors.textSecondary),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'Vence: ${_formatFechaCorta(cuotaInfo.fechaVencimiento)}',
+                                        style: AppTypography.small.copyWith(
+                                          color: AppColors.textSecondary,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                else
+                                  const SizedBox.shrink(),
+                                if (casa.saldo > 0)
+                                  Text(
+                                    _formatPesos(casa.saldo),
+                                    style: AppTypography.bodyMedium.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                              ],
                             ),
                           ],
                         ),
-                      ],
+                      ),
                     ],
-                  ),
-                ),
+                  );
+                } else {
+                  // ── MODO ESTÁNDAR (>= 350dp: Poco X3 Pro, Tablets, Web) ──
+                  return Row(
+                    children: [
+                      // Semáforo Indicator
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: color.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
+                        ),
+                        child: Center(child: Text(emoji, style: AppTypography.emoji)),
+                      ),
+                      const SizedBox(width: AppSpacing.md),
 
-                // Estado + Saldo
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    if (casa.saldo > 0)
-                      Text(
-                        _formatPesos(casa.saldo),
-                        style: AppTypography.bodyMedium.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
+                      // Info de Casa y Residente — 4 filas estructuradas
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Fila 1: Etapa badge + Manzana — Casa
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  margin: const EdgeInsets.only(right: 6),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                                  ),
+                                  child: Text(
+                                    etapaNombre,
+                                    style: AppTypography.micro.copyWith(
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Text(
+                                    direccionCompleta,
+                                    style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w700),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 2),
+                            // Fila 2: Residente
+                            Text(
+                              casa.residenteNombre,
+                              style: AppTypography.small.copyWith(
+                                color: AppColors.textSecondary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            // Fila 3: Cuota (según el sábado seleccionado o mora)
+                            if (cuotaInfo.nombre != null && cuotaInfo.nombre!.isNotEmpty) ...[
+                              const SizedBox(height: 3),
+                              Text(
+                                cuotaInfo.nombre!,
+                                style: AppTypography.small.copyWith(
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                            // Fila 4: Fecha de vencimiento (según el sábado seleccionado o mora)
+                            if (cuotaInfo.fechaVencimiento != null &&
+                                cuotaInfo.fechaVencimiento!.isNotEmpty) ...[
+                              const SizedBox(height: 2),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.event_rounded, size: 12, color: AppColors.textSecondary),
+                                  const SizedBox(width: 3),
+                                  Text(
+                                    'Vence: ${_formatFechaCorta(cuotaInfo.fechaVencimiento)}',
+                                    style: AppTypography.small.copyWith(
+                                      color: AppColors.textSecondary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ],
                         ),
                       ),
-                    const SizedBox(height: 3),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: color.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+
+                      // Estado + Saldo
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          if (casa.saldo > 0)
+                            Text(
+                              _formatPesos(casa.saldo),
+                              style: AppTypography.bodyMedium.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                          const SizedBox(height: 3),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: color.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+                            ),
+                            child: Text(
+                              label,
+                              style: AppTypography.small.copyWith(
+                                color: color,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      child: Text(
-                        label,
-                        style: AppTypography.small.copyWith(
-                          color: color,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  );
+                }
+              },
             ),
           ),
         ),

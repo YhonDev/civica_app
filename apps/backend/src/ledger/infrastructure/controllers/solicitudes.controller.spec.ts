@@ -50,6 +50,8 @@ describe('SolicitudesController', () => {
       findByTenant: jest.fn(),
       findPendingByTenant: jest.fn(),
       findById: jest.fn(),
+      findActiveRevisionByPagoOrCobro: jest.fn().mockResolvedValue(null),
+      findActiveCobroByResidente: jest.fn().mockResolvedValue(null),
       delete: jest.fn(),
     };
 
@@ -158,18 +160,59 @@ describe('SolicitudesController', () => {
       expect(saved.tenantId).toBe('tenant-123');
       expect(saved.usuarioId).toBe('usr-1');
     });
+
+    it('should throw ConflictException if active revision already exists', async () => {
+      mockCobroRepo.findById.mockResolvedValue({ id: 'cobro-1' });
+      mockSolicitudRepo.findActiveRevisionByPagoOrCobro.mockResolvedValue({ id: 'existing-sr' });
+
+      await expect(
+        controller.crear(
+          { cobroId: 'cobro-1', pagoId: 'pago-1', tipo: 'Revisión de pago', descripcion: 'Doble' },
+          mockUser,
+          'tenant-123',
+        ),
+      ).rejects.toThrow(/ya existe una solicitud de revisión/i);
+    });
+
+    it('should throw ConflictException if active cobro already exists for resident', async () => {
+      mockCobroRepo.findById.mockResolvedValue({ id: 'cobro-1' });
+      mockSolicitudRepo.findActiveCobroByResidente.mockResolvedValue({ id: 'existing-sc' });
+
+      await expect(
+        controller.crear(
+          { cobroId: 'cobro-1', tipo: 'Solicitud de cobro', descripcion: 'Doble' },
+          mockUser,
+          'tenant-123',
+        ),
+      ).rejects.toThrow(/ya tienes una solicitud de cobro activa/i);
+    });
+
+    it('should assign SR prefix for accented Revisión de pago', async () => {
+      mockCobroRepo.findById.mockResolvedValue({ id: 'cobro-1' });
+      mockSolicitudRepo.findActiveRevisionByPagoOrCobro.mockResolvedValue(null);
+
+      await controller.crear(
+        { cobroId: 'cobro-1', tipo: 'Revisión de pago', descripcion: 'Test tilde' },
+        mockUser,
+        'tenant-123',
+      );
+
+      const saved = mockSolicitudRepo.save.mock.calls[0][0];
+      expect(saved.nroRecibo).toMatch(/^SR-\d{6}$/);
+    });
   });
 
   describe('listarAdmin', () => {
-    it('should call findByTenant with tenant id and optional pagination', async () => {
+    it('should call findByTenant with tenant id and optional pagination and tipo', async () => {
       mockSolicitudRepo.findByTenant.mockResolvedValue([]);
 
-      await controller.listarAdmin('tenant-123', 50, 0);
+      await controller.listarAdmin('tenant-123', 50, 0, 'revision');
 
       expect(mockSolicitudRepo.findByTenant).toHaveBeenCalledWith(
         'tenant-123',
         50,
         0,
+        'revision',
       );
     });
   });

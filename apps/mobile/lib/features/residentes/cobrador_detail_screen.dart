@@ -112,6 +112,7 @@ class _CobradorDetailScreenState extends State<CobradorDetailScreen> {
       appBar: AppBar(
         title: const Text('Detalle del Cobrador'),
         leading: IconButton(
+          tooltip: 'Volver',
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.pop(),
         ),
@@ -275,10 +276,10 @@ class _CobradorDetailScreenState extends State<CobradorDetailScreen> {
                         ),
                       ),
                       onPressed: _isDeleting ? null : () => _confirmarEliminar(),
-                      icon: const Icon(Icons.delete_outline_rounded, color: Colors.white),
+                      icon: const Icon(Icons.delete_outline_rounded, color: AppColors.onPrimary),
                       label: const Text(
                         'Eliminar Cobrador',
-                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                        style: TextStyle(color: AppColors.onPrimary, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),

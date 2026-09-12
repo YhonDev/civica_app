@@ -77,7 +77,7 @@ class CarteraConsolidadaScreen extends StatelessWidget {
                               border: Border.all(color: AppColors.border.withValues(alpha: 0.6)),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.04),
+                                  color: AppColors.shadow.withValues(alpha: 0.04),
                                   blurRadius: 10,
                                   offset: const Offset(0, 4),
                                 ),
@@ -269,7 +269,7 @@ class CarteraConsolidadaScreen extends StatelessWidget {
       label: Text(
         label,
         style: AppTypography.label.copyWith(
-          color: isSelected ? Colors.white : AppColors.textPrimary,
+          color: isSelected ? AppColors.onPrimary : AppColors.textPrimary,
           fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
         ),
       ),
@@ -304,7 +304,7 @@ class CarteraConsolidadaScreen extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.elevatedCard : Colors.white,
+        color: AppColors.elevatedCard,
         borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
         border: Border.all(
           color: cardBorderColor,
@@ -312,7 +312,7 @@ class CarteraConsolidadaScreen extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+            color: AppColors.shadow.withValues(alpha: isDark ? 0.2 : 0.04),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),

@@ -258,7 +258,7 @@ class _TopToastWidgetState extends State<_TopToastWidget>
     final cardBgColor = AppColors.toastSurface;
     final titleTextColor = AppColors.toastTitle;
     final bodyTextColor = AppColors.toastBody;
-    final shadowColor = isDark ? Colors.black.withValues(alpha: 0.5) : Colors.black.withValues(alpha: 0.12);
+    final shadowColor = isDark ? AppColors.shadow.withValues(alpha: 0.5) : AppColors.shadow.withValues(alpha: 0.12);
     final borderColor = isDark ? iconColor.withValues(alpha: 0.35) : iconColor.withValues(alpha: 0.25);
 
     return Positioned(
@@ -275,9 +275,15 @@ class _TopToastWidgetState extends State<_TopToastWidget>
             bottom: false,
             child: Material(
               color: Colors.transparent,
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: _dismissAnimated,
+              child: Semantics(
+                liveRegion: true,
+                focused: true,
+                label: widget.title != null
+                    ? '${widget.title}: ${widget.message}'
+                    : widget.message,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: _dismissAnimated,
                 onVerticalDragUpdate: (details) {
                   setState(() {
                     // Solo sigue el dedo hacia arriba (gesto natural para un
@@ -376,6 +382,7 @@ class _TopToastWidgetState extends State<_TopToastWidget>
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 }

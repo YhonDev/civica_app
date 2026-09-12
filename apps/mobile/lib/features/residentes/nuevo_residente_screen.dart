@@ -154,6 +154,7 @@ class _NuevoResidenteScreenState extends State<NuevoResidenteScreen> {
       appBar: AppBar(
         title: const Text('Nuevo Residente'),
         leading: IconButton(
+          tooltip: 'Volver',
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.pop(),
         ),
@@ -307,7 +308,7 @@ class _NuevoResidenteScreenState extends State<NuevoResidenteScreen> {
               child: FilledButton(
                 onPressed: _isSaving ? null : _guardar,
                 child: _isSaving 
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: AppColors.onPrimary, strokeWidth: 2))
                   : const Text('Crear Residente'),
               ),
             ),

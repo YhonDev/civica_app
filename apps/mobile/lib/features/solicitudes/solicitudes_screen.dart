@@ -11,6 +11,7 @@ import '../../shared/widgets/solicitud_bottom_sheet.dart';
 import '../../shared/widgets/mini_stat_card.dart';
 import '../../shared/widgets/empty_state.dart';
 import '../../features/auth/auth_cubit.dart';
+import '../../core/network/local_cache_repository.dart';
 import 'solicitudes_repository.dart';
 
 /// Pantalla de Solicitudes — Módulo completo.
@@ -113,7 +114,9 @@ class _SolicitudesScreenState extends State<SolicitudesScreen>
 
   Future<void> _loadSolicitudes() async {
     try {
-      final list = await _repo.getSolicitudes();
+      final list = _isAdmin
+          ? await _repo.getSolicitudes(tipo: 'revision')
+          : await _repo.getMisSolicitudes();
       if (mounted) {
         setState(() {
           _solicitudes = list;
@@ -152,7 +155,8 @@ class _SolicitudesScreenState extends State<SolicitudesScreen>
   int get _pendientes => _solicitudes
       .where((s) =>
           s.estado == SolicitudEstado.pendiente ||
-          s.estado == SolicitudEstado.enRevision)
+          s.estado == SolicitudEstado.enRevision ||
+          s.estado == SolicitudEstado.enEspera)
       .length;
   int get _resueltas =>
       _solicitudes.where((s) => s.estado == SolicitudEstado.resuelta).length;
@@ -165,7 +169,8 @@ class _SolicitudesScreenState extends State<SolicitudesScreen>
         return _solicitudes
             .where((s) =>
                 s.estado == SolicitudEstado.pendiente ||
-                s.estado == SolicitudEstado.enRevision)
+                s.estado == SolicitudEstado.enRevision ||
+                s.estado == SolicitudEstado.enEspera)
             .toList();
       case 'RESUELTAS':
         return _solicitudes
@@ -200,6 +205,7 @@ class _SolicitudesScreenState extends State<SolicitudesScreen>
       appBar: AppBar(
         title: Text(_isAdmin ? 'Gestión de Solicitudes' : 'Mis Solicitudes'),
         leading: IconButton(
+          tooltip: 'Volver',
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.pop(),
         ),
@@ -284,11 +290,13 @@ class _SolicitudesScreenState extends State<SolicitudesScreen>
                           index: 2,
                           child: const Padding(
                             padding: EdgeInsets.only(top: AppSpacing.xl),
-                            child: EmptyState(
-                              icon: Icons.description_outlined,
-                              title: 'No hay solicitudes',
-                              description:
-                                  'No se encontraron solicitudes con este filtro.',
+                            child: Center(
+                              child: EmptyState(
+                                icon: Icons.description_outlined,
+                                title: 'No hay solicitudes',
+                                description:
+                                    'No se encontraron solicitudes con este filtro.',
+                              ),
                             ),
                           ),
                         ),
@@ -355,7 +363,7 @@ class _SolicitudesScreenState extends State<SolicitudesScreen>
                 if (result == true) _loadSolicitudes();
               },
               backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
+              foregroundColor: AppColors.onPrimary,
               shape: const CircleBorder(),
               child: const Icon(Icons.add_rounded, size: 24),
             ),
@@ -376,7 +384,7 @@ class _SolicitudesScreenState extends State<SolicitudesScreen>
       },
       selectedColor: AppColors.primary,
       labelStyle: TextStyle(
-        color: isSelected ? Colors.white : AppColors.textPrimary,
+        color: isSelected ? AppColors.onPrimary : AppColors.textPrimary,
         fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
       ),
       backgroundColor: AppColors.surface,
@@ -404,6 +412,9 @@ class _SolicitudesScreenState extends State<SolicitudesScreen>
           : null,
       onDelete: () async {
         await _repo.eliminarSolicitud(solicitud.id);
+        LocalCacheRepository.instance.invalidate('dashboard:residente');
+        LocalCacheRepository.instance.invalidate('dashboard:cobrador');
+        LocalCacheRepository.instance.invalidate('dashboard:administrador');
         await _loadSolicitudes();
       },
       onActionCompleted: () => _loadSolicitudes(),

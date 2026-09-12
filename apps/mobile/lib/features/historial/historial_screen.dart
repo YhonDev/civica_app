@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/format/app_currency.dart';
 import 'package:intl/intl.dart';
 
@@ -107,7 +108,7 @@ class _HistorialScreenState extends State<HistorialScreen> {
         return 0;
       });
 
-      final listSolicitudes = await _solicitudesRepo.getSolicitudes();
+      final listSolicitudes = await _solicitudesRepo.getMisSolicitudes();
 
       if (mounted) {
         setState(() {
@@ -200,32 +201,40 @@ class _HistorialScreenState extends State<HistorialScreen> {
                                     );
                                   },
                                   child: Padding(
-                                    padding: const EdgeInsets.all(AppSpacing.md),
-                                    child: Row(
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.all(10),
-                                          decoration: BoxDecoration(
-                                            color: AppColors.success.withValues(alpha: 0.12),
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: Icon(
-                                            Icons.check_circle_rounded,
-                                            color: AppColors.success,
-                                            size: 22,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 14),
-                                        Expanded(
-                                          child: Column(
+                                    padding: const EdgeInsets.all(AppSpacing.cardInnerPadding),
+                                    child: LayoutBuilder(
+                                      builder: (context, constraints) {
+                                        final isCompact = constraints.maxWidth < AppBreakpoints.compactCardContent;
+
+                                        if (isCompact) {
+                                          return Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
+                                              // Fila 1: Check en la esquina superior + Manzana/Casa + Badge vía solicitud
                                               Row(
                                                 children: [
+                                                  Container(
+                                                    padding: const EdgeInsets.all(AppSpacing.xs),
+                                                    decoration: BoxDecoration(
+                                                      color: AppColors.success.withValues(alpha: 0.12),
+                                                      shape: BoxShape.circle,
+                                                    ),
+                                                    child: const Icon(
+                                                      Icons.check_circle_rounded,
+                                                      color: AppColors.success,
+                                                      size: 22,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: AppSpacing.sm),
                                                   Expanded(
-                                                    child: Text(
-                                                      '$manzana $casa',
-                                                      style: AppTypography.cardTitle,
+                                                    child: FittedBox(
+                                                      fit: BoxFit.scaleDown,
+                                                      alignment: Alignment.centerLeft,
+                                                      child: Text(
+                                                        '$manzana $casa',
+                                                        style: AppTypography.cardTitle,
+                                                        maxLines: 1,
+                                                      ),
                                                     ),
                                                   ),
                                                   if (esViaSolicitud)
@@ -247,32 +256,156 @@ class _HistorialScreenState extends State<HistorialScreen> {
                                                     ),
                                                 ],
                                               ),
-                                              const SizedBox(height: 2),
-                                              Text(
-                                                residente,
-                                                style: AppTypography.caption.copyWith(
-                                                  color: AppColors.textSecondary,
+                                              const SizedBox(height: AppSpacing.xs),
+
+                                              // Fila 2: Nombre del residente
+                                              Padding(
+                                                padding: const EdgeInsets.only(left: 38),
+                                                child: Text(
+                                                  residente,
+                                                  style: AppTypography.bodySmall.copyWith(
+                                                    color: AppColors.textPrimary,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
                                                 ),
                                               ),
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                '$dateFormatted • $nroRecibo',
-                                                style: AppTypography.small.copyWith(
-                                                  color: AppColors.textSecondary.withValues(alpha: 0.8),
+                                              const SizedBox(height: AppSpacing.xs),
+
+                                              // Fila 3: Fecha y hora
+                                              Padding(
+                                                padding: const EdgeInsets.only(left: 38),
+                                                child: Row(
+                                                  children: [
+                                                    Icon(
+                                                      Icons.calendar_today_outlined,
+                                                      size: 13,
+                                                      color: AppColors.textSecondary.withValues(alpha: 0.7),
+                                                    ),
+                                                    const SizedBox(width: AppSpacing.xs),
+                                                    Expanded(
+                                                      child: Text(
+                                                        dateFormatted,
+                                                        style: AppTypography.small.copyWith(
+                                                          color: AppColors.textSecondary.withValues(alpha: 0.8),
+                                                          fontWeight: FontWeight.w500,
+                                                        ),
+                                                        maxLines: 1,
+                                                        overflow: TextOverflow.ellipsis,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              const SizedBox(height: AppSpacing.xs),
+
+                                              // Fila 4: Monto destacado abajo con presencia
+                                              Padding(
+                                                padding: const EdgeInsets.only(left: 38),
+                                                child: Text(
+                                                  AppCurrency.format(monto),
+                                                  style: AppTypography.title.copyWith(
+                                                    fontWeight: FontWeight.w900,
+                                                    color: AppColors.success,
+                                                  ),
                                                 ),
                                               ),
                                             ],
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          AppCurrency.format(monto),
-                                          style: AppTypography.cardValue.copyWith(
-                                            fontWeight: FontWeight.w900,
-                                            color: AppColors.success,
-                                          ),
-                                        ),
-                                      ],
+                                          );
+                                        }
+
+                                        // ── MODO ESTÁNDAR (Poco X3 Pro, Tablets, Web >= 315dp) ──
+                                        return Row(
+                                          crossAxisAlignment: CrossAxisAlignment.center,
+                                          children: [
+                                            Container(
+                                              padding: const EdgeInsets.all(AppSpacing.sm),
+                                              decoration: BoxDecoration(
+                                                color: AppColors.success.withValues(alpha: 0.12),
+                                                shape: BoxShape.circle,
+                                              ),
+                                              child: const Icon(
+                                                Icons.check_circle_rounded,
+                                                color: AppColors.success,
+                                                size: 24,
+                                              ),
+                                            ),
+                                            const SizedBox(width: AppSpacing.md),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Row(
+                                                    children: [
+                                                      Expanded(
+                                                        child: FittedBox(
+                                                          fit: BoxFit.scaleDown,
+                                                          alignment: Alignment.centerLeft,
+                                                          child: Text(
+                                                            '$manzana $casa',
+                                                            style: AppTypography.cardTitle,
+                                                            maxLines: 1,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      if (esViaSolicitud)
+                                                        Container(
+                                                          margin: const EdgeInsets.only(left: 6),
+                                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                                          decoration: BoxDecoration(
+                                                            color: AppColors.primary.withValues(alpha: 0.12),
+                                                            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                                                            border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                                                          ),
+                                                          child: Text(
+                                                            '📩 Vía Solicitud',
+                                                            style: AppTypography.micro.copyWith(
+                                                              fontWeight: FontWeight.w800,
+                                                              color: AppColors.primary,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                    ],
+                                                  ),
+                                                  const SizedBox(height: 2),
+                                                  Text(
+                                                    residente,
+                                                    style: AppTypography.caption.copyWith(
+                                                      color: AppColors.textSecondary,
+                                                      fontWeight: FontWeight.w500,
+                                                    ),
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                  const SizedBox(height: AppSpacing.xs),
+                                                  Text(
+                                                    '$dateFormatted • $nroRecibo',
+                                                    style: AppTypography.small.copyWith(
+                                                      color: AppColors.textSecondary.withValues(alpha: 0.8),
+                                                      fontWeight: FontWeight.w500,
+                                                    ),
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            const SizedBox(width: AppSpacing.sm),
+                                            FittedBox(
+                                              fit: BoxFit.scaleDown,
+                                              alignment: Alignment.centerRight,
+                                              child: Text(
+                                                AppCurrency.format(monto),
+                                                style: AppTypography.cardValue.copyWith(
+                                                  fontWeight: FontWeight.w900,
+                                                  color: AppColors.success,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        );
+                                      },
                                     ),
                                   ),
                                 ),
@@ -398,7 +531,7 @@ class _HistorialScreenState extends State<HistorialScreen> {
     );
   }
 
-  void _handleCuotaTap(Map<String, dynamic> c) {
+  Future<void> _handleCuotaTap(Map<String, dynamic> c) async {
     final matchingList = _solicitudes.where((s) => s.cobroId == c['id']).toList();
     final SolicitudData? matchingSolicitud = matchingList.isNotEmpty ? matchingList.first : null;
 
@@ -408,19 +541,44 @@ class _HistorialScreenState extends State<HistorialScreen> {
       final rawDate = c['fechaPago'] ?? c['updatedAt'] ?? c['createdAt'];
       final date = (DateTime.tryParse(rawDate?.toString() ?? '') ?? DateTime.now()).toLocal();
       final monto = AppCurrency.centsToPesos(c['monto'] as int? ?? 0);
-      TicketBottomSheet.show(
+      final ticketNum = (c['nroRecibo'] as String?)?.isNotEmpty == true
+          ? c['nroRecibo'] as String
+          : ((c['ticketNumero'] as String?)?.isNotEmpty == true
+              ? c['ticketNumero'] as String
+              : 'TK-${c['id'].hashCode.abs().toString().padLeft(6, '0')}');
+
+      final result = await TicketBottomSheet.show(
         context,
         TicketData(
-          numero: 'TK-${c['id'].hashCode.abs().toString().padLeft(6, '0')}',
+          numero: ticketNum,
           fecha: date,
           residente: context.read<AuthCubit>().state.usuario?['nombre'] as String? ?? 'Residente',
-          casa: 'Mi Casa',
+          casa: [c['etapaNombre'], c['manzanaNombre'], c['casaDireccion'] ?? 'Mi Casa'].where((s) => s != null && s.toString().isNotEmpty).join(' · '),
           monto: monto,
-          metodo: 'Efectivo',
-          estado: 'Pagado',
-          cobrador: 'Administración',
+          metodo: c['metodo'] as String? ?? 'Efectivo',
+          estado: 'PAGADO',
+          cobrador: c['cobradorNombre'] as String? ?? 'Administración',
+          concepto: c['concepto'] as String?,
+          cobroId: c['id'] as String?,
+          pagoId: c['pagoId'] as String?,
         ),
       );
+
+      if (result is TicketData && mounted) {
+        final created = await context.push<bool>(
+          '/solicitud-nueva',
+          extra: {
+            'cobroId': result.cobroId,
+            'pagoId': result.pagoId,
+            'concepto': result.concepto,
+            'nroRecibo': result.numero,
+            'monto': result.monto,
+          },
+        );
+        if (created == true && mounted) {
+          _loadHistorial(silent: true);
+        }
+      }
     }
   }
 

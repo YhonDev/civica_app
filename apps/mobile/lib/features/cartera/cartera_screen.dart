@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/widgets/top_toast.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -22,6 +23,8 @@ import 'dart:async';
 import '../dashboard/widgets/skeleton_loading.dart';
 import '../solicitudes/solicitudes_repository.dart';
 import '../../shared/widgets/fading_horizontal_scroll.dart';
+import '../../shared/widgets/solicitud_card.dart';
+import '../../core/network/local_cache_repository.dart';
 
 import '../../shared/widgets/screen_header.dart';
 
@@ -66,9 +69,44 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
   String? _selectedManzana; // Filtro por manzana
   Timer? _searchDebounce;
 
+  List<SolicitudData> _solicitudesActivas = [];
+  final SolicitudesRepository _solicitudesRepo = SolicitudesRepository();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadSolicitudesActivas();
+    });
+  }
+
+  Future<void> _loadSolicitudesActivas() async {
+    final user = context.read<AuthCubit>().state.usuario;
+    final rol = user?['rol'] as String?;
+    if (rol == 'RESIDENTE') {
+      try {
+        final list = await _solicitudesRepo.getMisSolicitudes();
+        if (mounted) {
+          setState(() {
+            _solicitudesActivas = list
+                .where(
+                  (s) =>
+                      s.estado == SolicitudEstado.pendiente ||
+                      s.estado == SolicitudEstado.enEspera ||
+                      s.estado == SolicitudEstado.enCamino ||
+                      s.estado == SolicitudEstado.enRevision,
+                )
+                .toList();
+          });
+        }
+      } catch (_) {}
+    }
+  }
+
   @override
   void onAppResumed() {
     context.read<CarteraCubit>().loadCobros(silent: true);
+    _loadSolicitudesActivas();
   }
 
   @override
@@ -129,7 +167,7 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                 }),
                 selectedColor: AppColors.primary,
                 labelStyle: AppTypography.smallBold.copyWith(
-                  color: _selectedEtapa == null ? Colors.white : AppColors.textSecondary,
+                  color: _selectedEtapa == null ? AppColors.onPrimary : AppColors.textSecondary,
                 ),
                 backgroundColor: AppColors.surface,
                 shape: RoundedRectangleBorder(
@@ -153,7 +191,7 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                   }),
                   selectedColor: AppColors.primary,
                   labelStyle: AppTypography.smallBold.copyWith(
-                    color: isSelected ? Colors.white : AppColors.textSecondary,
+                    color: isSelected ? AppColors.onPrimary : AppColors.textSecondary,
                   ),
                   backgroundColor: AppColors.surface,
                   shape: RoundedRectangleBorder(
@@ -190,7 +228,7 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                 onSelected: (_) => setState(() => _selectedManzana = null),
                 selectedColor: AppColors.accentTeal,
                 labelStyle: AppTypography.smallBold.copyWith(
-                  color: _selectedManzana == null ? Colors.white : AppColors.textSecondary,
+                  color: _selectedManzana == null ? AppColors.onPrimary : AppColors.textSecondary,
                 ),
                 backgroundColor: AppColors.surface,
                 shape: RoundedRectangleBorder(
@@ -211,7 +249,7 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                   onSelected: (_) => setState(() => _selectedManzana = manzana),
                   selectedColor: AppColors.accentTeal,
                   labelStyle: AppTypography.smallBold.copyWith(
-                    color: isSelected ? Colors.white : AppColors.textSecondary,
+                    color: isSelected ? AppColors.onPrimary : AppColors.textSecondary,
                   ),
                   backgroundColor: AppColors.surface,
                   shape: RoundedRectangleBorder(
@@ -245,7 +283,7 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
         },
         selectedColor: activeColor,
         labelStyle: AppTypography.smallBold.copyWith(
-          color: isSelected ? Colors.white : AppColors.textSecondary,
+          color: isSelected ? AppColors.onPrimary : AppColors.textSecondary,
         ),
         backgroundColor: AppColors.surface,
         shape: RoundedRectangleBorder(
@@ -420,9 +458,20 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
 
             Widget buildCobroItem(int index) {
               final cobro = filteredCobros[index];
+              final bool hasAnyActiveRequest = _solicitudesActivas.isNotEmpty;
+              final activeForThisCobro = _solicitudesActivas
+                  .where((s) => s.cobroId == cobro.id)
+                  .firstOrNull;
+              final String? solicitudEstado = activeForThisCobro != null
+                  ? (activeForThisCobro.estado == SolicitudEstado.enCamino
+                      ? 'EN_CAMINO'
+                      : 'EN_ESPERA')
+                  : null;
+
               return CobroCard(
                 cobro: cobro,
-                onTap: () {
+                solicitudEstado: solicitudEstado,
+                onTap: () async {
                   if (cobro.isPaid) {
                     DateTime fecha = DateTime.now();
                     if (cobro.fechaPago.isNotEmpty) {
@@ -433,7 +482,7 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                     final ticketNum = cobro.nroRecibo.isNotEmpty
                         ? cobro.nroRecibo
                         : 'TK-${cobro.id.replaceAll("-", "").substring(0, 6).toUpperCase()}';
-                    TicketBottomSheet.show(
+                    final result = await TicketBottomSheet.show(
                       context,
                       TicketData(
                         numero: ticketNum,
@@ -449,8 +498,26 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                         cobrador: cobro.cobradorNombre.isNotEmpty ? cobro.cobradorNombre : 'Administración',
                         etapa: cobro.etapa,
                         manzana: cobro.manzana,
+                        cobroId: cobro.id,
                       ),
                     );
+
+                    if (result is TicketData && context.mounted) {
+                      final created = await context.push<bool>(
+                        '/solicitud-nueva',
+                        extra: {
+                          'cobroId': result.cobroId,
+                          'pagoId': result.pagoId,
+                          'concepto': result.concepto,
+                          'nroRecibo': result.numero,
+                          'monto': result.monto,
+                        },
+                      );
+                      if (created == true && context.mounted) {
+                        _loadSolicitudesActivas();
+                        context.read<CarteraCubit>().loadCobros();
+                      }
+                    }
                   } else if (canRegisterPago) {
                     final cuotasDelResidente = state.cobros
                         .where((c) => c.residenteId == cobro.residenteId && !c.isPaid)
@@ -474,7 +541,7 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                     );
                   }
                 },
-                onSolicitarCobro: !canRegisterPago && !cobro.isPaid
+                onSolicitarCobro: !canRegisterPago && !cobro.isPaid && !hasAnyActiveRequest
                     ? () async {
                         try {
                           final repo = SolicitudesRepository();
@@ -485,6 +552,10 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                             descripcion: 'El residente solicita cobro presencial en domicilio para ${cobro.tituloCuota}',
                             residenteId: resId,
                           );
+                          LocalCacheRepository.instance.invalidate('dashboard:residente');
+                          LocalCacheRepository.instance.invalidate('dashboard:cobrador');
+                          LocalCacheRepository.instance.invalidate('dashboard:administrador');
+                          await _loadSolicitudesActivas();
                           if (context.mounted) {
                             TopToast.showSuccess(
                               context,
@@ -811,13 +882,14 @@ class _CarteraSharedLayout extends StatelessWidget {
                       controller: searchController,
                       onChanged: onSearchChanged,
                       decoration: InputDecoration(
-                        hintText: searchHint,
+                        hintText: context.isWideScreen ? searchHint : 'Buscar',
                         hintStyle: AppTypography.caption.copyWith(
                           color: AppColors.textSecondary,
                         ),
                         prefixIcon: const Icon(Icons.search_rounded, size: 20),
                         suffixIcon: searchQuery.isNotEmpty
                             ? IconButton(
+                                tooltip: 'Limpiar búsqueda',
                                 icon: const Icon(Icons.clear_rounded, size: 18),
                                 onPressed: () {
                                   searchController.clear();

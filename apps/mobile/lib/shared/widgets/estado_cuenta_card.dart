@@ -70,28 +70,43 @@ class EstadoCuentaCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  StatusBadge(
-                    status: status,
-                    iconSize: 16,
-                    textStyle: AppTypography.caption,
+                  Flexible(
+                    child: StatusBadge(
+                      status: status,
+                      iconSize: 16,
+                      textStyle: AppTypography.caption,
+                    ),
                   ),
-                  if (tarifaActual != null)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
-                      decoration: AppCardStyles.metaChip(),
-                      child: Text(
-                        'Tarifa: ${AppCurrency.formatOrNull((tarifaActual!['cobroMensual'] ?? tarifaActual!['cuotaMensual'] ?? tarifaActual!['montoSegunModalidad'] as num?)?.toInt(), fallback: 40000)}',
-                        style: AppCardStyles.metaChipText,
+                  if (tarifaActual != null) ...[
+                    const SizedBox(width: AppSpacing.xs),
+                    Flexible(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerRight,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+                          decoration: AppCardStyles.metaChip(),
+                          child: Text(
+                            'Tarifa: ${AppCurrency.formatOrNull((tarifaActual!['cobroMensual'] ?? tarifaActual!['cuotaMensual'] ?? tarifaActual!['montoSegunModalidad'] as num?)?.toInt(), fallback: 40000)}',
+                            style: AppCardStyles.metaChipText,
+                          ),
+                        ),
                       ),
                     ),
+                  ],
                 ],
               ),
               const SizedBox(height: AppSpacing.md),
 
               // Saldo
-              Text(
-                saldoLabel,
-                style: AppCardStyles.heroValue,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  saldoLabel,
+                  style: AppCardStyles.heroValue,
+                  maxLines: 1,
+                ),
               ),
               if (secondaryLabel != null) ...[
                 const SizedBox(height: AppSpacing.sm),

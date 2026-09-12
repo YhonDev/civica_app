@@ -308,8 +308,9 @@ consolidación.
 >    `fontSize:` inline, `NumberFormat`, hex `Color(0x…)`, radios con literal
 >    (`BorderRadius.circular(<n>)` / `Radius.circular(<n>)`), `EdgeInsets` compuestos
 >    solo de valores tokenizados {4, 8, 16, 20, 24, 32} escritos con números, errores
->    crudos interpolados en UI/logs (regla 9.7) o notificaciones fuera del estándar
->    `TopToast` (regla 9.8) — todo fuera de `core/theme/` y `core/format/`. El fallo
+>    crudos interpolados en UI/logs (regla 9.7), notificaciones fuera del estándar
+>    `TopToast` (regla 9.8) o colores de tinta/sombra crudos fuera de los tokens
+>    (regla 9.10) — todo fuera de `core/theme/` y `core/format/`. El fallo
 >    incluye ruta, línea, columna y la regla infringida.
 > 2. `scripts/check_design_system.sh` (paso `Design system guard` en CI) es el espejo
 >    rápido de los patrones de texto.
@@ -414,6 +415,22 @@ consolidación.
 - Los Strings se admiten como copia ya redactada por el equipo; la sanitizer
   les aplica el mismo puente (y un String que vista ropa de excepción de
   runtime —`'DioException…'`— cae al fallback).
+
+### 9.10 Tinta sobre acento y sombras: tokens semánticos (prohibido Colors.white/black)
+
+- **Prohibido** usar `Colors.white` o `Colors.black` (y variantes `white70`, `black26`, etc.)
+  fuera de `core/theme/`. El hex crudo erosiona el sistema y omite la intención de diseño.
+- **Tinta fija sobre acento:** botones, chips y badges que usan un fondo constante de acento
+  (`primary`, `success`, `error`, `info`, `accent*`) usan `AppColors.onPrimary` (blanco puro)
+  para texto e iconos, o `AppColors.onPrimarySubdued` (blanco al 70%, `0xB3FFFFFF`) para textos
+  secundarios.
+- **Tinta fija sobre advertencia:** `AppColors.onWarning` (blanco fijo sobre el banner offline).
+- **Sombras y scrims:** `AppColors.shadow.withValues(alpha: ...)` — el color base es un token
+  único, y el call site aporta únicamente el valor alfa según la profundidad deseada.
+- **Textos modo-condicionales:** no uses `isDark ? Colors.white : AppColors.textPrimary`; usa
+  directamente `AppColors.textPrimary` (que ya resuelve el color óptimo para cada tema).
+- Esta regla la verifican activamente el guard Dart (`design_token_guard_test.dart`) y el
+  espejo de integración continua (`scripts/check_design_system.sh`).
 
 ## 10. Referencias rápidas
 

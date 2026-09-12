@@ -210,6 +210,7 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
       appBar: AppBar(
         title: const Text('Nueva Solicitud'),
         leading: IconButton(
+          tooltip: 'Volver',
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.pop(),
         ),
@@ -310,12 +311,12 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
                           ? const Icon(
                               Icons.check_rounded,
                               size: 16,
-                              color: Colors.white,
+                              color: AppColors.onPrimary,
                             )
                           : null,
                       label: Text(motivo),
                       labelStyle: TextStyle(
-                        color: isSelected ? Colors.white : AppColors.textPrimary,
+                        color: isSelected ? AppColors.onPrimary : AppColors.textPrimary,
                         fontWeight:
                             isSelected ? FontWeight.w600 : FontWeight.w400,
                       ),
@@ -446,7 +447,7 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
                             height: 24,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: Colors.white,
+                              color: AppColors.onPrimary,
                             ),
                           )
                         : const Text('Enviar Solicitud'),
