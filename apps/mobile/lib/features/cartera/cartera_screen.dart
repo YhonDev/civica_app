@@ -23,6 +23,8 @@ import 'dart:async';
 import '../dashboard/widgets/skeleton_loading.dart';
 import '../solicitudes/solicitudes_repository.dart';
 import '../../shared/widgets/fading_horizontal_scroll.dart';
+import '../../shared/widgets/solicitud_card.dart';
+import '../../core/network/local_cache_repository.dart';
 
 import '../../shared/widgets/screen_header.dart';
 
@@ -67,9 +69,44 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
   String? _selectedManzana; // Filtro por manzana
   Timer? _searchDebounce;
 
+  List<SolicitudData> _solicitudesActivas = [];
+  final SolicitudesRepository _solicitudesRepo = SolicitudesRepository();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadSolicitudesActivas();
+    });
+  }
+
+  Future<void> _loadSolicitudesActivas() async {
+    final user = context.read<AuthCubit>().state.usuario;
+    final rol = user?['rol'] as String?;
+    if (rol == 'RESIDENTE') {
+      try {
+        final list = await _solicitudesRepo.getMisSolicitudes();
+        if (mounted) {
+          setState(() {
+            _solicitudesActivas = list
+                .where(
+                  (s) =>
+                      s.estado == SolicitudEstado.pendiente ||
+                      s.estado == SolicitudEstado.enEspera ||
+                      s.estado == SolicitudEstado.enCamino ||
+                      s.estado == SolicitudEstado.enRevision,
+                )
+                .toList();
+          });
+        }
+      } catch (_) {}
+    }
+  }
+
   @override
   void onAppResumed() {
     context.read<CarteraCubit>().loadCobros(silent: true);
+    _loadSolicitudesActivas();
   }
 
   @override
@@ -421,8 +458,19 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
 
             Widget buildCobroItem(int index) {
               final cobro = filteredCobros[index];
+              final bool hasAnyActiveRequest = _solicitudesActivas.isNotEmpty;
+              final activeForThisCobro = _solicitudesActivas
+                  .where((s) => s.cobroId == cobro.id)
+                  .firstOrNull;
+              final String? solicitudEstado = activeForThisCobro != null
+                  ? (activeForThisCobro.estado == SolicitudEstado.enCamino
+                      ? 'EN_CAMINO'
+                      : 'EN_ESPERA')
+                  : null;
+
               return CobroCard(
                 cobro: cobro,
+                solicitudEstado: solicitudEstado,
                 onTap: () async {
                   if (cobro.isPaid) {
                     DateTime fecha = DateTime.now();
@@ -466,6 +514,7 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                         },
                       );
                       if (created == true && context.mounted) {
+                        _loadSolicitudesActivas();
                         context.read<CarteraCubit>().loadCobros();
                       }
                     }
@@ -492,7 +541,7 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                     );
                   }
                 },
-                onSolicitarCobro: !canRegisterPago && !cobro.isPaid
+                onSolicitarCobro: !canRegisterPago && !cobro.isPaid && !hasAnyActiveRequest
                     ? () async {
                         try {
                           final repo = SolicitudesRepository();
@@ -503,6 +552,10 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                             descripcion: 'El residente solicita cobro presencial en domicilio para ${cobro.tituloCuota}',
                             residenteId: resId,
                           );
+                          LocalCacheRepository.instance.invalidate('dashboard:residente');
+                          LocalCacheRepository.instance.invalidate('dashboard:cobrador');
+                          LocalCacheRepository.instance.invalidate('dashboard:administrador');
+                          await _loadSolicitudesActivas();
                           if (context.mounted) {
                             TopToast.showSuccess(
                               context,

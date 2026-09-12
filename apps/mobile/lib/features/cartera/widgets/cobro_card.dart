@@ -15,6 +15,7 @@ class CobroCard extends StatelessWidget {
   final VoidCallback? onSolicitarCobro;
   final VoidCallback? onTap;
   final bool? isCobradorView;
+  final String? solicitudEstado;
 
   const CobroCard({
     super.key,
@@ -23,6 +24,7 @@ class CobroCard extends StatelessWidget {
     this.onSolicitarCobro,
     this.onTap,
     this.isCobradorView,
+    this.solicitudEstado,
   });
 
   Color get _color {
@@ -555,7 +557,44 @@ class CobroCard extends StatelessWidget {
               style: AppTypography.smallBold,
             ),
           )
-        else if (onSolicitarCobro != null)
+        else if (solicitudEstado != null) ...[
+          Builder(
+            builder: (context) {
+              final isEnCamino =
+                  solicitudEstado!.toUpperCase().contains('CAMINO');
+              final color = isEnCamino ? AppColors.info : AppColors.warning;
+              final icon = isEnCamino
+                  ? Icons.directions_bike_rounded
+                  : Icons.hourglass_top_rounded;
+              final label = isEnCamino ? 'En camino' : 'En solicitud';
+              return Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.sm,
+                  vertical: AppSpacing.xs,
+                ),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                  border: Border.all(color: color.withValues(alpha: 0.4)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(icon, size: 12, color: color),
+                    const SizedBox(width: 4),
+                    Text(
+                      label,
+                      style: AppTypography.micro.copyWith(
+                        color: color,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ] else if (onSolicitarCobro != null)
           FilledButton.icon(
             onPressed: onSolicitarCobro,
             icon: const Icon(Icons.notifications_active_rounded, size: 14),

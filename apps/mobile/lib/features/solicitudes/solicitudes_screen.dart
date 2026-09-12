@@ -11,6 +11,7 @@ import '../../shared/widgets/solicitud_bottom_sheet.dart';
 import '../../shared/widgets/mini_stat_card.dart';
 import '../../shared/widgets/empty_state.dart';
 import '../../features/auth/auth_cubit.dart';
+import '../../core/network/local_cache_repository.dart';
 import 'solicitudes_repository.dart';
 
 /// Pantalla de Solicitudes — Módulo completo.
@@ -411,6 +412,9 @@ class _SolicitudesScreenState extends State<SolicitudesScreen>
           : null,
       onDelete: () async {
         await _repo.eliminarSolicitud(solicitud.id);
+        LocalCacheRepository.instance.invalidate('dashboard:residente');
+        LocalCacheRepository.instance.invalidate('dashboard:cobrador');
+        LocalCacheRepository.instance.invalidate('dashboard:administrador');
         await _loadSolicitudes();
       },
       onActionCompleted: () => _loadSolicitudes(),

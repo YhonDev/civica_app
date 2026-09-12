@@ -66,6 +66,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
   List<TimelineItem> _movimientos = [];
   List<SolicitudData> _solicitudesPendientes = [];
   Map<String, dynamic>? _tarifaActual;
+  int _dashboardRequestId = 0;
 
   final _solicitudesRepo = SolicitudesRepository();
 
@@ -84,6 +85,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
   }
 
   Future<void> _loadDashboardData({bool silent = false}) async {
+    final currentRequestId = ++_dashboardRequestId;
     if (!silent && LocalCacheRepository.instance.getCached('dashboard:residente') == null) {
       setState(() => _loading = true);
     }
@@ -96,6 +98,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
       },
       onData: (data, isStale) async {
         final listMisSolicitudes = await _solicitudesRepo.getMisSolicitudes();
+        if (currentRequestId != _dashboardRequestId) return;
         // Solo solicitudes activas/pendientes deben mostrarse en el widget y marcar cuotas como en proceso
         final listPendientes = listMisSolicitudes.where((s) =>
           s.estado == SolicitudEstado.pendiente ||
@@ -104,7 +107,7 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
           s.estado == SolicitudEstado.enRevision
         ).toList();
 
-        if (mounted) {
+        if (mounted && currentRequestId == _dashboardRequestId) {
           setState(() {
             _saldo = data['saldo'] as int;
 
@@ -334,7 +337,10 @@ class _ResidenteDashboardScreenState extends State<ResidenteDashboardScreen>
     return Scaffold(
       body: SafeArea(
         child: RefreshIndicator(
-          onRefresh: () => _loadDashboardData(silent: true),
+          onRefresh: () async {
+            LocalCacheRepository.instance.invalidate('dashboard:residente');
+            await _loadDashboardData(silent: true);
+          },
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.symmetric(
