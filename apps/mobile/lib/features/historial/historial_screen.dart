@@ -201,15 +201,126 @@ class _HistorialScreenState extends State<HistorialScreen> {
                                     );
                                   },
                                   child: Padding(
-                                    padding: const EdgeInsets.all(AppSpacing.cardPadding),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        // Fila 1: Check en la esquina superior + Manzana/Casa + Badge vía solicitud
-                                        Row(
+                                    padding: const EdgeInsets.all(AppSpacing.cardInnerPadding),
+                                    child: LayoutBuilder(
+                                      builder: (context, constraints) {
+                                        final isCompact = constraints.maxWidth < AppBreakpoints.compactCardContent;
+
+                                        if (isCompact) {
+                                          return Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              // Fila 1: Check en la esquina superior + Manzana/Casa + Badge vía solicitud
+                                              Row(
+                                                children: [
+                                                  Container(
+                                                    padding: const EdgeInsets.all(AppSpacing.xs),
+                                                    decoration: BoxDecoration(
+                                                      color: AppColors.success.withValues(alpha: 0.12),
+                                                      shape: BoxShape.circle,
+                                                    ),
+                                                    child: const Icon(
+                                                      Icons.check_circle_rounded,
+                                                      color: AppColors.success,
+                                                      size: 22,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: AppSpacing.sm),
+                                                  Expanded(
+                                                    child: FittedBox(
+                                                      fit: BoxFit.scaleDown,
+                                                      alignment: Alignment.centerLeft,
+                                                      child: Text(
+                                                        '$manzana $casa',
+                                                        style: AppTypography.cardTitle,
+                                                        maxLines: 1,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  if (esViaSolicitud)
+                                                    Container(
+                                                      margin: const EdgeInsets.only(left: 6),
+                                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                                      decoration: BoxDecoration(
+                                                        color: AppColors.primary.withValues(alpha: 0.12),
+                                                        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                                                        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                                                      ),
+                                                      child: Text(
+                                                        '📩 Vía Solicitud',
+                                                        style: AppTypography.micro.copyWith(
+                                                          fontWeight: FontWeight.w800,
+                                                          color: AppColors.primary,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: AppSpacing.xs),
+
+                                              // Fila 2: Nombre del residente
+                                              Padding(
+                                                padding: const EdgeInsets.only(left: 38),
+                                                child: Text(
+                                                  residente,
+                                                  style: AppTypography.bodySmall.copyWith(
+                                                    color: AppColors.textPrimary,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                              const SizedBox(height: AppSpacing.xs),
+
+                                              // Fila 3: Fecha y hora
+                                              Padding(
+                                                padding: const EdgeInsets.only(left: 38),
+                                                child: Row(
+                                                  children: [
+                                                    Icon(
+                                                      Icons.calendar_today_outlined,
+                                                      size: 13,
+                                                      color: AppColors.textSecondary.withValues(alpha: 0.7),
+                                                    ),
+                                                    const SizedBox(width: AppSpacing.xs),
+                                                    Expanded(
+                                                      child: Text(
+                                                        dateFormatted,
+                                                        style: AppTypography.small.copyWith(
+                                                          color: AppColors.textSecondary.withValues(alpha: 0.8),
+                                                          fontWeight: FontWeight.w500,
+                                                        ),
+                                                        maxLines: 1,
+                                                        overflow: TextOverflow.ellipsis,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              const SizedBox(height: AppSpacing.xs),
+
+                                              // Fila 4: Monto destacado abajo con presencia
+                                              Padding(
+                                                padding: const EdgeInsets.only(left: 38),
+                                                child: Text(
+                                                  AppCurrency.format(monto),
+                                                  style: AppTypography.title.copyWith(
+                                                    fontWeight: FontWeight.w900,
+                                                    color: AppColors.success,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          );
+                                        }
+
+                                        // ── MODO ESTÁNDAR (Poco X3 Pro, Tablets, Web >= 315dp) ──
+                                        return Row(
+                                          crossAxisAlignment: CrossAxisAlignment.center,
                                           children: [
                                             Container(
-                                              padding: const EdgeInsets.all(AppSpacing.xs),
+                                              padding: const EdgeInsets.all(AppSpacing.sm),
                                               decoration: BoxDecoration(
                                                 color: AppColors.success.withValues(alpha: 0.12),
                                                 shape: BoxShape.circle,
@@ -217,96 +328,84 @@ class _HistorialScreenState extends State<HistorialScreen> {
                                               child: const Icon(
                                                 Icons.check_circle_rounded,
                                                 color: AppColors.success,
-                                                size: 22,
+                                                size: 24,
+                                              ),
+                                            ),
+                                            const SizedBox(width: AppSpacing.md),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Row(
+                                                    children: [
+                                                      Expanded(
+                                                        child: FittedBox(
+                                                          fit: BoxFit.scaleDown,
+                                                          alignment: Alignment.centerLeft,
+                                                          child: Text(
+                                                            '$manzana $casa',
+                                                            style: AppTypography.cardTitle,
+                                                            maxLines: 1,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      if (esViaSolicitud)
+                                                        Container(
+                                                          margin: const EdgeInsets.only(left: 6),
+                                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                                          decoration: BoxDecoration(
+                                                            color: AppColors.primary.withValues(alpha: 0.12),
+                                                            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                                                            border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                                                          ),
+                                                          child: Text(
+                                                            '📩 Vía Solicitud',
+                                                            style: AppTypography.micro.copyWith(
+                                                              fontWeight: FontWeight.w800,
+                                                              color: AppColors.primary,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                    ],
+                                                  ),
+                                                  const SizedBox(height: 2),
+                                                  Text(
+                                                    residente,
+                                                    style: AppTypography.caption.copyWith(
+                                                      color: AppColors.textSecondary,
+                                                      fontWeight: FontWeight.w500,
+                                                    ),
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                  const SizedBox(height: AppSpacing.xs),
+                                                  Text(
+                                                    '$dateFormatted • $nroRecibo',
+                                                    style: AppTypography.small.copyWith(
+                                                      color: AppColors.textSecondary.withValues(alpha: 0.8),
+                                                      fontWeight: FontWeight.w500,
+                                                    ),
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                ],
                                               ),
                                             ),
                                             const SizedBox(width: AppSpacing.sm),
-                                            Expanded(
-                                              child: FittedBox(
-                                                fit: BoxFit.scaleDown,
-                                                alignment: Alignment.centerLeft,
-                                                child: Text(
-                                                  '$manzana $casa',
-                                                  style: AppTypography.cardTitle,
-                                                  maxLines: 1,
+                                            FittedBox(
+                                              fit: BoxFit.scaleDown,
+                                              alignment: Alignment.centerRight,
+                                              child: Text(
+                                                AppCurrency.format(monto),
+                                                style: AppTypography.cardValue.copyWith(
+                                                  fontWeight: FontWeight.w900,
+                                                  color: AppColors.success,
                                                 ),
                                               ),
                                             ),
-                                            if (esViaSolicitud)
-                                              Container(
-                                                margin: const EdgeInsets.only(left: 6),
-                                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                                decoration: BoxDecoration(
-                                                  color: AppColors.primary.withValues(alpha: 0.12),
-                                                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                                                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
-                                                ),
-                                                child: Text(
-                                                  '📩 Vía Solicitud',
-                                                  style: AppTypography.micro.copyWith(
-                                                    fontWeight: FontWeight.w800,
-                                                    color: AppColors.primary,
-                                                  ),
-                                                ),
-                                              ),
                                           ],
-                                        ),
-                                        const SizedBox(height: AppSpacing.xs),
-
-                                        // Fila 2: Nombre del residente
-                                        Padding(
-                                          padding: const EdgeInsets.only(left: 38),
-                                          child: Text(
-                                            residente,
-                                            style: AppTypography.bodySmall.copyWith(
-                                              color: AppColors.textPrimary,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                        const SizedBox(height: AppSpacing.xs),
-
-                                        // Fila 3: Fecha y hora
-                                        Padding(
-                                          padding: const EdgeInsets.only(left: 38),
-                                          child: Row(
-                                            children: [
-                                              Icon(
-                                                Icons.calendar_today_outlined,
-                                                size: 13,
-                                                color: AppColors.textSecondary.withValues(alpha: 0.7),
-                                              ),
-                                              const SizedBox(width: AppSpacing.xs),
-                                              Expanded(
-                                                child: Text(
-                                                  dateFormatted,
-                                                  style: AppTypography.small.copyWith(
-                                                    color: AppColors.textSecondary.withValues(alpha: 0.8),
-                                                    fontWeight: FontWeight.w500,
-                                                  ),
-                                                  maxLines: 1,
-                                                  overflow: TextOverflow.ellipsis,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        const SizedBox(height: AppSpacing.xs),
-
-                                        // Fila 4: Monto destacado abajo con presencia
-                                        Padding(
-                                          padding: const EdgeInsets.only(left: 38),
-                                          child: Text(
-                                            AppCurrency.format(monto),
-                                            style: AppTypography.title.copyWith(
-                                              fontWeight: FontWeight.w900,
-                                              color: AppColors.success,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
+                                        );
+                                      },
                                     ),
                                   ),
                                 ),

@@ -882,7 +882,7 @@ class _CarteraSharedLayout extends StatelessWidget {
                       controller: searchController,
                       onChanged: onSearchChanged,
                       decoration: InputDecoration(
-                        hintText: searchHint,
+                        hintText: context.isWideScreen ? searchHint : 'Buscar',
                         hintStyle: AppTypography.caption.copyWith(
                           color: AppColors.textSecondary,
                         ),
