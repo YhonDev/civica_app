@@ -48,18 +48,54 @@ export class RegistrarResidenteUseCase {
   async execute(
     params: RegistrarResidenteParams,
   ): Promise<ResultadoRegistroResidente> {
+    let registro: {
+      resultado: ResultadoRegistroResidente;
+      planParaCobros?: {
+        plan: PlanDeCobro;
+        mes: number;
+        anio: number;
+        fechaInicio: Date;
+      };
+    };
+
     if (this.dataSource && typeof this.dataSource.transaction === 'function') {
-      return this.dataSource.transaction(async (em) => {
+      registro = await this.dataSource.transaction(async (em) => {
         return this.ejecutarRegistro(params, em);
       });
+    } else {
+      registro = await this.ejecutarRegistro(params);
     }
-    return this.ejecutarRegistro(params);
+
+    if (registro.planParaCobros) {
+      const { plan, mes, anio, fechaInicio } = registro.planParaCobros;
+      try {
+        await this.generarCobrosUC.generarCobrosParaPlan(
+          plan,
+          mes,
+          anio,
+          fechaInicio,
+        );
+      } catch {
+        // Si falla la generación inicial (p.ej. sin tarifa configurada),
+        // el residente y su plan quedan creados correctamente
+      }
+    }
+
+    return registro.resultado;
   }
 
   private async ejecutarRegistro(
     params: RegistrarResidenteParams,
     em?: EntityManager,
-  ): Promise<ResultadoRegistroResidente> {
+  ): Promise<{
+    resultado: ResultadoRegistroResidente;
+    planParaCobros?: {
+      plan: PlanDeCobro;
+      mes: number;
+      anio: number;
+      fechaInicio: Date;
+    };
+  }> {
     let casa: Casa | null = null;
     if (params.casaId) {
       casa = await (em
@@ -93,6 +129,14 @@ export class RegistrarResidenteUseCase {
 
     let username: string;
     let password: string;
+    let planParaCobros:
+      | {
+          plan: PlanDeCobro;
+          mes: number;
+          anio: number;
+          fechaInicio: Date;
+        }
+      | undefined;
 
     // Si se proporcionó una casa, crear tenencia y plan de cobro
     if (params.casaId && casa) {
@@ -117,15 +161,15 @@ export class RegistrarResidenteUseCase {
           ? em.save(PlanDeCobro, plan)
           : this.planDeCobroRepository.save(plan));
 
-        // Generar cobros inmediatamente para el mes actual
+        // Programar generación de cobros post-commit para respetar FKs
         const mes = fechaInicio.getMonth() + 1;
         const anio = fechaInicio.getFullYear();
-        await this.generarCobrosUC.generarCobrosParaPlan(
-          planSaved,
+        planParaCobros = {
+          plan: planSaved,
           mes,
           anio,
           fechaInicio,
-        );
+        };
       }
     }
 
@@ -176,8 +220,11 @@ export class RegistrarResidenteUseCase {
       : this.usuarioRepository.save(usuario));
 
     return {
-      residente: saved,
-      credenciales: { username, password },
+      resultado: {
+        residente: saved,
+        credenciales: { username, password },
+      },
+      planParaCobros,
     };
   }
 }
