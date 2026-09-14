@@ -1,14 +1,21 @@
-import { Controller, Get } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Controller, Get, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { MetricsService } from './metrics.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { RolUsuario } from '../../iam/domain/usuario.entity';
 
 @ApiTags('Metrics')
+@ApiBearerAuth('jwt-auth')
 @Controller('metrics')
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class MetricsController {
   constructor(private readonly metrics: MetricsService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Métricas agregadas de rendimiento HTTP' })
+  @Roles(RolUsuario.ADMIN)
+  @ApiOperation({ summary: 'Métricas agregadas de rendimiento HTTP (solo ADMIN)' })
   getMetrics() {
     return {
       timestamp: new Date().toISOString(),

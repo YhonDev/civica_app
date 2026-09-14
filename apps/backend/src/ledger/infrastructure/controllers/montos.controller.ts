@@ -44,7 +44,7 @@ export class MontosController {
 
   @Get()
   @UseGuards(RolesGuard)
-  @Roles(RolUsuario.ADMIN, RolUsuario.RESIDENTE)
+  @Roles(RolUsuario.ADMIN, RolUsuario.COBRADOR, RolUsuario.RESIDENTE)
   @ApiOperation({ summary: 'Listar montos predefinidos por proyecto' })
   async listar(
     @Query() query: ListarMontosQueryDto,

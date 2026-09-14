@@ -4,6 +4,7 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Usuario } from '../../iam/domain/usuario.entity';
+import { TokenRevocationService } from './token-revocation.service';
 
 interface JwtPayload {
   sub: string;
@@ -18,10 +19,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
     @InjectRepository(Usuario)
     private readonly usuarioRepository: Repository<Usuario>,
+    private readonly tokenRevocation: TokenRevocationService,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
+      passReqToCallback: true,
       secretOrKey:
         process.env.JWT_SECRET ||
         (() => {
@@ -30,7 +33,22 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: JwtPayload): Promise<Usuario> {
+  async validate(
+    reqOrPayload: any,
+    payloadMaybe?: JwtPayload,
+  ): Promise<Usuario> {
+    const isPassReq = payloadMaybe !== undefined;
+    const req = isPassReq ? reqOrPayload : undefined;
+    const payload = isPassReq ? payloadMaybe : reqOrPayload;
+
+    // Verificar si el token fue revocado explícitamente (ej. tras logout)
+    if (req) {
+      const rawToken = ExtractJwt.fromAuthHeaderAsBearerToken()(req);
+      if (rawToken && (await this.tokenRevocation.isRevoked(rawToken))) {
+        throw new UnauthorizedException('Token revocado');
+      }
+    }
+
     // Reject refresh tokens used as access tokens — they have a 30d TTL
     // and must never grant API access.
     if (payload.type === 'refresh') {

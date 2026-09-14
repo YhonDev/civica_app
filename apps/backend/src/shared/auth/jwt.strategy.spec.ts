@@ -5,10 +5,12 @@ import { UnauthorizedException } from '@nestjs/common';
 
 import { JwtStrategy } from './jwt.strategy';
 import { Usuario, RolUsuario } from '../../iam/domain/usuario.entity';
+import { TokenRevocationService } from './token-revocation.service';
 
 describe('JwtStrategy', () => {
   let strategy: JwtStrategy;
   let usuarioRepo: jest.Mocked<Repository<Usuario>>;
+  let tokenRevocation: jest.Mocked<TokenRevocationService>;
 
   const mockUsuario = Usuario.crear(
     'test@test.com',
@@ -39,11 +41,18 @@ describe('JwtStrategy', () => {
             findOne: jest.fn(),
           },
         },
+        {
+          provide: TokenRevocationService,
+          useValue: {
+            isRevoked: jest.fn().mockResolvedValue(false),
+          },
+        },
       ],
     }).compile();
 
     strategy = module.get<JwtStrategy>(JwtStrategy);
     usuarioRepo = module.get(getRepositoryToken(Usuario));
+    tokenRevocation = module.get(TokenRevocationService);
   });
 
   afterEach(() => {
@@ -99,6 +108,19 @@ describe('JwtStrategy', () => {
       await expect(
         strategy.validate({ ...mockPayload, tenantId: 'tenant-otro' }),
       ).rejects.toThrow('Token emitido para otro tenant');
+    });
+
+    it('should reject a token that has been revoked', async () => {
+      tokenRevocation.isRevoked.mockResolvedValue(true);
+      const req = {
+        headers: {
+          authorization: 'Bearer revoked-token-123',
+        },
+      };
+
+      await expect(strategy.validate(req, mockPayload)).rejects.toThrow(
+        'Token revocado',
+      );
     });
 
     it('should accept a token without tenantId (legacy payloads) when user exists', async () => {

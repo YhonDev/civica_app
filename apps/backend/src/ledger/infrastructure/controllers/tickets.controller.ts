@@ -21,7 +21,7 @@ import { RolUsuario, Usuario } from '../../../iam/domain/usuario.entity';
 @ApiTags('Tickets')
 @ApiBearerAuth('jwt-auth')
 @Controller('tickets')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class TicketsController {
   constructor(private readonly ticketRepo: TicketRepository) {}
 
@@ -31,6 +31,7 @@ export class TicketsController {
    * Response fields vary by role (RESIDENTE < COBRADOR < ADMIN).
    */
   @Get(':id')
+  @Roles(RolUsuario.ADMIN, RolUsuario.COBRADOR, RolUsuario.RESIDENTE)
   async getById(
     @Param('id') id: string,
     @CurrentUser() user: Usuario,
@@ -53,6 +54,7 @@ export class TicketsController {
    * Used by all roles to view payment history.
    */
   @Get()
+  @Roles(RolUsuario.ADMIN, RolUsuario.COBRADOR, RolUsuario.RESIDENTE)
   async list(
     @Query('residenteId') residenteId: string,
     @Query('pagoId') pagoId: string,

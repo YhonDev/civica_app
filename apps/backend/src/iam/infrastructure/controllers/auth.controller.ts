@@ -9,6 +9,8 @@ import {
   Req,
   UseGuards,
   BadRequestException,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import type { Request } from 'express';
 import { Throttle } from '@nestjs/throttler';
@@ -115,19 +117,31 @@ export class AuthController {
   }
 
   @Post('logout')
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Cerrar sesión',
-    description: 'Revoca la sesión actual en la base de datos',
+    description:
+      'Revoca la sesión actual en la base de datos y añade el access token a la lista de revocación',
   })
   @ApiResponse({ status: 200, description: 'Sesión cerrada' })
-  async logout(@Body() dto: { refreshToken?: string }) {
+  async logout(@Body() dto: { refreshToken?: string }, @Req() req: any) {
     if (dto.refreshToken) {
       await this.authService.revokeRefreshToken(dto.refreshToken);
+    }
+    const authHeader = req?.headers?.authorization;
+    if (
+      authHeader &&
+      typeof authHeader === 'string' &&
+      authHeader.startsWith('Bearer ')
+    ) {
+      const accessToken = authHeader.substring(7);
+      await this.authService.revokeAccessToken(accessToken);
     }
     return { success: true };
   }
 
   @Post('logout-all')
+  @HttpCode(HttpStatus.OK)
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('jwt-auth')
   @ApiOperation({ summary: 'Cerrar todas las sesiones activas del usuario' })
@@ -135,8 +149,17 @@ export class AuthController {
     status: 200,
     description: 'Todas las sesiones fueron revocadas',
   })
-  async logoutAll(@CurrentUser() user: Usuario) {
+  async logoutAll(@CurrentUser() user: Usuario, @Req() req: any) {
     await this.authService.revokeAllSessionsForUser(user.id);
+    const authHeader = req?.headers?.authorization;
+    if (
+      authHeader &&
+      typeof authHeader === 'string' &&
+      authHeader.startsWith('Bearer ')
+    ) {
+      const accessToken = authHeader.substring(7);
+      await this.authService.revokeAccessToken(accessToken);
+    }
     return { success: true, message: 'Todas las sesiones fueron cerradas.' };
   }
 
@@ -163,6 +186,7 @@ export class AuthController {
   }
 
   @Post('reset-password')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(RolUsuario.ADMIN)
   @ApiBearerAuth('jwt-auth')
@@ -195,6 +219,7 @@ export class AuthController {
 
   /** Admin o propio: actualiza username y/o password. */
   @Patch('credentials')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(RolUsuario.ADMIN, RolUsuario.RESIDENTE, RolUsuario.COBRADOR)
   @ApiBearerAuth('jwt-auth')
