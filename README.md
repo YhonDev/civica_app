@@ -361,8 +361,8 @@ Cada commit debe incluir un prefijo identificador claro:
 
 ### Conexión a la Base de Datos Cloud (Supabase Pooler)
 ```bash
-# Conexión directa mediante psql con SSL
-psql "postgresql://postgres.fpgukukujxfrlvynpyha:6eq7I3m4RFH6ft@aws-1-us-east-2.pooler.supabase.com:5432/postgres?sslmode=require"
+# Conexión directa mediante psql con SSL (usar credenciales de entorno)
+psql "postgresql://<USUARIO>:<PASSWORD>@<HOST_POOLER>:5432/postgres?sslmode=require"
 ```
 
 ### Disparo Manual de Generación de Cobros en Nube
