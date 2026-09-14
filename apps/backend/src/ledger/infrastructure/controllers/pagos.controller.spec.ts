@@ -105,4 +105,67 @@ describe('PagosController', () => {
       expect(mockPagoRepo.findByPropietario).toHaveBeenCalledWith('res-cobrador', 'tenant-1');
     });
   });
+
+  describe('autorizacion territorial y de cobro', () => {
+    it('cobrador no puede registrar pagos en etapas no asignadas', async () => {
+      const mockDataSource = {
+        query: jest.fn().mockResolvedValue([]), // No asignaciones para esta etapa
+      };
+      const mockMantenimiento = {
+        verificarResidenteNoBloqueado: jest.fn().mockResolvedValue(true),
+      };
+
+      const customController = new PagosController(
+        {} as any,
+        {} as any,
+        {} as any,
+        {} as any,
+        mockPagoRepo as any,
+        mockMantenimiento as any,
+        mockDataSource as any,
+      );
+
+      const user = crearUser(RolUsuario.COBRADOR, 'u-cobrador');
+      const dto = {
+        clientPaymentId: 'pay-1',
+        monto: 10000,
+        fechaPago: '2026-09-14',
+        residenteId: 'res-no-asignado',
+      };
+
+      await expect(
+        customController.registrar(dto, user, 'tenant-1'),
+      ).rejects.toThrow(/No tienes autorización para registrar pagos/);
+    });
+
+    it('cobrador no puede corregir pagos registrados por otro cobrador', async () => {
+      const mockRepo = {
+        findById: jest.fn().mockResolvedValue({
+          id: 'pago-1',
+          cobradorId: 'otro-cobrador',
+        }),
+      };
+
+      const customController = new PagosController(
+        {} as any,
+        {} as any,
+        {} as any,
+        {} as any,
+        mockRepo as any,
+        {} as any,
+      );
+
+      const user = crearUser(RolUsuario.COBRADOR, 'u-cobrador');
+      user.id = 'mi-id-cobrador';
+
+      await expect(
+        customController.corregir(
+          'pago-1',
+          { nuevoMonto: 5000, motivo: 'Error' },
+          user,
+          'tenant-1',
+        ),
+      ).rejects.toThrow(/Solo puedes corregir pagos registrados por ti mismo/);
+    });
+  });
 });

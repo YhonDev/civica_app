@@ -193,14 +193,77 @@ export class DashboardQuery {
           };
         },
       );
-      // Calcular historial de los últimos 12 meses
-      const historialPromesas = [];
+      // Calcular historial de los últimos 12 meses (optimizado con agregación SQL)
+      const mesesObj: Array<{ anio: number; mes: number }> = [];
       let tempMes = mes;
       let tempAnio = anio;
       for (let i = 0; i < 12; i++) {
-        const targetMes = tempMes;
-        const targetAnio = tempAnio;
-        historialPromesas.push(
+        mesesObj.push({ anio: tempAnio, mes: tempMes });
+        tempMes--;
+        if (tempMes < 1) {
+          tempMes = 12;
+          tempAnio--;
+        }
+      }
+
+      let historialMeses: Array<{
+        mes: number;
+        anio: number;
+        recaudo: number;
+        pendientes: number;
+        mora: number;
+      }> = [];
+
+      if (
+        typeof (this.pagoRepo as any).sumMontoLast12Months === 'function' &&
+        typeof (this.cobroRepo as any).getMetricsLast12Months === 'function'
+      ) {
+        const oldest = mesesObj[mesesObj.length - 1];
+        const newest = mesesObj[0];
+        const startDate = `${oldest.anio}-${String(oldest.mes).padStart(2, '0')}-01`;
+        const endDate =
+          newest.mes === 12
+            ? `${newest.anio + 1}-01-01`
+            : `${newest.anio}-${String(newest.mes + 1).padStart(2, '0')}-01`;
+
+        const [pagosAgg, cobrosAgg] = await Promise.all([
+          (this.pagoRepo as any)
+            .sumMontoLast12Months(tenantId, startDate, endDate)
+            .catch(() => []),
+          (this.cobroRepo as any)
+            .getMetricsLast12Months(
+              tenantId,
+              startDate,
+              `${newest.anio}-${String(newest.mes).padStart(2, '0')}-01`,
+            )
+            .catch(() => []),
+        ]);
+
+        const pagosMap = new Map<string, number>();
+        for (const p of pagosAgg || []) {
+          pagosMap.set(`${p.anio}-${p.mes}`, p.recaudo);
+        }
+
+        const cobrosMap = new Map<string, { pendientes: number; mora: number }>();
+        for (const c of cobrosAgg || []) {
+          cobrosMap.set(`${c.anio}-${c.mes}`, {
+            pendientes: c.pendientes,
+            mora: c.mora,
+          });
+        }
+
+        historialMeses = mesesObj.map(({ anio: a, mes: m }) => {
+          const cobroData = cobrosMap.get(`${a}-${m}`);
+          return {
+            mes: m,
+            anio: a,
+            recaudo: pagosMap.get(`${a}-${m}`) || 0,
+            pendientes: cobroData?.pendientes || 0,
+            mora: cobroData?.mora || 0,
+          };
+        });
+      } else {
+        const historialPromesas = mesesObj.map(({ anio: targetAnio, mes: targetMes }) =>
           Promise.all([
             this.pagoRepo
               .sumMontoByMonth(tenantId, targetAnio, targetMes)
@@ -219,13 +282,8 @@ export class DashboardQuery {
             mora: Number(mMora) || 0,
           })),
         );
-        tempMes--;
-        if (tempMes < 1) {
-          tempMes = 12;
-          tempAnio--;
-        }
+        historialMeses = await Promise.all(historialPromesas);
       }
-      const historialMeses = await Promise.all(historialPromesas);
 
       return {
         mes,

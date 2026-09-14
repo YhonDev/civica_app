@@ -11,7 +11,10 @@ import {
   UseInterceptors,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
+  Optional,
 } from '@nestjs/common';
+import { DataSource } from 'typeorm';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { RegistrarPagoUseCase } from '../../application/use-cases/registrar-pago.use-case';
 import { EliminarPagoUseCase } from '../../application/use-cases/eliminar-pago.use-case';
@@ -44,6 +47,8 @@ export class PagosController {
     private readonly validarPagoUC: ValidarPagoUseCase,
     private readonly pagoRepo: PagoRepository,
     private readonly mantenimientoService: MantenimientoService,
+    @Optional()
+    private readonly dataSource?: DataSource,
   ) {}
 
   @Post()
@@ -76,11 +81,30 @@ export class PagosController {
     @CurrentUser() user: Usuario,
     @CurrentTenant() tenantId: string,
   ) {
-    // Verificar mantenimiento — solo bloquea a COBRADOR, el ADMIN nunca se bloquea
+    // Verificar mantenimiento y autorización territorial
     if (user.rol !== RolUsuario.ADMIN) {
       await this.mantenimientoService.verificarResidenteNoBloqueado(
         dto.residenteId,
       );
+
+      // Si es COBRADOR, verificar que la etapa del residente esté asignada
+      if (user.rol === RolUsuario.COBRADOR && this.dataSource) {
+        const asignaciones = await this.dataSource.query(
+          `SELECT ae.etapa_id
+           FROM asignaciones_etapa ae
+           JOIN casas c ON c.manzana_id IN (SELECT m.id FROM manzanas m WHERE m.etapa_id = ae.etapa_id)
+           JOIN tenencias t ON t.casa_id = c.id
+           WHERE ae.usuario_id = $1 
+             AND t.residente_id = $2 
+             AND (t.fecha_fin IS NULL OR t.fecha_fin >= CURRENT_DATE)`,
+          [user.id, dto.residenteId],
+        );
+        if (!asignaciones || asignaciones.length === 0) {
+          throw new ForbiddenException(
+            'No tienes autorización para registrar pagos en la etapa de este residente.',
+          );
+        }
+      }
     }
 
     return this.registrarPagoUC.execute({
@@ -111,6 +135,19 @@ export class PagosController {
     @CurrentUser() user: Usuario,
     @CurrentTenant() tenantId: string,
   ) {
+    // Si es COBRADOR, validar que solo pueda corregir pagos propios
+    if (user.rol === RolUsuario.COBRADOR) {
+      const pagoExistente = await this.pagoRepo.findById(pagoId, tenantId);
+      if (!pagoExistente) {
+        throw new NotFoundException(`Pago ${pagoId} no encontrado`);
+      }
+      if (pagoExistente.cobradorId !== user.id) {
+        throw new ForbiddenException(
+          'Solo puedes corregir pagos registrados por ti mismo.',
+        );
+      }
+    }
+
     return this.corregirPagoUC.execute({
       pagoId,
       nuevoMonto: dto.nuevoMonto,

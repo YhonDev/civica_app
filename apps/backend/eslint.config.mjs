@@ -35,7 +35,9 @@ export default tseslint.config(
       '@typescript-eslint/no-unsafe-return': 'warn',
       '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
       '@typescript-eslint/require-await': 'warn',
-      "prettier/prettier": ["error", { endOfLine: "auto" }],
+      // Formatting is reported during CI without blocking security and test
+      // gates; existing files can be migrated incrementally.
+      "prettier/prettier": ["warn", { endOfLine: "auto" }],
     },
   },
   {

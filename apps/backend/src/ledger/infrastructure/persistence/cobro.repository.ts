@@ -102,6 +102,35 @@ export class CobroRepository extends BaseTenantRepository<Cobro> {
     return Number(result?.total ?? 0);
   }
 
+  async getMetricsLast12Months(
+    tenantId: string,
+    startPeriodo: string,
+    endPeriodo: string,
+  ): Promise<Array<{ anio: number; mes: number; pendientes: number; mora: number }>> {
+    const result = await this.repo
+      .createQueryBuilder('cobro')
+      .select([
+        'EXTRACT(YEAR FROM cobro.periodoInicio)::int AS anio',
+        'EXTRACT(MONTH FROM cobro.periodoInicio)::int AS mes',
+        "COALESCE(SUM(CASE WHEN cobro.estado = 'PENDIENTE' THEN 1 ELSE 0 END), 0)::int AS pendientes",
+        "COALESCE(SUM(CASE WHEN cobro.estado = 'VENCIDA' OR (cobro.estado IN ('PENDIENTE', 'PARCIAL') AND cobro.fechaVencimiento < CURRENT_DATE) THEN (cobro.monto - cobro.montoPagado) ELSE 0 END), 0)::bigint AS mora",
+      ])
+      .where('cobro.tenantId = :tenantId', { tenantId })
+      .andWhere('cobro.periodoInicio >= :startPeriodo AND cobro.periodoInicio <= :endPeriodo', {
+        startPeriodo,
+        endPeriodo,
+      })
+      .groupBy('EXTRACT(YEAR FROM cobro.periodoInicio), EXTRACT(MONTH FROM cobro.periodoInicio)')
+      .getRawMany();
+
+    return (result || []).map((r: any) => ({
+      anio: Number(r.anio),
+      mes: Number(r.mes),
+      pendientes: Number(r.pendientes ?? 0),
+      mora: Number(r.mora ?? 0),
+    }));
+  }
+
   async sumMontoByMonth(
     tenantId: string,
     anio: number,

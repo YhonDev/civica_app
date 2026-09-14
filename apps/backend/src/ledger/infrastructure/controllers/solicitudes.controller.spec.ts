@@ -29,7 +29,7 @@ describe('SolicitudesController', () => {
       RolUsuario.RESIDENTE,
       'tenant-123',
     ),
-    { id: 'usr-1' },
+    { id: 'usr-1', residenteId: 'res-1' },
   );
 
   const mockAdmin = Object.assign(
@@ -148,7 +148,10 @@ describe('SolicitudesController', () => {
     });
 
     it('should stamp the solicitud with the token tenant, not a client-provided one', async () => {
-      mockCobroRepo.findById.mockResolvedValue({ id: 'cobro-1' });
+      mockCobroRepo.findById.mockResolvedValue({
+        id: 'cobro-1',
+        residenteId: 'res-1',
+      });
 
       await controller.crear(
         { cobroId: 'cobro-1', tipo: 'COBRO_PRESENCIAL', descripcion: 'Test' },
@@ -162,7 +165,15 @@ describe('SolicitudesController', () => {
     });
 
     it('should throw ConflictException if active revision already exists', async () => {
-      mockCobroRepo.findById.mockResolvedValue({ id: 'cobro-1' });
+      mockCobroRepo.findById.mockResolvedValue({
+        id: 'cobro-1',
+        residenteId: 'res-1',
+      });
+      mockPagoRepo.findById.mockResolvedValue({
+        id: 'pago-1',
+        cobroId: 'cobro-1',
+        residenteId: 'res-1',
+      });
       mockSolicitudRepo.findActiveRevisionByPagoOrCobro.mockResolvedValue({ id: 'existing-sr' });
 
       await expect(
@@ -175,7 +186,10 @@ describe('SolicitudesController', () => {
     });
 
     it('should throw ConflictException if active cobro already exists for resident', async () => {
-      mockCobroRepo.findById.mockResolvedValue({ id: 'cobro-1' });
+      mockCobroRepo.findById.mockResolvedValue({
+        id: 'cobro-1',
+        residenteId: 'res-1',
+      });
       mockSolicitudRepo.findActiveCobroByResidente.mockResolvedValue({ id: 'existing-sc' });
 
       await expect(
@@ -188,7 +202,10 @@ describe('SolicitudesController', () => {
     });
 
     it('should assign SR prefix for accented Revisión de pago', async () => {
-      mockCobroRepo.findById.mockResolvedValue({ id: 'cobro-1' });
+      mockCobroRepo.findById.mockResolvedValue({
+        id: 'cobro-1',
+        residenteId: 'res-1',
+      });
       mockSolicitudRepo.findActiveRevisionByPagoOrCobro.mockResolvedValue(null);
 
       await controller.crear(
@@ -362,9 +379,9 @@ describe('SolicitudesController', () => {
     it('should throw NotFoundException when solicitud is from another tenant', async () => {
       mockSolicitudRepo.findById.mockResolvedValue(null);
 
-      await expect(controller.eliminar('sol-x', 'tenant-123')).rejects.toThrow(
-        /no encontrada/,
-      );
+      await expect(
+        controller.eliminar('sol-x', { id: 'u-admin', rol: 'ADMIN' } as any, 'tenant-123'),
+      ).rejects.toThrow(/no encontrada/);
     });
   });
 
@@ -375,6 +392,119 @@ describe('SolicitudesController', () => {
       await expect(
         controller.getDetalleResolucion('sol-x', 'tenant-123'),
       ).rejects.toThrow(/no encontrada/);
+    });
+  });
+
+  describe('autorizacion territorial de cobrador', () => {
+    it('cobrador no puede marcar en camino solicitud de una etapa no asignada', async () => {
+      const mockSol = {
+        id: 'sol-1',
+        tenantId: 'tenant-123',
+        residenteId: 'res-otro',
+        estado: SolicitudEstado.PENDIENTE,
+      };
+      mockSolicitudRepo.findById.mockResolvedValue(mockSol);
+      const mockDS = { query: jest.fn().mockResolvedValue([]) };
+      const customCtrl = new SolicitudesController(
+        mockSolicitudRepo,
+        mockCobroRepo,
+        mockPagoRepo,
+        mockTicketRepo,
+        mockCorregirPagoUC,
+        mockEliminarPagoUC,
+        mockDS as any,
+      );
+      const cobrador = Object.assign(
+        Usuario.crear('c@test.com', 'hash', 'Cobrador', RolUsuario.COBRADOR, 'tenant-123'),
+        { id: 'c-1' },
+      );
+
+      await expect(
+        customCtrl.marcarEnCamino('sol-1', 'tenant-123', cobrador),
+      ).rejects.toThrow(/No tienes autorización para gestionar solicitudes/);
+    });
+
+    it('cobrador no puede resolver solicitud de una etapa no asignada', async () => {
+      const mockSol = {
+        id: 'sol-1',
+        tenantId: 'tenant-123',
+        residenteId: 'res-otro',
+        estado: SolicitudEstado.PENDIENTE,
+      };
+      mockSolicitudRepo.findById.mockResolvedValue(mockSol);
+      const mockDS = { query: jest.fn().mockResolvedValue([]) };
+      const customCtrl = new SolicitudesController(
+        mockSolicitudRepo,
+        mockCobroRepo,
+        mockPagoRepo,
+        mockTicketRepo,
+        mockCorregirPagoUC,
+        mockEliminarPagoUC,
+        mockDS as any,
+      );
+      const cobrador = Object.assign(
+        Usuario.crear('c@test.com', 'hash', 'Cobrador', RolUsuario.COBRADOR, 'tenant-123'),
+        { id: 'c-1' },
+      );
+
+      await expect(
+        customCtrl.resolver('sol-1', { estado: 'RESUELTA' }, 'tenant-123', cobrador),
+      ).rejects.toThrow(/No tienes autorización para gestionar solicitudes/);
+    });
+
+    it('cobrador no puede cancelar solicitud de una etapa no asignada', async () => {
+      const mockSol = {
+        id: 'sol-1',
+        tenantId: 'tenant-123',
+        residenteId: 'res-otro',
+        estado: SolicitudEstado.PENDIENTE,
+      };
+      mockSolicitudRepo.findById.mockResolvedValue(mockSol);
+      const mockDS = { query: jest.fn().mockResolvedValue([]) };
+      const customCtrl = new SolicitudesController(
+        mockSolicitudRepo,
+        mockCobroRepo,
+        mockPagoRepo,
+        mockTicketRepo,
+        mockCorregirPagoUC,
+        mockEliminarPagoUC,
+        mockDS as any,
+      );
+      const cobrador = Object.assign(
+        Usuario.crear('c@test.com', 'hash', 'Cobrador', RolUsuario.COBRADOR, 'tenant-123'),
+        { id: 'c-1' },
+      );
+
+      await expect(
+        customCtrl.eliminar('sol-1', cobrador, 'tenant-123'),
+      ).rejects.toThrow(/No tienes autorización para gestionar solicitudes/);
+    });
+
+    it('cobrador ve solo solicitudes pendientes de residentes en sus etapas asignadas', async () => {
+      const sol1 = { id: 'sol-1', residenteId: 'res-1', estado: SolicitudEstado.PENDIENTE };
+      const sol2 = { id: 'sol-2', residenteId: 'res-2', estado: SolicitudEstado.PENDIENTE };
+      mockSolicitudRepo.findPendingByTenant.mockResolvedValue([sol1, sol2]);
+
+      const mockDS = {
+        query: jest.fn().mockResolvedValue([{ residente_id: 'res-1' }]),
+      };
+      const customCtrl = new SolicitudesController(
+        mockSolicitudRepo,
+        mockCobroRepo,
+        mockPagoRepo,
+        mockTicketRepo,
+        mockCorregirPagoUC,
+        mockEliminarPagoUC,
+        mockDS as any,
+      );
+      const cobrador = Object.assign(
+        Usuario.crear('c@test.com', 'hash', 'Cobrador', RolUsuario.COBRADOR, 'tenant-123'),
+        { id: 'c-1' },
+      );
+
+      const res = await customCtrl.listarPendientes('tenant-123', cobrador);
+      expect(res).toHaveLength(1);
+      expect(res[0].id).toBe('sol-1');
     });
   });
 });

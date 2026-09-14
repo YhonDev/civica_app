@@ -28,6 +28,7 @@ class FakeCarteraRepository extends CarteraRepository {
     required int montoCentavos,
     String? cobroId,
     String? cobradorId,
+    String? solicitudId,
     String? tenantId,
     bool isCobrador = false,
   }) async => {'id': 'mock-pago'};

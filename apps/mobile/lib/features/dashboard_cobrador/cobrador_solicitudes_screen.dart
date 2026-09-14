@@ -320,6 +320,7 @@ class _CobradorSolicitudesScreenState extends State<CobradorSolicitudesScreen> {
     RegistrarPagoBottomSheet.show(
       context,
       cobro: cobroItem,
+      solicitudId: solicitud['id'] as String?,
       initialQuickMode: true,
       onSuccess: () {
         context.read<CasasCubit>().refresh();

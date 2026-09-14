@@ -231,14 +231,6 @@ export class ResidentesController {
     casaId?: string,
   ) {
     // Si ya se especificó una etapa en el query, usamos ese filtro directamente
-    if (etapaId) {
-      return this.residenteRepository.buscarPorFiltros({
-        tenantId,
-        etapaId,
-        casaId,
-      });
-    }
-
     // Buscamos las etapas asignadas al cobrador
     const asignaciones = await this.dataSource.query(
       'SELECT etapa_id FROM asignaciones_etapa WHERE usuario_id = $1',
@@ -250,9 +242,16 @@ export class ResidentesController {
       return [];
     }
 
+    const etapasPermitidas = etapaId
+      ? etapaIds.filter((id: string) => id === etapaId)
+      : etapaIds;
+    if (etapasPermitidas.length === 0) {
+      return [];
+    }
+
     const resultados = await this.residenteRepository.buscarPorEtapas(
       tenantId,
-      etapaIds,
+      etapasPermitidas,
     );
 
     // Si hay filtro adicional de casa, aplicarlo en memoria

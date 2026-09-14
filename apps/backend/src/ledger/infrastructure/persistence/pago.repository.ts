@@ -91,6 +91,34 @@ export class PagoRepository extends BaseTenantRepository<Pago> {
     return Number(result?.total ?? 0);
   }
 
+  async sumMontoLast12Months(
+    tenantId: string,
+    startMonthDate: string,
+    endMonthDate: string,
+  ): Promise<Array<{ anio: number; mes: number; recaudo: number }>> {
+    const qb = this.repo.createQueryBuilder('pago');
+    this.applyTenantFilter(qb, tenantId, 'pago');
+
+    const result = await qb
+      .select([
+        'EXTRACT(YEAR FROM pago.fecha_pago)::int AS anio',
+        'EXTRACT(MONTH FROM pago.fecha_pago)::int AS mes',
+        'COALESCE(SUM(pago.monto), 0)::bigint AS recaudo',
+      ])
+      .andWhere('pago.fecha_pago >= :start AND pago.fecha_pago < :end', {
+        start: startMonthDate,
+        end: endMonthDate,
+      })
+      .groupBy('EXTRACT(YEAR FROM pago.fecha_pago), EXTRACT(MONTH FROM pago.fecha_pago)')
+      .getRawMany();
+
+    return (result || []).map((r: any) => ({
+      anio: Number(r.anio),
+      mes: Number(r.mes),
+      recaudo: Number(r.recaudo ?? 0),
+    }));
+  }
+
   async countDistinctResidentesByMonth(
     tenantId: string,
     year: number,
