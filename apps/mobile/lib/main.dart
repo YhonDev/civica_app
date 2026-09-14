@@ -1,6 +1,8 @@
 import 'dart:ui' show PlatformDispatcher;
-import 'package:flutter/foundation.dart' show kDebugMode, kReleaseMode, kIsWeb;
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, kDebugMode, kReleaseMode, kIsWeb, TargetPlatform;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show DeviceOrientation, SystemChrome;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'core/database/app_database.dart';
@@ -96,7 +98,45 @@ void main() async {
   // Inicializar ciclo de vida de la sesión
   SessionLifecycleManager.instance.init();
 
+  // Configuración de orientación adaptativa:
+  // Fija vertical en teléfonos y habilita ambas en tablets.
+  await configureScreenOrientation();
+
   runApp(const CuentivaApp());
+}
+
+/// Configura las orientaciones permitidas según el tipo de dispositivo:
+/// - En smartphones (shortestSide < 600dp), fija vertical estricto ([DeviceOrientation.portraitUp]).
+/// - En tablets (>= 600dp), permite ambas (vertical y horizontal).
+/// - En Desktop y Web, no aplica restricciones para permitir que el gestor de ventanas del SO redimensione libremente.
+Future<void> configureScreenOrientation({double? shortestSideOverride}) async {
+  if (kIsWeb) return;
+  final isMobile = defaultTargetPlatform == TargetPlatform.android ||
+      defaultTargetPlatform == TargetPlatform.iOS;
+  if (!isMobile) return;
+
+  double? shortest = shortestSideOverride;
+  if (shortest == null) {
+    final view = WidgetsBinding.instance.platformDispatcher.views.firstOrNull;
+    if (view != null && view.devicePixelRatio > 0) {
+      shortest = (view.physicalSize / view.devicePixelRatio).shortestSide;
+    }
+  }
+
+  if (shortest == null || shortest <= 0) return;
+
+  if (shortest < AppBreakpoints.compact) {
+    await SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+    ]);
+  } else {
+    await SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
+  }
 }
 
 class CuentivaApp extends StatefulWidget {
@@ -184,6 +224,17 @@ class _CuentivaAppState extends State<CuentivaApp> {
     setState(() {
       _apiCheck = ApiHealthService(baseUrl: detectBaseUrl()).isApiReachable();
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.android ||
+            defaultTargetPlatform == TargetPlatform.iOS)) {
+      final shortest = MediaQuery.sizeOf(context).shortestSide;
+      configureScreenOrientation(shortestSideOverride: shortest);
+    }
   }
 
   @override
