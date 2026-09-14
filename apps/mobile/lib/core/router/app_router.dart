@@ -102,7 +102,8 @@ final GoRouter appRouter = GoRouter(
           path: '/',
           name: 'dashboard',
           builder: (context, _) {
-            final rol = context.read<AuthCubit>().state.usuario?['rol'] as String?;
+            final rol =
+                context.read<AuthCubit>().state.usuario?['rol'] as String?;
             return _dashboardForRol(rol);
           },
         ),
@@ -112,17 +113,19 @@ final GoRouter appRouter = GoRouter(
           path: '/estado',
           name: 'estado',
           builder: (context, _) {
-            final rol = context.read<AuthCubit>().state.usuario?['rol'] as String?;
+            final rol =
+                context.read<AuthCubit>().state.usuario?['rol'] as String?;
             return _carteraForRol(rol);
           },
         ),
-        
+
         // Cobrar/Pagar según rol (Cartera fallback)
         GoRoute(
           path: '/cartera',
           name: 'cartera',
           builder: (context, _) {
-            final rol = context.read<AuthCubit>().state.usuario?['rol'] as String?;
+            final rol =
+                context.read<AuthCubit>().state.usuario?['rol'] as String?;
             return _carteraForRol(rol);
           },
         ),
@@ -150,9 +153,13 @@ final GoRouter appRouter = GoRouter(
               etapas: extra['etapas'] as List<EtapaExplorer>? ?? [],
               solicitudes: extra['solicitudes'] as List<dynamic>? ?? [],
               selectedEtapaId: extra['selectedEtapaId'] as String? ?? 'TODAS',
-              selectedEstadoFiltro: extra['selectedEstadoFiltro'] as String? ?? 'TODAS',
+              selectedEstadoFiltro:
+                  extra['selectedEstadoFiltro'] as String? ?? 'TODAS',
               sentidoInverso: extra['sentidoInverso'] as bool? ?? false,
-              selectedRecorridoFecha: (extra['selectedRecorrido'] as Map<String, dynamic>?)?['fecha'] as String?,
+              selectedRecorridoFecha:
+                  (extra['selectedRecorrido']
+                          as Map<String, dynamic>?)?['fecha']
+                      as String?,
               selectedRecorridoLabel: () {
                 final rec = extra['selectedRecorrido'] as Map<String, dynamic>?;
                 if (rec == null) return null;
@@ -179,28 +186,40 @@ final GoRouter appRouter = GoRouter(
                   path: 'detalle',
                   name: 'comunidad-residente-detalle',
                   builder: (_, state) {
-                    final residente = state.extra as ResidenteItem;
+                    final residente = state.extra;
+                    if (residente is! ResidenteItem) {
+                      return const InvalidRouteArgumentsScreen();
+                    }
                     return ResidenteDetailScreen(residente: residente);
                   },
                   routes: [
                     GoRoute(
                       path: 'finanzas',
                       builder: (_, state) {
-                        final residente = state.extra as ResidenteItem;
+                        final residente = state.extra;
+                        if (residente is! ResidenteItem) {
+                          return const InvalidRouteArgumentsScreen();
+                        }
                         return ResidenteFinanzasScreen(residente: residente);
                       },
                     ),
                     GoRoute(
                       path: 'historial',
                       builder: (_, state) {
-                        final residente = state.extra as ResidenteItem;
+                        final residente = state.extra;
+                        if (residente is! ResidenteItem) {
+                          return const InvalidRouteArgumentsScreen();
+                        }
                         return ResidenteHistorialScreen(residente: residente);
                       },
                     ),
                     GoRoute(
                       path: 'inmueble',
                       builder: (_, state) {
-                        final residente = state.extra as ResidenteItem;
+                        final residente = state.extra;
+                        if (residente is! ResidenteItem) {
+                          return const InvalidRouteArgumentsScreen();
+                        }
                         return ResidenteInmuebleScreen(residente: residente);
                       },
                     ),
@@ -210,7 +229,10 @@ final GoRouter appRouter = GoRouter(
                   path: 'editar',
                   name: 'comunidad-residente-editar',
                   builder: (_, state) {
-                    final residente = state.extra as ResidenteItem;
+                    final residente = state.extra;
+                    if (residente is! ResidenteItem) {
+                      return const InvalidRouteArgumentsScreen();
+                    }
                     return EditarResidenteScreen(residente: residente);
                   },
                 ),
@@ -279,10 +301,7 @@ final GoRouter appRouter = GoRouter(
           name: 'configuracion',
           builder: (_, _) => const ConfiguracionScreen(),
         ),
-        GoRoute(
-          path: '/mas',
-          redirect: (_, _) => '/configuracion',
-        ),
+        GoRoute(path: '/mas', redirect: (_, _) => '/configuracion'),
 
         // Historial (Residente)
         GoRoute(
@@ -368,9 +387,13 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/cobrador-detalle',
       name: 'cobrador-detalle',
-      builder: (_, state) => CobradorDetailScreen(
-        cobrador: state.extra as CobradorItem,
-      ),
+      builder: (_, state) {
+        final cobrador = state.extra;
+        if (cobrador is! CobradorItem) {
+          return const InvalidRouteArgumentsScreen();
+        }
+        return CobradorDetailScreen(cobrador: cobrador);
+      },
     ),
   ],
 );
@@ -405,8 +428,26 @@ class PlaceholderScreen extends StatelessWidget {
         child: Text(
           '$title — Próximamente',
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class InvalidRouteArgumentsScreen extends StatelessWidget {
+  const InvalidRouteArgumentsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Pantalla no disponible')),
+      body: Center(
+        child: Text(
+          'Los datos de esta navegación ya no están disponibles.',
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.bodyLarge,
         ),
       ),
     );
