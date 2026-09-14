@@ -247,6 +247,26 @@ async function testSolicitudWritePath() {
   }
 }
 
+// ── 7. Metrics (telemetría de observabilidad) ────────────────────
+async function testMetrics() {
+  try {
+    const { status, data } = await req('GET', '/metrics', { auth: true });
+    const ok =
+      status === 200 &&
+      data?.requests !== undefined &&
+      data?.latencyMs?.p50 !== undefined;
+    check(
+      'GET /metrics shape válido de telemetría y percentiles',
+      ok,
+      ok
+        ? `requests=${data.requests}, p50=${data.latencyMs.p50}ms, p95=${data.latencyMs.p95}ms`
+        : `status=${status}`,
+    );
+  } catch (e) {
+    check('GET /metrics shape válido de telemetría y percentiles', false, e.message);
+  }
+}
+
 // ── Runner ───────────────────────────────────────────────────────
 async function main() {
   console.log(`\n🔥 Smoke test — ${BASE_URL}\n`);
@@ -257,6 +277,7 @@ async function main() {
   await testCobros();
   await testSolicitudWritePath();
   await testRefresh();
+  await testMetrics();
 
   const failed = results.filter((r) => !r.ok);
   const passed = results.length - failed.length;

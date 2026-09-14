@@ -22,7 +22,12 @@
     "test:docker": "node scripts/docker-smoke.mjs",
     "validate": "npm run build && npm test && npm run test:e2e",
     "seed": "ts-node database/scripts/seed-completo.ts",
-    "cobros:generar": "ts-node database/scripts/generar-cobros.ts"
+    "cobros:generar": "ts-node database/scripts/generar-cobros.ts",
+    "db:migrate": "node scripts/migrate-runner.mjs up",
+    "db:migrate:down": "node scripts/migrate-runner.mjs down",
+    "db:migrate:status": "node scripts/migrate-runner.mjs status",
+    "db:backup": "node scripts/db-backup.mjs",
+    "db:restore": "node scripts/db-restore.mjs"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
