@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/auth/user_role.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_breakpoints.dart';
@@ -61,7 +62,7 @@ class _SolicitudesScreenState extends State<SolicitudesScreen>
   void _detectRole() {
     final user = context.read<AuthCubit>().state.usuario;
     final rol = user?['rol'] as String? ?? '';
-    _isAdmin = rol == 'ADMIN';
+    _isAdmin = UserRole.fromString(rol).isAdmin;
     // Smart default: admin sees pending first, residente sees all
     _filtroActivo = _isAdmin ? 'PENDIENTES' : 'TODAS';
   }

@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/auth/user_role.dart';
 import '../../core/format/app_currency.dart';
 import '../../core/network/api_client.dart';
 import '../../core/theme/app_colors.dart';
@@ -391,7 +392,9 @@ class _ResidenteDetailScreenState extends State<ResidenteDetailScreen> {
                 usuarioId: _residente.usuarioId!,
                 nombre: _residente.nombre,
                 initialUsername: _residente.username,
-                isAdmin: context.read<AuthCubit>().state.usuario?['rol'] == 'ADMIN',
+                isAdmin: UserRole.fromString(
+                  context.read<AuthCubit>().state.usuario?['rol'] as String?,
+                ).isAdmin,
                 onCredentialsUpdated: () {
                   _recargarResidente();
                 },
