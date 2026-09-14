@@ -14,6 +14,7 @@ import {
   ForbiddenException,
   Optional,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { DataSource } from 'typeorm';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { RegistrarPagoUseCase } from '../../application/use-cases/registrar-pago.use-case';
@@ -52,6 +53,7 @@ export class PagosController {
   ) {}
 
   @Post()
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN, RolUsuario.COBRADOR)
   @UseInterceptors(ActividadInterceptor)
@@ -158,6 +160,7 @@ export class PagosController {
   }
 
   @Patch(':id/validar')
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN)
   @UseInterceptors(ActividadInterceptor)

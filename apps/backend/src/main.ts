@@ -17,6 +17,7 @@ async function bootstrap() {
   // en un solo bucket y las IPs reales no serían visibles en los logs.
   // Confía en el último salto (el proxy propio de la plataforma).
   app.set('trust proxy', 1);
+  app.disable('x-powered-by');
 
   // ─── Global Prefix ───────────────────────────────────
   app.setGlobalPrefix('api');

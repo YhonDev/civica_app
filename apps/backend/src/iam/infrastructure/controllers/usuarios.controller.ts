@@ -23,6 +23,7 @@ import {
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
+import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../../../shared/auth/jwt-auth.guard';
 import { AuthService } from '../../../shared/auth/auth.service';
 import { RolesGuard } from '../../../shared/auth/guards/roles.guard';
@@ -127,11 +128,34 @@ export class UsuariosController {
       );
     }
 
+    await this.authService.revokeAllSessionsForUser(usuario.id);
     await this.usuarioRepository.remove(usuario);
     return {
       success: true,
       message: `Usuario ${usuario.nombre} eliminado correctamente`,
     };
+  }
+
+  @Patch(':id/estado')
+  @UseGuards(RolesGuard)
+  @Roles(RolUsuario.ADMIN)
+  async cambiarEstado(
+    @Param('id') usuarioId: string,
+    @Body() dto: { activo: boolean },
+    @CurrentUser() currentUser: Usuario,
+  ) {
+    const usuario = await this.usuarioRepository.findOne({
+      where: { id: usuarioId, tenantId: currentUser.tenantId },
+    });
+    if (!usuario) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+    usuario.activo = Boolean(dto.activo);
+    await this.usuarioRepository.save(usuario);
+    if (!usuario.activo) {
+      await this.authService.revokeAllSessionsForUser(usuario.id);
+    }
+    return { success: true, activo: usuario.activo };
   }
 
   @Get(':id/etapas')
@@ -221,6 +245,7 @@ export class UsuariosController {
   }
 
   @Patch(':id/password')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN)
   async cambiarPassword(
@@ -248,6 +273,7 @@ export class UsuariosController {
   }
 
   @Post(':id/reset-password')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN)
   async resetearPassword(

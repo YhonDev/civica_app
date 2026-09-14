@@ -17,6 +17,7 @@ import {
   InternalServerErrorException,
   Optional,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { DataSource } from 'typeorm';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { SolicitudRepository } from '../persistence/solicitud.repository';
@@ -56,6 +57,7 @@ export class SolicitudesController {
   ) {}
 
   @Post()
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.RESIDENTE, RolUsuario.ADMIN)
   @UseInterceptors(ActividadInterceptor)

@@ -53,7 +53,7 @@ export class TarifasController {
 
   @Get()
   @UseGuards(RolesGuard)
-  @Roles(RolUsuario.ADMIN, RolUsuario.RESIDENTE)
+  @Roles(RolUsuario.ADMIN, RolUsuario.COBRADOR, RolUsuario.RESIDENTE)
   @ApiOperation({ summary: 'Listar todas las tarifas' })
   async listar(
     @Query() query: ListarTarifasQueryDto,
@@ -65,7 +65,7 @@ export class TarifasController {
   /** Tarifas vigentes hoy — siempre desde BD (editables por admin). */
   @Get('vigentes')
   @UseGuards(RolesGuard)
-  @Roles(RolUsuario.ADMIN, RolUsuario.RESIDENTE)
+  @Roles(RolUsuario.ADMIN, RolUsuario.COBRADOR, RolUsuario.RESIDENTE)
   @ApiOperation({ summary: 'Obtener tarifas vigentes por modalidad' })
   async vigentes(
     @Query() query: TarifasVigentesQueryDto,
@@ -103,7 +103,7 @@ export class TarifasController {
 
   @Get(':id')
   @UseGuards(RolesGuard)
-  @Roles(RolUsuario.ADMIN, RolUsuario.RESIDENTE)
+  @Roles(RolUsuario.ADMIN, RolUsuario.COBRADOR, RolUsuario.RESIDENTE)
   async obtener(@Param('id') id: string, @CurrentTenant() tenantId: string) {
     const tarifa = await this.tarifaRepository.findById(id, tenantId);
     if (!tarifa) {
