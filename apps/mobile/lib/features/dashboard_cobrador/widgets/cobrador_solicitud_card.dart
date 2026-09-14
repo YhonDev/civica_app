@@ -45,7 +45,8 @@ class CobradorSolicitudCard extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     if (compact) {
-      return Container(
+      return RepaintBoundary(
+        child: Container(
         margin: const EdgeInsets.only(bottom: AppSpacing.sm),
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.sm),
         decoration: BoxDecoration(
@@ -170,11 +171,13 @@ class CobradorSolicitudCard extends StatelessWidget {
             ),
           ],
         ),
-      );
-    }
+      ),
+    );
+  }
 
-    // Rich layout (for dedicated Solicitudes screen)
-    return Container(
+  // Rich layout (for dedicated Solicitudes screen)
+  return RepaintBoundary(
+    child: Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
@@ -366,6 +369,7 @@ class CobradorSolicitudCard extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 }

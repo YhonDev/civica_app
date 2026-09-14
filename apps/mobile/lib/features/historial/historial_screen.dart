@@ -170,7 +170,8 @@ class _HistorialScreenState extends State<HistorialScreen> {
                               final nroRecibo = c['nroRecibo'] as String? ?? 'TK-000000';
                               final esViaSolicitud = c['esViaSolicitud'] == true;
 
-                              return Card(
+                              return RepaintBoundary(
+                                child: Card(
                                 margin: const EdgeInsets.only(bottom: AppSpacing.sm),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
@@ -404,8 +405,9 @@ class _HistorialScreenState extends State<HistorialScreen> {
                                     ),
                                   ),
                                 ),
-                              );
-                            }
+                              ),
+                            );
+                          }
 
                             final c = _cuotasDb[index];
                             final periodoInicioStr = c['periodoInicio'] as String? ?? DateTime.now().toIso8601String();
