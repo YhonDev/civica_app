@@ -16,10 +16,11 @@ import { UserAwareThrottlerGuard } from './shared/auth/guards/user-aware-throttl
 import { ObservabilityModule } from './shared/observability/observability.module';
 import { RequestIdMiddleware } from './shared/observability/request-id.middleware';
 import { CacheModule } from './shared/cache/cache.module';
+import { validateEnv } from './shared/infrastructure/env/env.validation';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }),
     TypeOrmModule.forRoot(databaseConfig()),
 
     // Rate limiting global: 30 requests / 60 segundos por defecto
