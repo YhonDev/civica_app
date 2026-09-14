@@ -291,24 +291,31 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent>
     final isSelected = _selectedStatusFilter == key;
     return Padding(
       padding: const EdgeInsets.only(right: 6),
-      child: ChoiceChip(
-        key: Key('filter_chip_$key'),
-        label: Text(label),
+      child: Semantics(
+        label: 'Filtrar cartera por $label',
         selected: isSelected,
-        showCheckmark: false,
-        onSelected: (_) {
-          setState(() {
-            _selectedStatusFilter = key;
-          });
-        },
-        selectedColor: activeColor,
-        labelStyle: AppTypography.smallBold.copyWith(
-          color: isSelected ? AppColors.onPrimary : AppColors.textSecondary,
-        ),
-        backgroundColor: AppColors.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
-          side: BorderSide(color: isSelected ? activeColor : AppColors.border),
+        button: true,
+        child: ChoiceChip(
+          key: Key('filter_chip_$key'),
+          label: Text(label),
+          selected: isSelected,
+          showCheckmark: false,
+          onSelected: (_) {
+            setState(() {
+              _selectedStatusFilter = key;
+            });
+          },
+          selectedColor: activeColor,
+          labelStyle: AppTypography.smallBold.copyWith(
+            color: isSelected ? AppColors.onPrimary : AppColors.textSecondary,
+          ),
+          backgroundColor: AppColors.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
+            side: BorderSide(
+              color: isSelected ? activeColor : AppColors.border,
+            ),
+          ),
         ),
       ),
     );
