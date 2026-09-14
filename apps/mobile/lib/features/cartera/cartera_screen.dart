@@ -498,178 +498,186 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent>
                         : 'EN_ESPERA')
                   : null;
 
-              return CobroCard(
-                cobro: cobro,
-                solicitudEstado: solicitudEstado,
-                onTap: () async {
-                  if (cobro.isPaid) {
-                    DateTime fecha = DateTime.now();
-                    if (cobro.fechaPago.isNotEmpty) {
-                      fecha =
-                          DateTime.tryParse(cobro.fechaPago)?.toLocal() ??
-                          DateTime.now();
-                    } else if (cobro.fechaVencimiento.isNotEmpty) {
-                      fecha =
-                          DateTime.tryParse(
-                            cobro.fechaVencimiento,
-                          )?.toLocal() ??
-                          DateTime.now();
-                    }
-                    final ticketNum = cobro.nroRecibo.isNotEmpty
-                        ? cobro.nroRecibo
-                        : 'TK-${cobro.id.replaceAll("-", "").substring(0, 6).toUpperCase()}';
-                    final result = await TicketBottomSheet.show(
-                      context,
-                      TicketData(
-                        numero: ticketNum,
-                        fecha: fecha,
-                        residente:
-                            cobro.nombre.isNotEmpty &&
-                                cobro.nombre != 'Residente'
-                            ? cobro.nombre
-                            : userName,
-                        casa: '${cobro.casa} · ${cobro.manzana}',
-                        monto:
-                            (cobro.monto > 0 ? cobro.monto : cobro.montoPagado)
-                                .round(),
-                        metodo: cobro.metodoPago.isNotEmpty
-                            ? cobro.metodoPago
-                            : 'Efectivo',
-                        estado: 'PAGADO',
-                        concepto: cobro.concepto,
-                        cobrador: cobro.cobradorNombre.isNotEmpty
-                            ? cobro.cobradorNombre
-                            : 'Administración',
-                        etapa: cobro.etapa,
-                        manzana: cobro.manzana,
-                        cobroId: cobro.id,
-                      ),
-                    );
-
-                    if (result is TicketData && context.mounted) {
-                      final created = await context.push<bool>(
-                        '/solicitud-nueva',
-                        extra: {
-                          'cobroId': result.cobroId,
-                          'pagoId': result.pagoId,
-                          'concepto': result.concepto,
-                          'nroRecibo': result.numero,
-                          'monto': result.monto,
-                        },
-                      );
-                      if (created == true && context.mounted) {
-                        _loadSolicitudesActivas();
-                        context.read<CarteraCubit>().loadCobros();
+              return RepaintBoundary(
+                key: ValueKey('cobro-${cobro.id}'),
+                child: CobroCard(
+                  cobro: cobro,
+                  solicitudEstado: solicitudEstado,
+                  onTap: () async {
+                    if (cobro.isPaid) {
+                      DateTime fecha = DateTime.now();
+                      if (cobro.fechaPago.isNotEmpty) {
+                        fecha =
+                            DateTime.tryParse(cobro.fechaPago)?.toLocal() ??
+                            DateTime.now();
+                      } else if (cobro.fechaVencimiento.isNotEmpty) {
+                        fecha =
+                            DateTime.tryParse(
+                              cobro.fechaVencimiento,
+                            )?.toLocal() ??
+                            DateTime.now();
                       }
-                    }
-                  } else if (canRegisterPago) {
-                    final cuotasDelResidente = state.cobros
-                        .where(
-                          (c) =>
-                              c.residenteId == cobro.residenteId && !c.isPaid,
-                        )
-                        .map(
-                          (c) => {
-                            'id': c.id,
-                            'periodo': c.concepto,
-                            'tituloCuota': c.tituloCuota,
-                            'concepto': c.concepto,
-                            'fechaVencimiento': c.fechaVencimiento,
-                            'monto': c.saldo > 0 ? c.saldo : c.monto,
-                            'estado': c.estado,
-                          },
-                        )
-                        .toList();
+                      final ticketNum = cobro.nroRecibo.isNotEmpty
+                          ? cobro.nroRecibo
+                          : 'TK-${cobro.id.replaceAll("-", "").substring(0, 6).toUpperCase()}';
+                      final result = await TicketBottomSheet.show(
+                        context,
+                        TicketData(
+                          numero: ticketNum,
+                          fecha: fecha,
+                          residente:
+                              cobro.nombre.isNotEmpty &&
+                                  cobro.nombre != 'Residente'
+                              ? cobro.nombre
+                              : userName,
+                          casa: '${cobro.casa} · ${cobro.manzana}',
+                          monto:
+                              (cobro.monto > 0
+                                      ? cobro.monto
+                                      : cobro.montoPagado)
+                                  .round(),
+                          metodo: cobro.metodoPago.isNotEmpty
+                              ? cobro.metodoPago
+                              : 'Efectivo',
+                          estado: 'PAGADO',
+                          concepto: cobro.concepto,
+                          cobrador: cobro.cobradorNombre.isNotEmpty
+                              ? cobro.cobradorNombre
+                              : 'Administración',
+                          etapa: cobro.etapa,
+                          manzana: cobro.manzana,
+                          cobroId: cobro.id,
+                        ),
+                      );
 
-                    RegistrarPagoBottomSheet.show(
-                      context,
-                      cobro: cobro,
-                      solicitudId: activeForThisCobro?.id,
-                      cuotas: cuotasDelResidente.isNotEmpty
-                          ? cuotasDelResidente
-                          : null,
-                      initialQuickMode: true,
-                      onSuccess: () =>
-                          context.read<CarteraCubit>().loadCobros(),
-                    );
-                  }
-                },
-                onSolicitarCobro:
-                    !canRegisterPago &&
-                        !cobro.isPaid &&
-                        activeForThisCobro == null
-                    ? () async {
-                        try {
-                          final repo = SolicitudesRepository();
-                          final resId =
-                              (user?['residenteId'] as String?) ??
-                              (user?['id'] as String?) ??
-                              '';
-                          await repo.crearSolicitud(
-                            cobroId: cobro.id,
-                            tipo: 'Solicitud de cobro',
-                            descripcion:
-                                'El residente solicita cobro presencial en domicilio para ${cobro.tituloCuota}',
-                            residenteId: resId,
-                          );
-                          LocalCacheRepository.instance.invalidate(
-                            'dashboard:residente',
-                          );
-                          LocalCacheRepository.instance.invalidate(
-                            'dashboard:cobrador',
-                          );
-                          LocalCacheRepository.instance.invalidate(
-                            'dashboard:administrador',
-                          );
-                          await _loadSolicitudesActivas();
-                          if (context.mounted) {
-                            TopToast.showSuccess(context, 'Solicitud enviada');
-                          }
-                        } catch (e) {
-                          if (context.mounted) {
-                            TopToast.showError(
-                              context,
-                              e,
-                              prefix: 'Error al solicitar cobro',
-                            );
-                          }
+                      if (result is TicketData && context.mounted) {
+                        final created = await context.push<bool>(
+                          '/solicitud-nueva',
+                          extra: {
+                            'cobroId': result.cobroId,
+                            'pagoId': result.pagoId,
+                            'concepto': result.concepto,
+                            'nroRecibo': result.numero,
+                            'monto': result.monto,
+                          },
+                        );
+                        if (created == true && context.mounted) {
+                          _loadSolicitudesActivas();
+                          context.read<CarteraCubit>().loadCobros();
                         }
                       }
-                    : null,
-                onRegistrarPago: canRegisterPago && !cobro.isPaid
-                    ? () {
-                        final cuotasDelResidente = state.cobros
-                            .where(
-                              (c) =>
-                                  c.residenteId == cobro.residenteId &&
-                                  !c.isPaid,
-                            )
-                            .map(
-                              (c) => {
-                                'id': c.id,
-                                'periodo': c.concepto,
-                                'tituloCuota': c.tituloCuota,
-                                'concepto': c.concepto,
-                                'fechaVencimiento': c.fechaVencimiento,
-                                'monto': c.saldo > 0 ? c.saldo : c.monto,
-                                'estado': c.estado,
-                              },
-                            )
-                            .toList();
+                    } else if (canRegisterPago) {
+                      final cuotasDelResidente = state.cobros
+                          .where(
+                            (c) =>
+                                c.residenteId == cobro.residenteId && !c.isPaid,
+                          )
+                          .map(
+                            (c) => {
+                              'id': c.id,
+                              'periodo': c.concepto,
+                              'tituloCuota': c.tituloCuota,
+                              'concepto': c.concepto,
+                              'fechaVencimiento': c.fechaVencimiento,
+                              'monto': c.saldo > 0 ? c.saldo : c.monto,
+                              'estado': c.estado,
+                            },
+                          )
+                          .toList();
 
-                        RegistrarPagoBottomSheet.show(
-                          context,
-                          cobro: cobro,
-                          solicitudId: activeForThisCobro?.id,
-                          cuotas: cuotasDelResidente.isNotEmpty
-                              ? cuotasDelResidente
-                              : null,
-                          initialQuickMode: true,
-                          onSuccess: () =>
-                              context.read<CarteraCubit>().loadCobros(),
-                        );
-                      }
-                    : null,
+                      RegistrarPagoBottomSheet.show(
+                        context,
+                        cobro: cobro,
+                        solicitudId: activeForThisCobro?.id,
+                        cuotas: cuotasDelResidente.isNotEmpty
+                            ? cuotasDelResidente
+                            : null,
+                        initialQuickMode: true,
+                        onSuccess: () =>
+                            context.read<CarteraCubit>().loadCobros(),
+                      );
+                    }
+                  },
+                  onSolicitarCobro:
+                      !canRegisterPago &&
+                          !cobro.isPaid &&
+                          activeForThisCobro == null
+                      ? () async {
+                          try {
+                            final repo = SolicitudesRepository();
+                            final resId =
+                                (user?['residenteId'] as String?) ??
+                                (user?['id'] as String?) ??
+                                '';
+                            await repo.crearSolicitud(
+                              cobroId: cobro.id,
+                              tipo: 'Solicitud de cobro',
+                              descripcion:
+                                  'El residente solicita cobro presencial en domicilio para ${cobro.tituloCuota}',
+                              residenteId: resId,
+                            );
+                            LocalCacheRepository.instance.invalidate(
+                              'dashboard:residente',
+                            );
+                            LocalCacheRepository.instance.invalidate(
+                              'dashboard:cobrador',
+                            );
+                            LocalCacheRepository.instance.invalidate(
+                              'dashboard:administrador',
+                            );
+                            await _loadSolicitudesActivas();
+                            if (context.mounted) {
+                              TopToast.showSuccess(
+                                context,
+                                'Solicitud enviada',
+                              );
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              TopToast.showError(
+                                context,
+                                e,
+                                prefix: 'Error al solicitar cobro',
+                              );
+                            }
+                          }
+                        }
+                      : null,
+                  onRegistrarPago: canRegisterPago && !cobro.isPaid
+                      ? () {
+                          final cuotasDelResidente = state.cobros
+                              .where(
+                                (c) =>
+                                    c.residenteId == cobro.residenteId &&
+                                    !c.isPaid,
+                              )
+                              .map(
+                                (c) => {
+                                  'id': c.id,
+                                  'periodo': c.concepto,
+                                  'tituloCuota': c.tituloCuota,
+                                  'concepto': c.concepto,
+                                  'fechaVencimiento': c.fechaVencimiento,
+                                  'monto': c.saldo > 0 ? c.saldo : c.monto,
+                                  'estado': c.estado,
+                                },
+                              )
+                              .toList();
+
+                          RegistrarPagoBottomSheet.show(
+                            context,
+                            cobro: cobro,
+                            solicitudId: activeForThisCobro?.id,
+                            cuotas: cuotasDelResidente.isNotEmpty
+                                ? cuotasDelResidente
+                                : null,
+                            initialQuickMode: true,
+                            onSuccess: () =>
+                                context.read<CarteraCubit>().loadCobros(),
+                          );
+                        }
+                      : null,
+                ),
               );
             }
 
