@@ -39,7 +39,7 @@ void main() async {
   if (!kIsWeb) {
     try {
       await Firebase.initializeApp();
-      // En debug mode no enviamos eventos para no ensuciar la consola de Crashlytics
+      // En modo release la colección está activa; en debug se deshabilita para no ensuciar la consola
       await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(!kDebugMode);
 
       final prevFlutterError = FlutterError.onError;
