@@ -123,130 +123,181 @@ export class RegistrarPagoUseCase {
     }
 
     // 3. FIFO Distribution Loop — dentro de transacción con pessimistic locking
-    const { pago, cobrosAfectados, ticket } = await this.dataSource.transaction(
-      async (entityManager) => {
-        let remaining = input.monto;
-        const cobrosAfectados: Cobro[] = [];
-        const vinculos: PagoCobro[] = [];
+    let transResult: { pago: Pago; cobrosAfectados: Cobro[]; ticket: TicketCobro };
+    try {
+      transResult = await this.dataSource.transaction(
+        async (entityManager) => {
+          let remaining = input.monto;
+          const cobrosAfectados: Cobro[] = [];
+          const vinculos: PagoCobro[] = [];
 
-        // FIFO batch: una sola query con PESSIMISTIC_WRITE trae TODOS los
-        // cobros pendientes del residente (más antiguos primero); la
-        // distribución se hace en memoria. Reemplaza el loop N round-trips
-        // (un SELECT ... FOR UPDATE por cobro) y mantiene la protección
-        // contra race conditions entre pagos concurrentes.
-        const pendientes = await this.cobroRepo.findPendientesConSaldoLockedBatch(
-          entityManager,
-          input.residenteId,
-          input.tenantId,
-        );
-
-        for (const cobro of pendientes) {
-          if (remaining <= 0) break;
-          const aplicado = Math.min(remaining, cobro.monto - cobro.montoPagado);
-          const excess = cobro.aplicarPago(Money.ofCOP(remaining));
-          await entityManager.save(cobro);
-          cobrosAfectados.push(cobro);
-          // pagoId se completa al guardar el Pago (paso 5b), ya que aún no existe.
-          vinculos.push(
-            PagoCobro.crear('', cobro.id, aplicado, input.tenantId),
-          );
-          remaining = excess.amount;
-        }
-
-        if (remaining > 0) {
-          this.logger.warn(
-            `Pago ${input.clientPaymentId}: excedente de ${remaining} centavos no aplicado — sin cobros pendientes.`,
-          );
-        }
-
-        if (cobrosAfectados.length === 0) {
-          throw new BadRequestException(
-            `No hay cobros pendientes para el residente ${input.residenteId}. Todos los saldos están pagados.`,
-          );
-        }
-
-        // 4. Create Pago record (linked to first affected cobro)
-        const firstCobroId = cobrosAfectados[0]?.id;
-        const pago = Pago.crear(
-          input.clientPaymentId,
-          input.tenantId,
-          Money.ofCOP(input.monto),
-          input.fechaPago,
-          input.cobradorId,
-          input.residenteId,
-          firstCobroId,
-        );
-
-        // 5. Persist dentro de la misma transacción
-        await entityManager.save(pago);
-
-        // 5b. Registrar los vínculos PagoCobro (pagoId se conoce tras el save)
-        for (const vinculo of vinculos) {
-          vinculo.pagoId = pago.id;
-          await this.pagoCobroRepo.save(entityManager, vinculo);
-        }
-
-        if (input.solicitudId) {
-          const solicitud = await this.solicitudRepo.findById(
-            input.solicitudId,
+          // FIFO batch: una sola query con PESSIMISTIC_WRITE trae TODOS los
+          // cobros pendientes del residente (más antiguos primero); la
+          // distribución se hace en memoria. Reemplaza el loop N round-trips
+          // (un SELECT ... FOR UPDATE por cobro) y mantiene la protección
+          // contra race conditions entre pagos concurrentes.
+          const pendientes = await this.cobroRepo.findPendientesConSaldoLockedBatch(
+            entityManager,
+            input.residenteId,
             input.tenantId,
           );
-          if (solicitud) {
-            solicitud.estado = SolicitudEstado.RESUELTA;
-            solicitud.pagoId = pago.id;
-            solicitud.respuesta = 'Pago registrado exitosamente.';
-            solicitud.fechaRespuesta = new Date();
-            await entityManager.save(solicitud);
-          }
-        }
 
-        // Auto-resolver cualquier solicitud pendiente activa del residente para actualizar la interfaz
-        try {
-          const queryRunner = (entityManager as any).query
-            ? entityManager
-            : (this.dataSource as any);
-          if (queryRunner && typeof queryRunner.query === 'function') {
-            const pendingSolicitudes = await queryRunner.query(
-              `SELECT id FROM solicitudes 
-               WHERE tenant_id = $1 
-                 AND (residente_id = $2 OR cobro_id IN (${cobrosAfectados.map((_, i) => `$${i + 3}`).join(',') || 'NULL'}))
-                 AND estado IN ('PENDIENTE', 'EN_ESPERA', 'EN_CAMINO', 'EN_REVISION')`,
-              [
-                input.tenantId,
-                input.residenteId,
-                ...cobrosAfectados.map((c) => c.id),
-              ],
+          for (const cobro of pendientes) {
+            if (remaining <= 0) break;
+            const aplicado = Math.min(remaining, cobro.monto - cobro.montoPagado);
+            const excess = cobro.aplicarPago(Money.ofCOP(remaining));
+            await entityManager.save(cobro);
+            cobrosAfectados.push(cobro);
+            // pagoId se completa al guardar el Pago (paso 5b), ya que aún no existe.
+            vinculos.push(
+              PagoCobro.crear('', cobro.id, aplicado, input.tenantId),
             );
-            if (Array.isArray(pendingSolicitudes)) {
-              for (const sol of pendingSolicitudes) {
-                await queryRunner.query(
-                  `UPDATE solicitudes 
-                   SET estado = 'COBRADA', pago_id = $1, respuesta = 'Pago registrado exitosamente por el cobrador.', fecha_respuesta = NOW() 
-                   WHERE id = $2`,
-                  [pago.id, sol.id],
-                );
-              }
+            remaining = excess.amount;
+          }
+
+          if (remaining > 0) {
+            this.logger.warn(
+              `Pago ${input.clientPaymentId}: excedente de ${remaining} centavos no aplicado — sin cobros pendientes.`,
+            );
+          }
+
+          if (cobrosAfectados.length === 0) {
+            throw new BadRequestException(
+              `No hay cobros pendientes para el residente ${input.residenteId}. Todos los saldos están pagados.`,
+            );
+          }
+
+          // 4. Create Pago record (linked to first affected cobro)
+          const firstCobroId = cobrosAfectados[0]?.id;
+          const pago = Pago.crear(
+            input.clientPaymentId,
+            input.tenantId,
+            Money.ofCOP(input.monto),
+            input.fechaPago,
+            input.cobradorId,
+            input.residenteId,
+            firstCobroId,
+          );
+
+          // 5. Persist dentro de la misma transacción
+          await entityManager.save(pago);
+
+          // 5b. Registrar los vínculos PagoCobro (pagoId se conoce tras el save)
+          for (const vinculo of vinculos) {
+            vinculo.pagoId = pago.id;
+            await this.pagoCobroRepo.save(entityManager, vinculo);
+          }
+
+          if (input.solicitudId) {
+            const solicitud = await this.solicitudRepo.findById(
+              input.solicitudId,
+              input.tenantId,
+            );
+            if (solicitud) {
+              solicitud.estado = SolicitudEstado.RESUELTA;
+              solicitud.pagoId = pago.id;
+              solicitud.respuesta = 'Pago registrado exitosamente.';
+              solicitud.fechaRespuesta = new Date();
+              await entityManager.save(solicitud);
             }
           }
-        } catch (e) {
-          this.logger.warn(`Could not auto-resolve solicitudes: ${e}`);
-        }
 
-        // 5c. Generar y persistir el ticket DENTRO de la misma transacción,
-        //     con lock de numeración, para que el pago y su ticket se
-        //     confirmen (o reviertan) juntos y no haya carreras en el número.
-        const ticket = await this.generarTicketUC.execute(
-          {
-            pago,
-            cobrosAfectados,
-            cobradorNombre: input.cobradorNombre ?? 'Cobrador',
-          },
-          entityManager,
+          // Auto-resolver cualquier solicitud pendiente activa del residente para actualizar la interfaz
+          try {
+            const queryRunner = (entityManager as any).query
+              ? entityManager
+              : (this.dataSource as any);
+            if (queryRunner && typeof queryRunner.query === 'function') {
+              const pendingSolicitudes = await queryRunner.query(
+                `SELECT id FROM solicitudes 
+                 WHERE tenant_id = $1 
+                   AND (residente_id = $2 OR cobro_id IN (${cobrosAfectados.map((_, i) => `$${i + 3}`).join(',') || 'NULL'}))
+                   AND estado IN ('PENDIENTE', 'EN_ESPERA', 'EN_CAMINO', 'EN_REVISION')`,
+                [
+                  input.tenantId,
+                  input.residenteId,
+                  ...cobrosAfectados.map((c) => c.id),
+                ],
+              );
+              if (Array.isArray(pendingSolicitudes)) {
+                for (const sol of pendingSolicitudes) {
+                  await queryRunner.query(
+                    `UPDATE solicitudes 
+                     SET estado = 'COBRADA', pago_id = $1, respuesta = 'Pago registrado exitosamente por el cobrador.', fecha_respuesta = NOW() 
+                     WHERE id = $2`,
+                    [pago.id, sol.id],
+                  );
+                }
+              }
+            }
+          } catch (e) {
+            this.logger.warn(`Could not auto-resolve solicitudes: ${e}`);
+          }
+
+          // 5c. Generar y persistir el ticket DENTRO de la misma transacción,
+          //     con lock de numeración, para que el pago y su ticket se
+          //     confirmen (o reviertan) juntos y no haya carreras en el número.
+          const ticket = await this.generarTicketUC.execute(
+            {
+              pago,
+              cobrosAfectados,
+              cobradorNombre: input.cobradorNombre ?? 'Cobrador',
+            },
+            entityManager,
+          );
+
+          return { pago, cobrosAfectados, ticket };
+        },
+      );
+    } catch (err: any) {
+      // Manejo de carrera concurrente en clave única PostgreSQL 23505
+      if (
+        err?.code === '23505' ||
+        err?.message?.includes('duplicate key') ||
+        err?.message?.includes('unique constraint') ||
+        err?.detail?.includes('client_payment_id')
+      ) {
+        this.logger.warn(
+          `Colisión concurrente detectada en transacción para ${input.clientPaymentId}. Resolviendo de forma idempotente.`,
         );
+        const retryPago = await this.pagoRepo.findByIdempotentKey(
+          input.tenantId,
+          input.clientPaymentId,
+        );
+        if (retryPago) {
+          if (
+            retryPago.tenantId !== input.tenantId ||
+            retryPago.residenteId !== input.residenteId ||
+            retryPago.monto !== input.monto
+          ) {
+            throw new BadRequestException(
+              'El clientPaymentId ya está asociado a otro pago.',
+            );
+          }
+          const existingTicket = await this.ticketRepo.findByPago(
+            retryPago.id,
+            input.tenantId,
+          );
+          const event = new PagoRegistradoEvent(
+            retryPago.id,
+            retryPago.clientPaymentId,
+            retryPago.residenteId,
+            retryPago.monto,
+            retryPago.cobroId ? [retryPago.cobroId] : [],
+            retryPago.createdAt,
+          );
+          return {
+            pago: retryPago,
+            cobrosAfectados: [],
+            event,
+            ticket: existingTicket as TicketCobro,
+          };
+        }
+      }
+      throw err;
+    }
 
-        return { pago, cobrosAfectados, ticket };
-      },
-    );
+    const { pago, cobrosAfectados, ticket } = transResult;
 
     // 6. Build event
     const event = new PagoRegistradoEvent(

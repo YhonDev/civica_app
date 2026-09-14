@@ -58,6 +58,7 @@ Thumbs.db
 **/.atl/
 **/.agents/
 **/.agent/
+top_toast_goldens.html
 
 # ─── Database Local Seeds & Test Scripts (local-only) ──
 apps/backend/database/seed.sql

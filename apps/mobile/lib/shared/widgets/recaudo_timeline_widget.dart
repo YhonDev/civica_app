@@ -43,7 +43,7 @@ class RecaudoTimelineWidget extends StatelessWidget {
         border: Border.all(color: AppColors.border.withValues(alpha: 0.6)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: AppColors.shadow.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -125,22 +125,26 @@ class RecaudoTimelineWidget extends StatelessWidget {
 
           // ── Sub-stats Row ──────────────────────────────
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildStatItem(
-                label: 'Abonado este mes',
-                val: AppCurrency.format(montoPagado),
-                color: AppColors.success,
+              Expanded(
+                child: _buildStatItem(
+                  label: 'Abonado este mes',
+                  val: AppCurrency.format(montoPagado),
+                  color: AppColors.success,
+                ),
               ),
               Container(
                 height: 24,
                 width: 1,
+                margin: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
                 color: AppColors.border.withValues(alpha: 0.5),
               ),
-              _buildStatItem(
-                label: 'Saldo pendiente',
-                val: AppCurrency.format(saldoPendiente),
-                color: saldoPendiente > 0 ? AppColors.error : AppColors.textSecondary,
+              Expanded(
+                child: _buildStatItem(
+                  label: 'Saldo pendiente',
+                  val: AppCurrency.format(saldoPendiente),
+                  color: saldoPendiente > 0 ? AppColors.error : AppColors.textSecondary,
+                ),
               ),
             ],
           ),

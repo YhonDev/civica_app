@@ -69,6 +69,23 @@ class AppColors {
   static const Color warning = Color(0xFFF59E0B);
   static const Color info = Color(0xFF3B82F6);
 
+  // ── Ink sobre superficies acentuadas (regla 9.10) ────
+  // Texto/iconos fijos sobre botones/chips Filled con acento (primary,
+  // success, error, info, accent*). El acento es constante en ambos modos,
+  // así que su tinta también: sin rama isDark en los call sites.
+  static const Color onPrimary = Colors.white;
+
+  /// Igual que [onPrimary] pero con opacidad 70%: subtítulos/auxiliares
+  /// sobre acento (reemplaza Colors.white70 en textos secundarios).
+  static const Color onPrimarySubdued = Color(0xB3FFFFFF);
+
+  /// Tinta fija sobre la superficie de advertencia (banner offline).
+  static const Color onWarning = Colors.white;
+
+  /// Sombra/scrim estándar: negro puro — la alfa la pone el call site
+  /// (0.02–0.65 según profundidad). El negro NO cambia con el modo.
+  static const Color shadow = Colors.black;
+
   // ── Category & Feature Accents ────────────────────
   static const Color accentPurple = Color(0xFF8B5CF6);
   static const Color accentOrange = Color(0xFFF97316);

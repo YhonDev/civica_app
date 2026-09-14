@@ -53,17 +53,23 @@ class ContentConstrainedBox extends StatelessWidget {
   final Widget child;
   final double maxWidth;
   final EdgeInsetsGeometry padding;
+  final AlignmentGeometry alignment;
+  final double? heightFactor;
 
   const ContentConstrainedBox({
     super.key,
     required this.child,
     this.maxWidth = AppBreakpoints.maxContentWidth,
     this.padding = EdgeInsets.zero,
+    this.alignment = Alignment.center,
+    this.heightFactor,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Center(
+    return Align(
+      alignment: alignment,
+      heightFactor: heightFactor,
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: maxWidth),
         child: Padding(

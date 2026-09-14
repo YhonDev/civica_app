@@ -1,7 +1,7 @@
 /// Guardian del sistema de diseño: verifica que ningún archivo fuera de los
 /// archivos de tokens vuelva a introducir los patrones prohibidos.
 ///
-/// Detecta ocho tipos de regesión (reglas de guardian de doc/DESIGN_SYSTEM.md):
+/// Detecta diez tipos de regesión (reglas de guardian de doc/DESIGN_SYSTEM.md):
 ///
 /// 1. `fontSize:` inline fuera de `lib/core/theme/` (tipografía).
 /// 2. `NumberFormat` fuera de `lib/core/format/` (la única fuente de verdad
@@ -21,6 +21,10 @@
 ///    no deben construirse interpolando errores).
 /// 9. `SnackBar`/`ScaffoldMessenger` fuera de `lib/core/widgets/top_toast.dart`
 ///    — regla 9.8: el estándar único de notificaciones es `TopToast`.
+/// 10. `Colors.white`/`Colors.black` (+ variantes 24/26/30/60/70) fuera de
+///     `lib/core/theme/` — regla 9.10: la tinta sobre acento y la sombra son
+///     tokens (`AppColors.onPrimary/onPrimarySubdued/onWarning/shadow`); el
+///     hex blanco/negro crudo es erosión del sistema de color.
 ///
 /// Ejecutar con: `flutter test test/design_token_guard_test.dart`
 /// (incluido en `flutter test` y en CI). Diseñado para fallar cerrado:
@@ -78,6 +82,13 @@ final List<(RegExp, String, String)> kForbiddenPatterns = [
     'lib/core/theme/',
     'Regla 9.5 — radios con literal; usa tokens de `AppSpacing` '
         '(cardRadius, buttonRadius, radiusSm…)',
+  ),
+  (
+    RegExp(r'\bColors\.(white|black)(24|26|30|60|70)?\b'),
+    'lib/core/theme/',
+    'Regla 9.10 — nunca `Colors.white/black` crudos; usa los tokens de '
+        '`AppColors` (onPrimary/onPrimarySubdued/onWarning para tinta sobre '
+        'acento, shadow para sombras/scrims)',
   ),
 ];
 

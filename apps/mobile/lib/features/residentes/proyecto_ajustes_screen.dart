@@ -133,6 +133,7 @@ class _ProyectoAjustesScreenState extends State<ProyectoAjustesScreen> {
       appBar: AppBar(
         title: const Text('Ajustes del Proyecto'),
         leading: IconButton(
+          tooltip: 'Volver',
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.pop(),
         ),

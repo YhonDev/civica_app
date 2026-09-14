@@ -112,6 +112,7 @@ class _ResidenteFinanzasScreenState extends State<ResidenteFinanzasScreen> {
       appBar: AppBar(
         title: const Text('Gestión Financiera'),
         leading: IconButton(
+          tooltip: 'Volver',
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => Navigator.pop(context),
         ),

@@ -102,6 +102,7 @@ class _EtapasScreenState extends State<EtapasScreen> {
         appBar: AppBar(
           title: const Text('Gestión de Etapas'),
           leading: IconButton(
+            tooltip: 'Volver',
             icon: const Icon(Icons.arrow_back_rounded),
             onPressed: () => context.pop(),
           ),
@@ -114,6 +115,7 @@ class _EtapasScreenState extends State<EtapasScreen> {
       appBar: AppBar(
         title: const Text('Gestión de Etapas'),
         leading: IconButton(
+          tooltip: 'Volver',
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.pop(),
         ),

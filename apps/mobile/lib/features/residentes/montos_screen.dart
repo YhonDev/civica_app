@@ -241,6 +241,7 @@ class _MontosScreenState extends State<MontosScreen> {
                               ),
                             ),
                             trailing: IconButton(
+                              tooltip: 'Eliminar monto',
                               icon: Icon(
                                 Icons.delete_outline_rounded,
                                 color: AppColors.error,

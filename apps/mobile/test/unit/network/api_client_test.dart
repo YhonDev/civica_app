@@ -1,7 +1,26 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:civica_pago_mobile/core/network/api_client.dart';
+import '../repositories/mock_http_adapter.dart';
 
 void main() {
+  test('sends the real bearer token in authenticated requests', () async {
+    final storage = InMemorySecureStorage();
+    await storage.write('access_token', 'access-token-for-test');
+    ApiClient.init(
+      baseUrl: 'http://test.local',
+      tokenStorage: TokenStorage(storage: storage),
+    );
+    final adapter = MockHttpAdapter()..onGet('/protected', {'ok': true});
+    ApiClient.setHttpClientAdapter(adapter);
+
+    await ApiClient.instance.get<Map<String, dynamic>>('/protected');
+
+    expect(
+      adapter.lastHeaders['Authorization'],
+      'Bearer access-token-for-test',
+    );
+  });
+
   group('redactSensitiveData', () {
     test('redacts password and currentPassword in request map', () {
       final input = {

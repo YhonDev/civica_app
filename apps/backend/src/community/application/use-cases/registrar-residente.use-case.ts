@@ -1,6 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource, EntityManager } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { Residente } from '../../domain/residente.entity';
 import { ResidenteRepository } from '../../infrastructure/residente.repository';
@@ -41,17 +41,72 @@ export class RegistrarResidenteUseCase {
     private readonly casaRepository: Repository<Casa>,
     private readonly planDeCobroRepository: PlanDeCobroRepository,
     private readonly generarCobrosUC: GenerarCobrosUseCase,
+    @Optional()
+    private readonly dataSource?: DataSource,
   ) {}
 
   async execute(
     params: RegistrarResidenteParams,
   ): Promise<ResultadoRegistroResidente> {
+    let registro: {
+      resultado: ResultadoRegistroResidente;
+      planParaCobros?: {
+        plan: PlanDeCobro;
+        mes: number;
+        anio: number;
+        fechaInicio: Date;
+      };
+    };
+
+    if (this.dataSource && typeof this.dataSource.transaction === 'function') {
+      registro = await this.dataSource.transaction(async (em) => {
+        return this.ejecutarRegistro(params, em);
+      });
+    } else {
+      registro = await this.ejecutarRegistro(params);
+    }
+
+    if (registro.planParaCobros) {
+      const { plan, mes, anio, fechaInicio } = registro.planParaCobros;
+      try {
+        await this.generarCobrosUC.generarCobrosParaPlan(
+          plan,
+          mes,
+          anio,
+          fechaInicio,
+        );
+      } catch {
+        // Si falla la generación inicial (p.ej. sin tarifa configurada),
+        // el residente y su plan quedan creados correctamente
+      }
+    }
+
+    return registro.resultado;
+  }
+
+  private async ejecutarRegistro(
+    params: RegistrarResidenteParams,
+    em?: EntityManager,
+  ): Promise<{
+    resultado: ResultadoRegistroResidente;
+    planParaCobros?: {
+      plan: PlanDeCobro;
+      mes: number;
+      anio: number;
+      fechaInicio: Date;
+    };
+  }> {
     let casa: Casa | null = null;
     if (params.casaId) {
-      casa = await this.casaRepository.findOne({
-        where: { id: params.casaId },
-        relations: { manzana: { etapa: { proyecto: true } } },
-      });
+      casa = await (em
+        ? em.findOne(Casa, {
+            where: { id: params.casaId },
+            relations: { manzana: { etapa: { proyecto: true } } },
+          })
+        : this.casaRepository.findOne({
+            where: { id: params.casaId },
+            relations: { manzana: { etapa: { proyecto: true } } },
+          }));
       if (
         !casa ||
         casa.manzana?.etapa?.proyecto?.tenantId !== params.tenantId
@@ -68,17 +123,29 @@ export class RegistrarResidenteUseCase {
       params.modalidadPago,
     );
 
-    const saved = await this.residenteRepository.save(residente);
+    const saved = await (em
+      ? em.save(Residente, residente)
+      : this.residenteRepository.save(residente));
 
     let username: string;
     let password: string;
+    let planParaCobros:
+      | {
+          plan: PlanDeCobro;
+          mes: number;
+          anio: number;
+          fechaInicio: Date;
+        }
+      | undefined;
 
     // Si se proporcionó una casa, crear tenencia y plan de cobro
     if (params.casaId && casa) {
       const fechaInicio = params.fechaInicio ?? new Date();
       saved.agregarTenencia(params.casaId, fechaInicio);
       saved.asignarCasa(params.casaId);
-      await this.residenteRepository.save(saved);
+      await (em
+        ? em.save(Residente, saved)
+        : this.residenteRepository.save(saved));
 
       if (casa.manzana?.etapa?.proyectoId) {
         const fechaActivacionStr = fechaInicio.toISOString().split('T')[0];
@@ -90,17 +157,19 @@ export class RegistrarResidenteUseCase {
           saved.modalidadPago,
           fechaActivacionStr,
         );
-        const planSaved = await this.planDeCobroRepository.save(plan);
+        const planSaved = await (em
+          ? em.save(PlanDeCobro, plan)
+          : this.planDeCobroRepository.save(plan));
 
-        // Generar cobros inmediatamente para el mes actual
+        // Programar generación de cobros post-commit para respetar FKs
         const mes = fechaInicio.getMonth() + 1;
         const anio = fechaInicio.getFullYear();
-        await this.generarCobrosUC.generarCobrosParaPlan(
-          planSaved,
+        planParaCobros = {
+          plan: planSaved,
           mes,
           anio,
           fechaInicio,
-        );
+        };
       }
     }
 
@@ -126,7 +195,9 @@ export class RegistrarResidenteUseCase {
     const baseUsername = username;
     let counter = 1;
     while (
-      await this.usuarioRepository.findOne({ where: { email: username } })
+      await (em
+        ? em.findOne(Usuario, { where: { email: username } })
+        : this.usuarioRepository.findOne({ where: { email: username } }))
     ) {
       counter++;
       username = `${baseUsername}_${counter}`;
@@ -144,11 +215,16 @@ export class RegistrarResidenteUseCase {
       saved.id,
     );
 
-    await this.usuarioRepository.save(usuario);
+    await (em
+      ? em.save(Usuario, usuario)
+      : this.usuarioRepository.save(usuario));
 
     return {
-      residente: saved,
-      credenciales: { username, password },
+      resultado: {
+        residente: saved,
+        credenciales: { username, password },
+      },
+      planParaCobros,
     };
   }
 }

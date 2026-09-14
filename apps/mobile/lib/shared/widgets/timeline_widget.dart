@@ -228,23 +228,30 @@ class _TimelineRow extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
                                 Expanded(
-                                  child: Text(
-                                    title,
-                                    style: AppTypography.bodySmall.copyWith(
-                                      color: AppColors.textPrimary,
-                                      fontWeight: FontWeight.w600,
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    alignment: Alignment.centerLeft,
+                                    child: Text(
+                                      title,
+                                      style: AppTypography.bodySmall.copyWith(
+                                        color: AppColors.textPrimary,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                      maxLines: 1,
                                     ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
                                 if (montoStr != null) ...[
                                   const SizedBox(width: AppSpacing.xs),
-                                  Text(
-                                    montoStr,
-                                    style: AppTypography.bodySmall.copyWith(
-                                      color: isPago ? AppColors.success : AppColors.textPrimary,
-                                      fontWeight: FontWeight.w700,
+                                  FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    alignment: Alignment.centerRight,
+                                    child: Text(
+                                      montoStr,
+                                      style: AppTypography.bodySmall.copyWith(
+                                        color: isPago ? AppColors.success : AppColors.textPrimary,
+                                        fontWeight: FontWeight.w700,
+                                      ),
                                     ),
                                   ),
                                 ],

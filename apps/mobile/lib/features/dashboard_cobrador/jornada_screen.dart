@@ -6,9 +6,11 @@ import 'package:intl/intl.dart';
 import '../../core/format/app_currency.dart';
 import '../../features/auth/auth_cubit.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_breakpoints.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/lifecycle_observer_mixin.dart';
+import '../../shared/widgets/donut_chart.dart';
 import '../../shared/widgets/kpi_card.dart';
 
 import '../cartera/models/cartera_models.dart';
@@ -184,11 +186,9 @@ class _JornadaViewState extends State<_JornadaView> with LifecycleObserverMixin 
 
               const SizedBox(height: AppSpacing.xl),
 
-            // ── Próxima vivienda a visitar (Héroe interactivo) ──────
-            if (data.proximaVivienda != null) ...[
-              _buildProximaVivienda(data.proximaVivienda!),
-              const SizedBox(height: AppSpacing.lg),
-            ],
+            // ── Progreso de la Jornada (Mini widget de reporte) ────
+            _buildProgresoJornada(data),
+            const SizedBox(height: AppSpacing.lg),
 
             // ── Solicitudes de Cobro Prioritarias en Domicilio (Opcional si hay solicitudes activas) ─
             _buildSolicitudesDomicilioSection(data),
@@ -267,128 +267,218 @@ class _JornadaViewState extends State<_JornadaView> with LifecycleObserverMixin 
     );
   }
 
-  // ── Próxima Vivienda ─────────────────────────────────────────────
+  // ── Progreso de la Jornada (Mini widget de reporte) ───────────────
 
-  Widget _buildProximaVivienda(Map<String, dynamic> vivienda) {
-    final cuotas = vivienda['cuotas'] as List<dynamic>? ?? [];
-    final firstCuotaMonto = cuotas.isNotEmpty
-        ? (cuotas.first['monto'] as num? ?? 20000.0).toDouble()
-        : (vivienda['montoAdeudado'] as num? ?? 20000.0).toDouble();
-    final saldoTotal = (vivienda['montoAdeudado'] as num? ?? vivienda['saldo'] as num? ?? 20000.0).toDouble();
+  Widget _buildProgresoJornada(CobradorDashboardData data) {
+    final pagadas = data.cobradosHoy;
+    final pendientes = data.pendientes;
+    final vencidas = data.vencidas;
+    final totalCasas = (data.totalViviendas > 0)
+        ? data.totalViviendas
+        : (pagadas + pendientes + vencidas);
 
-    final cobroItem = CobroItem(
-      id: vivienda['id'] as String? ?? '0',
-      concepto: 'Cuota Actual',
-      monto: firstCuotaMonto > 0 ? firstCuotaMonto : 20000.0,
-      montoPagado: 0,
-      saldo: saldoTotal,
-      estado: vivienda['peorEstado'] as String? ?? 'Pendiente',
-      modalidad: vivienda['modalidadPago'] as String? ?? 'Mensual',
-      casa: vivienda['casaDireccion'] as String? ?? '',
-      manzana: vivienda['manzanaNombre'] as String? ?? '',
-      etapa: vivienda['etapaNombre'] as String? ?? '',
-      residenteId: vivienda['residenteId'] as String? ?? '',
-      nombre: vivienda['residenteNombre'] as String? ?? '',
-    );
+    final totalEstados = pagadas + pendientes + vencidas;
+    final denom = totalEstados > 0 ? totalEstados : (totalCasas > 0 ? totalCasas : 1);
 
-    return GestureDetector(
-      onTap: () {
-        final cobradorCubit = context.read<DashboardCobradorCubit>();
-        RegistrarPagoBottomSheet.show(
-          context,
-          cobro: cobroItem,
-          cuotas: cuotas,
-          initialQuickMode: true,
-          onSuccess: () {
-            cobradorCubit.optimisticRegistrarPago(
-              residenteId: cobroItem.residenteId,
-              montoPesos: firstCuotaMonto > 0 ? firstCuotaMonto.toInt() : 10000,
-            );
-            cobradorCubit.refresh(silent: true);
-          },
-        );
-      },
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(AppSpacing.cardPadding),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [AppColors.primary, AppColors.primaryDark],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.3),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
+    final pagadasPct = (pagadas / denom) * 100;
+    final pendientesPct = (pendientes / denom) * 100;
+    final vencidasPct = (vencidas / denom) * 100;
+
+    final ratioCompletado = totalCasas > 0 ? (pagadas / totalCasas).clamp(0.0, 1.0) : 0.0;
+    final pctCompletado = (ratioCompletado * 100).round();
+
+    final segments = <DonutSegment>[
+      DonutSegment(
+        percentage: pagadasPct,
+        color: AppColors.success,
+        label: 'Cobradas hoy ($pagadas)',
+      ),
+      DonutSegment(
+        percentage: pendientesPct,
+        color: AppColors.warning,
+        label: 'Pendientes ($pendientes)',
+      ),
+      DonutSegment(
+        percentage: vencidasPct,
+        color: AppColors.error,
+        label: 'Vencidas ($vencidas)',
+      ),
+    ];
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.cardPadding),
+      decoration: BoxDecoration(
+        color: AppColors.cobradorCard,
+        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+        border: Border.all(
+          color: AppColors.border,
+          width: 1.0,
         ),
-        child: Column(
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.shadow.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isCompact = constraints.maxWidth < AppBreakpoints.compactCardContent;
+
+          final header = Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.xs),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                ),
+                child: const Icon(
+                  Icons.donut_large_rounded,
+                  color: AppColors.primary,
+                  size: 18,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Progreso de la Jornada',
+                    style: AppTypography.subtitle.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                    maxLines: 1,
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: AppSpacing.xs),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
+                ),
+                child: Text(
+                  '$totalCasas casas',
+                  style: AppTypography.smallBold.copyWith(
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+            ],
+          );
+
+          Widget buildLegendItem(Color color, String label, String value) {
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  '$label: ',
+                  style: AppTypography.caption.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                Text(
+                  value,
+                  style: AppTypography.caption.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: color,
+                  ),
+                ),
+              ],
+            );
+          }
+
+          if (isCompact) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                header,
+                const SizedBox(height: AppSpacing.md),
+                Center(
+                  child: DonutChart(
+                    size: 130,
+                    strokeWidth: 16,
+                    centerText: '$pctCompletado%',
+                    centerLabel: 'cobrado',
+                    segments: segments,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Wrap(
+                  spacing: AppSpacing.md,
+                  runSpacing: AppSpacing.xs,
+                  alignment: WrapAlignment.center,
+                  children: [
+                    buildLegendItem(AppColors.success, 'Cobradas', '$pagadas'),
+                    buildLegendItem(AppColors.warning, 'Pendientes', '$pendientes'),
+                    buildLegendItem(AppColors.error, 'Vencidas', '$vencidas'),
+                  ],
+                ),
+              ],
+            );
+          }
+
+          return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              header,
+              const SizedBox(height: AppSpacing.md),
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.near_me_rounded, color: Colors.white, size: 18),
-                      const SizedBox(width: AppSpacing.sm),
-                      Text(
-                        'Próxima vivienda a visitar',
-                        style: AppTypography.caption.copyWith(
-                          color: Colors.white.withValues(alpha: 0.9),
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
+                  DonutChart(
+                    size: 120,
+                    strokeWidth: 16,
+                    centerText: '$pctCompletado%',
+                    centerLabel: 'cobrado',
+                    segments: segments,
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
-                    ),
-                    child: Text(
-                      'Tocar para cobrar',
-                      style: AppTypography.smallBold.copyWith(
-                        color: Colors.white,
-                      ),
+                  const SizedBox(width: AppSpacing.lg),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        buildLegendItem(AppColors.success, 'Cobradas hoy', '$pagadas casas'),
+                        const SizedBox(height: AppSpacing.xs),
+                        buildLegendItem(AppColors.warning, 'Pendientes', '$pendientes casas'),
+                        const SizedBox(height: AppSpacing.xs),
+                        buildLegendItem(AppColors.error, 'Vencidas / Mora', '$vencidas casas'),
+                        if (data.montoEsperado > 0) ...[
+                          const SizedBox(height: AppSpacing.sm),
+                          const Divider(height: 1),
+                          const SizedBox(height: AppSpacing.xs),
+                          Text(
+                            'Recaudado hoy: ${AppCurrency.format(data.montoCobradoHoy)}',
+                            style: AppTypography.micro.copyWith(
+                              color: AppColors.textSecondary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: AppSpacing.md),
-              Text(
-                '${vivienda['etapaNombre'] ?? ''}',
-                style: AppTypography.body.copyWith(
-                  color: Colors.white.withValues(alpha: 0.8),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                '${vivienda['manzanaNombre'] ?? ''} — ${vivienda['casaDireccion'] ?? ''}',
-                style: AppTypography.subtitle.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              if (vivienda['residenteNombre'] != null) ...[
-                const SizedBox(height: 4),
-                Text(
-                  'Residente: ${vivienda['residenteNombre']}',
-                  style: AppTypography.caption.copyWith(
-                    color: Colors.white.withValues(alpha: 0.9),
-                  ),
-                ),
-              ],
             ],
-          ),
-        ),
-      );
+          );
+        },
+      ),
+    );
   }
 
   Widget _buildSolicitudesDomicilioSection(CobradorDashboardData data) {
@@ -400,15 +490,15 @@ class _JornadaViewState extends State<_JornadaView> with LifecycleObserverMixin 
       margin: const EdgeInsets.only(bottom: AppSpacing.lg),
       padding: const EdgeInsets.all(AppSpacing.cardPadding),
       decoration: BoxDecoration(
-        color: AppColors.cobradorCard,
+        color: AppColors.screenBackground,
         borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
         border: Border.all(
-          color: AppColors.warning.withValues(alpha: 0.4),
+          color: AppColors.primary.withValues(alpha: 0.3),
           width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: AppColors.shadow.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -430,19 +520,19 @@ class _JornadaViewState extends State<_JornadaView> with LifecycleObserverMixin 
                       Container(
                         padding: const EdgeInsets.all(AppSpacing.sm),
                         decoration: BoxDecoration(
-                          color: AppColors.warning.withValues(alpha: 0.12),
+                          color: AppColors.primary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                         ),
-                        child: Icon(
+                        child: const Icon(
                           Icons.mark_email_unread_rounded,
-                          color: AppColors.warning,
+                          color: AppColors.primary,
                           size: 20,
                         ),
                       ),
                       const SizedBox(width: AppSpacing.sm),
                       Expanded(
                         child: Text(
-                          'Solicitudes en Domicilio',
+                          'Solicitudes',
                           style: AppTypography.subtitle.copyWith(
                             fontWeight: FontWeight.w700,
                           ),
@@ -457,7 +547,7 @@ class _JornadaViewState extends State<_JornadaView> with LifecycleObserverMixin 
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
                   decoration: BoxDecoration(
-                    color: AppColors.warning.withValues(alpha: 0.15),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                   ),
                   child: Row(
@@ -466,11 +556,11 @@ class _JornadaViewState extends State<_JornadaView> with LifecycleObserverMixin 
                       Text(
                         '${data.solicitudes.length} activas',
                         style: AppTypography.smallBold.copyWith(
-                          color: AppColors.warning,
+                          color: AppColors.primary,
                         ),
                       ),
                       const SizedBox(width: 4),
-                      Icon(Icons.arrow_forward_ios_rounded, size: 10, color: AppColors.warning),
+                      const Icon(Icons.arrow_forward_ios_rounded, size: 10, color: AppColors.primary),
                     ],
                   ),
                 ),
@@ -574,58 +664,78 @@ class _JornadaViewState extends State<_JornadaView> with LifecycleObserverMixin 
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: AppColors.shadow.withValues(alpha: 0.04),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
-            ),
-            child: Icon(
-              Icons.directions_walk_rounded,
-              color: AppColors.primary,
-              size: 22,
-            ),
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Rutas y Solicitudes',
-                  style: AppTypography.subtitle.copyWith(
-                    fontWeight: FontWeight.w700,
+          // Fila 1: Título e Icono a todo lo ancho
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.xs),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                ),
+                child: const Icon(
+                  Icons.directions_walk_rounded,
+                  color: AppColors.primary,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Rutas y Solicitudes',
+                    style: AppTypography.subtitle.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                    maxLines: 1,
                   ),
                 ),
-                Text(
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          // Fila 2: Casas asignadas y botón de acción
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Text(
                   '$count casas asignadas en tu ruta',
                   style: AppTypography.caption.copyWith(
                     color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              OutlinedButton.icon(
+                onPressed: () => context.push('/casas-explorer'),
+                icon: const Icon(Icons.arrow_forward_rounded, size: 16),
+                label: const Text('Ir a la ruta'),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  foregroundColor: AppColors.primary,
+                  side: BorderSide(color: AppColors.primary.withValues(alpha: 0.5)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                   ),
                 ),
-              ],
-            ),
-          ),
-          OutlinedButton.icon(
-            onPressed: () => context.push('/casas-explorer'),
-            icon: const Icon(Icons.arrow_forward_rounded, size: 16),
-            label: const Text('Ir'),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              foregroundColor: AppColors.primary,
-              side: BorderSide(color: AppColors.primary.withValues(alpha: 0.5)),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
               ),
-            ),
+            ],
           ),
         ],
       ),

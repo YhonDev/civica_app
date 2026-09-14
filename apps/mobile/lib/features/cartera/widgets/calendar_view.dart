@@ -59,6 +59,7 @@ class _CalendarViewState extends State<CalendarView> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             IconButton(
+              tooltip: 'Mes anterior',
               icon: const Icon(Icons.chevron_left),
               onPressed: _prevMonth,
             ),
@@ -67,6 +68,7 @@ class _CalendarViewState extends State<CalendarView> {
               style: AppTypography.subtitle.copyWith(fontWeight: FontWeight.bold),
             ),
             IconButton(
+              tooltip: 'Mes siguiente',
               icon: const Icon(Icons.chevron_right),
               onPressed: _nextMonth,
             ),

@@ -80,6 +80,7 @@ class _ActividadAdminScreenState extends State<ActividadAdminScreen> {
               children: [
                 if (canPop)
                   IconButton(
+                    tooltip: 'Volver',
                     icon: const Icon(Icons.arrow_back_rounded),
                     onPressed: () => context.pop(),
                   ),
@@ -177,7 +178,7 @@ class _ActividadAdminScreenState extends State<ActividadAdminScreen> {
                 onSelected: (_) => setState(() => _selectedFilter = f.$1),
                 labelStyle: AppTypography.caption.copyWith(
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                  color: isSelected ? Colors.white : AppColors.textSecondary,
+                  color: isSelected ? AppColors.onPrimary : AppColors.textSecondary,
                 ),
                 selectedColor: AppColors.primary,
                 backgroundColor: AppColors.surface,

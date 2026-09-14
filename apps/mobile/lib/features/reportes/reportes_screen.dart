@@ -105,9 +105,14 @@ class _ReportesScreenState extends State<ReportesScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Distribución de Cobros por Estado',
-          style: AppTypography.subtitle.copyWith(fontWeight: FontWeight.bold),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(
+            'Cobros por Estado',
+            style: AppTypography.subtitle.copyWith(fontWeight: FontWeight.bold),
+            maxLines: 1,
+          ),
         ),
         const SizedBox(height: AppSpacing.sm),
         Card(

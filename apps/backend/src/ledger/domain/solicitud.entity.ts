@@ -102,9 +102,13 @@ export class Solicitud {
     solicitud.usuarioId = usuarioId;
     solicitud.cobroId = cobroId;
 
-    const tipoLower = (tipo || '').toLowerCase();
+    const tipoNormalized = (tipo || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
     const prefix =
-      tipoLower.includes('revision') || tipoLower.includes('solicitud_revision')
+      tipoNormalized.includes('revision') ||
+      tipoNormalized.includes('solicitud_revision')
         ? 'SR'
         : 'SC';
     const randomNum = Math.floor(100000 + Math.random() * 900000);
@@ -116,10 +120,9 @@ export class Solicitud {
     if (estadoInicial) {
       solicitud.estado = estadoInicial;
     } else {
-      const tipoLower = (tipo || '').toLowerCase();
       if (
-        tipoLower.includes('cobro') ||
-        tipoLower.includes('solicitud_cobro')
+        tipoNormalized.includes('cobro') ||
+        tipoNormalized.includes('solicitud_cobro')
       ) {
         solicitud.estado = SolicitudEstado.EN_ESPERA;
       } else {

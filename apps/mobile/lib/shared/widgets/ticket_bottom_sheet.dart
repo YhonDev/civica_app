@@ -130,6 +130,8 @@ class TicketBottomSheet extends StatelessWidget {
       // En tablet/desktop el sheet no debe estirarse a todo el ancho.
       child: ContentConstrainedBox(
         maxWidth: AppBreakpoints.maxFormWidth,
+        alignment: Alignment.bottomCenter,
+        heightFactor: 1.0,
         child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [

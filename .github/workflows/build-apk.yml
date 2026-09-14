@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: 'Tag de la release de GitHub para publicar el APK (ej. v1.0.0)'
+        description: 'Tag de la release de GitHub para publicar el APK (ej. v1.0.1)'
         required: false
-        default: 'v1.0.0'
+        default: ''
       upload_to_release:
         description: 'Subir automáticamente a la release en Cuentiva/Cuentiva-platform (true/false)'
         required: false
@@ -14,6 +14,8 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'apps/mobile/pubspec.yaml'
     tags:
       - 'v*'
 
@@ -29,35 +31,68 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine Version and Release Eligibility
+        id: version_check
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: |
+          INPUT_TAG="${{ github.event.inputs.release_tag }}"
+
+          if [ -n "$INPUT_TAG" ]; then
+            TAG="$INPUT_TAG"
+            SHOULD_BUILD=true
+            echo "Modo manual: usando tag provisto $TAG."
+          elif [ "${{ github.ref_type }}" = "tag" ]; then
+            TAG="${{ github.ref_name }}"
+            SHOULD_BUILD=true
+            echo "Modo Git Tag: usando ref_name $TAG."
+          else
+            PUBSPEC_VERSION=$(grep '^version: ' pubspec.yaml | sed 's/version: //' | tr -d '\r' | cut -d '+' -f 1 | xargs)
+            TAG="v$PUBSPEC_VERSION"
+            echo "Versión detectada en pubspec.yaml: $PUBSPEC_VERSION (Tag esperado: $TAG)"
+
+            if gh release view "$TAG" --repo Cuentiva/Cuentiva-platform &>/dev/null; then
+              echo "⚠️ La release $TAG ya existe en Cuentiva/Cuentiva-platform."
+              echo "Omitiendo build automático para evitar sobrescribir versión existente o compilar parches no versionados."
+              SHOULD_BUILD=false
+            else
+              echo "✅ La versión $TAG es nueva en Cuentiva/Cuentiva-platform. Procediendo con la compilación."
+              SHOULD_BUILD=true
+            fi
+          fi
+
+          echo "should_build=$SHOULD_BUILD" >> $GITHUB_OUTPUT
+          echo "release_tag=$TAG" >> $GITHUB_OUTPUT
 
       - name: Set up Java 17
+        if: steps.version_check.outputs.should_build == 'true'
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
       - name: Set up Flutter
+        if: steps.version_check.outputs.should_build == 'true'
         uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
 
       - name: Install dependencies
+        if: steps.version_check.outputs.should_build == 'true'
         run: flutter pub get
 
       - name: Build Android Release APK
+        if: steps.version_check.outputs.should_build == 'true'
         run: flutter build apk --release --dart-define=API_BASE_URL=https://cuentiva.onrender.com/api
 
       - name: Package APK and Calculate SHA-256
+        if: steps.version_check.outputs.should_build == 'true'
         run: |
-          TAG="${{ github.event.inputs.release_tag }}"
-          if [ -z "$TAG" ]; then
-            TAG="${{ github.ref_name }}"
-          fi
-          if [ -z "$TAG" ] || [ "$TAG" = "dev" ] || [ "$TAG" = "main" ]; then
-            TAG="v1.0.0"
-          fi
-
+          TAG="${{ steps.version_check.outputs.release_tag }}"
           APK_NAME="cuentiva-mobile-$TAG.apk"
           cp build/app/outputs/flutter-apk/app-release.apk "$APK_NAME"
 
@@ -71,6 +106,7 @@ jobs:
           echo "RELEASE_TAG=$TAG" >> $GITHUB_ENV
 
       - name: Upload APK Artifact
+        if: steps.version_check.outputs.should_build == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.APK_NAME }}
@@ -78,10 +114,20 @@ jobs:
           retention-days: 14
 
       - name: Upload to Cuentiva/Cuentiva-platform Release
-        if: ${{ github.event.inputs.upload_to_release != 'false' && env.RELEASE_TAG != '' }}
+        if: ${{ steps.version_check.outputs.should_build == 'true' && github.event.inputs.upload_to_release != 'false' }}
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         run: |
-          echo "Subiendo ${{ env.APK_NAME }} a release ${{ env.RELEASE_TAG }} en Cuentiva/Cuentiva-platform..."
-          gh release upload ${{ env.RELEASE_TAG }} --repo Cuentiva/Cuentiva-platform --clobber ${{ env.APK_NAME }} SHA256_ANDROID.txt
+          TAG="${{ env.RELEASE_TAG }}"
+
+          if ! gh release view "$TAG" --repo Cuentiva/Cuentiva-platform &>/dev/null; then
+            echo "Creando nueva release $TAG en Cuentiva/Cuentiva-platform..."
+            gh release create "$TAG" \
+              --repo Cuentiva/Cuentiva-platform \
+              --title "Release $TAG" \
+              --generate-notes
+          fi
+
+          echo "Subiendo ${{ env.APK_NAME }} a release $TAG en Cuentiva/Cuentiva-platform..."
+          gh release upload "$TAG" --repo Cuentiva/Cuentiva-platform --clobber "${{ env.APK_NAME }}" SHA256_ANDROID.txt
           echo "✅ Subida completada exitosamente."

@@ -431,49 +431,6 @@ class _SolicitudBottomSheetState extends State<SolicitudBottomSheet> {
     }
   }
 
-  // ── Action: Resolver genérica (para solicitudes de cobro) ───────────────
-  Future<void> _resolverGenerica(String estado) async {
-    final respuesta = _respuestaController.text.trim();
-    if (respuesta.isEmpty) {
-      TopToast.showError(context, 'Escribe una respuesta antes de continuar.');
-      return;
-    }
-
-    setState(() => _enviando = true);
-    AppFeedback.medium();
-
-    try {
-      if (widget.onResolve != null) {
-        await widget.onResolve!(estado, respuesta);
-      } else {
-        await _solicitudesRepo.resolverSolicitud(
-          id: widget.solicitud.id,
-          estado: estado,
-          respuesta: respuesta,
-        );
-      }
-      _invalidateCaches();
-      AppFeedback.success();
-
-      if (mounted) {
-        Navigator.pop(context);
-        TopToast.showSuccess(
-          context,
-          estado == 'RESUELTA'
-              ? 'Solicitud resuelta exitosamente.'
-              : 'Solicitud rechazada.',
-        );
-        widget.onActionCompleted?.call();
-      }
-    } catch (e) {
-      AppFeedback.error();
-      if (mounted) {
-        setState(() => _enviando = false);
-        TopToast.showError(context, e, prefix: 'Error');
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final dateStr = DateFormat(
@@ -852,86 +809,44 @@ class _SolicitudBottomSheetState extends State<SolicitudBottomSheet> {
                   ),
                 ),
               ] else ...[
-                // For non-payment solicitudes (e.g. collection requests): Standard response
-                Text(
-                  'Responder solicitud',
-                  style: AppTypography.caption.copyWith(
-                    color: AppColors.textSecondary,
-                    fontWeight: FontWeight.w600,
+                // Solicitud de cobro presencial (vista informativa para el admin)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(AppSpacing.cardInnerPadding),
+                  decoration: BoxDecoration(
+                    color: AppColors.info.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                    border: Border.all(
+                      color: AppColors.info.withValues(alpha: 0.2),
+                    ),
                   ),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                TextFormField(
-                  controller: _respuestaController,
-                  maxLines: 3,
-                  style: AppTypography.body,
-                  decoration: const InputDecoration(
-                    hintText: 'Escribe tu respuesta...',
-                    alignLabelWithHint: true,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.info_outline_rounded,
+                        color: AppColors.info,
+                        size: 20,
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: Text(
+                          'Solicitud de visita presencial en domicilio asignada a la ruta del cobrador. La resolución se completa en terreno cuando el cobrador registra el pago.',
+                          style: AppTypography.caption.copyWith(
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: AppSpacing.md),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: _enviando
-                            ? null
-                            : () => _resolverGenerica('RECHAZADA'),
-                        icon: _enviando
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : Icon(
-                                Icons.cancel_outlined,
-                                color: AppColors.error,
-                              ),
-                        label: Text(
-                          'Rechazar',
-                          style: TextStyle(color: AppColors.error),
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          side: BorderSide(color: AppColors.error),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                              AppSpacing.buttonRadius,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.md),
-                    Expanded(
-                      child: FilledButton.icon(
-                        onPressed: _enviando
-                            ? null
-                            : () => _resolverGenerica('RESUELTA'),
-                        icon: _enviando
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Icon(Icons.check_circle_outlined),
-                        label: const Text('Resolver'),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.success,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                              AppSpacing.buttonRadius,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Cerrar'),
+                  ),
                 ),
               ],
             ],

@@ -158,7 +158,7 @@ class _SystemSettingsSectionState extends State<SystemSettingsSection> {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.02),
+                    color: AppColors.shadow.withValues(alpha: isDark ? 0.2 : 0.02),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -178,11 +178,16 @@ class _SystemSettingsSectionState extends State<SystemSettingsSection> {
                       ),
                       child: const Icon(Icons.palette_outlined, color: AppColors.accentPurple, size: 20),
                     ),
-                    title: Text(
-                      'Tema oscuro',
-                      style: AppTypography.body.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                    title: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Tema oscuro',
+                        style: AppTypography.body.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                        ),
+                        maxLines: 1,
                       ),
                     ),
                     subtitle: Text(
@@ -214,11 +219,16 @@ class _SystemSettingsSectionState extends State<SystemSettingsSection> {
                         ),
                         child: const Icon(Icons.fingerprint_rounded, color: AppColors.primary, size: 20),
                       ),
-                      title: Text(
-                        'Acceso biométrico',
-                        style: AppTypography.body.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                      title: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          'Biometría',
+                          style: AppTypography.body.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                          ),
+                          maxLines: 1,
                         ),
                       ),
                       subtitle: Text(
@@ -248,11 +258,16 @@ class _SystemSettingsSectionState extends State<SystemSettingsSection> {
                       ),
                       child: const Icon(Icons.lock_outlined, color: AppColors.error, size: 20),
                     ),
-                    title: Text(
-                      'Seguridad y Contraseña',
-                      style: AppTypography.body.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                    title: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Seguridad',
+                        style: AppTypography.body.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                        ),
+                        maxLines: 1,
                       ),
                     ),
                     subtitle: Text(

@@ -63,6 +63,43 @@ El arranque configura el prefijo global `/api`, Swagger en `/docs` fuera de prod
 
 Cuando se recupera la conectividad, `SyncService` envía los pagos pendientes individualmente a `POST /api/pagos` y distingue estados de éxito, sincronización parcial, error de red y conflicto. No se debe asumir que existe un endpoint batch `/pagos/sync`: el flujo actual no lo utiliza.
 
+### Flujo de Arquitectura del Motor de Solicitudes y Tickets
+
+El sistema implementa una segregación estricta de responsabilidades entre tipos de solicitud, roles operativos y el ciclo de vida inmutable de los comprobantes digitales:
+
+```mermaid
+flowchart TD
+    subgraph "1. Residente (Generador de Eventos)"
+        R1["Cuota Pendiente / Mora"] -->|"Solicitar Visita en Domicilio"| SC["Solicitud de Cobro (SC)<br><i>Estado: EN_ESPERA</i>"]
+        R2["Pago Realizado / Ticket"] -->|"Revisar Pago (Reclamo)"| SR["Solicitud de Revisión (SR)<br><i>Estado: EN_REVISION</i>"]
+    end
+
+    subgraph "2. Cobrador (Operación en Ruta) — GLOBAL"
+        SC -->|"Asignación automática a su etapa"| C1["CasasExplorerScreen / Rutas y Solicitudes"]
+        C1 -->|"Marcar en camino"| C2["Cobrador en Camino (EN_CAMINO)"]
+        C2 -->|"Cobro en puerta"| T1["Emite Pago & Ticket Canónico Inmutable"]
+    end
+
+    subgraph "3. Administrador (Auditoría Financiera) — GLOBAL"
+        SR -->|"Bandeja exclusiva de revisión"| A1["Gestión de Solicitudes (Admin)"]
+        A1 -->|"Acción: Revertir Pago"| A2["EliminarPagoUseCase (Transaccional)"]
+        A2 -->|"1. Anula Ticket (ANULADO)<br>2. Elimina Pago<br>3. Libera Cuota a Pendiente/Mora"| R1
+        A1 -->|"Acción: Corregir Valor"| A3["CorregirPagoUseCase"]
+    end
+
+    subgraph "4. Auditoría General (Timeline de Actividades) — GLOBAL"
+        SC -.->|"Log de sistema"| AUD["Actividad del Sistema (Admin)"]
+        SR -.->|"Log de sistema"| AUD
+        T1 -.->|"Log de sistema"| AUD
+    end
+```
+
+#### Principios de Dominio:
+1. **Solicitudes de Cobro (SC):** Operativas para el Cobrador. Piden visita presencial y se gestionan desde la ruta (`CasasExplorerScreen` / `CobradorSolicitudesScreen`).
+2. **Solicitudes de Revisión (SR):** Auditoría financiera para el Administrador. Permiten corregir valor o revertir el pago, anulando el ticket y liberando la cuota.
+3. **Tickets Canónicos e Inmutables:** Documento digital inmutable emitido por el backend (`TKT-2026-XXXXXX`), visible para los 3 roles sin generar identificadores sintéticos locales.
+4. **Timeline de Actividades:** Registro cronológico global de solo lectura para auditoría.
+
 ## Stack
 
 | Capa | Tecnología | Referencia |
@@ -324,8 +361,8 @@ Cada commit debe incluir un prefijo identificador claro:
 
 ### Conexión a la Base de Datos Cloud (Supabase Pooler)
 ```bash
-# Conexión directa mediante psql con SSL
-psql "postgresql://postgres.fpgukukujxfrlvynpyha:6eq7I3m4RFH6ft@aws-1-us-east-2.pooler.supabase.com:5432/postgres?sslmode=require"
+# Conexión directa mediante psql con SSL (usar credenciales de entorno)
+psql "postgresql://<USUARIO>:<PASSWORD>@<HOST_POOLER>:5432/postgres?sslmode=require"
 ```
 
 ### Disparo Manual de Generación de Cobros en Nube

@@ -51,14 +51,17 @@ class CobradorCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          cobrador.nombre,
-                          style: AppTypography.subtitle.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            cobrador.nombre,
+                            style: AppTypography.subtitle.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
+                            ),
+                            maxLines: 1,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 2),
                         Text(
@@ -97,7 +100,7 @@ class CobradorCard extends StatelessWidget {
                   Row(
                     children: [
                       Icon(Icons.payments_rounded, size: 16, color: AppColors.textSecondary),
-                      const SizedBox(width: 4),
+                      const SizedBox(width: AppSpacing.xs),
                       Text(
                         '${cobrador.pagosRegistradosSemana} pagos esta sem.',
                         style: AppTypography.caption.copyWith(color: AppColors.textSecondary),

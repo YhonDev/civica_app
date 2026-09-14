@@ -139,6 +139,7 @@ class _ResidenteHistorialScreenState extends State<ResidenteHistorialScreen> {
       appBar: AppBar(
         title: const Text('Historial de Pagos'),
         leading: IconButton(
+          tooltip: 'Volver',
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => Navigator.pop(context),
         ),

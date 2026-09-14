@@ -61,6 +61,7 @@ class BalanceAnualBottomSheet extends StatelessWidget {
                   style: AppTypography.title.copyWith(color: AppColors.textPrimary),
                 ),
                 IconButton(
+                  tooltip: 'Cerrar',
                   icon: Icon(Icons.close_rounded, color: AppColors.textSecondary),
                   onPressed: () => Navigator.pop(context),
                 ),

@@ -41,17 +41,7 @@ class ScaffoldWithBottomNav extends StatelessWidget {
             final mainContent = Column(
               children: [
                 const ConnectivityBanner(),
-                Expanded(
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 250),
-                    switchInCurve: Curves.easeOutCubic,
-                    switchOutCurve: Curves.easeInCubic,
-                    child: KeyedSubtree(
-                      key: ValueKey(currentLocation),
-                      child: child,
-                    ),
-                  ),
-                ),
+                Expanded(child: child),
               ],
             );
 
@@ -290,6 +280,7 @@ class DesktopSidebar extends StatelessWidget {
                           borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                           child: Image.asset(
                             'img/logo.png',
+                            semanticLabel: 'Logo de Cuentiva',
                             width: 24,
                             height: 24,
                             fit: BoxFit.contain,

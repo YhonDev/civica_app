@@ -1,5 +1,6 @@
 import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
+import 'package:civica_pago_mobile/core/theme/app_colors.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../features/auth/auth_cubit.dart';
 import 'biometric_auth_service.dart';
@@ -72,7 +73,7 @@ class _BiometricLifecycleLockState extends State<BiometricLifecycleLock> {
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 18.0, sigmaY: 18.0),
                 child: Container(
-                  color: Colors.black.withValues(alpha: 0.10),
+                  color: AppColors.shadow.withValues(alpha: 0.10),
                 ),
               ),
             ),

@@ -1,5 +1,6 @@
-import 'package:flutter/foundation.dart';
+import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 
 /// Enterprise SWR (Stale-While-Revalidate) Cache Repository.
 ///
@@ -14,8 +15,6 @@ class LocalCacheRepository {
 
   final Map<String, dynamic> _memoryCache = {};
   final Map<String, DateTime> _timestamps = {};
-
-
 
   /// Reads cached value synchronously from memory if within maxAge TTL.
   dynamic getCached(String key, {Duration? maxAge}) {
@@ -57,7 +56,9 @@ class LocalCacheRepository {
 
   /// Invalida únicamente las claves que coincidan con un patrón o prefijo.
   void invalidatePattern(String pattern) {
-    final keysToRemove = _memoryCache.keys.where((k) => k.contains(pattern)).toList();
+    final keysToRemove = _memoryCache.keys
+        .where((k) => k.contains(pattern))
+        .toList();
     for (final key in keysToRemove) {
       _memoryCache.remove(key);
       _timestamps.remove(key);
@@ -72,7 +73,7 @@ class LocalCacheRepository {
   Future<void> executeSWR<T>({
     required String key,
     required Future<T> Function() fetcher,
-    required void Function(T data, bool isStale) onData,
+    required FutureOr<void> Function(T data, bool isStale) onData,
     void Function(Object error)? onError,
     Duration maxAge = const Duration(minutes: 3),
   }) async {
@@ -82,7 +83,7 @@ class LocalCacheRepository {
     if (cached != null) {
       hasCached = true;
       try {
-        onData(cached as T, true);
+        await onData(cached as T, true);
       } catch (e) {
         if (kDebugMode) {
           debugPrint('[SWR] Error rendering cached data for key $key: $e');
@@ -93,7 +94,7 @@ class LocalCacheRepository {
     try {
       final fresh = await fetcher();
       setCache(key, fresh);
-      onData(fresh, false);
+      await onData(fresh, false);
     } catch (e) {
       if (kDebugMode) {
         debugPrint('[SWR] Background fetch failed for key $key: $e');

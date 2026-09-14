@@ -7,6 +7,7 @@
 #   - `Color(0x...)`   → color (AppColors)
 #   - `BorderRadius.circular(<literal>)` / `Radius.circular(<literal>)`
 #     → radios (tokens de AppSpacing)
+#   - `Colors.(white|black)...` → tinta/sombra (AppColors.onPrimary/shadow, regla 9.10)
 #
 # La versión completa y precisa (EdgeInsets tokenizados, línea/columna,
 # regla infringida) vive en apps/mobile/test/design_token_guard_test.dart;
@@ -57,6 +58,7 @@ check 'fontSize:' 'tipografía'
 check 'Color\(0x' 'color'
 check 'BorderRadius\.circular\(\s*[0-9]' 'radio de borde'
 check 'Radius\.circular\(\s*[0-9]' 'radio (Radius)'
+check 'Colors\.(white|black)(24|26|30|60|70)?\b' 'color de tinta/sombra (9.10)'
 
 # 9.7a — UI: error crudo en SnackBar/toast sin sanitizeApiError
 check_97 '9.7 UI' \

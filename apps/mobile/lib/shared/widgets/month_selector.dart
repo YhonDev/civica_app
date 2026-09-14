@@ -166,6 +166,7 @@ class _MonthPickerSheetState extends State<_MonthPickerSheet> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               IconButton(
+                tooltip: 'Año anterior',
                 icon: const Icon(Icons.chevron_left),
                 onPressed: () => setState(() => _year--),
               ),
@@ -176,6 +177,7 @@ class _MonthPickerSheetState extends State<_MonthPickerSheet> {
                 ),
               ),
               IconButton(
+                tooltip: 'Año siguiente',
                 icon: const Icon(Icons.chevron_right),
                 onPressed: () => setState(() => _year++),
               ),
@@ -199,7 +201,7 @@ class _MonthPickerSheetState extends State<_MonthPickerSheet> {
                 },
                 selectedColor: AppColors.primary,
                 labelStyle: TextStyle(
-                  color: isSelected ? Colors.white : AppColors.textPrimary,
+                  color: isSelected ? AppColors.onPrimary : AppColors.textPrimary,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                 ),
                 backgroundColor: AppColors.surface,

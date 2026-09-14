@@ -8,9 +8,11 @@ class SolicitudesRepository {
   SolicitudesRepository({ApiClient? apiClient})
       : _api = apiClient ?? ApiClient.instance;
 
-  Future<List<SolicitudData>> getSolicitudes() async {
+  Future<List<SolicitudData>> getSolicitudes({String? tipo}) async {
     try {
-      final response = await _api.get('/solicitudes/admin');
+      final response = await _api.get('/solicitudes/admin', queryParameters: {
+        'tipo': ?tipo,
+      });
       return (response.data as List).map((json) => _mapToSolicitudData(json)).toList();
     } catch (e) {
       throw e is ApiException ? e : Exception('Error al cargar solicitudes: $e');

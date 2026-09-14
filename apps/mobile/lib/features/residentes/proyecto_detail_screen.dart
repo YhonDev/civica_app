@@ -66,6 +66,7 @@ class _ProyectoDetailScreenState extends State<ProyectoDetailScreen> {
       appBar: AppBar(
         title: const Text('Gestión de Proyecto'),
         leading: IconButton(
+          tooltip: 'Volver',
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.pop(),
         ),
@@ -570,6 +571,7 @@ class _GeneradorEstructuraSheetState extends State<_GeneradorEstructuraSheet> {
                       ],
                     ),
                     IconButton(
+                      tooltip: 'Cerrar',
                       icon: const Icon(Icons.close_rounded),
                       onPressed: _isSubmitting ? null : () => Navigator.pop(context),
                     ),

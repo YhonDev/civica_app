@@ -79,6 +79,7 @@ class _ResidentesScreenState extends State<ResidentesScreen> {
       appBar: AppBar(
         title: const Text('Gestión de Residentes'),
         leading: IconButton(
+          tooltip: 'Volver',
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.pop(),
         ),
@@ -305,7 +306,7 @@ class _ResidentesScreenState extends State<ResidentesScreen> {
                 filter,
                 style: AppTypography.small.copyWith(
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                  color: isSelected ? Colors.white : AppColors.textPrimary,
+                  color: isSelected ? AppColors.onPrimary : AppColors.textPrimary,
                 ),
               ),
               selected: isSelected,
@@ -316,7 +317,7 @@ class _ResidentesScreenState extends State<ResidentesScreen> {
               },
               backgroundColor: AppColors.surface,
               selectedColor: AppColors.primary,
-              checkmarkColor: Colors.white,
+              checkmarkColor: AppColors.onPrimary,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
                 side: BorderSide(

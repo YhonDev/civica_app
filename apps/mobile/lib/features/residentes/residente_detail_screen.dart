@@ -332,7 +332,7 @@ class _ResidenteDetailScreenState extends State<ResidenteDetailScreen> {
                                 }
                               },
                         icon: guardando
-                            ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                            ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.onPrimary))
                             : const Icon(Icons.save_rounded, size: 18),
                         label: const Text('Guardar Cambios'),
                       ),
@@ -353,6 +353,7 @@ class _ResidenteDetailScreenState extends State<ResidenteDetailScreen> {
       appBar: AppBar(
         title: const Text('Gestión de Residente'),
         leading: IconButton(
+          tooltip: 'Volver',
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.pop(true),
         ),
@@ -546,12 +547,12 @@ class _ResidenteDetailScreenState extends State<ResidenteDetailScreen> {
       case _CobroStatus.pagado:
         nodeColor = AppColors.success;
         bgColor = AppColors.success;
-        icon = const Icon(Icons.check, size: 10, color: Colors.white);
+        icon = const Icon(Icons.check, size: 10, color: AppColors.onPrimary);
         break;
       case _CobroStatus.hoy:
         nodeColor = AppColors.info;
         bgColor = AppColors.info;
-        icon = const Icon(Icons.circle, size: 6, color: Colors.white);
+        icon = const Icon(Icons.circle, size: 6, color: AppColors.onPrimary);
         break;
       case _CobroStatus.pendiente:
         nodeColor = AppColors.border;

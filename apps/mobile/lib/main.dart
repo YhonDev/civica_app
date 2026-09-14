@@ -1,3 +1,4 @@
+import 'dart:ui' show PlatformDispatcher;
 import 'package:flutter/foundation.dart' show kDebugMode, kReleaseMode, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -6,6 +7,7 @@ import 'core/database/app_database.dart';
 import 'core/network/api_client.dart';
 import 'core/network/api_health_service.dart';
 import 'core/network/base_url.dart';
+import 'core/network/error_messages.dart' show debugReportUnknownError;
 import 'core/sync/connectivity_detector.dart';
 import 'core/sync/sync_service.dart';
 import 'core/theme/app_theme.dart';
@@ -16,9 +18,33 @@ import 'core/router/app_router.dart';
 import 'core/theme/app_breakpoints.dart';
 import 'features/auth/auth_cubit.dart';
 import 'features/setup/api_unavailable_screen.dart';
+import 'shared/widgets/empty_state.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    debugReportUnknownError(details.exception, 'FlutterError', stackTrace: details.stack);
+  };
+  PlatformDispatcher.instance.onError = (error, stack) {
+    debugReportUnknownError(error, 'PlatformDispatcher', stackTrace: stack);
+    return true;
+  };
+  ErrorWidget.builder = (details) {
+    if (kDebugMode) {
+      return ErrorWidget(details.exception);
+    }
+    return const Material(
+      child: Center(
+        child: EmptyState(
+          icon: Icons.error_outline_rounded,
+          title: 'Ocurrió un error inesperado',
+          description: 'Por favor, reinicia la pantalla o intenta de nuevo.',
+        ),
+      ),
+    );
+  };
 
   await initializeDateFormatting('es', null);
   if (!kIsWeb) {

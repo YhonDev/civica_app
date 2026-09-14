@@ -668,7 +668,9 @@ export class DashboardController {
       LEFT JOIN manzanas m ON m.id = c.manzana_id
       LEFT JOIN etapas e ON e.id = m.etapa_id
       WHERE s.tenant_id = $1
-        AND s.estado IN ('EN_ESPERA', 'PENDIENTE', 'EN_CAMINO', 'EN_REVISION')
+        AND s.estado IN ('EN_ESPERA', 'PENDIENTE', 'EN_CAMINO')
+        AND (s.tipo ILIKE '%cobro%' OR s.nro_recibo LIKE 'SC-%')
+        AND (s.tipo NOT ILIKE '%revision%' AND s.nro_recibo NOT LIKE 'SR-%')
         ${etapaIds.length > 0 ? 'AND (e.id IS NULL OR e.id = ANY($2::uuid[]))' : ''}
       ORDER BY s.created_at ASC`,
       etapaIds.length > 0 ? [tenantId, etapaIds] : [tenantId],

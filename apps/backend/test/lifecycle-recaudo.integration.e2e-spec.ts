@@ -32,6 +32,7 @@ describe('Ciclo Completo del Motor de Recaudo (E2E Integration)', () => {
   let tenantId: string;
   let adminToken: string;
   let cobradorToken: string;
+  let cobradorId: string;
 
   // Paso 1: IDs de infraestructura
   let proyectoId: string;
@@ -67,7 +68,7 @@ describe('Ciclo Completo del Motor de Recaudo (E2E Integration)', () => {
 
     // ── Seed Admin & Cobrador users ──────────────────────────
     const adminId = randomUUID();
-    const cobradorId = randomUUID();
+    cobradorId = randomUUID();
     const adminHash = bcryptHashSync('admin123', 10);
     const cobradorHash = bcryptHashSync('cobrador123', 10);
 
@@ -138,6 +139,10 @@ describe('Ciclo Completo del Motor de Recaudo (E2E Integration)', () => {
       'DELETE FROM tenencias WHERE residente_id IN (SELECT id FROM residentes WHERE tenant_id = $1)',
       [tenantId],
     );
+    await dataSource.query(
+      'DELETE FROM asignaciones_etapa WHERE tenant_id = $1',
+      [tenantId],
+    );
     await dataSource.query('DELETE FROM usuarios WHERE tenant_id = $1', [
       tenantId,
     ]);
@@ -190,6 +195,12 @@ describe('Ciclo Completo del Motor de Recaudo (E2E Integration)', () => {
       expect(res.body).toHaveProperty('id');
       expect(res.body.nombre).toBe('Etapa 1 Sol');
       etapaId = res.body.id;
+
+      await dataSource.query(
+        `INSERT INTO asignaciones_etapa (id, usuario_id, etapa_id, tenant_id)
+         VALUES ($1, $2, $3, $4)`,
+        [randomUUID(), cobradorId, etapaId, tenantId],
+      );
     });
 
     it('debe crear una Manzana en la Etapa', async () => {
