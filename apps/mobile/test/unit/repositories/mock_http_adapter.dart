@@ -9,6 +9,7 @@ import 'package:dio/dio.dart';
 class MockHttpAdapter implements HttpClientAdapter {
   final Map<String, _MockResponse> _handlers = {};
   final Map<String, int> _callCount = {};
+  final Map<String, dynamic> lastHeaders = {};
 
   void onGet(String path, dynamic data, {int statusCode = 200}) {
     _handlers['GET $path'] = _MockResponse(data, statusCode);
@@ -27,8 +28,7 @@ class MockHttpAdapter implements HttpClientAdapter {
   }
 
   /// How many times a given method+path was called.
-  int calls(String method, String path) =>
-      _callCount['$method $path'] ?? 0;
+  int calls(String method, String path) => _callCount['$method $path'] ?? 0;
 
   @override
   Future<ResponseBody> fetch(
@@ -52,6 +52,9 @@ class MockHttpAdapter implements HttpClientAdapter {
     }
 
     final key = '${options.method} $resolvedPath';
+    lastHeaders
+      ..clear()
+      ..addAll(options.headers);
 
     _callCount[key] = (_callCount[key] ?? 0) + 1;
 

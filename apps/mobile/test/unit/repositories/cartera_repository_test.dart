@@ -12,7 +12,7 @@ List<Map<String, dynamic>> _cuotasResponse() {
     // PAGADA
     {
       'id': 'CUO_1',
-      'monto': 5000000,     // 50,000 COP en centavos
+      'monto': 5000000, // 50,000 COP en centavos
       'montoPagado': 5000000,
       'estado': 'PAGADA',
       'residente': {
@@ -22,7 +22,10 @@ List<Map<String, dynamic>> _cuotasResponse() {
           {
             'casa': {
               'direccionInterna': 'Casa 101',
-              'manzana': {'nombre': 'Manzana A', 'etapa': {'nombre': 'Etapa Alfa'}},
+              'manzana': {
+                'nombre': 'Manzana A',
+                'etapa': {'nombre': 'Etapa Alfa'},
+              },
             },
           },
         ],
@@ -32,7 +35,7 @@ List<Map<String, dynamic>> _cuotasResponse() {
     {
       'id': 'CUO_2',
       'monto': 5000000,
-      'montoPagado': 2000000,  // pagó parcial
+      'montoPagado': 2000000, // pagó parcial
       'estado': 'VENCIDA',
       'residente': {
         'id': 'PRO_2',
@@ -41,7 +44,10 @@ List<Map<String, dynamic>> _cuotasResponse() {
           {
             'casa': {
               'direccionInterna': 'Casa 102',
-              'manzana': {'nombre': 'Manzana A', 'etapa': {'nombre': 'Etapa Alfa'}},
+              'manzana': {
+                'nombre': 'Manzana A',
+                'etapa': {'nombre': 'Etapa Alfa'},
+              },
             },
           },
         ],
@@ -53,11 +59,7 @@ List<Map<String, dynamic>> _cuotasResponse() {
       'monto': 5000000,
       'montoPagado': 0,
       'estado': 'PENDIENTE',
-      'residente': {
-        'id': 'PRO_3',
-        'nombre': 'Pedro López',
-        'tenencias': [],
-      },
+      'residente': {'id': 'PRO_3', 'nombre': 'Pedro López', 'tenencias': []},
     },
   ];
 }
@@ -77,22 +79,25 @@ void main() {
   });
 
   group('CarteraRepository.getCarteraResumen', () {
-    test('agrega correctamente montos por estado (PAGADA, VENCIDA, PENDIENTE)', () async {
-      mockAdapter.onGet('/cobros', _cuotasResponse());
+    test(
+      'agrega correctamente montos por estado (PAGADA, VENCIDA, PENDIENTE)',
+      () async {
+        mockAdapter.onGet('/cobros', _cuotasResponse());
 
-      final resumen = await repository.getCarteraResumen();
+        final resumen = await repository.getCarteraResumen();
 
-      // CUO_1: PAGADA → 50,000 pagado
-      // CUO_2: VENCIDA → monto=50,000, pagado=20,000 → mora=30,000
-      // CUO_3: PENDIENTE → monto=50,000, pagado=0 → pendiente=50,000
-      expect(resumen.cantidadPagados, 1);
-      expect(resumen.cantidadMora, 1);
-      expect(resumen.cantidadPendientes, 1);
+        // CUO_1: PAGADA → 50,000 pagado
+        // CUO_2: VENCIDA → monto=50,000, pagado=20,000 → mora=30,000
+        // CUO_3: PENDIENTE → monto=50,000, pagado=0 → pendiente=50,000
+        expect(resumen.cantidadPagados, 1);
+        expect(resumen.cantidadMora, 1);
+        expect(resumen.cantidadPendientes, 1);
 
-      expect(resumen.totalPagado, 70000);  // 50,000 + 20,000
-      expect(resumen.totalMora, 30000);    // 50,000 - 20,000
-      expect(resumen.totalPendiente, 50000); // 50,000 - 0
-    });
+        expect(resumen.totalPagado, 70000); // 50,000 + 20,000
+        expect(resumen.totalMora, 30000); // 50,000 - 20,000
+        expect(resumen.totalPendiente, 50000); // 50,000 - 0
+      },
+    );
 
     test('lista vacía retorna todo en cero', () async {
       mockAdapter.onGet('/cobros', []);
@@ -175,26 +180,25 @@ void main() {
       expect(result['id'], 'PAG_NEW');
     });
 
-    test('salvaguarda en SQLite local cuando cobrador está en fallback de red', () async {
+    test('no guarda errores de servidor como pagos offline', () async {
       final db = AppDatabase.forTesting(NativeDatabase.memory());
       AppDatabase.setTestingInstance(db);
 
-      mockAdapter.onPost('/pagos', {'error': 'Network timeout'}, statusCode: 500);
+      mockAdapter.onPost('/pagos', {
+        'error': 'Network timeout',
+      }, statusCode: 500);
 
-      final result = await repository.registrarPago(
-        residenteId: 'PRO_OFFLINE',
-        montoCentavos: 3000000,
-        isCobrador: true,
+      await expectLater(
+        repository.registrarPago(
+          residenteId: 'PRO_OFFLINE',
+          montoCentavos: 3000000,
+          isCobrador: true,
+        ),
+        throwsA(isA<Exception>()),
       );
 
-      expect(result['offline'], true);
-      expect(result['status'], 'OFFLINE_FALLBACK');
-
       final pendientes = await db.pagoDao.getPendientesSync();
-      expect(pendientes.length, 1);
-      expect(pendientes.first.residenteId, 'PRO_OFFLINE');
-      expect(pendientes.first.monto, 3000000);
-      expect(pendientes.first.syncStatus, 'PENDIENTE_SYNC');
+      expect(pendientes, isEmpty);
 
       await db.close();
     });
@@ -214,92 +218,92 @@ void main() {
   });
 
   group('CarteraRepository — edge cases', () {
-    test('cuota en estado PARCIAL se trata como pendiente en getCobros', () async {
-      mockAdapter.onGet('/cobros', [
-        {
-          'id': 'CUO_PARCIAL',
-          'monto': 5000000,
-          'montoPagado': 3000000,
-          'estado': 'PARCIAL',
-          'residente': {
-            'id': 'PRO_P',
-            'nombre': 'Parcial',
-            'tenencias': [],
+    test(
+      'cuota en estado PARCIAL se trata como pendiente en getCobros',
+      () async {
+        mockAdapter.onGet('/cobros', [
+          {
+            'id': 'CUO_PARCIAL',
+            'monto': 5000000,
+            'montoPagado': 3000000,
+            'estado': 'PARCIAL',
+            'residente': {'id': 'PRO_P', 'nombre': 'Parcial', 'tenencias': []},
           },
-        },
-      ]);
+        ]);
 
-      final cobros = await repository.getCobros();
+        final cobros = await repository.getCobros();
 
-      // Estado PARCIAL no tiene mapeo explícito → cae a 'Pendiente'
-      expect(cobros[0].estado, 'Pendiente');
-      expect(cobros[0].saldo, 20000); // (50,000 - 30,000)
-    });
+        // Estado PARCIAL no tiene mapeo explícito → cae a 'Pendiente'
+        expect(cobros[0].estado, 'Pendiente');
+        expect(cobros[0].saldo, 20000); // (50,000 - 30,000)
+      },
+    );
 
-    test('cuota en estado PARCIAL se suma al resumen como pendiente y abono', () async {
-      mockAdapter.onGet('/cobros', [
-        {
-          'id': 'CUO_PP',
-          'monto': 5000000,
-          'montoPagado': 3000000,
-          'estado': 'PARCIAL',
-          'residente': {'id': 'P1', 'nombre': 'Test', 'tenencias': []},
-        },
-      ]);
+    test(
+      'cuota en estado PARCIAL se suma al resumen como pendiente y abono',
+      () async {
+        mockAdapter.onGet('/cobros', [
+          {
+            'id': 'CUO_PP',
+            'monto': 5000000,
+            'montoPagado': 3000000,
+            'estado': 'PARCIAL',
+            'residente': {'id': 'P1', 'nombre': 'Test', 'tenencias': []},
+          },
+        ]);
 
-      final resumen = await repository.getCarteraResumen();
+        final resumen = await repository.getCarteraResumen();
 
-      // PARCIAL se mapea a Pendiente, por lo que suma al saldo pendiente y al total pagado
-      expect(resumen.cantidadPagados, 0);
-      expect(resumen.cantidadMora, 0);
-      expect(resumen.cantidadPendientes, 1);
-      expect(resumen.totalPagado, 30000.0);
-      expect(resumen.totalMora, 0.0);
-      expect(resumen.totalPendiente, 20000.0);
-    });
+        // PARCIAL se mapea a Pendiente, por lo que suma al saldo pendiente y al total pagado
+        expect(resumen.cantidadPagados, 0);
+        expect(resumen.cantidadMora, 0);
+        expect(resumen.cantidadPendientes, 1);
+        expect(resumen.totalPagado, 30000.0);
+        expect(resumen.totalMora, 0.0);
+        expect(resumen.totalPendiente, 20000.0);
+      },
+    );
   });
 
   group('CarteraRepository — error handling', () {
     test('lanza Exception cuando la API falla en getCarteraResumen', () async {
-      expect(
-        () => repository.getCarteraResumen(),
-        throwsA(isA<Exception>()),
-      );
+      expect(() => repository.getCarteraResumen(), throwsA(isA<Exception>()));
     });
   });
 
   group('CarteraRepository — role-aware endpoint selection', () {
-    test('PROPIETARIO calls GET /cobros/residente/{id} for getCarteraResumen', () async {
-      final propRepo = CarteraRepository(
-        role: 'PROPIETARIO',
-        residenteId: 'PROP_42',
-      );
+    test(
+      'PROPIETARIO calls GET /cobros/residente/{id} for getCarteraResumen',
+      () async {
+        final propRepo = CarteraRepository(
+          role: 'PROPIETARIO',
+          residenteId: 'PROP_42',
+        );
 
-      mockAdapter.onGet('/cobros/residente/PROP_42', [
-        {
-          'id': 'CUO_R1',
-          'monto': 5000000,
-          'montoPagado': 0,
-          'estado': 'PENDIENTE',
-          'residente': {
-            'id': 'PROP_42',
-            'nombre': 'Prop Test',
-            'tenencias': [],
+        mockAdapter.onGet('/cobros/residente/PROP_42', [
+          {
+            'id': 'CUO_R1',
+            'monto': 5000000,
+            'montoPagado': 0,
+            'estado': 'PENDIENTE',
+            'residente': {
+              'id': 'PROP_42',
+              'nombre': 'Prop Test',
+              'tenencias': [],
+            },
           },
-        },
-      ]);
+        ]);
 
-      final resumen = await propRepo.getCarteraResumen();
+        final resumen = await propRepo.getCarteraResumen();
 
-      expect(mockAdapter.calls('GET', '/cobros/residente/PROP_42'), 1);
-      expect(mockAdapter.calls('GET', '/cobros'), 0);
-      expect(resumen.cantidadPendientes, 1);
-    });
+        expect(mockAdapter.calls('GET', '/cobros/residente/PROP_42'), 1);
+        expect(mockAdapter.calls('GET', '/cobros'), 0);
+        expect(resumen.cantidadPendientes, 1);
+      },
+    );
 
     test('COBRADOR calls GET /cobros for getCarteraResumen', () async {
-      final cobradorRepo = CarteraRepository(
-        role: 'COBRADOR',
-      );
+      final cobradorRepo = CarteraRepository(role: 'COBRADOR');
 
       mockAdapter.onGet('/cobros', []);
 
@@ -308,42 +312,48 @@ void main() {
       expect(mockAdapter.calls('GET', '/cobros'), 1);
     });
 
-    test('PROPIETARIO calls GET /cobros/residente/{id} for getCobros', () async {
-      final propRepo = CarteraRepository(
-        role: 'PROPIETARIO',
-        residenteId: 'PROP_42',
-      );
+    test(
+      'PROPIETARIO calls GET /cobros/residente/{id} for getCobros',
+      () async {
+        final propRepo = CarteraRepository(
+          role: 'PROPIETARIO',
+          residenteId: 'PROP_42',
+        );
 
-      mockAdapter.onGet('/cobros/residente/PROP_42', [
-        {
-          'id': 'CUO_R2',
-          'monto': 5000000,
-          'montoPagado': 2000000,
-          'estado': 'VENCIDA',
-          'residente': {
-            'id': 'PROP_42',
-            'nombre': 'Prop Test',
-            'tenencias': [],
+        mockAdapter.onGet('/cobros/residente/PROP_42', [
+          {
+            'id': 'CUO_R2',
+            'monto': 5000000,
+            'montoPagado': 2000000,
+            'estado': 'VENCIDA',
+            'residente': {
+              'id': 'PROP_42',
+              'nombre': 'Prop Test',
+              'tenencias': [],
+            },
           },
-        },
-      ]);
+        ]);
 
-      final cobros = await propRepo.getCobros();
+        final cobros = await propRepo.getCobros();
 
-      expect(mockAdapter.calls('GET', '/cobros/residente/PROP_42'), 1);
-      expect(cobros.length, 1);
-      expect(cobros[0].nombre, 'Prop Test');
-    });
+        expect(mockAdapter.calls('GET', '/cobros/residente/PROP_42'), 1);
+        expect(cobros.length, 1);
+        expect(cobros[0].nombre, 'Prop Test');
+      },
+    );
 
-    test('without role falls back to GET /cobros (backward compatible)', () async {
-      final defaultRepo = CarteraRepository();
+    test(
+      'without role falls back to GET /cobros (backward compatible)',
+      () async {
+        final defaultRepo = CarteraRepository();
 
-      mockAdapter.onGet('/cobros', _cuotasResponse());
+        mockAdapter.onGet('/cobros', _cuotasResponse());
 
-      final resumen = await defaultRepo.getCarteraResumen();
+        final resumen = await defaultRepo.getCarteraResumen();
 
-      expect(mockAdapter.calls('GET', '/cobros'), 1);
-      expect(resumen.cantidadPagados, 1);
-    });
+        expect(mockAdapter.calls('GET', '/cobros'), 1);
+        expect(resumen.cantidadPagados, 1);
+      },
+    );
   });
 }

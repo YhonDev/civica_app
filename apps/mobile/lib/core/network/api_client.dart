@@ -63,7 +63,7 @@ class TokenStorage {
   final SecureStorage _storage;
 
   TokenStorage({SecureStorage? storage})
-      : _storage = storage ?? FlutterSecureStorageAdapter();
+    : _storage = storage ?? FlutterSecureStorageAdapter();
 
   Future<String?> getAccessToken() async {
     return _storage.read(_accessKey);
@@ -137,10 +137,7 @@ class AuthInterceptor extends Interceptor {
   bool _isRefreshing = false;
   final _pendingRequests = <_PendingRequest>[];
 
-  AuthInterceptor({
-    required this._dioForRefresh,
-    required this._tokenStorage,
-  });
+  AuthInterceptor({required this._dioForRefresh, required this._tokenStorage});
 
   @override
   void onRequest(
@@ -155,12 +152,10 @@ class AuthInterceptor extends Interceptor {
   }
 
   @override
-  void onError(
-    DioException err,
-    ErrorInterceptorHandler handler,
-  ) async {
+  void onError(DioException err, ErrorInterceptorHandler handler) async {
     final path = err.requestOptions.path;
-    final isAuthEndpoint = path.contains('/auth/login') || path.contains('/auth/refresh');
+    final isAuthEndpoint =
+        path.contains('/auth/login') || path.contains('/auth/refresh');
 
     // Solo intentamos refresh en 401 que no corresponda a un endpoint de autenticación
     if (err.response?.statusCode != 401 || isAuthEndpoint) {
@@ -231,10 +226,9 @@ class AuthInterceptor extends Interceptor {
       }
     } else {
       // Ya hay un refresh en progreso → encolamos
-      _pendingRequests.add(_PendingRequest(
-        options: err.requestOptions,
-        handler: handler,
-      ));
+      _pendingRequests.add(
+        _PendingRequest(options: err.requestOptions, handler: handler),
+      );
     }
   }
 
@@ -317,7 +311,9 @@ class ApiClient {
     SecureStorage? storage,
   }) : tokenStorage = tokenStorage ?? TokenStorage(storage: storage) {
     // Dio para refresh (sin interceptors para evitar loops)
-    final dioForRefresh = Dio(_baseOptions(baseUrl, connectTimeout, receiveTimeout));
+    final dioForRefresh = Dio(
+      _baseOptions(baseUrl, connectTimeout, receiveTimeout),
+    );
 
     _authInterceptor = AuthInterceptor(
       dioForRefresh: dioForRefresh,
@@ -329,32 +325,34 @@ class ApiClient {
 
     // Solo agregar logging en desarrollo, redactando datos sensibles
     if (enableLogging) {
-      _dio.interceptors.add(InterceptorsWrapper(
-        onRequest: (options, handler) {
-          final sanitized = redactSensitiveData(options.data);
-          debugPrint('[API] *** Request ***');
-          debugPrint('[API] uri: ${options.uri}');
-          debugPrint('[API] method: ${options.method}');
-          if (sanitized != null) {
-            debugPrint('[API] data: $sanitized');
-          }
-          handler.next(options);
-        },
-        onResponse: (response, handler) {
-          final sanitized = redactSensitiveData(response.data);
-          debugPrint('[API] *** Response ***');
-          debugPrint('[API] uri: ${response.requestOptions.uri}');
-          debugPrint('[API] statusCode: ${response.statusCode}');
-          if (sanitized != null) {
-            debugPrint('[API] Response Text: $sanitized');
-          }
-          handler.next(response);
-        },
-        onError: (err, handler) {
-          debugPrint('[API] *** DioException ***: ${err.message}');
-          handler.next(err);
-        },
-      ));
+      _dio.interceptors.add(
+        InterceptorsWrapper(
+          onRequest: (options, handler) {
+            final sanitized = redactSensitiveData(options.data);
+            debugPrint('[API] *** Request ***');
+            debugPrint('[API] uri: ${options.uri}');
+            debugPrint('[API] method: ${options.method}');
+            if (sanitized != null) {
+              debugPrint('[API] data: $sanitized');
+            }
+            handler.next(options);
+          },
+          onResponse: (response, handler) {
+            final sanitized = redactSensitiveData(response.data);
+            debugPrint('[API] *** Response ***');
+            debugPrint('[API] uri: ${response.requestOptions.uri}');
+            debugPrint('[API] statusCode: ${response.statusCode}');
+            if (sanitized != null) {
+              debugPrint('[API] Response Text: $sanitized');
+            }
+            handler.next(response);
+          },
+          onError: (err, handler) {
+            debugPrint('[API] *** DioException ***: ${err.message}');
+            handler.next(err);
+          },
+        ),
+      );
     }
   }
 
@@ -416,7 +414,11 @@ class ApiClient {
     Map<String, dynamic>? queryParameters,
     Options? options,
   }) {
-    return _dio.get<T>(path, queryParameters: queryParameters, options: options);
+    return _dio.get<T>(
+      path,
+      queryParameters: queryParameters,
+      options: options,
+    );
   }
 
   Future<Response<T>> post<T>(
@@ -425,8 +427,12 @@ class ApiClient {
     Map<String, dynamic>? queryParameters,
     Options? options,
   }) {
-    return _dio.post<T>(path,
-        data: data, queryParameters: queryParameters, options: options);
+    return _dio.post<T>(
+      path,
+      data: data,
+      queryParameters: queryParameters,
+      options: options,
+    );
   }
 
   Future<Response<T>> put<T>(
@@ -435,8 +441,12 @@ class ApiClient {
     Map<String, dynamic>? queryParameters,
     Options? options,
   }) {
-    return _dio.put<T>(path,
-        data: data, queryParameters: queryParameters, options: options);
+    return _dio.put<T>(
+      path,
+      data: data,
+      queryParameters: queryParameters,
+      options: options,
+    );
   }
 
   Future<Response<T>> patch<T>(
@@ -445,8 +455,12 @@ class ApiClient {
     Map<String, dynamic>? queryParameters,
     Options? options,
   }) {
-    return _dio.patch<T>(path,
-        data: data, queryParameters: queryParameters, options: options);
+    return _dio.patch<T>(
+      path,
+      data: data,
+      queryParameters: queryParameters,
+      options: options,
+    );
   }
 
   Future<Response<T>> delete<T>(
@@ -455,8 +469,12 @@ class ApiClient {
     Map<String, dynamic>? queryParameters,
     Options? options,
   }) {
-    return _dio.delete<T>(path,
-        data: data, queryParameters: queryParameters, options: options);
+    return _dio.delete<T>(
+      path,
+      data: data,
+      queryParameters: queryParameters,
+      options: options,
+    );
   }
 
   /// Cierra sesión: limpia tokens y cache
@@ -479,7 +497,8 @@ ApiException mapDioError(DioException error) {
     case DioExceptionType.receiveTimeout:
     case DioExceptionType.connectionError:
       return const NetworkException(
-        message: 'No se pudo conectar con el servidor. Verifica tu conexión a internet.',
+        message:
+            'No se pudo conectar con el servidor. Verifica tu conexión a internet.',
       );
 
     case DioExceptionType.cancel:
@@ -493,7 +512,8 @@ ApiException mapDioError(DioException error) {
         final path = error.requestOptions.path;
         if (path.contains('/auth/login')) {
           return ApiException(
-            message: _extractMessage(data) ?? 'Usuario o contraseña incorrectos',
+            message:
+                _extractMessage(data) ?? 'Usuario o contraseña incorrectos',
             statusCode: 401,
             data: data,
           );
@@ -508,13 +528,17 @@ ApiException mapDioError(DioException error) {
       }
       if (status == 422) {
         return ValidationException(
-          message: _extractMessage(data) ?? 'Error de validación en los datos enviados',
+          message:
+              _extractMessage(data) ??
+              'Error de validación en los datos enviados',
           errors: _extractErrors(data),
         );
       }
       if (status == 429) {
         return ApiException(
-          message: _extractMessage(data) ?? 'Demasiados intentos. Por favor espera un momento.',
+          message:
+              _extractMessage(data) ??
+              'Demasiados intentos. Por favor espera un momento.',
           statusCode: 429,
           data: data,
         );
@@ -525,16 +549,22 @@ ApiException mapDioError(DioException error) {
         );
       }
       return ApiException(
-        message: _extractMessage(data) ?? 'Ocurrió un error inesperado al procesar la solicitud',
+        message:
+            _extractMessage(data) ??
+            'Ocurrió un error inesperado al procesar la solicitud',
         statusCode: status,
         data: data,
       );
 
     case DioExceptionType.badCertificate:
-      return const NetworkException(message: 'Error de certificado de seguridad SSL');
+      return const NetworkException(
+        message: 'Error de certificado de seguridad SSL',
+      );
 
     case DioExceptionType.transformTimeout:
-      return const NetworkException(message: 'Tiempo de espera agotado al procesar la respuesta');
+      return const NetworkException(
+        message: 'Tiempo de espera agotado al procesar la respuesta',
+      );
 
     case DioExceptionType.unknown:
       if (error.error is ApiException) {
