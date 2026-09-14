@@ -39,3 +39,10 @@ paths = ['''^apps/mobile/lib/screens/auth/login_screen\.dart$''']
 [[allowlists]]
 description = "Token de ejemplo del badge CircleCI en README de plantilla NestJS"
 paths = ['''^apps/backend/README\.md$''']
+
+# Archivo de configuración pública de Firebase para la app Android de Cuentiva.
+# Contiene el client API key público restringido por package name / SHA-1 en Google Cloud.
+[[allowlists]]
+description = "Firebase client configuration for Android (google-services.json)"
+paths = ['''^apps/mobile/android/app/google-services\.json$''']
+

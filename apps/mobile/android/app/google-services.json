@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "139338482816",
+    "project_id": "cuentiva-7cbd0",
+    "storage_bucket": "cuentiva-7cbd0.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:139338482816:android:cf43cfd41b92dfe408d265",
+        "android_client_info": {
+          "package_name": "com.cuentiva.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDTvBDcLoOPfjzjWjvLlqstD4HHAgpurTU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
