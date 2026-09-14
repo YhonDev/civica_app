@@ -17,6 +17,8 @@ import 'core/security/session_lifecycle_manager.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_breakpoints.dart';
 import 'features/auth/auth_cubit.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'features/setup/api_unavailable_screen.dart';
 import 'shared/widgets/empty_state.dart';
 
@@ -31,6 +33,32 @@ void main() async {
     debugReportUnknownError(error, 'PlatformDispatcher', stackTrace: stack);
     return true;
   };
+
+  // Inicialización defensiva de Firebase y Crashlytics para Android / iOS.
+  // Protegido con try/catch para no romper ejecución en Web, Desktop o tests unitarios.
+  if (!kIsWeb) {
+    try {
+      await Firebase.initializeApp();
+      // En debug mode no enviamos eventos para no ensuciar la consola de Crashlytics
+      await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(!kDebugMode);
+
+      final prevFlutterError = FlutterError.onError;
+      FlutterError.onError = (details) {
+        FirebaseCrashlytics.instance.recordFlutterFatalError(details);
+        prevFlutterError?.call(details);
+      };
+
+      final prevPlatformError = PlatformDispatcher.instance.onError;
+      PlatformDispatcher.instance.onError = (error, stack) {
+        FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+        return prevPlatformError?.call(error, stack) ?? true;
+      };
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Firebase/Crashlytics init skipped: $e');
+      }
+    }
+  }
   ErrorWidget.builder = (details) {
     if (kDebugMode) {
       return ErrorWidget(details.exception);

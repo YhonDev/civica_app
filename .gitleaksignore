@@ -1,0 +1,3 @@
+# Ignorar clave pública de cliente Firebase en google-services.json
+63321cb987401ccfc5c8219ff4d7793209dc43c1:apps/mobile/android/app/google-services.json:gcp-api-key:18
+apps/mobile/android/app/google-services.json:gcp-api-key:18
