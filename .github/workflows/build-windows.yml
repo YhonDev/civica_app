@@ -85,6 +85,12 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         run: |
-          Write-Host "Subiendo ${{ env.ZIP_NAME }} a release ${{ env.RELEASE_TAG }} en Cuentiva/Cuentiva-platform..."
-          gh release upload ${{ env.RELEASE_TAG }} --repo Cuentiva/Cuentiva-platform --clobber ${{ env.ZIP_NAME }} SHA256_WINDOWS.txt
+          $tag = "${{ env.RELEASE_TAG }}"
+          $exists = gh release view $tag --repo Cuentiva/Cuentiva-platform 2>&1
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "Creando release $tag en Cuentiva/Cuentiva-platform..."
+            gh release create $tag --repo Cuentiva/Cuentiva-platform --title "Release $tag" --generate-notes
+          }
+          Write-Host "Subiendo ${{ env.ZIP_NAME }} a release $tag en Cuentiva/Cuentiva-platform..."
+          gh release upload $tag --repo Cuentiva/Cuentiva-platform --clobber ${{ env.ZIP_NAME }} SHA256_WINDOWS.txt
           Write-Host "✅ Subida completada exitosamente."
