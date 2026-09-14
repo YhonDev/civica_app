@@ -13,6 +13,9 @@ class TimelinePagedList extends StatefulWidget {
   final bool isLoadingMore;
   final VoidCallback? onLoadMore;
   final void Function(TimelineItem item)? onItemTap;
+  final ScrollPhysics? physics;
+  final bool shrinkWrap;
+  final ScrollController? controller;
 
   const TimelinePagedList({
     super.key,
@@ -21,6 +24,9 @@ class TimelinePagedList extends StatefulWidget {
     this.isLoadingMore = false,
     this.onLoadMore,
     this.onItemTap,
+    this.physics,
+    this.shrinkWrap = false,
+    this.controller,
   });
 
   @override
@@ -28,23 +34,27 @@ class TimelinePagedList extends StatefulWidget {
 }
 
 class _TimelinePagedListState extends State<TimelinePagedList> {
-  final _scrollController = ScrollController();
+  late final ScrollController _scrollController;
 
   @override
   void initState() {
     super.initState();
+    _scrollController = widget.controller ?? ScrollController();
     _scrollController.addListener(_onScroll);
   }
 
   @override
   void dispose() {
     _scrollController.removeListener(_onScroll);
-    _scrollController.dispose();
+    if (widget.controller == null) {
+      _scrollController.dispose();
+    }
     super.dispose();
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >=
+    if (_scrollController.hasClients &&
+        _scrollController.position.pixels >=
             _scrollController.position.maxScrollExtent - 200 &&
         widget.hasMore &&
         !widget.isLoadingMore &&
@@ -57,8 +67,8 @@ class _TimelinePagedListState extends State<TimelinePagedList> {
   Widget build(BuildContext context) {
     return ListView.builder(
       controller: _scrollController,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
+      shrinkWrap: widget.shrinkWrap,
+      physics: widget.physics ?? const AlwaysScrollableScrollPhysics(),
       itemCount: widget.items.length + (widget.hasMore ? 1 : 0),
       itemBuilder: (context, index) {
         if (index == widget.items.length) {
@@ -77,9 +87,11 @@ class _TimelinePagedListState extends State<TimelinePagedList> {
 
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
-          child: TimelineWidget(
-            items: [widget.items[index]],
-            onItemTap: widget.onItemTap,
+          child: RepaintBoundary(
+            child: TimelineWidget(
+              items: [widget.items[index]],
+              onItemTap: widget.onItemTap,
+            ),
           ),
         );
       },

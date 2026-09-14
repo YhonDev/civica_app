@@ -598,43 +598,56 @@ class _ResidenteDetailScreenState extends State<ResidenteDetailScreen> {
   }
 
   Widget _buildGrid(BuildContext context) {
-    return GridView.count(
-      crossAxisCount: 2,
-      childAspectRatio: 2.8,
-      crossAxisSpacing: AppSpacing.md,
-      mainAxisSpacing: AppSpacing.md,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
+    return Column(
       children: [
-        _buildModuleCard(
-          context,
-          title: 'Finanzas',
-          icon: Icons.account_balance_wallet_rounded,
-          color: AppColors.primary,
-          route: '/comunidad/residentes/detalle/finanzas',
-          extra: _residente,
+        Row(
+          children: [
+            Expanded(
+              child: _buildModuleCard(
+                context,
+                title: 'Finanzas',
+                icon: Icons.account_balance_wallet_rounded,
+                color: AppColors.primary,
+                route: '/comunidad/residentes/detalle/finanzas',
+                extra: _residente,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: _buildModuleCard(
+                context,
+                title: 'Historial',
+                icon: Icons.receipt_long_rounded,
+                color: AppColors.success,
+                route: '/comunidad/residentes/detalle/historial',
+                extra: _residente,
+              ),
+            ),
+          ],
         ),
-        _buildModuleCard(
-          context,
-          title: 'Historial',
-          icon: Icons.receipt_long_rounded,
-          color: AppColors.success,
-          route: '/comunidad/residentes/detalle/historial',
-          extra: _residente,
-        ),
-        _buildModuleCard(
-          context,
-          title: 'Editar',
-          icon: Icons.edit_rounded,
-          color: AppColors.info,
-          onTap: () => _mostrarModalEditar(context),
-        ),
-        _buildModuleCard(
-          context,
-          title: 'Eliminar',
-          icon: Icons.delete_forever_rounded,
-          color: AppColors.error,
-          onTap: () => _confirmarEliminar(),
+        const SizedBox(height: AppSpacing.md),
+        Row(
+          children: [
+            Expanded(
+              child: _buildModuleCard(
+                context,
+                title: 'Editar',
+                icon: Icons.edit_rounded,
+                color: AppColors.info,
+                onTap: () => _mostrarModalEditar(context),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: _buildModuleCard(
+                context,
+                title: 'Eliminar',
+                icon: Icons.delete_forever_rounded,
+                color: AppColors.error,
+                onTap: () => _confirmarEliminar(),
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -649,33 +662,46 @@ class _ResidenteDetailScreenState extends State<ResidenteDetailScreen> {
     Object? extra,
     VoidCallback? onTap,
   }) {
-    return InkWell(
-      onTap: onTap ?? () {
-        if (route != null) {
-          context.push(route, extra: extra);
-        }
-      },
-      borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: color, size: 22),
-            const SizedBox(width: AppSpacing.sm),
-            Text(
-              title,
-              style: AppTypography.bodyMedium.copyWith(
-                fontWeight: FontWeight.w600,
-                color: color == AppColors.error ? color : null,
+    return Semantics(
+      button: true,
+      label: title,
+      child: InkWell(
+        onTap: onTap ?? () {
+          if (route != null) {
+            context.push(route, extra: extra);
+          }
+        },
+        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 52),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.sm,
+            vertical: 12,
+          ),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: color, size: 22),
+              const SizedBox(width: AppSpacing.sm),
+              Flexible(
+                child: Text(
+                  title,
+                  style: AppTypography.bodyMedium.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: color == AppColors.error ? color : null,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-              textAlign: TextAlign.center,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

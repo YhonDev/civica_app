@@ -7,6 +7,8 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_breakpoints.dart';
 import '../../shared/widgets/empty_state.dart';
+import '../../shared/widgets/error_state.dart';
+import '../../shared/widgets/loading_state.dart';
 import '../cartera/models/cartera_models.dart';
 import '../cartera/widgets/registrar_pago_bottom_sheet.dart';
 import 'casas_cubit.dart';
@@ -74,27 +76,13 @@ class _CobradorSolicitudesScreenState extends State<CobradorSolicitudesScreen> {
       body: BlocBuilder<CasasCubit, CasasState>(
         builder: (context, state) {
           if (state is ViviendasLoading && state is! ViviendasLoaded) {
-            return const Center(child: CircularProgressIndicator());
+            return const LoadingState(message: 'Cargando solicitudes...');
           }
 
           if (state is ViviendasError) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.error_outline_rounded, size: 48, color: AppColors.error),
-                    const SizedBox(height: AppSpacing.md),
-                    Text(state.message, style: AppTypography.body, textAlign: TextAlign.center),
-                    const SizedBox(height: AppSpacing.md),
-                    ElevatedButton(
-                      onPressed: () => context.read<CasasCubit>().refresh(),
-                      child: const Text('Reintentar'),
-                    ),
-                  ],
-                ),
-              ),
+            return ErrorState(
+              description: state.message,
+              onRetry: () => context.read<CasasCubit>().refresh(),
             );
           }
 
@@ -132,143 +120,172 @@ class _CobradorSolicitudesScreenState extends State<CobradorSolicitudesScreen> {
                 await context.read<DashboardCobradorCubit>().refresh();
               }
             },
-            child: ListView(
-              padding: const EdgeInsets.all(AppSpacing.screenPadding),
-              children: [
-                // Barra de búsqueda rápida
-                Container(
-                  decoration: BoxDecoration(
-                    color: AppColors.cobradorCard,
-                    borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
-                    border: Border.all(color: AppColors.border),
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.screenPadding,
+                    AppSpacing.screenPadding,
+                    AppSpacing.screenPadding,
+                    0,
                   ),
-                  child: TextField(
-                    controller: _searchCtrl,
-                    onChanged: (val) => setState(() => _searchQuery = val.trim()),
-                    decoration: InputDecoration(
-                      hintText: 'Buscar por residente, casa o manzana...',
-                      hintStyle: AppTypography.caption.copyWith(color: AppColors.textSecondary),
-                      prefixIcon: Icon(Icons.search_rounded, size: 20, color: AppColors.textSecondary),
-                      suffixIcon: _searchQuery.isNotEmpty
-                          ? IconButton(
-                              tooltip: 'Limpiar búsqueda',
-                              icon: const Icon(Icons.clear_rounded, size: 18),
-                              onPressed: () {
-                                _searchCtrl.clear();
-                                setState(() => _searchQuery = '');
-                              },
-                            )
-                          : null,
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 12),
+                  sliver: SliverToBoxAdapter(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Barra de búsqueda rápida
+                        Container(
+                          decoration: BoxDecoration(
+                            color: AppColors.cobradorCard,
+                            borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
+                            border: Border.all(color: AppColors.border),
+                          ),
+                          child: TextField(
+                            controller: _searchCtrl,
+                            onChanged: (val) => setState(() => _searchQuery = val.trim()),
+                            decoration: InputDecoration(
+                              hintText: 'Buscar por residente, casa o manzana...',
+                              hintStyle: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+                              prefixIcon: Icon(Icons.search_rounded, size: 20, color: AppColors.textSecondary),
+                              suffixIcon: _searchQuery.isNotEmpty
+                                  ? IconButton(
+                                      tooltip: 'Limpiar búsqueda',
+                                      icon: const Icon(Icons.clear_rounded, size: 18),
+                                      onPressed: () {
+                                        _searchCtrl.clear();
+                                        setState(() => _searchQuery = '');
+                                      },
+                                    )
+                                  : null,
+                              border: InputBorder.none,
+                              contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 12),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: AppSpacing.md),
+
+                        // Filtros por Estado
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [
+                              _buildFilterChip('TODAS', 'Todas ($totalCount)'),
+                              const SizedBox(width: AppSpacing.xs),
+                              _buildFilterChip('EN_ESPERA', 'En espera ($enEsperaCount)'),
+                              const SizedBox(width: AppSpacing.xs),
+                              _buildFilterChip('EN_CAMINO', 'En camino ($enCaminoCount)'),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: AppSpacing.md),
+
+                        // Resumen / Info de la ruta
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              '${filtered.length} ${filtered.length == 1 ? 'solicitud' : 'solicitudes'} en orden FIFO',
+                              style: AppTypography.caption.copyWith(
+                                color: AppColors.textSecondary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Text(
+                              'La más antigua arriba',
+                              style: AppTypography.small.copyWith(
+                                color: AppColors.primary,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: AppSpacing.sm),
+                      ],
                     ),
                   ),
                 ),
 
-                const SizedBox(height: AppSpacing.md),
-
-                // Filtros por Estado
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      _buildFilterChip('TODAS', 'Todas ($totalCount)'),
-                      const SizedBox(width: AppSpacing.xs),
-                      _buildFilterChip('EN_ESPERA', 'En espera ($enEsperaCount)'),
-                      const SizedBox(width: AppSpacing.xs),
-                      _buildFilterChip('EN_CAMINO', 'En camino ($enCaminoCount)'),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: AppSpacing.md),
-
-                // Resumen / Info de la ruta
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '${filtered.length} ${filtered.length == 1 ? 'solicitud' : 'solicitudes'} en orden FIFO',
-                      style: AppTypography.caption.copyWith(
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w600,
+                if (filtered.isEmpty)
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
+                    sliver: SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: AppSpacing.xl),
+                        child: Center(
+                          child: EmptyState(
+                            title: totalCount == 0 ? 'Sin solicitudes activas' : 'Sin coincidencias',
+                            description: totalCount == 0
+                                ? 'No hay solicitudes de residentes pendientes por cobro en tu ruta.'
+                                : 'No encontramos solicitudes para el filtro seleccionado.',
+                            icon: Icons.mark_email_read_rounded,
+                          ),
+                        ),
                       ),
                     ),
-                    Text(
-                      'La más antigua arriba',
-                      style: AppTypography.small.copyWith(
-                        color: AppColors.primary,
-                        fontStyle: FontStyle.italic,
+                  )
+                else if (context.isWideScreen)
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
+                    sliver: SliverGrid(
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: context.gridColumns,
+                        mainAxisExtent: 190,
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                      ),
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                          final solicitud = filtered[index];
+                          final id = solicitud['id'] as String? ?? '';
+                          return CobradorSolicitudCard(
+                            solicitud: solicitud,
+                            compact: false,
+                            ordenFifo: index + 1,
+                            onMarcarEnCamino: () {
+                              context.read<CasasCubit>().cambiarEstadoSolicitud(id, 'EN_CAMINO');
+                              try {
+                                context.read<DashboardCobradorCubit>().cambiarEstadoSolicitud(id, 'EN_CAMINO');
+                              } catch (_) {}
+                            },
+                            onCobrar: () => _abrirCobroBottomSheet(context, solicitud),
+                          );
+                        },
+                        childCount: filtered.length,
                       ),
                     ),
-                  ],
+                  )
+                else
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
+                    sliver: SliverList.builder(
+                      itemCount: filtered.length,
+                      itemBuilder: (context, index) {
+                        final solicitud = filtered[index];
+                        final id = solicitud['id'] as String? ?? '';
+
+                        return CobradorSolicitudCard(
+                          solicitud: solicitud,
+                          compact: false,
+                          ordenFifo: index + 1,
+                          onMarcarEnCamino: () {
+                            context.read<CasasCubit>().cambiarEstadoSolicitud(id, 'EN_CAMINO');
+                            try {
+                              context.read<DashboardCobradorCubit>().cambiarEstadoSolicitud(id, 'EN_CAMINO');
+                            } catch (_) {}
+                          },
+                          onCobrar: () => _abrirCobroBottomSheet(context, solicitud),
+                        );
+                      },
+                    ),
+                  ),
+
+                const SliverToBoxAdapter(
+                  child: SizedBox(height: AppSpacing.xl),
                 ),
-
-                const SizedBox(height: AppSpacing.sm),
-
-                if (filtered.isEmpty) ...[
-                  const SizedBox(height: AppSpacing.xl),
-                  Center(
-                    child: EmptyState(
-                      title: totalCount == 0 ? 'Sin solicitudes activas' : 'Sin coincidencias',
-                      description: totalCount == 0
-                          ? 'No hay solicitudes de residentes pendientes por cobro en tu ruta.'
-                          : 'No encontramos solicitudes para el filtro seleccionado.',
-                      icon: Icons.mark_email_read_rounded,
-                    ),
-                  ),
-                ] else if (context.isWideScreen) ...[
-                  GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: filtered.length,
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: context.gridColumns,
-                      mainAxisExtent: 190,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                    ),
-                    itemBuilder: (context, index) {
-                      final solicitud = filtered[index];
-                      final id = solicitud['id'] as String? ?? '';
-                      return CobradorSolicitudCard(
-                        solicitud: solicitud,
-                        compact: false,
-                        ordenFifo: index + 1,
-                        onMarcarEnCamino: () {
-                          context.read<CasasCubit>().cambiarEstadoSolicitud(id, 'EN_CAMINO');
-                          try {
-                            context.read<DashboardCobradorCubit>().cambiarEstadoSolicitud(id, 'EN_CAMINO');
-                          } catch (_) {}
-                        },
-                        onCobrar: () => _abrirCobroBottomSheet(context, solicitud),
-                      );
-                    },
-                  ),
-                ] else ...[
-                  ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: filtered.length,
-                    itemBuilder: (context, index) {
-                      final solicitud = filtered[index];
-                      final id = solicitud['id'] as String? ?? '';
-
-                      return CobradorSolicitudCard(
-                        solicitud: solicitud,
-                        compact: false,
-                        ordenFifo: index + 1,
-                        onMarcarEnCamino: () {
-                          context.read<CasasCubit>().cambiarEstadoSolicitud(id, 'EN_CAMINO');
-                          try {
-                            context.read<DashboardCobradorCubit>().cambiarEstadoSolicitud(id, 'EN_CAMINO');
-                          } catch (_) {}
-                        },
-                        onCobrar: () => _abrirCobroBottomSheet(context, solicitud),
-                      );
-                    },
-                  ),
-                ],
               ],
             ),
           );

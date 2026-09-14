@@ -6,6 +6,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/network/api_client.dart';
 import '../../shared/widgets/empty_state.dart';
+import '../../shared/widgets/loading_state.dart';
 
 class MontosScreen extends StatefulWidget {
   const MontosScreen({super.key});
@@ -141,7 +142,7 @@ class _MontosScreenState extends State<MontosScreen> {
             )
           : null,
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? const LoadingState(message: 'Cargando montos predefinidos...')
           : SingleChildScrollView(
               padding: const EdgeInsets.all(AppSpacing.md),
               child: Column(
@@ -203,54 +204,53 @@ class _MontosScreenState extends State<MontosScreen> {
                           'Toca el botón + para agregar el primer monto predefinido.',
                     )
                   else
-                    ListView.separated(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: _montos.length,
-                      separatorBuilder: (_, _) =>
-                          const SizedBox(height: AppSpacing.xs),
-                      itemBuilder: (context, index) {
-                        final item = _montos[index];
+                    Column(
+                      children: _montos.map((item) {
                         final id = item['id'] as String;
                         final montoCents =
                             (item['monto'] as num?)?.toInt() ?? 0;
                         final montoCop = AppCurrency.centsToPesos(montoCents);
 
-                        return Card(
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-                            side: BorderSide(color: AppColors.border),
-                          ),
-                          child: ListTile(
-                            leading: Container(
-                              padding: const EdgeInsets.all(AppSpacing.sm),
-                              decoration: BoxDecoration(
-                                color: AppColors.success.withValues(alpha: 0.1),
-                                shape: BoxShape.circle,
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+                          child: RepaintBoundary(
+                            child: Card(
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+                                side: BorderSide(color: AppColors.border),
                               ),
-                              child: Icon(
-                                Icons.attach_money_rounded,
-                                color: AppColors.success,
+                              child: ListTile(
+                                leading: Container(
+                                  padding: const EdgeInsets.all(AppSpacing.sm),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.success.withValues(alpha: 0.1),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.attach_money_rounded,
+                                    color: AppColors.success,
+                                  ),
+                                ),
+                                title: Text(
+                                  AppCurrency.format(montoCop),
+                                  style: AppTypography.subtitle.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                trailing: IconButton(
+                                  tooltip: 'Eliminar monto',
+                                  icon: Icon(
+                                    Icons.delete_outline_rounded,
+                                    color: AppColors.error,
+                                  ),
+                                  onPressed: () => _eliminarMonto(id),
+                                ),
                               ),
-                            ),
-                            title: Text(
-                              AppCurrency.format(montoCop),
-                              style: AppTypography.subtitle.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            trailing: IconButton(
-                              tooltip: 'Eliminar monto',
-                              icon: Icon(
-                                Icons.delete_outline_rounded,
-                                color: AppColors.error,
-                              ),
-                              onPressed: () => _eliminarMonto(id),
                             ),
                           ),
                         );
-                      },
+                      }).toList(),
                     ),
                 ],
               ),

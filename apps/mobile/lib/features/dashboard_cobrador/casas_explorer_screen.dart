@@ -16,6 +16,8 @@ import 'casas_cubit.dart';
 import 'widgets/cobrador_solicitud_card.dart';
 import '../../shared/widgets/screen_header.dart';
 import '../../shared/widgets/fading_horizontal_scroll.dart';
+import '../../shared/widgets/error_state.dart';
+import '../../shared/widgets/loading_state.dart';
 import '../../core/widgets/top_toast.dart';
 
 /// Rutas Explorer — Navegador de Recorrido Continuo de Caminata para Cobrador (P05).
@@ -101,22 +103,8 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
   // ── Skeleton Loading ──────────────────────────────────────────────
 
   Widget _buildSkeletonLoading() {
-    return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.screenPadding),
-        child: Column(
-          children: List.generate(4, (i) => Padding(
-            padding: const EdgeInsets.only(bottom: AppSpacing.md),
-            child: Container(
-              height: 64,
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-              ),
-            ),
-          )),
-        ),
-      ),
+    return const SafeArea(
+      child: LoadingState(message: 'Cargando casas y ruta de cobro...'),
     );
   }
 
@@ -1272,7 +1260,8 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-      child: Card(
+      child: RepaintBoundary(
+        child: Card(
         margin: EdgeInsets.zero,
         elevation: 0,
         color: AppColors.surface,
@@ -1599,35 +1588,21 @@ class _CasasExplorerViewState extends State<_CasasExplorerView> with LifecycleOb
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   // ── Error ─────────────────────────────────────────────────────────
 
   Widget _buildError(String message) {
     return SafeArea(
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.xl),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.cloud_off_rounded, size: 48, color: AppColors.error),
-              const SizedBox(height: AppSpacing.md),
-              Text(
-                'No se pudieron cargar las casas de la ruta',
-                style: AppTypography.subtitle.copyWith(fontWeight: FontWeight.w600),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: AppSpacing.md),
-              FilledButton.icon(
-                onPressed: () => context.read<CasasCubit>().loadViviendas(),
-                icon: const Icon(Icons.refresh_rounded),
-                label: const Text('Reintentar'),
-              ),
-            ],
-          ),
-        ),
+      child: ErrorState(
+        title: 'No se pudieron cargar las casas de la ruta',
+        description: message.isNotEmpty
+            ? message
+            : 'Verifica tu conexión a internet e intenta nuevamente.',
+        icon: Icons.cloud_off_rounded,
+        onRetry: () => context.read<CasasCubit>().loadViviendas(),
       ),
     );
   }
