@@ -266,7 +266,8 @@ describe('ResidentesController', () => {
 
     it('should return filtered residentes by etapa for COBRADOR when etapaId is provided', async () => {
       const residentes = [{ id: 'res-1' }] as any;
-      residenteRepo.buscarPorFiltros.mockResolvedValue(residentes);
+      residenteRepo.buscarPorEtapas.mockResolvedValue(residentes);
+      dataSource.query.mockResolvedValue([{ etapa_id: 'etapa-1' }]);
       usuarioRepo.find.mockResolvedValue([]);
 
       const result = await controller.listar(
@@ -277,11 +278,9 @@ describe('ResidentesController', () => {
       );
 
       expect(result).toHaveLength(1);
-      expect(residenteRepo.buscarPorFiltros).toHaveBeenCalledWith({
-        tenantId: 'tenant-1',
-        etapaId: 'etapa-1',
-        casaId: undefined,
-      });
+      expect(residenteRepo.buscarPorEtapas).toHaveBeenCalledWith('tenant-1', [
+        'etapa-1',
+      ]);
     });
 
     it('should return residentes by assigned etapas for COBRADOR without etapaId', async () => {
