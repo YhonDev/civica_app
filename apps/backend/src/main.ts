@@ -23,7 +23,7 @@ async function bootstrap() {
 
   // ─── Swagger / OpenAPI ───────────────────────────────
   const config = new DocumentBuilder()
-    .setTitle('Cívica Pago API')
+    .setTitle('Cuentiva API')
     .setDescription(
       'API REST para gestión de cobros de vigilancia.\n\n' +
         '**Autenticación:** Bearer JWT (obtener en POST /api/auth/login).\n\n' +
@@ -67,7 +67,7 @@ async function bootstrap() {
         tagsSorter: 'alpha',
         operationsSorter: 'method',
       },
-      customSiteTitle: 'Cívica Pago — API Docs',
+      customSiteTitle: 'Cuentiva — API Docs',
     });
     console.log(
       `📄 Swagger docs disponibles en http://localhost:${process.env.PORT ?? 3000}/docs`,

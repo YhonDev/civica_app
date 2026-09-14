@@ -1,4 +1,4 @@
-# Base de Datos — Cívica Pago
+# Base de Datos — Cuentiva
 
 Esquema y datos de prueba para la base de datos PostgreSQL del backend.
 

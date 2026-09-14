@@ -71,7 +71,7 @@ pnpm add bullmq resend   # ioredis ya está
 REDIS_ENABLED=true
 REDIS_URL=redis://...            # Upstash/ElastiCache/localhost
 RESEND_API_KEY=re_...
-EMAIL_FROM="Cívica Pago <no-reply@civicapago.com>"
+EMAIL_FROM="Cuentiva <no-reply@cuentiva.com>"
 ```
 
 ## 7. Plan de verificación (cuando se implemente)

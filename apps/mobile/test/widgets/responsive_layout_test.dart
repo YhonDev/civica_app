@@ -138,7 +138,7 @@ void main() {
 
       expect(find.byType(DesktopSidebar), findsOneWidget);
       expect(find.byType(BottomNavigationBar), findsNothing);
-      expect(find.text('Cívica Pago'), findsOneWidget);
+      expect(find.text('Cuentiva'), findsOneWidget);
       expect(find.text('HOME_PAGE'), findsOneWidget);
     });
   });

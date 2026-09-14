@@ -68,14 +68,14 @@ void main() async {
   // Inicializar ciclo de vida de la sesión
   SessionLifecycleManager.instance.init();
 
-  runApp(const CivicaPagoApp());
+  runApp(const CuentivaApp());
 }
 
-class CivicaPagoApp extends StatefulWidget {
-  const CivicaPagoApp({super.key});
+class CuentivaApp extends StatefulWidget {
+  const CuentivaApp({super.key});
 
   @override
-  State<CivicaPagoApp> createState() => _CivicaPagoAppState();
+  State<CuentivaApp> createState() => _CuentivaAppState();
 }
 
 /// Builder compartido de MaterialApp: unifica tema (light/dark), animación
@@ -114,7 +114,7 @@ class _AppThemeBuilder extends StatelessWidget {
       builder: (context, isDark, _) {
         if (routerConfig != null) {
           return MaterialApp.router(
-            title: 'Cívica Pago',
+            title: 'Cuentiva',
             debugShowCheckedModeBanner: false,
             theme: buildLightTheme(),
             darkTheme: buildDarkTheme(),
@@ -125,7 +125,7 @@ class _AppThemeBuilder extends StatelessWidget {
           );
         }
         return MaterialApp(
-          title: 'Cívica Pago',
+          title: 'Cuentiva',
           debugShowCheckedModeBanner: false,
           theme: buildLightTheme(),
           darkTheme: buildDarkTheme(),
@@ -139,7 +139,7 @@ class _AppThemeBuilder extends StatelessWidget {
   }
 }
 
-class _CivicaPagoAppState extends State<CivicaPagoApp> {
+class _CuentivaAppState extends State<CuentivaApp> {
   /// Solo en debug: verificar que la API responde antes de entrar a la app.
   /// En release el gate se salta (modo offline tolerante, no bloquea arranque).
   Future<bool>? _apiCheck;

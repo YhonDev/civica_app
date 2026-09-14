@@ -1,4 +1,4 @@
-# Design System — Cívica Pago Mobile
+# Design System — Cuentiva Mobile
 
 > Fuente de verdad para tokens visuales, formato de dinero y reglas de construcción de UI.
 > Cambios de moneda, tipografía, color, espaciado o breakpoints se versionan aquí y se

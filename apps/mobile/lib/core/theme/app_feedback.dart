@@ -1,6 +1,6 @@
 import 'package:flutter/services.dart';
 
-/// Global enterprise tactile feedback service for Cívica Pago.
+/// Global enterprise tactile feedback service for Cuentiva.
 ///
 /// Centralizes all haptic interactions across all screens and modules,
 /// ensuring consistent, ergonomic physical response on key operations
