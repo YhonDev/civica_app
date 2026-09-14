@@ -29,7 +29,7 @@ describe('SolicitudesController', () => {
       RolUsuario.RESIDENTE,
       'tenant-123',
     ),
-    { id: 'usr-1' },
+    { id: 'usr-1', residenteId: 'res-1' },
   );
 
   const mockAdmin = Object.assign(
@@ -148,7 +148,10 @@ describe('SolicitudesController', () => {
     });
 
     it('should stamp the solicitud with the token tenant, not a client-provided one', async () => {
-      mockCobroRepo.findById.mockResolvedValue({ id: 'cobro-1' });
+      mockCobroRepo.findById.mockResolvedValue({
+        id: 'cobro-1',
+        residenteId: 'res-1',
+      });
 
       await controller.crear(
         { cobroId: 'cobro-1', tipo: 'COBRO_PRESENCIAL', descripcion: 'Test' },
@@ -162,7 +165,15 @@ describe('SolicitudesController', () => {
     });
 
     it('should throw ConflictException if active revision already exists', async () => {
-      mockCobroRepo.findById.mockResolvedValue({ id: 'cobro-1' });
+      mockCobroRepo.findById.mockResolvedValue({
+        id: 'cobro-1',
+        residenteId: 'res-1',
+      });
+      mockPagoRepo.findById.mockResolvedValue({
+        id: 'pago-1',
+        cobroId: 'cobro-1',
+        residenteId: 'res-1',
+      });
       mockSolicitudRepo.findActiveRevisionByPagoOrCobro.mockResolvedValue({ id: 'existing-sr' });
 
       await expect(
@@ -175,7 +186,10 @@ describe('SolicitudesController', () => {
     });
 
     it('should throw ConflictException if active cobro already exists for resident', async () => {
-      mockCobroRepo.findById.mockResolvedValue({ id: 'cobro-1' });
+      mockCobroRepo.findById.mockResolvedValue({
+        id: 'cobro-1',
+        residenteId: 'res-1',
+      });
       mockSolicitudRepo.findActiveCobroByResidente.mockResolvedValue({ id: 'existing-sc' });
 
       await expect(
@@ -188,7 +202,10 @@ describe('SolicitudesController', () => {
     });
 
     it('should assign SR prefix for accented Revisión de pago', async () => {
-      mockCobroRepo.findById.mockResolvedValue({ id: 'cobro-1' });
+      mockCobroRepo.findById.mockResolvedValue({
+        id: 'cobro-1',
+        residenteId: 'res-1',
+      });
       mockSolicitudRepo.findActiveRevisionByPagoOrCobro.mockResolvedValue(null);
 
       await controller.crear(

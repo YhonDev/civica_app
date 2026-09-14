@@ -12,6 +12,7 @@ import {
   BadRequestException,
   NotFoundException,
   ConflictException,
+  ForbiddenException,
   HttpException,
   InternalServerErrorException,
 } from '@nestjs/common';
@@ -88,6 +89,28 @@ export class SolicitudesController {
       throw new NotFoundException(
         `No existe un cobro válido asignado para el id ${targetCobroId}`,
       );
+    }
+
+    if (
+      user.rol === RolUsuario.RESIDENTE &&
+      (!user.residenteId || cobro.residenteId !== user.residenteId)
+    ) {
+      throw new ForbiddenException(
+        'No puedes crear una solicitud para el cobro de otro residente.',
+      );
+    }
+
+    if (dto.pagoId) {
+      const pago = await this.pagoRepo.findById(dto.pagoId, tenantId);
+      if (
+        !pago ||
+        pago.cobroId !== targetCobroId ||
+        pago.residenteId !== cobro.residenteId
+      ) {
+        throw new BadRequestException(
+          'El pago no pertenece al cobro seleccionado.',
+        );
+      }
     }
 
     const tipoNormalized = (dto.tipo || '')
@@ -479,7 +502,11 @@ export class SolicitudesController {
       solicitudId: r.id,
     }),
   })
-  async eliminar(@Param('id') id: string, @CurrentTenant() tenantId: string) {
+  async eliminar(
+    @Param('id') id: string,
+    @CurrentUser() user: Usuario,
+    @CurrentTenant() tenantId: string,
+  ) {
     const solicitud = await this.solicitudRepo.findById(id, tenantId);
     if (!solicitud) {
       throw new NotFoundException(`Solicitud ${id} no encontrada`);
@@ -490,6 +517,15 @@ export class SolicitudesController {
     ) {
       throw new BadRequestException(
         'No se puede cancelar una solicitud que ya ha sido procesada.',
+      );
+    }
+    if (
+      user.rol === RolUsuario.RESIDENTE &&
+      solicitud.usuarioId !== user.id &&
+      solicitud.residenteId !== user.residenteId
+    ) {
+      throw new ForbiddenException(
+        'No puedes cancelar la solicitud de otro residente.',
       );
     }
     await this.solicitudRepo.delete(id);
