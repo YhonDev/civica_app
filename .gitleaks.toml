@@ -14,35 +14,13 @@
 # Usa las reglas por defecto de gitleaks (https://github.com/gitleaks/gitleaks).
 useDefault = true
 
-# ─── Falsos positivos verificados (2026-09-08) ────────────────────────────
-# Nunca agregar aquí secretos reales. Cada excepción indica por qué es falsa.
-
-# Secreto JWT de la suite e2e: es de desarrollo, necesario para los tests.
-[[allowlists]]
-description = "Secreto JWT exclusivo de la suite de tests (dev)"
-paths = ['''^apps/backend/test/setup-jwt\.ts$''']
-
-# JWT de ejemplo truncado (payload falso) usado para probar el redactado
-# de tokens en el cliente HTTP. No es un secreto real.
-[[allowlists]]
-description = "Tokens falsos en tests unitarios del cliente API"
-paths = ['''^apps/mobile/test/unit/network/api_client_test\.dart$''']
-
-# Credenciales demo de la pantalla de login, ya retiradas del código
-# (solo aparecen en la historia). El hook no debe re-bloquearlas.
-[[allowlists]]
-description = "Credenciales demo históricas de login_screen (eliminadas)"
-paths = ['''^apps/mobile/lib/screens/auth/login_screen\.dart$''']
-
-# README heredado de la plantilla de NestJS: badge de CircleCI con token
-# de ejemplo "abc123def456" del propio template, no un secreto.
-[[allowlists]]
-description = "Token de ejemplo del badge CircleCI en README de plantilla NestJS"
-paths = ['''^apps/backend/README\.md$''']
-
-# Archivo de configuración pública de Firebase para la app Android de Cuentiva.
-# Contiene el client API key público restringido por package name / SHA-1 en Google Cloud.
-[[allowlists]]
-description = "Firebase client configuration for Android (google-services.json)"
-paths = ['''^apps/mobile/android/app/google-services\.json$''']
+[allowlist]
+description = "Falsos positivos y archivos públicos de cliente"
+paths = [
+  '''^apps/backend/test/setup-jwt\.ts$''',
+  '''^apps/mobile/test/unit/network/api_client_test\.dart$''',
+  '''^apps/mobile/lib/screens/auth/login_screen\.dart$''',
+  '''^apps/backend/README\.md$''',
+  '''apps/mobile/android/app/google-services\.json''',
+]
 
