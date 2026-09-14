@@ -96,7 +96,7 @@ export class PagosController {
            JOIN tenencias t ON t.casa_id = c.id
            WHERE ae.usuario_id = $1 
              AND t.residente_id = $2 
-             AND t.activo = true`,
+             AND (t.fecha_fin IS NULL OR t.fecha_fin >= CURRENT_DATE)`,
           [user.id, dto.residenteId],
         );
         if (!asignaciones || asignaciones.length === 0) {

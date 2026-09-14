@@ -197,7 +197,7 @@ export class SolicitudesController {
          JOIN manzanas m ON m.etapa_id = ae.etapa_id
          JOIN casas c ON c.manzana_id = m.id
          JOIN tenencias t ON t.casa_id = c.id
-         WHERE ae.usuario_id = $1 AND t.activo = true`,
+         WHERE ae.usuario_id = $1 AND (t.fecha_fin IS NULL OR t.fecha_fin >= CURRENT_DATE)`,
         [user.id],
       );
       const permitidos = new Set(asignaciones.map((a: any) => a.residente_id));
@@ -348,7 +348,7 @@ export class SolicitudesController {
        JOIN tenencias t ON t.casa_id = c.id
        WHERE ae.usuario_id = $1 
          AND t.residente_id = $2 
-         AND t.activo = true`,
+         AND (t.fecha_fin IS NULL OR t.fecha_fin >= CURRENT_DATE)`,
       [cobradorId, residenteId],
     );
 
