@@ -94,7 +94,7 @@ class SessionLifecycleManager with WidgetsBindingObserver {
         await onReauthenticateRequired!();
       } else {
         final success = await BiometricAuthService.instance.authenticate(
-          localizedReason: 'Escanea tu huella dactilar para continuar en Cívica Pago',
+          localizedReason: 'Escanea tu huella dactilar para continuar en Cuentiva',
         );
         if (success) {
           recordUserActivity();

@@ -1,4 +1,4 @@
-# Cívica Pago
+# Cuentiva
 
 Plataforma mobile-first para gestionar el recaudo, la cartera y las operaciones de comunidades residenciales. El sistema combina una API REST en NestJS con una aplicación Flutter que puede registrar pagos sin conexión y sincronizarlos posteriormente.
 

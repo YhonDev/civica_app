@@ -1,4 +1,4 @@
-# ✅ Checklist post-despliegue — Cívica Pago en Render
+# ✅ Checklist post-despliegue — Cuentiva en Render
 
 URL base del despliegue: **`https://cuentiva.onrender.com`**
 Ejecutar los pasos **en orden**; si uno falla, detenerse y resolver antes de continuar.

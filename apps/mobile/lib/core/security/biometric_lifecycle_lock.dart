@@ -44,7 +44,7 @@ class _BiometricLifecycleLockState extends State<BiometricLifecycleLock> {
     }
 
     final success = await BiometricAuthService.instance.authenticate(
-      localizedReason: 'Escanea tu huella dactilar para continuar en Cívica Pago',
+      localizedReason: 'Escanea tu huella dactilar para continuar en Cuentiva',
     );
 
     if (!mounted) return;

@@ -14,7 +14,7 @@ void main() {
 
   testWidgets('App smoke test — shows login when unauthenticated',
       (WidgetTester tester) async {
-    await tester.pumpWidget(const CivicaPagoApp());
+    await tester.pumpWidget(const CuentivaApp());
 
     // Let async AuthCubit.checkSession() complete (no server -> catch -> unauthenticated)
     await tester.pump(const Duration(seconds: 1));

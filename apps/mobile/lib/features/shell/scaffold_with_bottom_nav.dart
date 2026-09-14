@@ -295,7 +295,7 @@ class DesktopSidebar extends StatelessWidget {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          'Cívica Pago',
+                          'Cuentiva',
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w800,
                             color: AppColors.primary,

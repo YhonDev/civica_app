@@ -1,8 +1,8 @@
-# Changelog — Cívica Pago
+# Changelog — Cuentiva
 
 ## v0.1.0-beta.1 (2026-09-06)
 
-Primera beta interna de Cívica Pago: motor de recaudo por cuotas con disciplina
+Primera beta interna de Cuentiva: motor de recaudo por cuotas con disciplina
 de rutas semanales para cobradores, gestión de cartera, solicitudes de pago y
 panel de administración, sobre arquitectura multi-tenant.
 

@@ -138,7 +138,7 @@ class BiometricAuthService {
       }
 
       return await _auth.authenticate(
-        localizedReason: localizedReason ?? 'Escanea tu huella dactilar para acceder a Cívica Pago',
+        localizedReason: localizedReason ?? 'Escanea tu huella dactilar para acceder a Cuentiva',
         biometricOnly: false,
         persistAcrossBackgrounding: true,
       );
