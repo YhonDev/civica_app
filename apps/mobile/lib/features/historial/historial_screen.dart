@@ -96,16 +96,11 @@ class _HistorialScreenState extends State<HistorialScreen> {
       final response = await ApiClient.instance.get<List<dynamic>>('/cobros/residente/$residenteId');
       final listCuotas = (response.data ?? []).map((item) => item as Map<String, dynamic>).toList();
 
-      // Ordenar: si están pagadas o en el módulo de pagos, las más recientes primero
+      // Ordenar: cuotas más recientes primero (por fecha de pago, actualización o periodo)
       listCuotas.sort((a, b) {
-        final aPagada = a['estado'] == 'PAGADA';
-        final bPagada = b['estado'] == 'PAGADA';
-        if (aPagada && bPagada) {
-          final dateA = DateTime.tryParse(a['updatedAt'] as String? ?? a['periodoInicio'] as String? ?? '') ?? DateTime(2000);
-          final dateB = DateTime.tryParse(b['updatedAt'] as String? ?? b['periodoInicio'] as String? ?? '') ?? DateTime(2000);
-          return dateB.compareTo(dateA); // Descenso: más reciente arriba
-        }
-        return 0;
+        final dateA = DateTime.tryParse(a['fechaPago'] as String? ?? a['updatedAt'] as String? ?? a['periodoInicio'] as String? ?? '') ?? DateTime(2000);
+        final dateB = DateTime.tryParse(b['fechaPago'] as String? ?? b['updatedAt'] as String? ?? b['periodoInicio'] as String? ?? '') ?? DateTime(2000);
+        return dateB.compareTo(dateA); // Descenso: más reciente arriba
       });
 
       final listSolicitudes = await _solicitudesRepo.getMisSolicitudes();
@@ -196,7 +191,7 @@ class _HistorialScreenState extends State<HistorialScreen> {
                                         monto: monto,
                                         metodo: 'Efectivo',
                                         estado: 'Cobrado',
-                                        cobrador: user?['nombre'] as String? ?? 'Ricardo Arrieta',
+                                        cobrador: (c['cobradorNombre'] as String?) ?? (user?['nombre'] as String?) ?? 'Cobrador Asignado',
                                       ),
                                     );
                                   },
@@ -602,6 +597,11 @@ class _HistorialScreenState extends State<HistorialScreen> {
         final isPago = solicitud.tipo.toLowerCase().contains('pago') ||
                        solicitud.tipo.toLowerCase().contains('pagad');
 
+        final matchingCuota = _cuotasDb.where((c) => c['id'] == solicitud.cobroId).firstOrNull;
+        final rawMonto = matchingCuota?['monto'] as int? ?? 0;
+        final valorStr = rawMonto > 0 ? AppCurrency.formatCents(rawMonto) : 'Por determinar';
+        final cobradorStr = (matchingCuota?['cobradorNombre'] as String?) ?? 'Administración';
+
         return Padding(
           padding: EdgeInsets.only(
             left: AppSpacing.screenPadding,
@@ -731,7 +731,7 @@ class _HistorialScreenState extends State<HistorialScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text('Valor', style: AppTypography.caption),
-                          Text('\$40.000', style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w700, color: AppColors.primary)),
+                          Text(valorStr, style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w700, color: AppColors.primary)),
                         ],
                       ),
                       const Divider(height: 16),
@@ -747,7 +747,7 @@ class _HistorialScreenState extends State<HistorialScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text('Cobrador', style: AppTypography.caption),
-                          Text('Carlos Gómez', style: AppTypography.bodyMedium),
+                          Text(cobradorStr, style: AppTypography.bodyMedium),
                         ],
                       ),
                     ],
