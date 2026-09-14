@@ -54,8 +54,9 @@ class _BiometricLifecycleLockState extends State<BiometricLifecycleLock> {
     if (success) {
       SessionLifecycleManager.instance.recordUserActivity();
     } else {
-      // Si canceló la huella o falló, redirige a LoginScreen
-      authCubit.logout();
+      // Si canceló la huella o falló, cerramos la aplicación de forma limpia para no exponer datos,
+      // pero conservando la sesión y tokens intactos para cuando el usuario vuelva a abrir la app.
+      await SessionLifecycleManager.instance.closeApp();
     }
   }
 
