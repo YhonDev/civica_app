@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 import '../../core/database/app_database.dart';
 import '../../core/network/api_client.dart';
 import '../../core/network/api_exceptions.dart';
+import '../../core/network/cache_keys.dart';
 import '../../core/network/local_cache_repository.dart';
 import '../../core/sync/connectivity_detector.dart';
 import 'models/cartera_models.dart';
@@ -226,10 +227,10 @@ class CarteraRepository {
   }
 
   void _invalidarCaches() {
-    LocalCacheRepository.instance.invalidate('dashboard:cobrador');
-    LocalCacheRepository.instance.invalidate('cobrador:viviendas');
-    LocalCacheRepository.instance.invalidate('dashboard:residente');
-    LocalCacheRepository.instance.invalidate('dashboard:administrador');
+    LocalCacheRepository.instance.invalidate(CacheKeys.dashboardCobrador);
+    LocalCacheRepository.instance.invalidate(CacheKeys.cobradorViviendas);
+    LocalCacheRepository.instance.invalidate(CacheKeys.dashboardResidente);
+    LocalCacheRepository.instance.invalidate(CacheKeys.dashboardAdministrador);
     LocalCacheRepository.instance.invalidate(cacheKey);
   }
 }
