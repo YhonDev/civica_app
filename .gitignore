@@ -64,3 +64,6 @@ top_toast_goldens.html
 apps/backend/database/seed.sql
 apps/backend/database/reset-db.sql
 apps/backend/database/scripts/
+apps/backend/database/backups/
+*.dump
+*.sql.gz

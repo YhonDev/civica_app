@@ -63,7 +63,12 @@ export class CarteraViviendaResumenQuery {
       return [];
     }
 
-    // 2. Obtener todos los cobros del tenant para calcular estados
+    const casaIds = casas.map((c) => c.casaId).filter(Boolean);
+    if (casaIds.length === 0) {
+      return [];
+    }
+
+    // 2. Obtener los cobros de las casas filtradas para calcular estados
     const cobros = await this.dataSource
       .createQueryBuilder()
       .select('cobro.id', 'id')
@@ -74,6 +79,7 @@ export class CarteraViviendaResumenQuery {
       .addSelect('cobro.fecha_vencimiento', 'fechaVencimiento')
       .from('cobros', 'cobro')
       .where('cobro.tenant_id = :tenantId', { tenantId })
+      .andWhere('cobro.casa_id IN (:...casaIds)', { casaIds })
       .getRawMany();
 
     // Indexar cobros por casaId para búsqueda O(1)

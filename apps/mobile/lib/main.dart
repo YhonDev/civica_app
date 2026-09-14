@@ -1,6 +1,8 @@
 import 'dart:ui' show PlatformDispatcher;
-import 'package:flutter/foundation.dart' show kDebugMode, kReleaseMode, kIsWeb;
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, kDebugMode, kReleaseMode, kIsWeb, TargetPlatform;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show DeviceOrientation, SystemChrome;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'core/database/app_database.dart';
@@ -17,6 +19,8 @@ import 'core/security/session_lifecycle_manager.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_breakpoints.dart';
 import 'features/auth/auth_cubit.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'features/setup/api_unavailable_screen.dart';
 import 'shared/widgets/empty_state.dart';
 
@@ -31,6 +35,32 @@ void main() async {
     debugReportUnknownError(error, 'PlatformDispatcher', stackTrace: stack);
     return true;
   };
+
+  // Inicialización defensiva de Firebase y Crashlytics para Android / iOS.
+  // Protegido con try/catch para no romper ejecución en Web, Desktop o tests unitarios.
+  if (!kIsWeb) {
+    try {
+      await Firebase.initializeApp();
+      // En debug mode no enviamos eventos para no ensuciar la consola de Crashlytics
+      await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(!kDebugMode);
+
+      final prevFlutterError = FlutterError.onError;
+      FlutterError.onError = (details) {
+        FirebaseCrashlytics.instance.recordFlutterFatalError(details);
+        prevFlutterError?.call(details);
+      };
+
+      final prevPlatformError = PlatformDispatcher.instance.onError;
+      PlatformDispatcher.instance.onError = (error, stack) {
+        FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+        return prevPlatformError?.call(error, stack) ?? true;
+      };
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Firebase/Crashlytics init skipped: $e');
+      }
+    }
+  }
   ErrorWidget.builder = (details) {
     if (kDebugMode) {
       return ErrorWidget(details.exception);
@@ -68,14 +98,52 @@ void main() async {
   // Inicializar ciclo de vida de la sesión
   SessionLifecycleManager.instance.init();
 
-  runApp(const CivicaPagoApp());
+  // Configuración de orientación adaptativa:
+  // Fija vertical en teléfonos y habilita ambas en tablets.
+  await configureScreenOrientation();
+
+  runApp(const CuentivaApp());
 }
 
-class CivicaPagoApp extends StatefulWidget {
-  const CivicaPagoApp({super.key});
+/// Configura las orientaciones permitidas según el tipo de dispositivo:
+/// - En smartphones (shortestSide < 600dp), fija vertical estricto ([DeviceOrientation.portraitUp]).
+/// - En tablets (>= 600dp), permite ambas (vertical y horizontal).
+/// - En Desktop y Web, no aplica restricciones para permitir que el gestor de ventanas del SO redimensione libremente.
+Future<void> configureScreenOrientation({double? shortestSideOverride}) async {
+  if (kIsWeb) return;
+  final isMobile = defaultTargetPlatform == TargetPlatform.android ||
+      defaultTargetPlatform == TargetPlatform.iOS;
+  if (!isMobile) return;
+
+  double? shortest = shortestSideOverride;
+  if (shortest == null) {
+    final view = WidgetsBinding.instance.platformDispatcher.views.firstOrNull;
+    if (view != null && view.devicePixelRatio > 0) {
+      shortest = (view.physicalSize / view.devicePixelRatio).shortestSide;
+    }
+  }
+
+  if (shortest == null || shortest <= 0) return;
+
+  if (shortest < AppBreakpoints.compact) {
+    await SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+    ]);
+  } else {
+    await SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
+  }
+}
+
+class CuentivaApp extends StatefulWidget {
+  const CuentivaApp({super.key});
 
   @override
-  State<CivicaPagoApp> createState() => _CivicaPagoAppState();
+  State<CuentivaApp> createState() => _CuentivaAppState();
 }
 
 /// Builder compartido de MaterialApp: unifica tema (light/dark), animación
@@ -114,7 +182,7 @@ class _AppThemeBuilder extends StatelessWidget {
       builder: (context, isDark, _) {
         if (routerConfig != null) {
           return MaterialApp.router(
-            title: 'Cívica Pago',
+            title: 'Cuentiva',
             debugShowCheckedModeBanner: false,
             theme: buildLightTheme(),
             darkTheme: buildDarkTheme(),
@@ -125,7 +193,7 @@ class _AppThemeBuilder extends StatelessWidget {
           );
         }
         return MaterialApp(
-          title: 'Cívica Pago',
+          title: 'Cuentiva',
           debugShowCheckedModeBanner: false,
           theme: buildLightTheme(),
           darkTheme: buildDarkTheme(),
@@ -139,7 +207,7 @@ class _AppThemeBuilder extends StatelessWidget {
   }
 }
 
-class _CivicaPagoAppState extends State<CivicaPagoApp> {
+class _CuentivaAppState extends State<CuentivaApp> {
   /// Solo en debug: verificar que la API responde antes de entrar a la app.
   /// En release el gate se salta (modo offline tolerante, no bloquea arranque).
   Future<bool>? _apiCheck;
@@ -156,6 +224,17 @@ class _CivicaPagoAppState extends State<CivicaPagoApp> {
     setState(() {
       _apiCheck = ApiHealthService(baseUrl: detectBaseUrl()).isApiReachable();
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.android ||
+            defaultTargetPlatform == TargetPlatform.iOS)) {
+      final shortest = MediaQuery.sizeOf(context).shortestSide;
+      configureScreenOrientation(shortestSideOverride: shortest);
+    }
   }
 
   @override

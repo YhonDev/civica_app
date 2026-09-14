@@ -86,12 +86,13 @@ class CobroCard extends StatelessWidget {
         ? AppColors.error.withValues(alpha: 0.4)
         : AppColors.elevatedCardBorder;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-      decoration: AppCardStyles.elevatedCard(
-        context,
-        borderColor: cardBorderColor,
-      ),
+    return RepaintBoundary(
+      child: Container(
+        margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+        decoration: AppCardStyles.elevatedCard(
+          context,
+          borderColor: cardBorderColor,
+        ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
         child: InkWell(
@@ -441,8 +442,9 @@ class CobroCard extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildIconContainer() {
     return Container(

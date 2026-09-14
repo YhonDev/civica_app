@@ -143,7 +143,12 @@ export class DashboardQuery {
 
       // Enrich PAGO activities with real ticket data if missing
       const missingTicketPagoIds = (actividadRecords || [])
-        .filter((a: any) => a.tipo === 'PAGO' && a.metadata?.pagoId && !a.metadata?.residenteNombre)
+        .filter(
+          (a: any) =>
+            a.tipo === 'PAGO' &&
+            a.metadata?.pagoId &&
+            !a.metadata?.residenteNombre,
+        )
         .map((a: any) => a.metadata.pagoId);
 
       const ticketsMap = new Map<string, any>();
@@ -215,8 +220,8 @@ export class DashboardQuery {
       }> = [];
 
       if (
-        typeof (this.pagoRepo as any).sumMontoLast12Months === 'function' &&
-        typeof (this.cobroRepo as any).getMetricsLast12Months === 'function'
+        typeof this.pagoRepo.sumMontoLast12Months === 'function' &&
+        typeof this.cobroRepo.getMetricsLast12Months === 'function'
       ) {
         const oldest = mesesObj[mesesObj.length - 1];
         const newest = mesesObj[0];
@@ -227,10 +232,10 @@ export class DashboardQuery {
             : `${newest.anio}-${String(newest.mes + 1).padStart(2, '0')}-01`;
 
         const [pagosAgg, cobrosAgg] = await Promise.all([
-          (this.pagoRepo as any)
+          this.pagoRepo
             .sumMontoLast12Months(tenantId, startDate, endDate)
             .catch(() => []),
-          (this.cobroRepo as any)
+          this.cobroRepo
             .getMetricsLast12Months(
               tenantId,
               startDate,
@@ -244,7 +249,10 @@ export class DashboardQuery {
           pagosMap.set(`${p.anio}-${p.mes}`, p.recaudo);
         }
 
-        const cobrosMap = new Map<string, { pendientes: number; mora: number }>();
+        const cobrosMap = new Map<
+          string,
+          { pendientes: number; mora: number }
+        >();
         for (const c of cobrosAgg || []) {
           cobrosMap.set(`${c.anio}-${c.mes}`, {
             pendientes: c.pendientes,
@@ -263,24 +271,25 @@ export class DashboardQuery {
           };
         });
       } else {
-        const historialPromesas = mesesObj.map(({ anio: targetAnio, mes: targetMes }) =>
-          Promise.all([
-            this.pagoRepo
-              .sumMontoByMonth(tenantId, targetAnio, targetMes)
-              .catch(() => 0),
-            this.cobroRepo
-              .countPendientesByMonth(tenantId, targetAnio, targetMes)
-              .catch(() => 0),
-            this.cobroRepo
-              .sumSaldoVencidasByMonth(tenantId, targetAnio, targetMes)
-              .catch(() => 0),
-          ]).then(([recaudo, mPendientes, mMora]) => ({
-            mes: targetMes,
-            anio: targetAnio,
-            recaudo: Number(recaudo) || 0,
-            pendientes: Number(mPendientes) || 0,
-            mora: Number(mMora) || 0,
-          })),
+        const historialPromesas = mesesObj.map(
+          ({ anio: targetAnio, mes: targetMes }) =>
+            Promise.all([
+              this.pagoRepo
+                .sumMontoByMonth(tenantId, targetAnio, targetMes)
+                .catch(() => 0),
+              this.cobroRepo
+                .countPendientesByMonth(tenantId, targetAnio, targetMes)
+                .catch(() => 0),
+              this.cobroRepo
+                .sumSaldoVencidasByMonth(tenantId, targetAnio, targetMes)
+                .catch(() => 0),
+            ]).then(([recaudo, mPendientes, mMora]) => ({
+              mes: targetMes,
+              anio: targetAnio,
+              recaudo: Number(recaudo) || 0,
+              pendientes: Number(mPendientes) || 0,
+              mora: Number(mMora) || 0,
+            })),
         );
         historialMeses = await Promise.all(historialPromesas);
       }

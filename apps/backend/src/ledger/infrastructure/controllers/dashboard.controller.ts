@@ -190,7 +190,12 @@ export class DashboardController {
     // 2. Cobros pendientes en esas etapas
     const cobros =
       etapaIds.length > 0
-        ? await this.cobroRepository.findPendientesByTenant(tenantId)
+        ? typeof this.cobroRepository.findPendientesByEtapas === 'function'
+          ? await this.cobroRepository.findPendientesByEtapas(
+              tenantId,
+              etapaIds,
+            )
+          : await this.cobroRepository.findPendientesByTenant(tenantId)
         : [];
 
     // 3. Pagos del cobrador hoy

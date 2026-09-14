@@ -6,11 +6,13 @@ import {
   CreateDateColumn,
   ManyToOne,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { Residente } from './residente.entity';
 import { Casa } from './casa.entity';
 
 @Entity('tenencias')
+@Index('idx_tenencias_casa_activa', ['casaId'])
 export class Tenencia {
   @PrimaryGeneratedColumn('uuid')
   id: string;

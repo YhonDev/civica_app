@@ -14,6 +14,7 @@ import {
   ForbiddenException,
   Optional,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { DataSource } from 'typeorm';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { RegistrarPagoUseCase } from '../../application/use-cases/registrar-pago.use-case';
@@ -52,6 +53,7 @@ export class PagosController {
   ) {}
 
   @Post()
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN, RolUsuario.COBRADOR)
   @UseInterceptors(ActividadInterceptor)
@@ -70,7 +72,8 @@ export class PagosController {
       manzana: result.ticket?.manzana,
       metodo: result.ticket?.metodo,
       cobradorId: result.pago?.cobradorId,
-      cobradorNombre: result.pago?.cobradorNombre ?? result.ticket?.cobradorNombre,
+      cobradorNombre:
+        result.pago?.cobradorNombre ?? result.ticket?.cobradorNombre,
       clientPaymentId: result.pago?.clientPaymentId,
       solicitudId: result.pago?.solicitudId,
     }),
@@ -158,6 +161,7 @@ export class PagosController {
   }
 
   @Patch(':id/validar')
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN)
   @UseInterceptors(ActividadInterceptor)
@@ -198,8 +202,23 @@ export class PagosController {
   async listCobrosPorCobrador(
     @CurrentUser() user: Usuario,
     @CurrentTenant() tenantId: string,
+    @Query('limit') limitStr?: string,
+    @Query('offset') offsetStr?: string,
   ) {
-    const pagos = await this.pagoRepo.findByCobrador(user.id, tenantId);
+    const limit = limitStr
+      ? Math.min(Math.max(parseInt(limitStr, 10) || 50, 1), 100)
+      : undefined;
+    const offset = offsetStr
+      ? Math.max(parseInt(offsetStr, 10) || 0, 0)
+      : undefined;
+
+    const pagos =
+      limit !== undefined || offset !== undefined
+        ? await this.pagoRepo.findByCobrador(user.id, tenantId, {
+            limit,
+            offset,
+          })
+        : await this.pagoRepo.findByCobrador(user.id, tenantId);
     return pagos.map((pago) => {
       const residente = pago.residente;
       const casa = pago.cobro?.casa ?? residente?.casaActual;
@@ -228,6 +247,8 @@ export class PagosController {
     @Query('residenteId') residenteId: string,
     @CurrentUser() user: Usuario,
     @CurrentTenant() tenantId: string,
+    @Query('limit') limitStr?: string,
+    @Query('offset') offsetStr?: string,
   ) {
     // C5: un RESIDENTE solo puede ver SUS pagos. Se usa siempre el
     // residenteId del token (JWT), sin fallback al query string: si la
@@ -239,7 +260,21 @@ export class PagosController {
         : (residenteId ?? user.residenteId);
 
     if (!targetId) return [];
-    const pagos = await this.pagoRepo.findByPropietario(targetId, tenantId);
+
+    const limit = limitStr
+      ? Math.min(Math.max(parseInt(limitStr, 10) || 50, 1), 100)
+      : undefined;
+    const offset = offsetStr
+      ? Math.max(parseInt(offsetStr, 10) || 0, 0)
+      : undefined;
+
+    const pagos =
+      limit !== undefined || offset !== undefined
+        ? await this.pagoRepo.findByPropietario(targetId, tenantId, {
+            limit,
+            offset,
+          })
+        : await this.pagoRepo.findByPropietario(targetId, tenantId);
     return pagos.map((pago) => {
       const residente = pago.residente;
       const casa = pago.cobro?.casa ?? residente?.casaActual;

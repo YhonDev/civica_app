@@ -1,20 +1,26 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart' show SystemNavigator;
 import 'package:flutter/widgets.dart';
 import 'biometric_auth_service.dart';
 
 /// Gestor del ciclo de vida de la sesión (Inactividad y Segundo Plano).
 ///
-/// Implementa el estándar de seguridad:
-/// 1. Inactividad (5 minutos sin tocar la pantalla).
-/// 2. Segundo plano (30 segundos de gracia al cambiar de app).
-/// 3. Al cumplirse cualquiera, solicita autenticación directamente al sensor de Android
-///    sobre la pantalla actual, o redirige a LoginScreen en caso de cancelación.
+/// Implementa el estándar de seguridad y rendimiento de Cuentiva:
+/// 1. Inactividad (3 minutos sin actividad táctil):
+///    - Cierra la aplicación limpiamente con `SystemNavigator.pop()` para evitar
+///      consumo innecesario de batería y recursos en segundo plano.
+///    - Mantiene intactos los tokens de autenticación y la configuración biométrica.
+/// 2. Segundo plano:
+///    - Periodo de gracia de 30 segundos (ej. cambiar a otra app brevemente).
+///    - Al retornar tras el periodo de gracia, solicita verificación biométrica.
+///    - Si el usuario cancela o falla, cierra la aplicación limpiamente sin destruir la sesión.
 class SessionLifecycleManager with WidgetsBindingObserver {
   static final SessionLifecycleManager instance = SessionLifecycleManager._internal();
 
   SessionLifecycleManager._internal();
 
-  static const Duration inactivityTimeout = Duration(minutes: 5);
+  static const Duration inactivityTimeout = Duration(minutes: 3);
   static const Duration backgroundGracePeriod = Duration(seconds: 30);
 
   DateTime? _pausedAt;
@@ -23,11 +29,18 @@ class SessionLifecycleManager with WidgetsBindingObserver {
   bool _isAuthenticating = false;
 
   Future<void> Function()? onReauthenticateRequired;
+  Future<void> Function()? onCloseApp;
 
   /// Inicializa el observador de ciclo de vida global
-  void init({Future<void> Function()? onReauthenticateRequired}) {
+  void init({
+    Future<void> Function()? onReauthenticateRequired,
+    Future<void> Function()? onCloseApp,
+  }) {
     if (onReauthenticateRequired != null) {
       this.onReauthenticateRequired = onReauthenticateRequired;
+    }
+    if (onCloseApp != null) {
+      this.onCloseApp = onCloseApp;
     }
     if (_isInitialized) return;
     _isInitialized = true;
@@ -47,13 +60,25 @@ class SessionLifecycleManager with WidgetsBindingObserver {
     _resetInactivityTimer();
   }
 
+  /// Cierra la aplicación limpiamente a nivel del sistema operativo.
+  Future<void> closeApp() async {
+    _inactivityTimer?.cancel();
+    if (onCloseApp != null) {
+      await onCloseApp!();
+    } else {
+      await SystemNavigator.pop();
+    }
+  }
+
   void _resetInactivityTimer() {
     _inactivityTimer?.cancel();
     _inactivityTimer = Timer(inactivityTimeout, () async {
       final isBioEnabled = await BiometricAuthService.instance.isBiometricsEnabled();
+      if (kDebugMode) {
+        debugPrint('[SessionLifecycleManager] Inactividad (3 min): cerrando app limpiamente');
+      }
       if (isBioEnabled) {
-        debugPrint('[SessionLifecycleManager] Inactividad (5 min): solicitando huella');
-        triggerReauthentication();
+        await closeApp();
       }
     });
   }
@@ -78,7 +103,9 @@ class SessionLifecycleManager with WidgetsBindingObserver {
     final isBioEnabled = await BiometricAuthService.instance.isBiometricsEnabled();
 
     if (isBioEnabled && secondsInBackground >= backgroundGracePeriod.inSeconds) {
-      debugPrint('[SessionLifecycleManager] Retorno de segundo plano ($secondsInBackground seg): solicitando huella');
+      if (kDebugMode) {
+        debugPrint('[SessionLifecycleManager] Retorno de segundo plano ($secondsInBackground seg): solicitando huella');
+      }
       triggerReauthentication();
     } else {
       recordUserActivity();
@@ -94,10 +121,12 @@ class SessionLifecycleManager with WidgetsBindingObserver {
         await onReauthenticateRequired!();
       } else {
         final success = await BiometricAuthService.instance.authenticate(
-          localizedReason: 'Escanea tu huella dactilar para continuar en Cívica Pago',
+          localizedReason: 'Escanea tu huella dactilar para continuar en Cuentiva',
         );
         if (success) {
           recordUserActivity();
+        } else {
+          await closeApp();
         }
       }
     } finally {

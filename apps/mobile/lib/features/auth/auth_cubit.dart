@@ -228,7 +228,6 @@ class AuthCubit extends Cubit<AuthState> {
     } catch (_) {}
     try {
       await BiometricAuthService.instance.clearBiometricCredentials();
-      await BiometricAuthService.instance.setBiometricsEnabled(false);
     } catch (_) {}
     try {
       await _authApi.logout();

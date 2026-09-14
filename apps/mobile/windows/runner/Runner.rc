@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.civicapago" "\0"
-            VALUE "FileDescription", "civica_pago_mobile" "\0"
+            VALUE "CompanyName", "Cuentiva" "\0"
+            VALUE "FileDescription", "Cuentiva Desktop" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "civica_pago_mobile" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 com.civicapago. All rights reserved." "\0"
-            VALUE "OriginalFilename", "civica_pago_mobile.exe" "\0"
-            VALUE "ProductName", "civica_pago_mobile" "\0"
+            VALUE "InternalName", "cuentiva" "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 Cuentiva. All rights reserved." "\0"
+            VALUE "OriginalFilename", "cuentiva.exe" "\0"
+            VALUE "ProductName", "Cuentiva" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

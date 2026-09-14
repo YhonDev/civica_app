@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Design system colors for the Civica Pago app.
+/// Design system colors for the Cuentiva app.
 ///
 /// Matches the tokens defined in doc/DESIGN_SYSTEM.md.
 class AppColors {

@@ -31,8 +31,11 @@ export function databaseConfig(): TypeOrmModuleOptions {
     database: process.env.DATABASE_NAME || 'postgres',
     autoLoadEntities: true,
     synchronize: false,
-    logging:
-      process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
+    maxQueryExecutionTime: parseInt(
+      process.env.DATABASE_MAX_QUERY_TIME_MS || '150',
+      10,
+    ),
+    logging: ['error', 'warn'],
     ...(sslMode && {
       ssl: {
         // Cifrado AUTENTICADO: verifica la identidad del servidor (previene MITM).

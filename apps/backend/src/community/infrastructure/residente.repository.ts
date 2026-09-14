@@ -8,6 +8,8 @@ interface BuscarPorFiltrosParams {
   etapaId?: string;
   casaId?: string;
   tenantId: string;
+  limit?: number;
+  offset?: number;
 }
 
 @Injectable()
@@ -62,6 +64,13 @@ export class ResidenteRepository extends BaseTenantRepository<Residente> {
       });
     }
 
+    if (params.limit) {
+      qb.take(params.limit);
+    }
+    if (params.offset) {
+      qb.skip(params.offset);
+    }
+
     return qb.getMany();
   }
 
@@ -100,6 +109,7 @@ export class ResidenteRepository extends BaseTenantRepository<Residente> {
   async buscarPorEtapas(
     tenantId: string,
     etapaIds: string[],
+    pagination?: { limit?: number; offset?: number },
   ): Promise<Residente[]> {
     if (!etapaIds || etapaIds.length === 0) {
       return [];
@@ -119,6 +129,13 @@ export class ResidenteRepository extends BaseTenantRepository<Residente> {
       { etapaIds },
     );
     qb.orderBy('residente.nombre', 'ASC');
+
+    if (pagination?.limit) {
+      qb.take(pagination.limit);
+    }
+    if (pagination?.offset) {
+      qb.skip(pagination.offset);
+    }
 
     return qb.getMany();
   }

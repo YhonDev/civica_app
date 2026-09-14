@@ -75,6 +75,17 @@ class _LoginScreenState extends State<LoginScreen> {
     if (mounted) {
       setState(() => _isBiometricsEnabled = enabled);
     }
+
+    // Si tiene huella habilitada y la sesión sigue viva en el almacenamiento,
+    // solicitamos la huella automáticamente al abrir la app para no pedir contraseña.
+    final hasSession = await ApiClient.instance.isLoggedIn();
+    if (enabled && hasSession && mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _autenticarConHuella();
+        }
+      });
+    }
   }
 
   Future<void> _autenticarConHuella() async {

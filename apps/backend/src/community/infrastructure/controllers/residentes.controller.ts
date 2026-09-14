@@ -154,23 +154,46 @@ export class ResidentesController {
     required: false,
     description: 'Filtrar por UUID de casa',
   })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Límite de resultados (1-100)',
+  })
+  @ApiQuery({
+    name: 'offset',
+    required: false,
+    description: 'Desplazamiento para paginación',
+  })
   async listar(
     @CurrentTenant() tenantId: string,
     @Query('etapa') etapaId?: string,
     @Query('casa') casaId?: string,
     @CurrentUser() user?: Usuario,
+    @Query('limit') limitStr?: string,
+    @Query('offset') offsetStr?: string,
   ) {
     if (!user || !tenantId) {
       throw new UnauthorizedException('Usuario no autenticado o sin tenant');
     }
 
+    const limit = limitStr
+      ? Math.min(Math.max(parseInt(limitStr, 10) || 50, 1), 100)
+      : undefined;
+    const offset = offsetStr
+      ? Math.max(parseInt(offsetStr, 10) || 0, 0)
+      : undefined;
+
     // ADMIN: retorna todos los residentes
     if (user.rol === RolUsuario.ADMIN) {
-      const residentes = await this.residenteRepository.buscarPorFiltros({
+      const filtros: any = {
         tenantId,
         etapaId,
         casaId,
-      });
+      };
+      if (limit !== undefined) filtros.limit = limit;
+      if (offset !== undefined) filtros.offset = offset;
+      const residentes =
+        await this.residenteRepository.buscarPorFiltros(filtros);
       return this.adjuntarUsernames(residentes);
     }
 
@@ -181,6 +204,8 @@ export class ResidentesController {
         tenantId,
         etapaId,
         casaId,
+        limit,
+        offset,
       );
       return this.adjuntarUsernames(residentes);
     }
@@ -229,6 +254,8 @@ export class ResidentesController {
     tenantId: string,
     etapaId?: string,
     casaId?: string,
+    limit?: number,
+    offset?: number,
   ) {
     // Si ya se especificó una etapa en el query, usamos ese filtro directamente
     // Buscamos las etapas asignadas al cobrador
@@ -249,10 +276,17 @@ export class ResidentesController {
       return [];
     }
 
-    const resultados = await this.residenteRepository.buscarPorEtapas(
-      tenantId,
-      etapasPermitidas,
-    );
+    const resultados =
+      limit !== undefined || offset !== undefined
+        ? await this.residenteRepository.buscarPorEtapas(
+            tenantId,
+            etapasPermitidas,
+            { limit, offset },
+          )
+        : await this.residenteRepository.buscarPorEtapas(
+            tenantId,
+            etapasPermitidas,
+          );
 
     // Si hay filtro adicional de casa, aplicarlo en memoria
     if (casaId) {

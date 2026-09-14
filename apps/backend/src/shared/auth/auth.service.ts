@@ -210,6 +210,10 @@ export class AuthService {
     );
   }
 
+  async revokeAccessToken(token: string): Promise<void> {
+    await this.tokenRevocation.revoke(token);
+  }
+
   async revokeAllSessionsForUser(usuarioId: string): Promise<void> {
     await this.sessionRepository.update({ usuarioId }, { isRevoked: true });
   }

@@ -1,4 +1,4 @@
-package com.civicapago.civica_pago_mobile
+package com.cuentiva.app
 
 import io.flutter.embedding.android.FlutterFragmentActivity
 
