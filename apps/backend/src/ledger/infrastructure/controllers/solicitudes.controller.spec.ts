@@ -379,9 +379,9 @@ describe('SolicitudesController', () => {
     it('should throw NotFoundException when solicitud is from another tenant', async () => {
       mockSolicitudRepo.findById.mockResolvedValue(null);
 
-      await expect(controller.eliminar('sol-x', 'tenant-123')).rejects.toThrow(
-        /no encontrada/,
-      );
+      await expect(
+        controller.eliminar('sol-x', { id: 'u-admin', rol: 'ADMIN' } as any, 'tenant-123'),
+      ).rejects.toThrow(/no encontrada/);
     });
   });
 
