@@ -314,6 +314,26 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent>
     );
   }
 
+  List<Map<String, dynamic>> _cuotasPendientes(
+    List<CobroItem> cobros,
+    CobroItem cobro,
+  ) {
+    return cobros
+        .where((item) => item.residenteId == cobro.residenteId && !item.isPaid)
+        .map(
+          (item) => {
+            'id': item.id,
+            'periodo': item.concepto,
+            'tituloCuota': item.tituloCuota,
+            'concepto': item.concepto,
+            'fechaVencimiento': item.fechaVencimiento,
+            'monto': item.saldo > 0 ? item.saldo : item.monto,
+            'estado': item.estado,
+          },
+        )
+        .toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = context.read<AuthCubit>().state.usuario;
@@ -567,23 +587,10 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent>
                         }
                       }
                     } else if (canRegisterPago) {
-                      final cuotasDelResidente = state.cobros
-                          .where(
-                            (c) =>
-                                c.residenteId == cobro.residenteId && !c.isPaid,
-                          )
-                          .map(
-                            (c) => {
-                              'id': c.id,
-                              'periodo': c.concepto,
-                              'tituloCuota': c.tituloCuota,
-                              'concepto': c.concepto,
-                              'fechaVencimiento': c.fechaVencimiento,
-                              'monto': c.saldo > 0 ? c.saldo : c.monto,
-                              'estado': c.estado,
-                            },
-                          )
-                          .toList();
+                      final cuotasDelResidente = _cuotasPendientes(
+                        state.cobros,
+                        cobro,
+                      );
 
                       RegistrarPagoBottomSheet.show(
                         context,
@@ -645,24 +652,10 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent>
                       : null,
                   onRegistrarPago: canRegisterPago && !cobro.isPaid
                       ? () {
-                          final cuotasDelResidente = state.cobros
-                              .where(
-                                (c) =>
-                                    c.residenteId == cobro.residenteId &&
-                                    !c.isPaid,
-                              )
-                              .map(
-                                (c) => {
-                                  'id': c.id,
-                                  'periodo': c.concepto,
-                                  'tituloCuota': c.tituloCuota,
-                                  'concepto': c.concepto,
-                                  'fechaVencimiento': c.fechaVencimiento,
-                                  'monto': c.saldo > 0 ? c.saldo : c.monto,
-                                  'estado': c.estado,
-                                },
-                              )
-                              .toList();
+                          final cuotasDelResidente = _cuotasPendientes(
+                            state.cobros,
+                            cobro,
+                          );
 
                           RegistrarPagoBottomSheet.show(
                             context,
