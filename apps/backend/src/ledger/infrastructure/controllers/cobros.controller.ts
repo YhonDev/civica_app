@@ -111,6 +111,8 @@ export class CobrosController {
     @Param('residenteId') residenteId: string,
     @CurrentTenant() tenantId: string,
     @CurrentUser() user: Usuario,
+    @Query('limit') limitStr?: string,
+    @Query('offset') offsetStr?: string,
   ) {
     if (!tenantId) return [];
 
@@ -124,9 +126,7 @@ export class CobrosController {
         );
       }
       if (user.residenteId !== residenteId) {
-        throw new ForbiddenException(
-          'No tienes permiso para ver estos cobros',
-        );
+        throw new ForbiddenException('No tienes permiso para ver estos cobros');
       }
     }
 
@@ -145,10 +145,20 @@ export class CobrosController {
       allowedEtapaIds = stageIds;
     }
 
-    const cobros = await this.cobroRepository.findByResidente(
-      residenteId,
-      tenantId,
-    );
+    const limit = limitStr
+      ? Math.min(Math.max(parseInt(limitStr, 10) || 50, 1), 100)
+      : undefined;
+    const offset = offsetStr
+      ? Math.max(parseInt(offsetStr, 10) || 0, 0)
+      : undefined;
+
+    const cobros =
+      limit !== undefined || offset !== undefined
+        ? await this.cobroRepository.findByResidente(residenteId, tenantId, {
+            limit,
+            offset,
+          })
+        : await this.cobroRepository.findByResidente(residenteId, tenantId);
 
     const escoped = allowedEtapaIds
       ? cobros.filter((cobro) => {

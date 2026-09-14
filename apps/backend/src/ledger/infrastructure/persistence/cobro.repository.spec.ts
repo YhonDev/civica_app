@@ -15,6 +15,7 @@ describe('CobroRepository', () => {
     where: jest.fn().mockReturnThis(),
     andWhere: jest.fn().mockReturnThis(),
     leftJoin: jest.fn().mockReturnThis(),
+    leftJoinAndSelect: jest.fn().mockReturnThis(),
     groupBy: jest.fn().mockReturnThis(),
     orderBy: jest.fn().mockReturnThis(),
     limit: jest.fn().mockReturnThis(),
@@ -384,11 +385,7 @@ describe('CobroRepository', () => {
       const qb = fullQb();
       mockRepo.createQueryBuilder.mockReturnValue(qb as any);
 
-      await repo.findAllWithFilters(
-        TENANT_ID,
-        {},
-        ['etapa-1', 'etapa-2'],
-      );
+      await repo.findAllWithFilters(TENANT_ID, {}, ['etapa-1', 'etapa-2']);
 
       expect(qb.where).toHaveBeenCalledWith('cobro.tenantId = :tenantId', {
         tenantId: TENANT_ID,
@@ -403,11 +400,9 @@ describe('CobroRepository', () => {
       const qb = fullQb();
       mockRepo.createQueryBuilder.mockReturnValue(qb as any);
 
-      await repo.findAllWithFilters(
-        TENANT_ID,
-        { etapaId: 'etapa-9' },
-        ['etapa-1'],
-      );
+      await repo.findAllWithFilters(TENANT_ID, { etapaId: 'etapa-9' }, [
+        'etapa-1',
+      ]);
 
       const andWhereArgs = qb.andWhere.mock.calls.map((c: any[]) => c[0]);
       expect(andWhereArgs).toContainEqual(
@@ -425,7 +420,7 @@ describe('CobroRepository', () => {
     // La condición de mora debe ir SIEMPRE entre paréntesis para que el
     // AND del tenant aplique a ambas ramas del OR.
     const CONDICION_MORA_AGRUPADA =
-      '(cobro.estado IN (\'VENCIDA\') OR (cobro.estado IN (\'PENDIENTE\', \'PARCIAL\') AND cobro.fechaVencimiento < CURRENT_DATE))';
+      "(cobro.estado IN ('VENCIDA') OR (cobro.estado IN ('PENDIENTE', 'PARCIAL') AND cobro.fechaVencimiento < CURRENT_DATE))";
 
     function condicionMoraEnAndWhere(): string | undefined {
       const calls = mockQueryBuilder.andWhere.mock.calls as string[][];
@@ -457,6 +452,38 @@ describe('CobroRepository', () => {
         .map((c) => c[0])
         .some((sql) => sql?.includes('VENCIDA'));
       expect(viaWhereDirecto).toBe(false);
+    });
+  });
+
+  describe('findPendientesByEtapas() y paginación', () => {
+    it('retorna vacío si etapaIds está vacío', async () => {
+      const result = await repo.findPendientesByEtapas(TENANT_ID, []);
+      expect(result).toEqual([]);
+      expect(mockRepo.createQueryBuilder).not.toHaveBeenCalled();
+    });
+
+    it('ejecuta consulta con joins e index scan por etapas', async () => {
+      mockQueryBuilder.getMany.mockResolvedValue([{ id: 'cobro-1' }]);
+      const result = await repo.findPendientesByEtapas(TENANT_ID, ['etapa-1']);
+
+      expect(mockRepo.createQueryBuilder).toHaveBeenCalledWith('cobro');
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith(
+        'cobro.tenantId = :tenantId',
+        { tenantId: TENANT_ID },
+      );
+      expect(result).toHaveLength(1);
+    });
+
+    it('aplica take y skip en findByResidente cuando se especifica paginación', async () => {
+      mockRepo.find.mockResolvedValue([]);
+      await repo.findByResidente('res-1', TENANT_ID, { limit: 20, offset: 40 });
+
+      expect(mockRepo.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          take: 20,
+          skip: 40,
+        }),
+      );
     });
   });
 });

@@ -20,6 +20,7 @@ export class CobroRepository extends BaseTenantRepository<Cobro> {
   async findByResidente(
     residenteId: string,
     tenantId: string,
+    pagination?: { limit?: number; offset?: number },
   ): Promise<Cobro[]> {
     return this.repo.find({
       where: { residenteId, tenantId },
@@ -28,6 +29,8 @@ export class CobroRepository extends BaseTenantRepository<Cobro> {
         casa: { manzana: { etapa: true } },
       },
       order: { periodoInicio: 'DESC' },
+      take: pagination?.limit,
+      skip: pagination?.offset,
     });
   }
 
@@ -56,6 +59,41 @@ export class CobroRepository extends BaseTenantRepository<Cobro> {
       },
       order: { fechaVencimiento: 'ASC' },
     });
+  }
+
+  async findPendientesByEtapas(
+    tenantId: string,
+    etapaIds: string[],
+  ): Promise<Cobro[]> {
+    if (!etapaIds || etapaIds.length === 0) return [];
+
+    return this.repo
+      .createQueryBuilder('cobro')
+      .leftJoinAndSelect('cobro.residente', 'residente')
+      .leftJoinAndSelect(
+        'residente.tenencias',
+        'tenencia',
+        'tenencia.fecha_fin IS NULL',
+      )
+      .leftJoinAndSelect('tenencia.casa', 'tCasa')
+      .leftJoinAndSelect('tCasa.manzana', 'tManzana')
+      .leftJoinAndSelect('tManzana.etapa', 'tEtapa')
+      .leftJoinAndSelect('residente.casaActual', 'rCasa')
+      .leftJoinAndSelect('rCasa.manzana', 'rManzana')
+      .leftJoinAndSelect('rManzana.etapa', 'rEtapa')
+      .leftJoinAndSelect('cobro.casa', 'casa')
+      .leftJoinAndSelect('casa.manzana', 'manzana')
+      .leftJoinAndSelect('manzana.etapa', 'etapa')
+      .where('cobro.tenantId = :tenantId', { tenantId })
+      .andWhere('cobro.estado IN (:...estados)', {
+        estados: ['PENDIENTE', 'VENCIDA', 'PARCIAL'],
+      })
+      .andWhere(
+        '(etapa.id IN (:...etapaIds) OR tEtapa.id IN (:...etapaIds) OR rEtapa.id IN (:...etapaIds))',
+        { etapaIds },
+      )
+      .orderBy('cobro.fechaVencimiento', 'ASC')
+      .getMany();
   }
 
   async countPendientesByMonth(
@@ -106,7 +144,9 @@ export class CobroRepository extends BaseTenantRepository<Cobro> {
     tenantId: string,
     startPeriodo: string,
     endPeriodo: string,
-  ): Promise<Array<{ anio: number; mes: number; pendientes: number; mora: number }>> {
+  ): Promise<
+    Array<{ anio: number; mes: number; pendientes: number; mora: number }>
+  > {
     const result = await this.repo
       .createQueryBuilder('cobro')
       .select([
@@ -116,11 +156,16 @@ export class CobroRepository extends BaseTenantRepository<Cobro> {
         "COALESCE(SUM(CASE WHEN cobro.estado = 'VENCIDA' OR (cobro.estado IN ('PENDIENTE', 'PARCIAL') AND cobro.fechaVencimiento < CURRENT_DATE) THEN (cobro.monto - cobro.montoPagado) ELSE 0 END), 0)::bigint AS mora",
       ])
       .where('cobro.tenantId = :tenantId', { tenantId })
-      .andWhere('cobro.periodoInicio >= :startPeriodo AND cobro.periodoInicio <= :endPeriodo', {
-        startPeriodo,
-        endPeriodo,
-      })
-      .groupBy('EXTRACT(YEAR FROM cobro.periodoInicio), EXTRACT(MONTH FROM cobro.periodoInicio)')
+      .andWhere(
+        'cobro.periodoInicio >= :startPeriodo AND cobro.periodoInicio <= :endPeriodo',
+        {
+          startPeriodo,
+          endPeriodo,
+        },
+      )
+      .groupBy(
+        'EXTRACT(YEAR FROM cobro.periodoInicio), EXTRACT(MONTH FROM cobro.periodoInicio)',
+      )
       .getRawMany();
 
     return (result || []).map((r: any) => ({

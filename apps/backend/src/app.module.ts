@@ -15,6 +15,7 @@ import { HealthController } from './shared/health/health.controller';
 import { UserAwareThrottlerGuard } from './shared/auth/guards/user-aware-throttler.guard';
 import { ObservabilityModule } from './shared/observability/observability.module';
 import { RequestIdMiddleware } from './shared/observability/request-id.middleware';
+import { CacheModule } from './shared/cache/cache.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { RequestIdMiddleware } from './shared/observability/request-id.middlewar
       ],
     }),
 
+    CacheModule,
     AuthModule,
     TenantModule,
     CommunityModule,

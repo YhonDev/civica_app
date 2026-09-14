@@ -77,6 +77,7 @@ CREATE TABLE tenencias (
 CREATE INDEX idx_tenencias_residente ON tenencias (residente_id);
 CREATE INDEX idx_tenencias_casa      ON tenencias (casa_id);
 CREATE INDEX idx_tenencias_activas   ON tenencias (residente_id, casa_id) WHERE fecha_fin IS NULL;
+CREATE INDEX idx_tenencias_casa_activa ON tenencias (casa_id) WHERE fecha_fin IS NULL;
 -- NOTA: La entidad Tenencia usa @ManyToOne con createForeignKeyConstraints: false para casa_id
 -- La FK se omite a propósito para mantener consistencia con el backend.
 
@@ -175,6 +176,8 @@ CREATE INDEX idx_cobros_vencimiento ON cobros (fecha_vencimiento);
 CREATE INDEX idx_cobros_tenant_periodo_estado     ON cobros (tenant_id, periodo_inicio, estado);
 CREATE INDEX idx_cobros_tenant_vencimiento_estado ON cobros (tenant_id, fecha_vencimiento, estado);
 CREATE INDEX idx_cobros_tenant_casa               ON cobros (tenant_id, casa_id);
+CREATE INDEX idx_cobros_tenant_residente_estado   ON cobros (tenant_id, residente_id, estado);
+CREATE INDEX idx_cobros_casa_estado               ON cobros (casa_id, estado);
 -- NOTA: Sin FK constraints para residente_id, periodo_id, casa_id, tarifa_id
 -- (las entidades usan @ManyToOne con createForeignKeyConstraints: false)
 
@@ -200,6 +203,8 @@ CREATE INDEX idx_pagos_tenant_client ON pagos (tenant_id, client_payment_id);
 CREATE INDEX idx_pagos_residente     ON pagos (residente_id);
 CREATE INDEX idx_pagos_cobro         ON pagos (cobro_id);
 CREATE INDEX idx_pagos_cobrador      ON pagos (cobrador_id);
+CREATE INDEX idx_pagos_cobrador_fecha ON pagos (tenant_id, cobrador_id, fecha_pago DESC);
+CREATE INDEX idx_pagos_residente_fecha ON pagos (tenant_id, residente_id, fecha_pago DESC);
 
 -- ── 12b. PagoCobros (Vínculo FIFO exacto) ────────────────
 CREATE TABLE pago_cobros (

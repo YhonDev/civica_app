@@ -31,6 +31,7 @@ export class PagoRepository extends BaseTenantRepository<Pago> {
   async findByPropietario(
     residenteId: string,
     tenantId: string,
+    pagination?: { limit?: number; offset?: number },
   ): Promise<Pago[]> {
     return this.repo.find({
       where: { residenteId, tenantId },
@@ -39,10 +40,16 @@ export class PagoRepository extends BaseTenantRepository<Pago> {
         cobro: { casa: { manzana: { etapa: true } } },
       },
       order: { createdAt: 'DESC' },
+      take: pagination?.limit,
+      skip: pagination?.offset,
     });
   }
 
-  async findByCobrador(cobradorId: string, tenantId: string): Promise<Pago[]> {
+  async findByCobrador(
+    cobradorId: string,
+    tenantId: string,
+    pagination?: { limit?: number; offset?: number },
+  ): Promise<Pago[]> {
     return this.repo.find({
       where: { cobradorId, tenantId },
       relations: {
@@ -50,6 +57,8 @@ export class PagoRepository extends BaseTenantRepository<Pago> {
         cobro: { casa: { manzana: { etapa: true } } },
       },
       order: { createdAt: 'DESC' },
+      take: pagination?.limit,
+      skip: pagination?.offset,
     });
   }
 
@@ -109,7 +118,9 @@ export class PagoRepository extends BaseTenantRepository<Pago> {
         start: startMonthDate,
         end: endMonthDate,
       })
-      .groupBy('EXTRACT(YEAR FROM pago.fecha_pago), EXTRACT(MONTH FROM pago.fecha_pago)')
+      .groupBy(
+        'EXTRACT(YEAR FROM pago.fecha_pago), EXTRACT(MONTH FROM pago.fecha_pago)',
+      )
       .getRawMany();
 
     return (result || []).map((r: any) => ({
@@ -212,13 +223,10 @@ export class PagoRepository extends BaseTenantRepository<Pago> {
     const hoy = new Date();
     const hoyStr = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
 
-    const pagos = await this.repo.find({
-      where: { cobradorId, tenantId },
+    const hoyPagos = await this.repo.find({
+      where: { cobradorId, tenantId, fechaPago: hoyStr },
       order: { fechaPago: 'DESC' },
     });
-
-    // Filter in-memory by today's date (fechaPago is a string YYYY-MM-DD)
-    const hoyPagos = pagos.filter((p) => p.fechaPago.startsWith(hoyStr));
 
     const total = hoyPagos.reduce((sum, p) => sum + p.monto, 0);
 
