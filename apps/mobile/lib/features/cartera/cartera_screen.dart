@@ -43,9 +43,9 @@ class CarteraScreen extends StatelessWidget {
     final user = context.read<AuthCubit>().state.usuario;
     final rol = user?['rol'] as String?;
     final propietarioId = user?['residenteId'] as String?;
-    
-    final resolvedRepository = repository ??
-        CarteraRepository(role: rol, residenteId: propietarioId);
+
+    final resolvedRepository =
+        repository ?? CarteraRepository(role: rol, residenteId: propietarioId);
 
     return BlocProvider(
       create: (context) => CarteraCubit(resolvedRepository)..loadCobros(),
@@ -61,7 +61,8 @@ class _CarteraScreenContent extends StatefulWidget {
   State<_CarteraScreenContent> createState() => _CarteraScreenContentState();
 }
 
-class _CarteraScreenContentState extends State<_CarteraScreenContent> with LifecycleObserverMixin {
+class _CarteraScreenContentState extends State<_CarteraScreenContent>
+    with LifecycleObserverMixin {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   String _selectedStatusFilter = 'TODOS';
@@ -153,7 +154,9 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
       // Escala con la fuente de sistema (clamp 1.0–1.3) para no recortar chips.
       height: 34 * context.scaleForText,
       child: FadingHorizontalScroll(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.screenPadding,
+        ),
         child: Row(
           children: [
             Padding(
@@ -167,13 +170,17 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                 }),
                 selectedColor: AppColors.primary,
                 labelStyle: AppTypography.smallBold.copyWith(
-                  color: _selectedEtapa == null ? AppColors.onPrimary : AppColors.textSecondary,
+                  color: _selectedEtapa == null
+                      ? AppColors.onPrimary
+                      : AppColors.textSecondary,
                 ),
                 backgroundColor: AppColors.surface,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
                   side: BorderSide(
-                    color: _selectedEtapa == null ? AppColors.primary : AppColors.border,
+                    color: _selectedEtapa == null
+                        ? AppColors.primary
+                        : AppColors.border,
                   ),
                 ),
               ),
@@ -187,11 +194,14 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                   selected: isSelected,
                   onSelected: (_) => setState(() {
                     _selectedEtapa = etapa;
-                    _selectedManzana = null; // Reinicia manzana al alternar etapa
+                    _selectedManzana =
+                        null; // Reinicia manzana al alternar etapa
                   }),
                   selectedColor: AppColors.primary,
                   labelStyle: AppTypography.smallBold.copyWith(
-                    color: isSelected ? AppColors.onPrimary : AppColors.textSecondary,
+                    color: isSelected
+                        ? AppColors.onPrimary
+                        : AppColors.textSecondary,
                   ),
                   backgroundColor: AppColors.surface,
                   shape: RoundedRectangleBorder(
@@ -217,7 +227,9 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
       // Escala con la fuente de sistema (clamp 1.0–1.3) para no recortar chips.
       height: 32 * context.scaleForText,
       child: FadingHorizontalScroll(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.screenPadding,
+        ),
         child: Row(
           children: [
             Padding(
@@ -228,13 +240,17 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                 onSelected: (_) => setState(() => _selectedManzana = null),
                 selectedColor: AppColors.accentTeal,
                 labelStyle: AppTypography.smallBold.copyWith(
-                  color: _selectedManzana == null ? AppColors.onPrimary : AppColors.textSecondary,
+                  color: _selectedManzana == null
+                      ? AppColors.onPrimary
+                      : AppColors.textSecondary,
                 ),
                 backgroundColor: AppColors.surface,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
                   side: BorderSide(
-                    color: _selectedManzana == null ? AppColors.accentTeal : AppColors.border,
+                    color: _selectedManzana == null
+                        ? AppColors.accentTeal
+                        : AppColors.border,
                   ),
                 ),
               ),
@@ -249,13 +265,17 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                   onSelected: (_) => setState(() => _selectedManzana = manzana),
                   selectedColor: AppColors.accentTeal,
                   labelStyle: AppTypography.smallBold.copyWith(
-                    color: isSelected ? AppColors.onPrimary : AppColors.textSecondary,
+                    color: isSelected
+                        ? AppColors.onPrimary
+                        : AppColors.textSecondary,
                   ),
                   backgroundColor: AppColors.surface,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
                     side: BorderSide(
-                      color: isSelected ? AppColors.accentTeal : AppColors.border,
+                      color: isSelected
+                          ? AppColors.accentTeal
+                          : AppColors.border,
                     ),
                   ),
                 ),
@@ -288,9 +308,7 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
         backgroundColor: AppColors.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
-          side: BorderSide(
-            color: isSelected ? activeColor : AppColors.border,
-          ),
+          side: BorderSide(color: isSelected ? activeColor : AppColors.border),
         ),
       ),
     );
@@ -324,7 +342,8 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
 
                   if (state.error != null) {
                     return RefreshIndicator(
-                      onRefresh: () => context.read<CarteraCubit>().loadCobros(),
+                      onRefresh: () =>
+                          context.read<CarteraCubit>().loadCobros(),
                       child: CustomScrollView(
                         slivers: [
                           SliverFillRemaining(
@@ -344,14 +363,17 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                     if (_selectedEtapa != null && c.etapa != _selectedEtapa) {
                       return false;
                     }
-                    if (_selectedManzana != null && c.manzana != _selectedManzana) {
+                    if (_selectedManzana != null &&
+                        c.manzana != _selectedManzana) {
                       return false;
                     }
                     return true;
                   }).toList();
 
                   // 2. Resumen dinámico y contadores dependientes del sector activo
-                  final dynamicResumen = CarteraResumen.fromCobros(sectorCobros);
+                  final dynamicResumen = CarteraResumen.fromCobros(
+                    sectorCobros,
+                  );
                   final totalSectorCount = sectorCobros.length;
 
                   // 3. Aplicar filtro de búsqueda (índice precomputado en el
@@ -369,8 +391,7 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                       return c.isPaid;
                     }
                     return true;
-                  }).toList()
-                    ..sort(CobroItem.comparePorVisitaYCobro);
+                  }).toList()..sort(CobroItem.comparePorVisitaYCobro);
 
                   if (isResidente) {
                     return _ResidenteCarteraView(
@@ -382,7 +403,8 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                       searchQuery: _searchQuery,
                       selectedStatusFilter: _selectedStatusFilter,
                       onSearchChanged: _onSearchChanged,
-                      onStatusFilterChanged: (key) => setState(() => _selectedStatusFilter = key),
+                      onStatusFilterChanged: (key) =>
+                          setState(() => _selectedStatusFilter = key),
                       buildFilterChip: _buildFilterChip,
                       buildGroupedList: _buildGroupedList,
                     );
@@ -396,7 +418,8 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                       searchQuery: _searchQuery,
                       selectedStatusFilter: _selectedStatusFilter,
                       onSearchChanged: _onSearchChanged,
-                      onStatusFilterChanged: (key) => setState(() => _selectedStatusFilter = key),
+                      onStatusFilterChanged: (key) =>
+                          setState(() => _selectedStatusFilter = key),
                       buildFilterChip: _buildFilterChip,
                       buildGroupedList: _buildGroupedList,
                       etapaChips: _buildEtapaChips(state.cobros),
@@ -413,7 +436,8 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                     searchQuery: _searchQuery,
                     selectedStatusFilter: _selectedStatusFilter,
                     onSearchChanged: _onSearchChanged,
-                    onStatusFilterChanged: (key) => setState(() => _selectedStatusFilter = key),
+                    onStatusFilterChanged: (key) =>
+                        setState(() => _selectedStatusFilter = key),
                     buildFilterChip: _buildFilterChip,
                     buildGroupedList: _buildGroupedList,
                     etapaChips: _buildEtapaChips(state.cobros),
@@ -428,7 +452,12 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
     );
   }
 
-  List<Widget> _buildGroupedList(BuildContext context, List<CobroItem> filteredCobros, bool canRegisterPago, {required CarteraState state}) {
+  List<Widget> _buildGroupedList(
+    BuildContext context,
+    List<CobroItem> filteredCobros,
+    bool canRegisterPago, {
+    required CarteraState state,
+  }) {
     final user = context.read<AuthCubit>().state.usuario;
     final userName = (user?['nombre'] as String?) ?? 'Residente';
 
@@ -451,21 +480,22 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
         ),
       ),
       SliverPadding(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.screenPadding,
+        ),
         sliver: Builder(
           builder: (context) {
             final isWide = context.isWideScreen;
 
             Widget buildCobroItem(int index) {
               final cobro = filteredCobros[index];
-              final bool hasAnyActiveRequest = _solicitudesActivas.isNotEmpty;
               final activeForThisCobro = _solicitudesActivas
                   .where((s) => s.cobroId == cobro.id)
                   .firstOrNull;
               final String? solicitudEstado = activeForThisCobro != null
                   ? (activeForThisCobro.estado == SolicitudEstado.enCamino
-                      ? 'EN_CAMINO'
-                      : 'EN_ESPERA')
+                        ? 'EN_CAMINO'
+                        : 'EN_ESPERA')
                   : null;
 
               return CobroCard(
@@ -475,9 +505,15 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                   if (cobro.isPaid) {
                     DateTime fecha = DateTime.now();
                     if (cobro.fechaPago.isNotEmpty) {
-                      fecha = DateTime.tryParse(cobro.fechaPago)?.toLocal() ?? DateTime.now();
+                      fecha =
+                          DateTime.tryParse(cobro.fechaPago)?.toLocal() ??
+                          DateTime.now();
                     } else if (cobro.fechaVencimiento.isNotEmpty) {
-                      fecha = DateTime.tryParse(cobro.fechaVencimiento)?.toLocal() ?? DateTime.now();
+                      fecha =
+                          DateTime.tryParse(
+                            cobro.fechaVencimiento,
+                          )?.toLocal() ??
+                          DateTime.now();
                     }
                     final ticketNum = cobro.nroRecibo.isNotEmpty
                         ? cobro.nroRecibo
@@ -487,15 +523,23 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                       TicketData(
                         numero: ticketNum,
                         fecha: fecha,
-                        residente: cobro.nombre.isNotEmpty && cobro.nombre != 'Residente'
+                        residente:
+                            cobro.nombre.isNotEmpty &&
+                                cobro.nombre != 'Residente'
                             ? cobro.nombre
                             : userName,
                         casa: '${cobro.casa} · ${cobro.manzana}',
-                        monto: (cobro.monto > 0 ? cobro.monto : cobro.montoPagado).round(),
-                        metodo: cobro.metodoPago.isNotEmpty ? cobro.metodoPago : 'Efectivo',
+                        monto:
+                            (cobro.monto > 0 ? cobro.monto : cobro.montoPagado)
+                                .round(),
+                        metodo: cobro.metodoPago.isNotEmpty
+                            ? cobro.metodoPago
+                            : 'Efectivo',
                         estado: 'PAGADO',
                         concepto: cobro.concepto,
-                        cobrador: cobro.cobradorNombre.isNotEmpty ? cobro.cobradorNombre : 'Administración',
+                        cobrador: cobro.cobradorNombre.isNotEmpty
+                            ? cobro.cobradorNombre
+                            : 'Administración',
                         etapa: cobro.etapa,
                         manzana: cobro.manzana,
                         cobroId: cobro.id,
@@ -520,47 +564,65 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                     }
                   } else if (canRegisterPago) {
                     final cuotasDelResidente = state.cobros
-                        .where((c) => c.residenteId == cobro.residenteId && !c.isPaid)
-                        .map((c) => {
-                          'id': c.id,
-                          'periodo': c.concepto,
-                          'tituloCuota': c.tituloCuota,
-                          'concepto': c.concepto,
-                          'fechaVencimiento': c.fechaVencimiento,
-                          'monto': c.saldo > 0 ? c.saldo : c.monto,
-                          'estado': c.estado,
-                        })
+                        .where(
+                          (c) =>
+                              c.residenteId == cobro.residenteId && !c.isPaid,
+                        )
+                        .map(
+                          (c) => {
+                            'id': c.id,
+                            'periodo': c.concepto,
+                            'tituloCuota': c.tituloCuota,
+                            'concepto': c.concepto,
+                            'fechaVencimiento': c.fechaVencimiento,
+                            'monto': c.saldo > 0 ? c.saldo : c.monto,
+                            'estado': c.estado,
+                          },
+                        )
                         .toList();
 
                     RegistrarPagoBottomSheet.show(
                       context,
                       cobro: cobro,
-                      cuotas: cuotasDelResidente.isNotEmpty ? cuotasDelResidente : null,
+                      cuotas: cuotasDelResidente.isNotEmpty
+                          ? cuotasDelResidente
+                          : null,
                       initialQuickMode: true,
-                      onSuccess: () => context.read<CarteraCubit>().loadCobros(),
+                      onSuccess: () =>
+                          context.read<CarteraCubit>().loadCobros(),
                     );
                   }
                 },
-                onSolicitarCobro: !canRegisterPago && !cobro.isPaid && !hasAnyActiveRequest
+                onSolicitarCobro:
+                    !canRegisterPago &&
+                        !cobro.isPaid &&
+                        activeForThisCobro == null
                     ? () async {
                         try {
                           final repo = SolicitudesRepository();
-                          final resId = (user?['residenteId'] as String?) ?? (user?['id'] as String?) ?? '';
+                          final resId =
+                              (user?['residenteId'] as String?) ??
+                              (user?['id'] as String?) ??
+                              '';
                           await repo.crearSolicitud(
                             cobroId: cobro.id,
                             tipo: 'Solicitud de cobro',
-                            descripcion: 'El residente solicita cobro presencial en domicilio para ${cobro.tituloCuota}',
+                            descripcion:
+                                'El residente solicita cobro presencial en domicilio para ${cobro.tituloCuota}',
                             residenteId: resId,
                           );
-                          LocalCacheRepository.instance.invalidate('dashboard:residente');
-                          LocalCacheRepository.instance.invalidate('dashboard:cobrador');
-                          LocalCacheRepository.instance.invalidate('dashboard:administrador');
+                          LocalCacheRepository.instance.invalidate(
+                            'dashboard:residente',
+                          );
+                          LocalCacheRepository.instance.invalidate(
+                            'dashboard:cobrador',
+                          );
+                          LocalCacheRepository.instance.invalidate(
+                            'dashboard:administrador',
+                          );
                           await _loadSolicitudesActivas();
                           if (context.mounted) {
-                            TopToast.showSuccess(
-                              context,
-                              'Solicitud enviada',
-                            );
+                            TopToast.showSuccess(context, 'Solicitud enviada');
                           }
                         } catch (e) {
                           if (context.mounted) {
@@ -576,24 +638,33 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
                 onRegistrarPago: canRegisterPago && !cobro.isPaid
                     ? () {
                         final cuotasDelResidente = state.cobros
-                            .where((c) => c.residenteId == cobro.residenteId && !c.isPaid)
-                            .map((c) => {
-                              'id': c.id,
-                              'periodo': c.concepto,
-                              'tituloCuota': c.tituloCuota,
-                              'concepto': c.concepto,
-                              'fechaVencimiento': c.fechaVencimiento,
-                              'monto': c.saldo > 0 ? c.saldo : c.monto,
-                              'estado': c.estado,
-                            })
+                            .where(
+                              (c) =>
+                                  c.residenteId == cobro.residenteId &&
+                                  !c.isPaid,
+                            )
+                            .map(
+                              (c) => {
+                                'id': c.id,
+                                'periodo': c.concepto,
+                                'tituloCuota': c.tituloCuota,
+                                'concepto': c.concepto,
+                                'fechaVencimiento': c.fechaVencimiento,
+                                'monto': c.saldo > 0 ? c.saldo : c.monto,
+                                'estado': c.estado,
+                              },
+                            )
                             .toList();
 
                         RegistrarPagoBottomSheet.show(
                           context,
                           cobro: cobro,
-                          cuotas: cuotasDelResidente.isNotEmpty ? cuotasDelResidente : null,
+                          cuotas: cuotasDelResidente.isNotEmpty
+                              ? cuotasDelResidente
+                              : null,
                           initialQuickMode: true,
-                          onSuccess: () => context.read<CarteraCubit>().loadCobros(),
+                          onSuccess: () =>
+                              context.read<CarteraCubit>().loadCobros(),
                         );
                       }
                     : null,
@@ -619,15 +690,12 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent> with Lifec
             }
 
             return SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                    child: buildCobroItem(index),
-                  );
-                },
-                childCount: filteredCobros.length,
-              ),
+              delegate: SliverChildBuilderDelegate((context, index) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                  child: buildCobroItem(index),
+                );
+              }, childCount: filteredCobros.length),
             );
           },
         ),
@@ -647,13 +715,15 @@ class _ResidenteCarteraView extends StatelessWidget {
   final String selectedStatusFilter;
   final ValueChanged<String> onSearchChanged;
   final ValueChanged<String> onStatusFilterChanged;
-  final Widget Function(String key, String label, Color activeColor) buildFilterChip;
+  final Widget Function(String key, String label, Color activeColor)
+  buildFilterChip;
   final List<Widget> Function(
     BuildContext context,
     List<CobroItem> filteredCobros,
     bool canRegisterPago, {
     required CarteraState state,
-  }) buildGroupedList;
+  })
+  buildGroupedList;
 
   const _ResidenteCarteraView({
     required this.state,
@@ -700,13 +770,15 @@ class _CobradorCarteraView extends StatelessWidget {
   final String selectedStatusFilter;
   final ValueChanged<String> onSearchChanged;
   final ValueChanged<String> onStatusFilterChanged;
-  final Widget Function(String key, String label, Color activeColor) buildFilterChip;
+  final Widget Function(String key, String label, Color activeColor)
+  buildFilterChip;
   final List<Widget> Function(
     BuildContext context,
     List<CobroItem> filteredCobros,
     bool canRegisterPago, {
     required CarteraState state,
-  }) buildGroupedList;
+  })
+  buildGroupedList;
   final Widget? etapaChips;
   final Widget? manzanaChips;
 
@@ -759,13 +831,15 @@ class _AdminCarteraView extends StatelessWidget {
   final String selectedStatusFilter;
   final ValueChanged<String> onSearchChanged;
   final ValueChanged<String> onStatusFilterChanged;
-  final Widget Function(String key, String label, Color activeColor) buildFilterChip;
+  final Widget Function(String key, String label, Color activeColor)
+  buildFilterChip;
   final List<Widget> Function(
     BuildContext context,
     List<CobroItem> filteredCobros,
     bool canRegisterPago, {
     required CarteraState state,
-  }) buildGroupedList;
+  })
+  buildGroupedList;
   final Widget? etapaChips;
   final Widget? manzanaChips;
 
@@ -818,7 +892,8 @@ class _CarteraSharedLayout extends StatelessWidget {
   final String selectedStatusFilter;
   final ValueChanged<String> onSearchChanged;
   final ValueChanged<String> onStatusFilterChanged;
-  final Widget Function(String key, String label, Color activeColor) buildFilterChip;
+  final Widget Function(String key, String label, Color activeColor)
+  buildFilterChip;
   final String searchHint;
   final bool canRegisterPago;
 
@@ -829,7 +904,8 @@ class _CarteraSharedLayout extends StatelessWidget {
     List<CobroItem> filteredCobros,
     bool canRegisterPago, {
     required CarteraState state,
-  }) buildGroupedList;
+  })
+  buildGroupedList;
 
   /// Chips de filtro por etapa; null en otros roles.
   final Widget? etapaChips;
@@ -864,17 +940,21 @@ class _CarteraSharedLayout extends StatelessWidget {
           // Resumen Dinámico del Sector Seleccionado
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.screenPadding,
+              ),
               child: CarteraResumenHeader(resumen: dynamicResumen),
             ),
           ),
-          
+
           const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
-          
+
           // Fila Unificada: Buscador + Selector de Vista (Lista / Calendario)
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.screenPadding,
+              ),
               child: Row(
                 children: [
                   Expanded(
@@ -899,9 +979,13 @@ class _CarteraSharedLayout extends StatelessWidget {
                             : null,
                         filled: true,
                         fillColor: AppColors.searchField,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 12,
+                        ),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
+                          borderRadius: BorderRadius.circular(
+                            AppSpacing.buttonRadius,
+                          ),
                           borderSide: BorderSide.none,
                         ),
                       ),
@@ -911,12 +995,18 @@ class _CarteraSharedLayout extends StatelessWidget {
                   Container(
                     decoration: BoxDecoration(
                       color: AppColors.searchField,
-                      borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
+                      borderRadius: BorderRadius.circular(
+                        AppSpacing.buttonRadius,
+                      ),
                     ),
                     child: IconButton(
-                      tooltip: state.showCalendar ? 'Ver Lista' : 'Ver Calendario',
+                      tooltip: state.showCalendar
+                          ? 'Ver Lista'
+                          : 'Ver Calendario',
                       icon: Icon(
-                        state.showCalendar ? Icons.list_rounded : Icons.calendar_month_rounded,
+                        state.showCalendar
+                            ? Icons.list_rounded
+                            : Icons.calendar_month_rounded,
                         color: AppColors.primary,
                         size: 22,
                       ),
@@ -955,13 +1045,31 @@ class _CarteraSharedLayout extends StatelessWidget {
               // Escala con la fuente de sistema (clamp 1.0–1.3).
               height: 32 * context.scaleForText,
               child: FadingHorizontalScroll(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.screenPadding,
+                ),
                 child: Row(
                   children: [
-                    buildFilterChip('TODOS', 'Todas ($totalSectorCount)', AppColors.primary),
-                    buildFilterChip('PENDIENTE', 'Pendientes (${dynamicResumen.cantidadPendientes})', AppColors.warning),
-                    buildFilterChip('MORA', 'Mora (${dynamicResumen.cantidadMora})', AppColors.error),
-                    buildFilterChip('PAGADO', 'Pagadas (${dynamicResumen.cantidadPagados})', AppColors.success),
+                    buildFilterChip(
+                      'TODOS',
+                      'Todas ($totalSectorCount)',
+                      AppColors.primary,
+                    ),
+                    buildFilterChip(
+                      'PENDIENTE',
+                      'Pendientes (${dynamicResumen.cantidadPendientes})',
+                      AppColors.warning,
+                    ),
+                    buildFilterChip(
+                      'MORA',
+                      'Mora (${dynamicResumen.cantidadMora})',
+                      AppColors.error,
+                    ),
+                    buildFilterChip(
+                      'PAGADO',
+                      'Pagadas (${dynamicResumen.cantidadPagados})',
+                      AppColors.success,
+                    ),
                   ],
                 ),
               ),
@@ -972,13 +1080,18 @@ class _CarteraSharedLayout extends StatelessWidget {
           if (state.showCalendar)
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.screenPadding,
+                ),
                 child: CalendarView(
                   cobros: state.cobros,
                   onDaySelected: (date, dayCobros) {
                     if (dayCobros.isNotEmpty) {
                       final primerCobro = dayCobros.first;
-                      final fechaStr = DateFormat('d MMMM yyyy', 'es_CO').format(date);
+                      final fechaStr = DateFormat(
+                        'd MMMM yyyy',
+                        'es_CO',
+                      ).format(date);
                       showModalBottomSheet(
                         context: context,
                         backgroundColor: AppColors.card,
@@ -988,7 +1101,9 @@ class _CarteraSharedLayout extends StatelessWidget {
                           ),
                         ),
                         builder: (_) => Padding(
-                          padding: const EdgeInsets.all(AppSpacing.screenPadding),
+                          padding: const EdgeInsets.all(
+                            AppSpacing.screenPadding,
+                          ),
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1014,23 +1129,37 @@ class _CarteraSharedLayout extends StatelessWidget {
                                     onPressed: () {
                                       Navigator.of(context).pop();
                                       final cuotasDelResidente = state.cobros
-                                          .where((c) => c.residenteId == primerCobro.residenteId && !c.isPaid)
-                                          .map((c) => {
-                                            'id': c.id,
-                                            'periodo': c.concepto,
-                                            'tituloCuota': c.tituloCuota,
-                                            'concepto': c.concepto,
-                                            'fechaVencimiento': c.fechaVencimiento,
-                                            'monto': c.saldo > 0 ? c.saldo : c.monto,
-                                            'estado': c.estado,
-                                          })
+                                          .where(
+                                            (c) =>
+                                                c.residenteId ==
+                                                    primerCobro.residenteId &&
+                                                !c.isPaid,
+                                          )
+                                          .map(
+                                            (c) => {
+                                              'id': c.id,
+                                              'periodo': c.concepto,
+                                              'tituloCuota': c.tituloCuota,
+                                              'concepto': c.concepto,
+                                              'fechaVencimiento':
+                                                  c.fechaVencimiento,
+                                              'monto': c.saldo > 0
+                                                  ? c.saldo
+                                                  : c.monto,
+                                              'estado': c.estado,
+                                            },
+                                          )
                                           .toList();
                                       RegistrarPagoBottomSheet.show(
                                         context,
                                         cobro: primerCobro,
-                                        cuotas: cuotasDelResidente.isNotEmpty ? cuotasDelResidente : null,
+                                        cuotas: cuotasDelResidente.isNotEmpty
+                                            ? cuotasDelResidente
+                                            : null,
                                         initialQuickMode: true,
-                                        onSuccess: () => context.read<CarteraCubit>().loadCobros(),
+                                        onSuccess: () => context
+                                            .read<CarteraCubit>()
+                                            .loadCobros(),
                                       );
                                     },
                                     icon: const Icon(Icons.payment_rounded),
@@ -1067,9 +1196,14 @@ class _CarteraSharedLayout extends StatelessWidget {
                 ),
               )
             else
-              ...buildGroupedList(context, displayCobros, canRegisterPago, state: state),
+              ...buildGroupedList(
+                context,
+                displayCobros,
+                canRegisterPago,
+                state: state,
+              ),
           ],
-                
+
           // Espaciado final
           const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xl)),
         ],
@@ -1088,7 +1222,11 @@ class _CarteraSkeleton extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SkeletonBox(width: double.infinity, height: 100, borderRadius: 16),
+          const SkeletonBox(
+            width: double.infinity,
+            height: 100,
+            borderRadius: 16,
+          ),
           const SizedBox(height: AppSpacing.lg),
           Row(
             children: List.generate(
