@@ -105,6 +105,7 @@ class CarteraRepository {
     required int montoCentavos,
     String? cobroId,
     String? cobradorId,
+    String? solicitudId,
     String? tenantId,
     bool isCobrador = false,
   }) async {
@@ -121,6 +122,7 @@ class CarteraRepository {
         montoCentavos: montoCentavos,
         cobroId: cobroId,
         cobradorId: cobradorId,
+        solicitudId: solicitudId,
         tenantId: tenantId,
       );
     }
@@ -134,6 +136,7 @@ class CarteraRepository {
         'fechaPago': DateTime.now().toIso8601String(),
         if (cobroId != null && cobroId.isNotEmpty) 'cobroId': cobroId,
         if (cobradorId != null && cobradorId.isNotEmpty) 'cobradorId': cobradorId,
+        if (solicitudId != null && solicitudId.isNotEmpty) 'solicitudId': solicitudId,
       });
 
       _invalidarCaches();
@@ -164,6 +167,7 @@ class CarteraRepository {
     required int montoCentavos,
     String? cobroId,
     String? cobradorId,
+    String? solicitudId,
     String? tenantId,
     bool isFallback = false,
   }) async {
@@ -175,6 +179,7 @@ class CarteraRepository {
           clientPaymentId: clientPaymentId,
           tenantId: tenantId ?? 'default',
           cobroId: drift.Value(cobroId),
+          solicitudId: drift.Value(solicitudId),
           monto: montoCentavos,
           fechaPago: DateTime.now().toIso8601String(),
           cobradorId: cobradorId ?? '',

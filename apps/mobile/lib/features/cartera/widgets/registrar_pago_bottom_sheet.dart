@@ -23,6 +23,7 @@ class RegistrarPagoBottomSheet extends StatefulWidget {
   final CobroItem cobro;
   final List<dynamic>? cuotas;
   final bool initialQuickMode;
+  final String? solicitudId;
   final VoidCallback onSuccess;
 
   const RegistrarPagoBottomSheet({
@@ -30,6 +31,7 @@ class RegistrarPagoBottomSheet extends StatefulWidget {
     required this.cobro,
     this.cuotas,
     this.initialQuickMode = true,
+    this.solicitudId,
     required this.onSuccess,
   });
 
@@ -38,6 +40,7 @@ class RegistrarPagoBottomSheet extends StatefulWidget {
     required CobroItem cobro,
     List<dynamic>? cuotas,
     bool initialQuickMode = true,
+    String? solicitudId,
     required VoidCallback onSuccess,
   }) {
     return showModalBottomSheet(
@@ -52,6 +55,7 @@ class RegistrarPagoBottomSheet extends StatefulWidget {
         cobro: cobro,
         cuotas: cuotas,
         initialQuickMode: initialQuickMode,
+        solicitudId: solicitudId,
         onSuccess: onSuccess,
       ),
     );
@@ -250,6 +254,7 @@ class _RegistrarPagoBottomSheetState extends State<RegistrarPagoBottomSheet> {
         montoCentavos: AppCurrency.pesosToCents(monto),
         cobroId: widget.cobro.id,
         cobradorId: cobradorId,
+        solicitudId: widget.solicitudId,
         tenantId: tenantId,
         isCobrador: isCobrador,
       );

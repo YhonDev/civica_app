@@ -584,6 +584,7 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent>
                     RegistrarPagoBottomSheet.show(
                       context,
                       cobro: cobro,
+                      solicitudId: activeForThisCobro?.id,
                       cuotas: cuotasDelResidente.isNotEmpty
                           ? cuotasDelResidente
                           : null,
@@ -659,6 +660,7 @@ class _CarteraScreenContentState extends State<_CarteraScreenContent>
                         RegistrarPagoBottomSheet.show(
                           context,
                           cobro: cobro,
+                          solicitudId: activeForThisCobro?.id,
                           cuotas: cuotasDelResidente.isNotEmpty
                               ? cuotasDelResidente
                               : null,
