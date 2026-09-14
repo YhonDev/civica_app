@@ -15,7 +15,9 @@ import {
   ForbiddenException,
   HttpException,
   InternalServerErrorException,
+  Optional,
 } from '@nestjs/common';
+import { DataSource } from 'typeorm';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { SolicitudRepository } from '../persistence/solicitud.repository';
 import { CobroRepository } from '../persistence/cobro.repository';
@@ -49,6 +51,8 @@ export class SolicitudesController {
     private readonly ticketRepo: TicketRepository,
     private readonly corregirPagoUC: CorregirPagoUseCase,
     private readonly eliminarPagoUC: EliminarPagoUseCase,
+    @Optional()
+    private readonly dataSource?: DataSource,
   ) {}
 
   @Post()
@@ -181,8 +185,27 @@ export class SolicitudesController {
   @Get('pendientes')
   @UseGuards(RolesGuard)
   @Roles(RolUsuario.ADMIN, RolUsuario.COBRADOR)
-  async listarPendientes(@CurrentTenant() tenantId: string) {
-    return this.solicitudRepo.findPendingByTenant(tenantId);
+  async listarPendientes(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user?: Usuario,
+  ) {
+    const solicitudes = await this.solicitudRepo.findPendingByTenant(tenantId);
+    if (user?.rol === RolUsuario.COBRADOR && this.dataSource) {
+      const asignaciones = await this.dataSource.query(
+        `SELECT DISTINCT t.residente_id
+         FROM asignaciones_etapa ae
+         JOIN manzanas m ON m.etapa_id = ae.etapa_id
+         JOIN casas c ON c.manzana_id = m.id
+         JOIN tenencias t ON t.casa_id = c.id
+         WHERE ae.usuario_id = $1 AND t.activo = true`,
+        [user.id],
+      );
+      const permitidos = new Set(asignaciones.map((a: any) => a.residente_id));
+      return solicitudes.filter(
+        (s) => s.residenteId && permitidos.has(s.residenteId),
+      );
+    }
+    return solicitudes;
   }
 
   @Get('admin')
@@ -225,10 +248,14 @@ export class SolicitudesController {
   async marcarEnCamino(
     @Param('id') id: string,
     @CurrentTenant() tenantId: string,
+    @CurrentUser() user?: Usuario,
   ) {
     const solicitud = await this.solicitudRepo.findById(id, tenantId);
     if (!solicitud) {
       throw new NotFoundException(`Solicitud ${id} no encontrada`);
+    }
+    if (user?.rol === RolUsuario.COBRADOR) {
+      await this.validarEtapaAsignadaCobrador(user.id, solicitud, tenantId);
     }
     solicitud.estado = SolicitudEstado.EN_CAMINO;
     return this.solicitudRepo.save(solicitud);
@@ -254,10 +281,15 @@ export class SolicitudesController {
     @Param('id') id: string,
     @Body() dto: { estado: string; respuesta?: string },
     @CurrentTenant() tenantId: string,
+    @CurrentUser() user?: Usuario,
   ) {
     const solicitud = await this.solicitudRepo.findById(id, tenantId);
     if (!solicitud) {
       throw new NotFoundException(`Solicitud ${id} no encontrada`);
+    }
+
+    if (user?.rol === RolUsuario.COBRADOR) {
+      await this.validarEtapaAsignadaCobrador(user.id, solicitud, tenantId);
     }
 
     const estadosValidos = [
@@ -280,6 +312,51 @@ export class SolicitudesController {
     solicitud.fechaRespuesta = new Date();
 
     return this.solicitudRepo.save(solicitud);
+  }
+
+  private async validarEtapaAsignadaCobrador(
+    cobradorId: string,
+    solicitud: Solicitud,
+    tenantId: string,
+  ): Promise<void> {
+    if (!this.dataSource) return;
+
+    let residenteId: string | null | undefined = solicitud.residenteId;
+    if (!residenteId && solicitud.cobroId) {
+      const cobro = await this.cobroRepo.findById(solicitud.cobroId, tenantId);
+      residenteId = cobro?.residenteId;
+    }
+
+    if (!residenteId) {
+      const usuarioRes = await this.dataSource.query(
+        `SELECT residente_id FROM usuarios WHERE id = $1 AND tenant_id = $2`,
+        [solicitud.usuarioId, tenantId],
+      );
+      residenteId = usuarioRes?.[0]?.residente_id;
+    }
+
+    if (!residenteId) {
+      throw new ForbiddenException(
+        'No tienes autorización para gestionar solicitudes en la etapa de este residente.',
+      );
+    }
+
+    const asignaciones = await this.dataSource.query(
+      `SELECT ae.etapa_id
+       FROM asignaciones_etapa ae
+       JOIN casas c ON c.manzana_id IN (SELECT m.id FROM manzanas m WHERE m.etapa_id = ae.etapa_id)
+       JOIN tenencias t ON t.casa_id = c.id
+       WHERE ae.usuario_id = $1 
+         AND t.residente_id = $2 
+         AND t.activo = true`,
+      [cobradorId, residenteId],
+    );
+
+    if (!asignaciones || asignaciones.length === 0) {
+      throw new ForbiddenException(
+        'No tienes autorización para gestionar solicitudes en la etapa de este residente.',
+      );
+    }
   }
 
   @Get(':id/detalle-resolucion')
@@ -527,6 +604,9 @@ export class SolicitudesController {
       throw new ForbiddenException(
         'No puedes cancelar la solicitud de otro residente.',
       );
+    }
+    if (user.rol === RolUsuario.COBRADOR) {
+      await this.validarEtapaAsignadaCobrador(user.id, solicitud, tenantId);
     }
     await this.solicitudRepo.delete(id);
     return { ok: true, message: 'Solicitud cancelada exitosamente', id };
