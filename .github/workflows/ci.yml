@@ -6,6 +6,14 @@ on:
   pull_request:
     branches: [master, main, dev]
 
+permissions:
+  contents: read
+  security-events: write
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   # ── Backend: build + unit + e2e + smoke ───────────────
   backend:
@@ -55,6 +63,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Lint
+        run: npm run lint
+
       - name: TypeScript compile check
         run: npx tsc --noEmit
 
@@ -70,7 +81,7 @@ jobs:
           for f in database/migrations/*.sql; do
             echo "-- Aplicando $f"
             psql -h 127.0.0.1 -p 54322 -U postgres -d postgres \
-              -v ON_ERROR_STOP=1 -f "$f" || echo "::warning::migración $f falló"
+              -v ON_ERROR_STOP=1 -f "$f"
           done
         env:
           PGPASSWORD: postgres
@@ -160,6 +171,9 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Verify formatting
+        run: dart format --output=none --set-exit-if-changed lib test
+
       # Filosofía de tokens: el dinero, la tipografía, el color y los radios
       # se cambian en UN archivo (AppCurrency / AppTypography / AppColors /
       # AppSpacing). Falla si reaparecen literales fuera de core.
@@ -177,3 +191,55 @@ jobs:
 
       - name: Run widget & unit tests
         run: flutter test
+
+  dependency-and-secret-audit:
+    name: Dependency and secret audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: apps/backend/package-lock.json
+
+      - name: Generate dependency audit report
+        working-directory: apps/backend
+        run: |
+          npm ci --ignore-scripts
+          npm audit --omit=dev --json > ../../npm-audit.json || true
+
+      - name: Block critical dependency vulnerabilities
+        run: |
+          node -e "const r=require('./npm-audit.json'); const n=r.metadata?.vulnerabilities?.critical ?? 0; if (n > 0) { console.error('Critical vulnerabilities:', n); process.exit(1); }"
+
+      - name: Upload dependency audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-audit
+          path: npm-audit.json
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Scan repository for secrets
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  codeql:
+    name: CodeQL
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+      - uses: github/codeql-action/autobuild@v3
+      - uses: github/codeql-action/analyze@v3
