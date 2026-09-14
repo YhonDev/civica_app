@@ -68,7 +68,7 @@ describe('Matriz de Autorización — Verificación Estática de Controladores',
 
     for (const ControllerClass of CONTROLLERS) {
       const controllerName = ControllerClass.name;
-      const prototype = ControllerClass.prototype;
+      const prototype = ControllerClass.prototype as Record<string, any>;
       const methods = Object.getOwnPropertyNames(prototype).filter(
         (prop) =>
           prop !== 'constructor' && typeof prototype[prop] === 'function',
