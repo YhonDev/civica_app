@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/auth/user_role.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
@@ -67,16 +68,6 @@ class UserProfileHeader extends StatelessWidget {
   }
 
   String _rolName(String rol) {
-    switch (rol.toUpperCase()) {
-      case 'ADMIN':
-        return 'Administrador';
-      case 'COBRADOR':
-        return 'Cobrador';
-      case 'PROPIETARIO':
-      case 'RESIDENTE':
-        return 'Residente';
-      default:
-        return rol;
-    }
+    return UserRole.fromString(rol).label;
   }
 }

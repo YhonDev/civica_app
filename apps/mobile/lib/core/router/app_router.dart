@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../auth/user_role.dart';
 import '../../features/auth/login_screen.dart';
 import '../../features/auth/auth_cubit.dart';
+import '../../features/auth/unauthorized_role_screen.dart';
 import '../../features/shell/scaffold_with_bottom_nav.dart';
 import '../../features/dashboard/dashboard_screen.dart';
 import '../../features/dashboard_cobrador/jornada_screen.dart';
@@ -79,8 +81,16 @@ final GoRouter appRouter = GoRouter(
     // ── Shell with Bottom Navigation ───────────────────────────────────
     ShellRoute(
       builder: (context, state, child) {
-        final rol = context.watch<AuthCubit>().state.usuario?['rol'] as String?;
-        if (rol == 'COBRADOR') {
+        final rawRol = context.watch<AuthCubit>().state.usuario?['rol'] as String?;
+        final role = UserRole.fromString(rawRol);
+
+        if (!role.isAuthorized) {
+          return const Scaffold(
+            body: UnauthorizedRoleScreen(),
+          );
+        }
+
+        if (role == UserRole.cobrador) {
           return MultiBlocProvider(
             key: const ValueKey('shell_cobrador_providers'),
             providers: [
@@ -399,19 +409,27 @@ final GoRouter appRouter = GoRouter(
 );
 
 /// Returns the appropriate dashboard screen for the given role.
-Widget _dashboardForRol(String? rol) {
-  switch (rol) {
-    case 'COBRADOR':
+Widget _dashboardForRol(String? rawRol) {
+  final role = UserRole.fromString(rawRol);
+  switch (role) {
+    case UserRole.cobrador:
       return const JornadaScreen();
-    case 'RESIDENTE':
+    case UserRole.residente:
       return const ResidenteDashboardScreen();
-    default:
+    case UserRole.admin:
       return const DashboardScreen();
+    case UserRole.superadmin:
+    case UserRole.unauthorized:
+      return const UnauthorizedRoleScreen();
   }
 }
 
 /// Returns the appropriate cartera/payment screen for the given role.
-Widget _carteraForRol(String? rol) {
+Widget _carteraForRol(String? rawRol) {
+  final role = UserRole.fromString(rawRol);
+  if (!role.isAuthorized) {
+    return const UnauthorizedRoleScreen();
+  }
   return const CarteraScreen();
 }
 

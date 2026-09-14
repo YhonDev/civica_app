@@ -3,10 +3,12 @@ import '../../core/theme/app_spacing.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../core/auth/user_role.dart';
 import '../../core/theme/app_breakpoints.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../features/auth/auth_cubit.dart';
+import '../../features/auth/unauthorized_role_screen.dart';
 import '../../shared/widgets/connectivity_banner.dart';
 
 /// Shell route widget that wraps all navigation screens with responsive navigation.
@@ -20,8 +22,11 @@ class ScaffoldWithBottomNav extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<AuthCubit, AuthState>(
       builder: (context, state) {
-        final rol = state.usuario?['rol'] as String? ?? 'ADMIN';
-        final tabs = _tabsForRol(rol);
+        final role = UserRole.fromString(state.usuario?['rol'] as String?);
+        if (!role.isAuthorized) {
+          return const UnauthorizedRoleScreen();
+        }
+        final tabs = _tabsForRol(role);
         final currentLocation = GoRouterState.of(context).matchedLocation;
 
         // Find which tab index matches current location
@@ -113,9 +118,9 @@ class ScaffoldWithBottomNav extends StatelessWidget {
     }
   }
 
-  List<NavTabItem> _tabsForRol(String rol) {
-    switch (rol) {
-      case 'COBRADOR':
+  List<NavTabItem> _tabsForRol(UserRole role) {
+    switch (role) {
+      case UserRole.cobrador:
         return [
           NavTabItem(
             label: 'Inicio',
@@ -148,8 +153,7 @@ class ScaffoldWithBottomNav extends StatelessWidget {
             route: '/configuracion',
           ),
         ];
-      case 'PROPIETARIO':
-      case 'RESIDENTE':
+      case UserRole.residente:
         return [
           NavTabItem(
             label: 'Inicio',
@@ -176,7 +180,7 @@ class ScaffoldWithBottomNav extends StatelessWidget {
             route: '/configuracion',
           ),
         ];
-      default: // ADMIN
+      case UserRole.admin:
         return [
           NavTabItem(
             label: 'Inicio',
@@ -209,6 +213,9 @@ class ScaffoldWithBottomNav extends StatelessWidget {
             route: '/configuracion',
           ),
         ];
+      case UserRole.superadmin:
+      case UserRole.unauthorized:
+        return const [];
     }
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../core/auth/user_role.dart';
 import '../../core/format/app_currency.dart';
 import '../../features/auth/auth_cubit.dart';
 import 'package:go_router/go_router.dart';
@@ -52,7 +53,7 @@ class _DashboardBody extends StatelessWidget {
     final user = context.watch<AuthCubit>().state.usuario;
     final nombre = user?['nombre'] as String? ?? 'Admin';
     final rol = user?['rol'] as String? ?? '';
-    final rolLabel = rol == 'ADMIN' ? 'Administrador' : rol;
+    final rolLabel = UserRole.fromString(rol).label;
 
     return Scaffold(
       body: SafeArea(
