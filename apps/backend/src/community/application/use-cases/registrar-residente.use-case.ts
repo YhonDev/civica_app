@@ -1,6 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource, EntityManager } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { Residente } from '../../domain/residente.entity';
 import { ResidenteRepository } from '../../infrastructure/residente.repository';
@@ -41,17 +41,36 @@ export class RegistrarResidenteUseCase {
     private readonly casaRepository: Repository<Casa>,
     private readonly planDeCobroRepository: PlanDeCobroRepository,
     private readonly generarCobrosUC: GenerarCobrosUseCase,
+    @Optional()
+    private readonly dataSource?: DataSource,
   ) {}
 
   async execute(
     params: RegistrarResidenteParams,
   ): Promise<ResultadoRegistroResidente> {
+    if (this.dataSource && typeof this.dataSource.transaction === 'function') {
+      return this.dataSource.transaction(async (em) => {
+        return this.ejecutarRegistro(params, em);
+      });
+    }
+    return this.ejecutarRegistro(params);
+  }
+
+  private async ejecutarRegistro(
+    params: RegistrarResidenteParams,
+    em?: EntityManager,
+  ): Promise<ResultadoRegistroResidente> {
     let casa: Casa | null = null;
     if (params.casaId) {
-      casa = await this.casaRepository.findOne({
-        where: { id: params.casaId },
-        relations: { manzana: { etapa: { proyecto: true } } },
-      });
+      casa = await (em
+        ? em.findOne(Casa, {
+            where: { id: params.casaId },
+            relations: { manzana: { etapa: { proyecto: true } } },
+          })
+        : this.casaRepository.findOne({
+            where: { id: params.casaId },
+            relations: { manzana: { etapa: { proyecto: true } } },
+          }));
       if (
         !casa ||
         casa.manzana?.etapa?.proyecto?.tenantId !== params.tenantId
@@ -68,7 +87,9 @@ export class RegistrarResidenteUseCase {
       params.modalidadPago,
     );
 
-    const saved = await this.residenteRepository.save(residente);
+    const saved = await (em
+      ? em.save(Residente, residente)
+      : this.residenteRepository.save(residente));
 
     let username: string;
     let password: string;
@@ -78,7 +99,9 @@ export class RegistrarResidenteUseCase {
       const fechaInicio = params.fechaInicio ?? new Date();
       saved.agregarTenencia(params.casaId, fechaInicio);
       saved.asignarCasa(params.casaId);
-      await this.residenteRepository.save(saved);
+      await (em
+        ? em.save(Residente, saved)
+        : this.residenteRepository.save(saved));
 
       if (casa.manzana?.etapa?.proyectoId) {
         const fechaActivacionStr = fechaInicio.toISOString().split('T')[0];
@@ -90,7 +113,9 @@ export class RegistrarResidenteUseCase {
           saved.modalidadPago,
           fechaActivacionStr,
         );
-        const planSaved = await this.planDeCobroRepository.save(plan);
+        const planSaved = await (em
+          ? em.save(PlanDeCobro, plan)
+          : this.planDeCobroRepository.save(plan));
 
         // Generar cobros inmediatamente para el mes actual
         const mes = fechaInicio.getMonth() + 1;
@@ -126,7 +151,9 @@ export class RegistrarResidenteUseCase {
     const baseUsername = username;
     let counter = 1;
     while (
-      await this.usuarioRepository.findOne({ where: { email: username } })
+      await (em
+        ? em.findOne(Usuario, { where: { email: username } })
+        : this.usuarioRepository.findOne({ where: { email: username } }))
     ) {
       counter++;
       username = `${baseUsername}_${counter}`;
@@ -144,7 +171,9 @@ export class RegistrarResidenteUseCase {
       saved.id,
     );
 
-    await this.usuarioRepository.save(usuario);
+    await (em
+      ? em.save(Usuario, usuario)
+      : this.usuarioRepository.save(usuario));
 
     return {
       residente: saved,
