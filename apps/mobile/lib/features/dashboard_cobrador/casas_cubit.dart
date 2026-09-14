@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../../core/network/api_client.dart';
 import '../../core/network/local_cache_repository.dart';
+import '../../core/network/cache_keys.dart';
 
 // ════════════════════════════════════════════════════════════
 // DATA MODELS
@@ -14,7 +15,7 @@ class CasaExplorer extends Equatable {
   final String residenteNombre;
   final String residenteTelefono;
   final String modalidad;
-  final String estado;  // AL_DIA, PENDIENTE, PARCIAL, VENCIDA
+  final String estado; // AL_DIA, PENDIENTE, PARCIAL, VENCIDA
   final int saldo;
   final String? proximaCuotaNombre;
   final int proximaCuotaMonto;
@@ -51,7 +52,8 @@ class CasaExplorer extends Equatable {
       proximaCuotaNombre: json['proximaCuotaNombre'] as String?,
       proximaCuotaMonto: json['proximaCuotaMonto'] as int? ?? 0,
       proximaCuotaId: json['proximaCuotaId'] as String?,
-      proximaCuotaFechaVencimiento: json['proximaCuotaFechaVencimiento'] as String?,
+      proximaCuotaFechaVencimiento:
+          json['proximaCuotaFechaVencimiento'] as String?,
       cuotas: (json['cuotas'] as List? ?? [])
           .map((c) => Map<String, dynamic>.from(c as Map))
           .toList(),
@@ -60,19 +62,19 @@ class CasaExplorer extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        direccion,
-        residenteId,
-        residenteNombre,
-        modalidad,
-        estado,
-        saldo,
-        proximaCuotaNombre,
-        proximaCuotaMonto,
-        proximaCuotaId,
-        proximaCuotaFechaVencimiento,
-        cuotas,
-      ];
+    id,
+    direccion,
+    residenteId,
+    residenteNombre,
+    modalidad,
+    estado,
+    saldo,
+    proximaCuotaNombre,
+    proximaCuotaMonto,
+    proximaCuotaId,
+    proximaCuotaFechaVencimiento,
+    cuotas,
+  ];
 }
 
 class RecorridoExplorer extends Equatable {
@@ -223,7 +225,8 @@ CuotaItemInfo obtenerCuotaParaRecorrido(
       if (saldo <= 0 || estado != 'VENCIDA') continue;
       final fv = cuota['fechaVencimiento'] as String? ?? '';
       final dia = fv.length >= 10 ? fv.substring(0, 10) : fv;
-      if (fechaMasAntigua.isEmpty || (dia.isNotEmpty && dia.compareTo(fechaMasAntigua) < 0)) {
+      if (fechaMasAntigua.isEmpty ||
+          (dia.isNotEmpty && dia.compareTo(fechaMasAntigua) < 0)) {
         fechaMasAntigua = dia;
         cuotaVencidaMasAntigua = cuota;
       }
@@ -231,13 +234,16 @@ CuotaItemInfo obtenerCuotaParaRecorrido(
     if (cuotaVencidaMasAntigua != null) {
       return CuotaItemInfo(
         id: cuotaVencidaMasAntigua['id'] as String?,
-        nombre: cuotaVencidaMasAntigua['tituloCuota'] as String? ??
+        nombre:
+            cuotaVencidaMasAntigua['tituloCuota'] as String? ??
             cuotaVencidaMasAntigua['concepto'] as String? ??
             casa.proximaCuotaNombre,
-        monto: (cuotaVencidaMasAntigua['saldo'] as num?)?.toInt() ??
+        monto:
+            (cuotaVencidaMasAntigua['saldo'] as num?)?.toInt() ??
             (cuotaVencidaMasAntigua['monto'] as num?)?.toInt() ??
             casa.saldo,
-        fechaVencimiento: cuotaVencidaMasAntigua['fechaVencimiento'] as String? ??
+        fechaVencimiento:
+            cuotaVencidaMasAntigua['fechaVencimiento'] as String? ??
             casa.proximaCuotaFechaVencimiento,
         estado: 'VENCIDA',
       );
@@ -252,13 +258,16 @@ CuotaItemInfo obtenerCuotaParaRecorrido(
       if (dia == fechaCorte && kEstadosCuotaPorCobrar.contains(estado)) {
         return CuotaItemInfo(
           id: cuota['id'] as String?,
-          nombre: cuota['tituloCuota'] as String? ??
+          nombre:
+              cuota['tituloCuota'] as String? ??
               cuota['concepto'] as String? ??
               casa.proximaCuotaNombre,
-          monto: (cuota['saldo'] as num?)?.toInt() ??
+          monto:
+              (cuota['saldo'] as num?)?.toInt() ??
               (cuota['monto'] as num?)?.toInt() ??
               casa.proximaCuotaMonto,
-          fechaVencimiento: cuota['fechaVencimiento'] as String? ??
+          fechaVencimiento:
+              cuota['fechaVencimiento'] as String? ??
               casa.proximaCuotaFechaVencimiento,
           estado: estado,
         );
@@ -321,7 +330,11 @@ class ManzanaExplorer extends Equatable {
   final String nombre;
   final List<CasaExplorer> casas;
 
-  const ManzanaExplorer({required this.id, required this.nombre, required this.casas});
+  const ManzanaExplorer({
+    required this.id,
+    required this.nombre,
+    required this.casas,
+  });
 
   factory ManzanaExplorer.fromJson(Map<String, dynamic> json) {
     return ManzanaExplorer(
@@ -342,7 +355,11 @@ class EtapaExplorer extends Equatable {
   final String nombre;
   final List<ManzanaExplorer> manzanas;
 
-  const EtapaExplorer({required this.id, required this.nombre, required this.manzanas});
+  const EtapaExplorer({
+    required this.id,
+    required this.nombre,
+    required this.manzanas,
+  });
 
   factory EtapaExplorer.fromJson(Map<String, dynamic> json) {
     return EtapaExplorer(
@@ -391,11 +408,11 @@ class ViviendasLoaded extends CasasState {
 
   @override
   List<Object?> get props => [
-        etapas,
-        solicitudes,
-        recorridos,
-        recorridoActualNumero,
-      ];
+    etapas,
+    solicitudes,
+    recorridos,
+    recorridoActualNumero,
+  ];
 }
 
 class ViviendasError extends CasasState {
@@ -413,20 +430,25 @@ class CasasCubit extends Cubit<CasasState> {
   final ApiClient _api;
 
   CasasCubit({ApiClient? api})
-      : _api = api ?? ApiClient.instance,
-        super(const ViviendasInitial());
+    : _api = api ?? ApiClient.instance,
+      super(const ViviendasInitial());
 
-  Future<void> loadViviendas({bool silent = false, bool forceFresh = true}) async {
+  Future<void> loadViviendas({
+    bool silent = false,
+    bool forceFresh = true,
+  }) async {
     if (forceFresh) {
-      LocalCacheRepository.instance.invalidate('cobrador:viviendas');
+      LocalCacheRepository.instance.invalidate(CacheKeys.cobradorViviendas);
     }
 
-    if (!silent && LocalCacheRepository.instance.getCached('cobrador:viviendas') == null) {
+    if (!silent &&
+        LocalCacheRepository.instance.getCached(CacheKeys.cobradorViviendas) ==
+            null) {
       emit(const ViviendasLoading());
     }
 
     await LocalCacheRepository.instance.executeSWR<Map<String, dynamic>>(
-      key: 'cobrador:viviendas',
+      key: CacheKeys.cobradorViviendas,
       fetcher: () async {
         final response = await _api.get('/dashboard/cobrador/viviendas');
         return response.data as Map<String, dynamic>;
@@ -435,21 +457,30 @@ class CasasCubit extends Cubit<CasasState> {
         final etapas = (data['etapas'] as List? ?? [])
             .map((e) => EtapaExplorer.fromJson(e as Map<String, dynamic>))
             .toList();
-        final solicitudes = List<Map<String, dynamic>>.from(data['solicitudes'] as List? ?? []);
+        final solicitudes = List<Map<String, dynamic>>.from(
+          data['solicitudes'] as List? ?? [],
+        );
         final recorridos = (data['recorridos'] as List? ?? [])
             .map((r) => RecorridoExplorer.fromJson(r as Map<String, dynamic>))
             .toList();
-        final recorridoActualNumero = data['recorridoActualNumero'] as int? ?? 1;
+        final recorridoActualNumero =
+            data['recorridoActualNumero'] as int? ?? 1;
 
-        emit(ViviendasLoaded(
-          etapas,
-          solicitudes: solicitudes,
-          recorridos: recorridos,
-          recorridoActualNumero: recorridoActualNumero,
-        ));
+        emit(
+          ViviendasLoaded(
+            etapas,
+            solicitudes: solicitudes,
+            recorridos: recorridos,
+            recorridoActualNumero: recorridoActualNumero,
+          ),
+        );
       },
       onError: (e) {
-        if (!silent && LocalCacheRepository.instance.getCached('cobrador:viviendas') == null) {
+        if (!silent &&
+            LocalCacheRepository.instance.getCached(
+                  CacheKeys.cobradorViviendas,
+                ) ==
+                null) {
           emit(ViviendasError('Error al cargar casas: $e'));
         }
       },
@@ -468,12 +499,14 @@ class CasasCubit extends Cubit<CasasState> {
       return s;
     }).toList();
 
-    emit(ViviendasLoaded(
-      current.etapas,
-      solicitudes: updatedSolicitudes,
-      recorridos: current.recorridos,
-      recorridoActualNumero: current.recorridoActualNumero,
-    ));
+    emit(
+      ViviendasLoaded(
+        current.etapas,
+        solicitudes: updatedSolicitudes,
+        recorridos: current.recorridos,
+        recorridoActualNumero: current.recorridoActualNumero,
+      ),
+    );
 
     if (nuevoEstado == 'EN_CAMINO') {
       _api.patch('/solicitudes/$solicitudId/en-camino').ignore();

@@ -1,9 +1,11 @@
 import 'package:drift/drift.dart' as drift;
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:uuid/uuid.dart';
 import '../../core/database/app_database.dart';
 import '../../core/network/api_client.dart';
 import '../../core/network/api_exceptions.dart';
+import '../../core/network/cache_keys.dart';
 import '../../core/network/local_cache_repository.dart';
 import '../../core/sync/connectivity_detector.dart';
 import 'models/cartera_models.dart';
@@ -14,14 +16,15 @@ class CarteraRepository {
   final String? _residenteId;
 
   CarteraRepository({ApiClient? apiClient, this._role, this._residenteId})
-      : _api = apiClient ?? ApiClient.instance;
+    : _api = apiClient ?? ApiClient.instance;
 
   /// Unique cache key scoped to user role and residente ID.
   String get cacheKey => 'cartera:cobros:${_residenteId ?? _role ?? "all"}';
 
   /// Returns the correct cuotas endpoint based on user role.
   String get _cuotasEndpoint {
-    if ((_role == 'PROPIETARIO' || _role == 'RESIDENTE') && _residenteId != null) {
+    if ((_role == 'PROPIETARIO' || _role == 'RESIDENTE') &&
+        _residenteId != null) {
       return '/cobros/residente/$_residenteId';
     }
     return '/cobros';
@@ -32,7 +35,7 @@ class CarteraRepository {
     double totalPendiente = 0;
     double totalMora = 0;
     double totalPagado = 0;
-    
+
     int cantidadPendientes = 0;
     int cantidadMora = 0;
     int cantidadPagados = 0;
@@ -84,7 +87,9 @@ class CarteraRepository {
         cuotas = const [];
       }
 
-      return cuotas.map((c) => CobroItem.fromJson(c as Map<String, dynamic>)).toList();
+      return cuotas
+          .map((c) => CobroItem.fromJson(c as Map<String, dynamic>))
+          .toList();
     } catch (e) {
       final cached = LocalCacheRepository.instance.getCached(cacheKey);
       if (cached != null && cached is List) {
@@ -129,28 +134,34 @@ class CarteraRepository {
 
     // Caso 2: Intento Online (Cobrador con conexión, o Admin/Residente siempre online)
     try {
-      final response = await _api.post('/pagos', data: {
-        'clientPaymentId': clientPaymentId,
-        'residenteId': residenteId,
-        'monto': montoCentavos,
-        'fechaPago': DateTime.now().toIso8601String(),
-        if (cobroId != null && cobroId.isNotEmpty) 'cobroId': cobroId,
-        if (cobradorId != null && cobradorId.isNotEmpty) 'cobradorId': cobradorId,
-        if (solicitudId != null && solicitudId.isNotEmpty) 'solicitudId': solicitudId,
-      });
+      final response = await _api.post(
+        '/pagos',
+        data: {
+          'clientPaymentId': clientPaymentId,
+          'residenteId': residenteId,
+          'monto': montoCentavos,
+          'fechaPago': DateTime.now().toIso8601String(),
+          if (cobroId != null && cobroId.isNotEmpty) 'cobroId': cobroId,
+          if (cobradorId != null && cobradorId.isNotEmpty)
+            'cobradorId': cobradorId,
+          if (solicitudId != null && solicitudId.isNotEmpty)
+            'solicitudId': solicitudId,
+        },
+      );
 
       _invalidarCaches();
       return response.data as Map<String, dynamic>;
     } catch (e) {
-      // Caso 3: Fallo de red en Cobrador mientras transmitía en terreno
-      // Garantía de CERO pérdida de datos: salvaguardar en SQLite local
-      if (isCobrador && !kIsWeb) {
+      // Solo los fallos transitorios de conectividad pueden pasar a la cola.
+      // Errores de auth, validación, conflicto o servidor deben llegar a la UI.
+      if (isCobrador && !kIsWeb && _isTransientNetworkError(e)) {
         return _guardarPagoEnColaLocal(
           clientPaymentId: clientPaymentId,
           residenteId: residenteId,
           montoCentavos: montoCentavos,
           cobroId: cobroId,
           cobradorId: cobradorId,
+          solicitudId: solicitudId,
           tenantId: tenantId,
           isFallback: true,
         );
@@ -159,6 +170,18 @@ class CarteraRepository {
       // Para Admin o Web, propagar el error claro de red sin tocar SQLite
       throw e is ApiException ? e : Exception('Error al registrar pago: $e');
     }
+  }
+
+  bool _isTransientNetworkError(Object error) {
+    if (error is NetworkException) return true;
+    if (error is! DioException) return false;
+    return switch (error.type) {
+      DioExceptionType.connectionTimeout ||
+      DioExceptionType.sendTimeout ||
+      DioExceptionType.receiveTimeout ||
+      DioExceptionType.connectionError => true,
+      _ => false,
+    };
   }
 
   Future<Map<String, dynamic>> _guardarPagoEnColaLocal({
@@ -204,10 +227,10 @@ class CarteraRepository {
   }
 
   void _invalidarCaches() {
-    LocalCacheRepository.instance.invalidate('dashboard:cobrador');
-    LocalCacheRepository.instance.invalidate('cobrador:viviendas');
-    LocalCacheRepository.instance.invalidate('dashboard:residente');
-    LocalCacheRepository.instance.invalidate('dashboard:administrador');
+    LocalCacheRepository.instance.invalidate(CacheKeys.dashboardCobrador);
+    LocalCacheRepository.instance.invalidate(CacheKeys.cobradorViviendas);
+    LocalCacheRepository.instance.invalidate(CacheKeys.dashboardResidente);
+    LocalCacheRepository.instance.invalidate(CacheKeys.dashboardAdministrador);
     LocalCacheRepository.instance.invalidate(cacheKey);
   }
 }

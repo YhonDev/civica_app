@@ -17,6 +17,8 @@ class ConnectivityDetector {
   final Connectivity _connectivity = Connectivity();
 
   final _statusController = StreamController<bool>.broadcast();
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
+  bool _disposed = false;
 
   /// Stream que emite `true` cuando hay conexión, `false` cuando se pierde.
   Stream<bool> get onStatusChanged => _statusController.stream;
@@ -57,7 +59,9 @@ class ConnectivityDetector {
       _updateStatus(results);
 
       // Escuchar cambios
-      _connectivity.onConnectivityChanged.listen(_updateStatus);
+      _connectivitySubscription = _connectivity.onConnectivityChanged.listen(
+        _updateStatus,
+      );
     } catch (e) {
       if (kDebugMode) {
         debugPrint('[ConnectivityDetector] Error al inicializar: $e');
@@ -68,11 +72,14 @@ class ConnectivityDetector {
   }
 
   void _updateStatus(List<ConnectivityResult> results) {
+    if (_disposed || _statusController.isClosed) return;
     final online = results.any((r) => r != ConnectivityResult.none);
     if (online != _isOnline) {
       _isOnline = online;
       _statusController.add(online);
-      debugPrint('[ConnectivityDetector] Estado cambiado: ${online ? "ONLINE" : "OFFLINE"}');
+      debugPrint(
+        '[ConnectivityDetector] Estado cambiado: ${online ? "ONLINE" : "OFFLINE"}',
+      );
     } else {
       _isOnline = online;
     }
@@ -80,6 +87,10 @@ class ConnectivityDetector {
 
   /// Libera recursos.
   void dispose() {
+    if (_disposed) return;
+    _disposed = true;
+    unawaited(_connectivitySubscription?.cancel());
+    _connectivitySubscription = null;
     _statusController.close();
     _instance = null;
   }
