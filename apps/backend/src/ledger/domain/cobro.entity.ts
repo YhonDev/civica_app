@@ -6,6 +6,7 @@ import {
   UpdateDateColumn,
   ManyToOne,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { Money, type EstadoCobro } from '../../shared/common/value-objects';
 import { Residente } from '../../community/domain/residente.entity';
@@ -13,6 +14,12 @@ import { Casa } from '../../community/domain/casa.entity';
 import { PeriodoCobro } from './periodo-cobro.entity';
 
 @Entity('cobros')
+@Index('idx_cobros_tenant_residente_estado', [
+  'tenantId',
+  'residenteId',
+  'estado',
+])
+@Index('idx_cobros_casa_estado', ['casaId', 'estado'])
 export class Cobro {
   @PrimaryGeneratedColumn('uuid')
   id: string;

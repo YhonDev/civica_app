@@ -9,11 +9,13 @@ import {
   Body,
   UseGuards,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { ConfigurarTarifaUseCase } from '../../application/use-cases/configurar-tarifa.use-case';
 import { ActualizarTarifaUseCase } from '../../application/use-cases/actualizar-tarifa.use-case';
 import { TarifaRepository } from '../persistence/tarifa.repository';
+import { CacheService } from '../../../shared/cache/cache.service';
 import {
   CrearTarifaDto,
   ActualizarTarifaDto,
@@ -35,6 +37,8 @@ export class TarifasController {
     private readonly configurarTarifaUseCase: ConfigurarTarifaUseCase,
     private readonly actualizarTarifaUseCase: ActualizarTarifaUseCase,
     private readonly tarifaRepository: TarifaRepository,
+    @Optional()
+    private readonly cacheService?: CacheService,
   ) {}
 
   @Post()
@@ -42,13 +46,17 @@ export class TarifasController {
   @Roles(RolUsuario.ADMIN)
   @ApiOperation({ summary: 'Crear nueva tarifa' })
   async crear(@Body() dto: CrearTarifaDto, @CurrentTenant() tenantId: string) {
-    return this.configurarTarifaUseCase.execute({
+    const result = await this.configurarTarifaUseCase.execute({
       proyectoId: dto.proyectoId,
       tenantId,
       modalidad: dto.modalidad,
       montoPesos: dto.monto,
       fechaVigencia: dto.fechaVigencia,
     });
+    if (this.cacheService) {
+      await this.cacheService.delByPrefix(`tarifas:${tenantId}`);
+    }
+    return result;
   }
 
   @Get()
@@ -71,34 +79,42 @@ export class TarifasController {
     @Query() query: TarifasVigentesQueryDto,
     @CurrentTenant() tenantId: string,
   ) {
-    const vigentes = await this.tarifaRepository.findVigentesPorConjunto(
-      query.proyectoId,
-      tenantId,
-    );
+    const cacheKey = `tarifas:vigentes:${tenantId}:${query.proyectoId ?? 'all'}`;
+    const compute = async () => {
+      const vigentes = await this.tarifaRepository.findVigentesPorConjunto(
+        query.proyectoId,
+        tenantId,
+      );
 
-    const toDto = (tarifa: typeof vigentes.MENSUAL) =>
-      tarifa
-        ? {
-            id: tarifa.id,
-            modalidad: tarifa.modalidad,
-            monto: tarifa.monto,
-            montoPesos: Math.round(tarifa.monto / 100),
-            fechaVigencia: tarifa.fechaVigencia,
-          }
-        : null;
+      const toDto = (tarifa: typeof vigentes.MENSUAL) =>
+        tarifa
+          ? {
+              id: tarifa.id,
+              modalidad: tarifa.modalidad,
+              monto: tarifa.monto,
+              montoPesos: Math.round(tarifa.monto / 100),
+              fechaVigencia: tarifa.fechaVigencia,
+            }
+          : null;
 
-    return {
-      proyectoId: query.proyectoId,
-      tenantId,
-      tarifas: {
-        MENSUAL: toDto(vigentes.MENSUAL),
-        QUINCENAL: toDto(vigentes.QUINCENAL),
-        SEMANAL: toDto(vigentes.SEMANAL),
-      },
-      cuotaMensualPesos: vigentes.MENSUAL
-        ? Math.round(vigentes.MENSUAL.monto / 100)
-        : null,
+      return {
+        proyectoId: query.proyectoId,
+        tenantId,
+        tarifas: {
+          MENSUAL: toDto(vigentes.MENSUAL),
+          QUINCENAL: toDto(vigentes.QUINCENAL),
+          SEMANAL: toDto(vigentes.SEMANAL),
+        },
+        cuotaMensualPesos: vigentes.MENSUAL
+          ? Math.round(vigentes.MENSUAL.monto / 100)
+          : null,
+      };
     };
+
+    if (this.cacheService) {
+      return this.cacheService.wrap(cacheKey, 120, compute);
+    }
+    return compute();
   }
 
   @Get(':id')
@@ -120,12 +136,16 @@ export class TarifasController {
     @Body() dto: ActualizarTarifaDto,
     @CurrentTenant() tenantId: string,
   ) {
-    return this.actualizarTarifaUseCase.execute({
+    const result = await this.actualizarTarifaUseCase.execute({
       tarifaId: id,
       montoPesos: dto.monto,
       fechaVigencia: dto.fechaVigencia,
       tenantId,
     });
+    if (this.cacheService) {
+      await this.cacheService.delByPrefix(`tarifas:${tenantId}`);
+    }
+    return result;
   }
 
   @Delete(':id')
@@ -138,6 +158,9 @@ export class TarifasController {
     }
     tarifa.desactivar();
     await this.tarifaRepository.save(tarifa);
+    if (this.cacheService) {
+      await this.cacheService.delByPrefix(`tarifas:${tenantId}`);
+    }
     return { message: 'Tarifa desactivada correctamente' };
   }
 }

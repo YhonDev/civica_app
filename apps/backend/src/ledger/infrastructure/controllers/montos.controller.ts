@@ -8,10 +8,12 @@ import {
   Body,
   UseGuards,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { ConfigurarMontoUseCase } from '../../application/use-cases/configurar-monto.use-case';
 import { MontoPagoPredefinidoRepository } from '../persistence/monto-pago-predefinido.repository';
+import { CacheService } from '../../../shared/cache/cache.service';
 import { CrearMontoDto, ListarMontosQueryDto } from './dtos/montos.dto';
 import { JwtAuthGuard } from '../../../shared/auth/jwt-auth.guard';
 import { RolesGuard } from '../../../shared/auth/guards/roles.guard';
@@ -27,6 +29,8 @@ export class MontosController {
   constructor(
     private readonly configurarMontoUseCase: ConfigurarMontoUseCase,
     private readonly montoRepository: MontoPagoPredefinidoRepository,
+    @Optional()
+    private readonly cacheService?: CacheService,
   ) {}
 
   @Post()
@@ -34,12 +38,16 @@ export class MontosController {
   @Roles(RolUsuario.ADMIN)
   @ApiOperation({ summary: 'Crear monto predefinido' })
   async crear(@Body() dto: CrearMontoDto, @CurrentTenant() tenantId: string) {
-    return this.configurarMontoUseCase.execute({
+    const result = await this.configurarMontoUseCase.execute({
       tenantId,
       proyectoId: dto.proyectoId,
       montoPesos: dto.monto,
       descripcion: dto.descripcion,
     });
+    if (this.cacheService) {
+      await this.cacheService.delByPrefix(`montos:${tenantId}`);
+    }
+    return result;
   }
 
   @Get()
@@ -50,7 +58,14 @@ export class MontosController {
     @Query() query: ListarMontosQueryDto,
     @CurrentTenant() tenantId: string,
   ) {
-    return this.montoRepository.findAllByConjunto(query.proyectoId, tenantId);
+    const cacheKey = `montos:${tenantId}:${query.proyectoId ?? 'all'}`;
+    const compute = () =>
+      this.montoRepository.findAllByConjunto(query.proyectoId, tenantId);
+
+    if (this.cacheService) {
+      return this.cacheService.wrap(cacheKey, 120, compute);
+    }
+    return compute();
   }
 
   @Delete(':id')
@@ -62,6 +77,9 @@ export class MontosController {
       throw new NotFoundException('Monto no encontrado');
     }
     await this.montoRepository.remove(id);
+    if (this.cacheService) {
+      await this.cacheService.delByPrefix(`montos:${tenantId}`);
+    }
     return { message: 'Monto desactivado correctamente' };
   }
 }

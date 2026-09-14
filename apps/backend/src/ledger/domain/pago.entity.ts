@@ -6,6 +6,7 @@ import {
   UpdateDateColumn,
   ManyToOne,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { Money, type SyncStatus } from '../../shared/common/value-objects';
 import { Residente } from '../../community/domain/residente.entity';
@@ -19,6 +20,8 @@ export enum EstadoValidacionPago {
 }
 
 @Entity('pagos')
+@Index('idx_pagos_cobrador_fecha', ['tenantId', 'cobradorId', 'fechaPago'])
+@Index('idx_pagos_residente_fecha', ['tenantId', 'residenteId', 'fechaPago'])
 export class Pago {
   @PrimaryGeneratedColumn('uuid')
   id: string;
