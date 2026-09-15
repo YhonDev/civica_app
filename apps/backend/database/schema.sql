@@ -6,6 +6,80 @@
 -- Uso: psql -h <host> -U <user> -d <db> -f schema.sql
 -- ═══════════════════════════════════════════════════════════
 
+-- ── 0. Tenants de Cuentiva Platform ─────────────────────
+CREATE TABLE tenants (
+  id         UUID PRIMARY KEY,
+  name       VARCHAR(255) NOT NULL,
+  status     VARCHAR(32) NOT NULL DEFAULT 'ACTIVE'
+    CHECK (status IN ('ACTIVE', 'SUSPENDED', 'MAINTENANCE', 'ARCHIVED')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_tenants_status_created ON tenants (status, created_at DESC);
+
+-- ── 0.1. Auditoría de Cuentiva Platform ────────────────
+CREATE TABLE platform_audit_events (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  actor_id    VARCHAR(255) NOT NULL,
+  action      VARCHAR(100) NOT NULL,
+  resource    VARCHAR(100) NOT NULL,
+  resource_id UUID,
+  result      VARCHAR(16) NOT NULL DEFAULT 'SUCCESS'
+    CHECK (result IN ('SUCCESS', 'FAILURE')),
+  request_id  VARCHAR(100),
+  ip_address  INET,
+  metadata    JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_platform_audit_created
+  ON platform_audit_events (created_at DESC);
+CREATE INDEX idx_platform_audit_action_resource
+  ON platform_audit_events (action, resource, created_at DESC);
+
+-- ── 0.2. Administradores y sesiones de plataforma ──────
+CREATE TABLE platform_admins (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email         VARCHAR(255) NOT NULL UNIQUE,
+  name          VARCHAR(255) NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  active        BOOLEAN NOT NULL DEFAULT true,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE TABLE platform_sessions (
+  id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  admin_id          UUID NOT NULL REFERENCES platform_admins(id) ON DELETE CASCADE,
+  jti               UUID NOT NULL UNIQUE,
+  access_token_hash VARCHAR(64) NOT NULL UNIQUE,
+  expires_at        TIMESTAMPTZ NOT NULL,
+  revoked_at        TIMESTAMPTZ,
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_platform_sessions_admin_active
+  ON platform_sessions (admin_id, expires_at)
+  WHERE revoked_at IS NULL;
+
+-- ── 0.3. Invitaciones a administradores de tenant ───────
+CREATE TABLE tenant_invitations (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id   UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  email       VARCHAR(255) NOT NULL,
+  name        VARCHAR(255) NOT NULL,
+  token_hash  VARCHAR(64) NOT NULL UNIQUE,
+  status      VARCHAR(32) NOT NULL DEFAULT 'PENDING'
+    CHECK (status IN ('PENDING', 'ACCEPTED', 'REVOKED', 'EXPIRED')),
+  expires_at  TIMESTAMPTZ NOT NULL,
+  accepted_at TIMESTAMPTZ,
+  created_by  VARCHAR(255) NOT NULL,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_tenant_invitations_token
+  ON tenant_invitations (token_hash)
+  WHERE status = 'PENDING';
+CREATE INDEX idx_tenant_invitations_tenant
+  ON tenant_invitations (tenant_id, status, created_at DESC);
+
 -- ── 1. Proyectos ────────────────────────────────────────
 CREATE TABLE proyectos (
   id                       UUID PRIMARY KEY DEFAULT gen_random_uuid(),

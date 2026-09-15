@@ -18,6 +18,9 @@ import { TicketsController } from '../../../ledger/infrastructure/controllers/ti
 import { NotificacionesController } from '../../../notifications/infrastructure/controllers/notificaciones.controller';
 import { HealthController } from '../../health/health.controller';
 import { MetricsController } from '../../observability/metrics.controller';
+import { PlatformAdminController } from '../../../platform/infrastructure/controllers/platform-admin.controller';
+import { AccessScope } from '../../../platform/domain/access-scope.enum';
+import { REQUIRED_SCOPE_KEY } from '../../../platform/decorators/require-scope.decorator';
 
 /**
  * Suite de Verificación Estática de la Matriz de Autorización
@@ -61,6 +64,7 @@ describe('Matriz de Autorización — Verificación Estática de Controladores',
     NotificacionesController,
     HealthController,
     MetricsController,
+    PlatformAdminController,
   ];
 
   it('todos los endpoints protegidos deben declarar roles autorizados (@Roles)', () => {
@@ -94,6 +98,17 @@ describe('Matriz de Autorización — Verificación Estática de Controladores',
           handler,
           ControllerClass,
         ]);
+
+        if (ControllerClass === PlatformAdminController) {
+          const scope = reflector.getAllAndOverride<AccessScope>(
+            REQUIRED_SCOPE_KEY,
+            [handler, ControllerClass],
+          );
+          if (scope !== AccessScope.PLATFORM) {
+            unmappedEndpoints.push(endpointKey);
+          }
+          continue;
+        }
 
         if (!roles || roles.length === 0) {
           unmappedEndpoints.push(endpointKey);

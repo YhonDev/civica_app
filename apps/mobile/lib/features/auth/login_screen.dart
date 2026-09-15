@@ -12,6 +12,8 @@ import '../../core/theme/app_breakpoints.dart';
 import '../../core/security/biometric_auth_service.dart';
 import '../../core/network/api_client.dart';
 import '../../core/widgets/top_toast.dart';
+import 'package:go_router/go_router.dart';
+import '../../core/theme/app_typography.dart';
 
 /// Pantalla de inicio de sesión con JWT.
 class LoginScreen extends StatefulWidget {
@@ -382,6 +384,27 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ),
                                   ),
                                 ],
+                                const SizedBox(height: AppSpacing.sm),
+                                Center(
+                                  child: TextButton.icon(
+                                    style: TextButton.styleFrom(
+                                      minimumSize: const Size(48, 48),
+                                    ),
+                                    onPressed: () => context.go('/platform/login'),
+                                    icon: Icon(
+                                      Icons.admin_panel_settings_outlined,
+                                      size: 18,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                    label: Text(
+                                      'Acceso a Consola de Plataforma',
+                                      style: AppTypography.small.copyWith(
+                                        color: AppColors.textSecondary,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ),
                                 const Spacer(flex: 2),
                               ],
                             ),
