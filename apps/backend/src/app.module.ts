@@ -17,6 +17,7 @@ import { ObservabilityModule } from './shared/observability/observability.module
 import { RequestIdMiddleware } from './shared/observability/request-id.middleware';
 import { CacheModule } from './shared/cache/cache.module';
 import { validateEnv } from './shared/infrastructure/env/env.validation';
+import { PlatformModule } from './platform/platform.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { validateEnv } from './shared/infrastructure/env/env.validation';
     LedgerModule,
     NotificationsModule,
     ObservabilityModule,
+    PlatformModule,
   ],
   controllers: [HealthController],
   providers: [

@@ -1,0 +1,233 @@
+import {
+  BadRequestException,
+  Controller,
+  Get,
+  Body,
+  Patch,
+  Param,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
+import type { Request } from 'express';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { AccessScope } from '../../domain/access-scope.enum';
+import { RequireScope } from '../../decorators/require-scope.decorator';
+import { PlatformAdminGuard } from '../../guards/platform-admin.guard';
+import { PlatformOverviewService } from '../../application/platform-overview.service';
+import { TenantStatus } from '../../domain/tenant-status.enum';
+import { PlatformAuditService } from '../../domain/platform-audit.service';
+import { PlatformAuthService } from '../../application/platform-auth.service';
+import {
+  IsBoolean,
+  IsEmail,
+  IsNotEmpty,
+  IsString,
+  MinLength,
+} from 'class-validator';
+
+class CreatePlatformAdministratorDto {
+  @IsEmail()
+  email: string;
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+  @IsString()
+  @MinLength(12)
+  password: string;
+}
+
+class SetAdministratorStatusDto {
+  @IsBoolean()
+  active: boolean;
+}
+
+@ApiTags('Platform')
+@ApiBearerAuth('jwt-auth')
+@Controller('platform')
+@UseGuards(PlatformAdminGuard)
+@RequireScope(AccessScope.PLATFORM)
+export class PlatformAdminController {
+  constructor(
+    private readonly overviewService: PlatformOverviewService,
+    private readonly auditService: PlatformAuditService,
+    private readonly authService: PlatformAuthService,
+  ) {}
+
+  @Get('health')
+  @ApiOperation({ summary: 'Health check de Cuentiva Platform' })
+  async health(@Req() request: Request) {
+    await this.audit(request, 'PLATFORM_HEALTH_READ', 'platform');
+    return { status: 'ok', scope: AccessScope.PLATFORM };
+  }
+
+  @Get('overview')
+  @ApiOperation({ summary: 'Resumen global de Cuentiva Platform' })
+  async overview(@Req() request: Request) {
+    const result = await this.overviewService.overview();
+    await this.audit(request, 'PLATFORM_OVERVIEW_READ', 'platform');
+    return result;
+  }
+
+  @Get('tenants')
+  @ApiOperation({ summary: 'Inventario paginado de tenants' })
+  async tenants(
+    @Req() request: Request,
+    @Query('page') pageParam = '1',
+    @Query('limit') limitParam = '25',
+    @Query('status') status?: TenantStatus,
+  ) {
+    const page = this.parsePositiveInteger(pageParam, 'page');
+    const limit = Math.min(this.parsePositiveInteger(limitParam, 'limit'), 100);
+    if (status && !Object.values(TenantStatus).includes(status)) {
+      throw new BadRequestException('Estado de tenant inválido');
+    }
+    const result = await this.overviewService.listTenants(page, limit, status);
+    await this.audit(request, 'PLATFORM_TENANTS_READ', 'tenant', undefined, {
+      page,
+      limit,
+      status,
+    });
+    return result;
+  }
+
+  @Get('scopes')
+  @ApiOperation({ summary: 'Catálogo de scopes de acceso' })
+  async scopes(@Req() request: Request) {
+    await this.audit(request, 'PLATFORM_SCOPES_READ', 'platform');
+    return {
+      active: AccessScope.PLATFORM,
+      scopes: [
+        {
+          scope: AccessScope.PLATFORM,
+          principal: 'SUPERADMIN',
+          status: 'active',
+          description: 'Alcance global de administración de la plataforma',
+        },
+        {
+          scope: AccessScope.TENANT,
+          principal: 'ADMIN',
+          status: 'documented',
+          description:
+            'Alcance completo del tenantId del administrador operativo',
+        },
+        {
+          scope: AccessScope.PROJECT,
+          principal: 'ADMIN',
+          status: 'inactive',
+          description: 'Alcance reservado para un proyecto específico',
+        },
+        {
+          scope: AccessScope.STAGE,
+          principal: 'COBRADOR',
+          status: 'documented',
+          description: 'Alcance de etapas asignadas',
+        },
+        {
+          scope: AccessScope.OWN_RESOURCE,
+          principal: 'RESIDENTE',
+          status: 'documented',
+          description: 'Alcance de recursos propios',
+        },
+      ],
+    };
+  }
+
+  @Get('administrators')
+  @ApiOperation({ summary: 'Lista administradores de plataforma' })
+  administrators() {
+    return this.authService.listAdministrators();
+  }
+
+  @Post('administrators')
+  @ApiOperation({ summary: 'Crea un administrador de plataforma' })
+  createAdministrator(
+    @Body() dto: CreatePlatformAdministratorDto,
+    @Req() request: Request,
+  ) {
+    return this.authService.createAdministrator(
+      dto.email,
+      dto.name,
+      dto.password,
+      this.actorId(request),
+    );
+  }
+
+  @Patch('administrators/:id/status')
+  @ApiOperation({
+    summary: 'Activa o desactiva un administrador de plataforma',
+  })
+  setAdministratorStatus(
+    @Param('id') id: string,
+    @Body() dto: SetAdministratorStatusDto,
+    @Req() request: Request,
+  ) {
+    return this.authService.setActive(id, dto.active, this.actorId(request));
+  }
+
+  @Post('administrators/:id/revoke-sessions')
+  @ApiOperation({ summary: 'Revoca sesiones de un administrador' })
+  async revokeAdministratorSessions(
+    @Param('id') id: string,
+    @Req() request: Request,
+  ) {
+    await this.authService.revokeSessions(id);
+    await this.audit(
+      request,
+      'PLATFORM_SESSIONS_REVOKED',
+      'platform_admin',
+      id,
+    );
+    return { success: true };
+  }
+
+  @Get('audit')
+  @ApiOperation({ summary: 'Auditoría durable de Cuentiva Platform' })
+  auditEvents(
+    @Query('page') pageParam = '1',
+    @Query('limit') limitParam = '25',
+    @Query('action') action?: string,
+    @Query('resource') resource?: string,
+  ) {
+    const page = this.parsePositiveInteger(pageParam, 'page');
+    const limit = Math.min(this.parsePositiveInteger(limitParam, 'limit'), 100);
+    return this.auditService.list({ page, limit, action, resource });
+  }
+
+  private async audit(
+    request: Request,
+    action: string,
+    resource: string,
+    resourceId?: string,
+    metadata?: Record<string, unknown>,
+  ): Promise<void> {
+    await this.auditService.record({
+      actorId: this.actorId(request),
+      action,
+      resource,
+      resourceId,
+      requestId: request.header('x-request-id') ?? undefined,
+      ipAddress: request.ip,
+      metadata,
+    });
+  }
+
+  private actorId(request: Request): string {
+    const actorId = Reflect.get(request.user ?? {}, 'sub');
+    if (typeof actorId !== 'string' || actorId.length === 0) {
+      throw new BadRequestException('Principal de plataforma inválido');
+    }
+    return actorId;
+  }
+
+  private parsePositiveInteger(value: string, parameter: string): number {
+    const parsed = Number(value);
+    if (!Number.isInteger(parsed) || parsed < 1) {
+      throw new BadRequestException(
+        `El parámetro ${parameter} debe ser un entero positivo`,
+      );
+    }
+    return parsed;
+  }
+}
