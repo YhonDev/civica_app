@@ -77,12 +77,8 @@ jobs:
           psql -h 127.0.0.1 -p 54322 -U postgres -d postgres \
             -v ON_ERROR_STOP=1 \
             -f database/schema.sql
-          # Migraciones incrementales (idempotentes si aplican)
-          for f in database/migrations/*.sql; do
-            echo "-- Aplicando $f"
-            psql -h 127.0.0.1 -p 54322 -U postgres -d postgres \
-              -v ON_ERROR_STOP=1 -f "$f"
-          done
+          # Migraciones incrementales (ignora .down.sql y registra historial)
+          npm run db:migrate
         env:
           PGPASSWORD: postgres
 
