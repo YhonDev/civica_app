@@ -206,6 +206,34 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 
+  /// Inicia sesión exclusivamente en Cuentiva Platform (SUPERADMIN).
+  Future<void> loginPlatform({
+    required String email,
+    required String password,
+  }) async {
+    emit(const AuthState.loading());
+    try {
+      LocalCacheRepository.instance.invalidateAll();
+      final result = await _authApi.loginPlatform(
+        email: email,
+        password: password,
+      );
+      emit(AuthState.authenticated(result.usuario));
+    } on AuthException catch (e) {
+      final msg = e.message.isNotEmpty ? e.message : 'Credenciales de plataforma inválidas';
+      emit(AuthState.error(msg));
+    } on NetworkException {
+      emit(const AuthState.error('Sin conexión a internet'));
+    } on ApiException catch (e) {
+      emit(AuthState.error(_sanitizeErrorMessage(e.message)));
+    } catch (e, stack) {
+      if (kDebugMode) {
+        debugPrint('[AuthCubit] Error en login platform: $e\n$stack');
+      }
+      emit(AuthState.error(_sanitizeErrorMessage(e)));
+    }
+  }
+
   /// Delega en el sanitizador compartido (core/network/error_messages.dart).
   /// Pasa el OBJETO del error (no toString): el sanitizador distingue tipos
   /// y evita filtrar diagnostics técnicos en la UI.

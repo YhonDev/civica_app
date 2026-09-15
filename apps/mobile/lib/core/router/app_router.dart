@@ -47,6 +47,15 @@ import '../../features/residentes/asignar_etapas_screen.dart';
 import '../../features/residentes/montos_screen.dart';
 import '../../features/residentes/residente_inmueble_screen.dart';
 import '../../features/sync/sync_queue_screen.dart';
+import '../../features/platform/cubits/platform_overview_cubit.dart';
+import '../../features/platform/cubits/platform_tenants_cubit.dart';
+import '../../features/platform/cubits/platform_audit_cubit.dart';
+import '../../features/platform/presentation/platform_shell.dart';
+import '../../features/platform/presentation/platform_login_screen.dart';
+import '../../features/platform/presentation/platform_overview_screen.dart';
+import '../../features/platform/presentation/tenant_management_screen.dart';
+import '../../features/platform/presentation/tenant_detail_screen.dart';
+import '../../features/platform/presentation/platform_audit_screen.dart';
 
 /// GoRouter configuration — role-aware.
 ///
@@ -63,19 +72,96 @@ final GoRouter appRouter = GoRouter(
   redirect: (context, state) {
     final auth = context.read<AuthCubit>();
     final isLoggedIn = auth.state.isAuthenticated;
-    final isLoginRoute = state.matchedLocation == '/login';
+    final location = state.matchedLocation;
+    final isLoginRoute = location == '/login' || location == '/platform/login';
+    final rawRol = auth.state.usuario?['rol'] as String?;
+    final role = UserRole.fromString(rawRol);
 
     if (!isLoggedIn && !isLoginRoute) return '/login';
-    if (isLoggedIn && isLoginRoute) return '/';
+    if (isLoggedIn && isLoginRoute) {
+      if (role == UserRole.superadmin) {
+        return '/platform/overview';
+      }
+      return '/';
+    }
+
+    // Role isolation guards:
+    final isPlatformRoute = location.startsWith('/platform');
+
+    // Operational roles cannot access platform console -> redirect to operational home
+    if (isPlatformRoute && role != UserRole.superadmin) {
+      return '/';
+    }
+
+    // Superadmin cannot access operational tenant routes -> redirect to platform overview
+    if (role == UserRole.superadmin && !isPlatformRoute) {
+      return '/platform/overview';
+    }
+
     return null;
   },
 
   routes: [
-    // ── Login ──────────────────────────────────────────────────────────
+    // ── Login Operativo ────────────────────────────────────────────────
     GoRoute(
       path: '/login',
       name: 'login',
       builder: (_, _) => const LoginScreen(),
+    ),
+
+    // ── Login de Plataforma (Exclusivo SUPERADMIN) ─────────────────────
+    GoRoute(
+      path: '/platform/login',
+      name: 'platform_login',
+      builder: (_, _) => const PlatformLoginScreen(),
+    ),
+
+    // ── Shell de Plataforma (Consola Operativa SUPERADMIN) ─────────────
+    ShellRoute(
+      builder: (context, state, child) {
+        return MultiBlocProvider(
+          key: const ValueKey('shell_platform_providers'),
+          providers: [
+            BlocProvider<PlatformOverviewCubit>(
+              create: (_) => PlatformOverviewCubit(),
+            ),
+            BlocProvider<PlatformTenantsCubit>(
+              create: (_) => PlatformTenantsCubit(),
+            ),
+            BlocProvider<PlatformAuditCubit>(
+              create: (_) => PlatformAuditCubit(),
+            ),
+          ],
+          child: PlatformShell(child: child),
+        );
+      },
+      routes: [
+        GoRoute(
+          path: '/platform/overview',
+          name: 'platform_overview',
+          builder: (_, _) => const PlatformOverviewScreen(),
+        ),
+        GoRoute(
+          path: '/platform/tenants',
+          name: 'platform_tenants',
+          builder: (_, _) => const TenantManagementScreen(),
+          routes: [
+            GoRoute(
+              path: ':id',
+              name: 'platform_tenant_detail',
+              builder: (context, state) {
+                final tenantId = state.pathParameters['id'] ?? '';
+                return TenantDetailScreen(tenantId: tenantId);
+              },
+            ),
+          ],
+        ),
+        GoRoute(
+          path: '/platform/audit',
+          name: 'platform_audit',
+          builder: (_, _) => const PlatformAuditScreen(),
+        ),
+      ],
     ),
 
     // ── Shell with Bottom Navigation ───────────────────────────────────

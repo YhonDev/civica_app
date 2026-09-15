@@ -71,6 +71,55 @@ class AuthApi {
     }
   }
 
+  /// Inicia sesión exclusivamente en Cuentiva Platform como SUPERADMIN.
+  Future<LoginResult> loginPlatform({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      final response = await _client.post<Map<String, dynamic>>(
+        '/platform/auth/login',
+        data: {
+          'email': email.trim().toLowerCase(),
+          'password': password,
+        },
+      );
+
+      final data = response.data;
+      if (data == null) {
+        throw const ApiException(message: 'Respuesta vacía de autenticación de plataforma');
+      }
+
+      final accessToken = data['accessToken'] as String;
+      final admin = data['administrator'] as Map<String, dynamic>? ?? {};
+      final usuario = <String, dynamic>{
+        'id': admin['id'] ?? '',
+        'username': admin['email'] ?? email,
+        'email': admin['email'] ?? email,
+        'nombre': admin['name'] ?? 'Superadministrador',
+        'rol': 'SUPERADMIN',
+        'scope': 'PLATFORM',
+      };
+
+      await _client.tokenStorage.saveTokens(
+        accessToken,
+        '', // Plataforma maneja sesiones basadas en BD y jti, sin refresh token operativo
+      );
+      await _client.tokenStorage.saveUser(usuario);
+
+      return LoginResult(
+        accessToken: accessToken,
+        refreshToken: '',
+        usuario: usuario,
+      );
+    } on DioException catch (e) {
+      throw mapDioError(e);
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException(message: 'Error inesperado durante la autenticación de plataforma: $e');
+    }
+  }
+
   /// Registra un nuevo usuario (solo ADMIN).
   Future<Map<String, dynamic>> register({
     required String username,
