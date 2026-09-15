@@ -22,7 +22,9 @@ import { PlatformAuthService } from '../../application/platform-auth.service';
 import {
   IsBoolean,
   IsEmail,
+  IsEnum,
   IsNotEmpty,
+  IsOptional,
   IsString,
   MinLength,
 } from 'class-validator';
@@ -41,6 +43,21 @@ class CreatePlatformAdministratorDto {
 class SetAdministratorStatusDto {
   @IsBoolean()
   active: boolean;
+}
+
+class CreateTenantDto {
+  @IsString()
+  @IsNotEmpty({ message: 'El nombre del tenant es obligatorio' })
+  name: string;
+
+  @IsOptional()
+  @IsEnum(TenantStatus, { message: 'Estado de tenant inválido' })
+  status?: TenantStatus;
+}
+
+class UpdateTenantStatusDto {
+  @IsEnum(TenantStatus, { message: 'Estado de tenant inválido' })
+  status: TenantStatus;
 }
 
 @ApiTags('Platform')
@@ -88,6 +105,54 @@ export class PlatformAdminController {
       page,
       limit,
       status,
+    });
+    return result;
+  }
+
+  @Post('tenants')
+  @ApiOperation({ summary: 'Crea un nuevo tenant en Cuentiva Platform' })
+  async createTenant(
+    @Body() dto: CreateTenantDto,
+    @Req() request: Request,
+  ) {
+    const result = await this.overviewService.createTenant(dto.name, dto.status);
+    await this.audit(request, 'TENANT_CREATED', 'tenant', result.id, {
+      name: result.name,
+      status: result.status,
+    });
+    return result;
+  }
+
+  @Get('tenants/:id')
+  @ApiOperation({
+    summary:
+      'Consulta el detalle de un tenant con sus proyectos y administradores',
+  })
+  async tenantDetail(@Param('id') id: string, @Req() request: Request) {
+    const result = await this.overviewService.getTenantDetail(id);
+    await this.audit(request, 'TENANT_DETAIL_READ', 'tenant', id);
+    return result;
+  }
+
+  @Patch('tenants/:id/status')
+  @ApiOperation({
+    summary:
+      'Actualiza el estado de un tenant (activar, suspender, mantenimiento, archivar)',
+  })
+  async updateTenantStatus(
+    @Param('id') id: string,
+    @Body() dto: UpdateTenantStatusDto,
+    @Req() request: Request,
+  ) {
+    const result = await this.overviewService.updateTenantStatus(id, dto.status);
+    const auditAction =
+      dto.status === TenantStatus.SUSPENDED
+        ? 'TENANT_SUSPENDED'
+        : dto.status === TenantStatus.ACTIVE
+          ? 'TENANT_ACTIVATED'
+          : 'TENANT_STATUS_UPDATED';
+    await this.audit(request, auditAction, 'tenant', id, {
+      newStatus: dto.status,
     });
     return result;
   }

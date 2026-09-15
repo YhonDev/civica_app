@@ -217,4 +217,80 @@ describe('Platform isolation — E2E', () => {
       .set('Authorization', `Bearer ${token}`)
       .expect(401);
   });
+
+  it('gestiona el ciclo de vida completo de un tenant (crear, consultar detalle, suspender y reactivar)', async () => {
+    const token = jwtService.sign({
+      sub: 'platform-user',
+      scope: 'PLATFORM',
+      platformRole: 'SUPERADMIN',
+      mfaLevel: 'NONE',
+    });
+
+    // 1. Crear tenant
+    const createRes = await request(app.getHttpServer())
+      .post('/platform/tenants')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ name: 'Tenant E2E Lifecycle' })
+      .expect(201);
+
+    expect(createRes.body).toEqual(
+      expect.objectContaining({
+        id: expect.any(String),
+        name: 'Tenant E2E Lifecycle',
+        status: 'ACTIVE',
+      }),
+    );
+    const createdTenantId = createRes.body.id as string;
+
+    // 2. Consultar detalle del tenant
+    const detailRes = await request(app.getHttpServer())
+      .get(`/platform/tenants/${createdTenantId}`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+
+    expect(detailRes.body).toEqual(
+      expect.objectContaining({
+        tenant: expect.objectContaining({
+          id: createdTenantId,
+          name: 'Tenant E2E Lifecycle',
+          status: 'ACTIVE',
+        }),
+        projects: expect.any(Array),
+        administrators: expect.any(Array),
+        summary: expect.objectContaining({
+          users: 0,
+          residents: 0,
+          projects: 0,
+        }),
+      }),
+    );
+
+    // 3. Suspender tenant
+    const suspendRes = await request(app.getHttpServer())
+      .patch(`/platform/tenants/${createdTenantId}/status`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ status: 'SUSPENDED' })
+      .expect(200);
+
+    expect(suspendRes.body.status).toBe('SUSPENDED');
+
+    // 4. Reactivar tenant
+    const reactivateRes = await request(app.getHttpServer())
+      .patch(`/platform/tenants/${createdTenantId}/status`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ status: 'ACTIVE' })
+      .expect(200);
+
+    expect(reactivateRes.body.status).toBe('ACTIVE');
+
+    // 5. 404 para tenant inexistente
+    await request(app.getHttpServer())
+      .get('/platform/tenants/00000000-0000-0000-0000-999999999999')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(404);
+
+    // Limpieza
+    await dataSource.query('DELETE FROM tenants WHERE id = $1', [createdTenantId]);
+  });
 });
+
