@@ -19,6 +19,7 @@ import { PlatformOverviewService } from '../../application/platform-overview.ser
 import { TenantStatus } from '../../domain/tenant-status.enum';
 import { PlatformAuditService } from '../../domain/platform-audit.service';
 import { PlatformAuthService } from '../../application/platform-auth.service';
+import { PlatformInvitationService } from '../../application/platform-invitation.service';
 import {
   IsBoolean,
   IsEmail,
@@ -60,6 +61,15 @@ class UpdateTenantStatusDto {
   status: TenantStatus;
 }
 
+class InviteTenantAdminDto {
+  @IsEmail({}, { message: 'Debe ingresar un correo electrónico válido' })
+  email: string;
+
+  @IsString()
+  @IsNotEmpty({ message: 'El nombre del administrador es obligatorio' })
+  name: string;
+}
+
 @ApiTags('Platform')
 @ApiBearerAuth('jwt-auth')
 @Controller('platform')
@@ -70,6 +80,7 @@ export class PlatformAdminController {
     private readonly overviewService: PlatformOverviewService,
     private readonly auditService: PlatformAuditService,
     private readonly authService: PlatformAuthService,
+    private readonly invitationService: PlatformInvitationService,
   ) {}
 
   @Get('health')
@@ -155,6 +166,52 @@ export class PlatformAdminController {
       newStatus: dto.status,
     });
     return result;
+  }
+
+  @Post('tenants/:id/invitations')
+  @ApiOperation({
+    summary:
+      'Emite una invitación criptográfica de un solo uso para administrador de tenant',
+  })
+  async inviteTenantAdmin(
+    @Param('id') id: string,
+    @Body() dto: InviteTenantAdminDto,
+    @Req() request: Request,
+  ) {
+    return this.invitationService.createInvitation(
+      id,
+      dto.email,
+      dto.name,
+      this.actorId(request),
+      request.header('x-request-id') ?? undefined,
+      request.ip,
+    );
+  }
+
+  @Get('tenants/:id/invitations')
+  @ApiOperation({
+    summary: 'Lista el historial de invitaciones emitidas para un tenant',
+  })
+  async listTenantInvitations(
+    @Param('id') id: string,
+    @Req() request: Request,
+  ) {
+    await this.audit(request, 'TENANT_INVITATIONS_READ', 'tenant', id);
+    return this.invitationService.listInvitations(id);
+  }
+
+  @Post('invitations/:id/revoke')
+  @ApiOperation({ summary: 'Revoca una invitación pendiente' })
+  async revokeInvitation(
+    @Param('id') id: string,
+    @Req() request: Request,
+  ) {
+    return this.invitationService.revokeInvitation(
+      id,
+      this.actorId(request),
+      request.header('x-request-id') ?? undefined,
+      request.ip,
+    );
   }
 
   @Get('scopes')

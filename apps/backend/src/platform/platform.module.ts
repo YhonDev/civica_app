@@ -6,6 +6,7 @@ import { PlatformOverviewService } from './application/platform-overview.service
 import { PlatformAuditService } from './domain/platform-audit.service';
 import { PlatformAuthService } from './application/platform-auth.service';
 import { PlatformAuthController } from './infrastructure/controllers/platform-auth.controller';
+import { PlatformInvitationService } from './application/platform-invitation.service';
 
 @Module({
   imports: [AuthModule],
@@ -15,6 +16,8 @@ import { PlatformAuthController } from './infrastructure/controllers/platform-au
     PlatformOverviewService,
     PlatformAuditService,
     PlatformAuthService,
+    PlatformInvitationService,
   ],
+  exports: [PlatformInvitationService],
 })
 export class PlatformModule {}

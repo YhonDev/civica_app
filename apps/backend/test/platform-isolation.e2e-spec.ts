@@ -292,5 +292,139 @@ describe('Platform isolation — E2E', () => {
     // Limpieza
     await dataSource.query('DELETE FROM tenants WHERE id = $1', [createdTenantId]);
   });
+
+  it('gestiona el flujo completo de invitación y activación segura de administradores de tenant', async () => {
+    const platformToken = jwtService.sign({
+      sub: 'platform-user',
+      scope: 'PLATFORM',
+      platformRole: 'SUPERADMIN',
+      mfaLevel: 'NONE',
+    });
+
+    // 1. Crear tenant temporal
+    const tenantRes = await request(app.getHttpServer())
+      .post('/platform/tenants')
+      .set('Authorization', `Bearer ${platformToken}`)
+      .send({ name: 'Tenant Invitations E2E' })
+      .expect(201);
+    const tenantId = tenantRes.body.id as string;
+
+    const inviteeEmail = 'invited-admin-e2e@test.local';
+
+    // Limpieza preventiva
+    await dataSource.query('DELETE FROM usuarios WHERE email = $1', [inviteeEmail]);
+
+    // 2. Intentar invitar con token operativo de ADMIN -> 403 Forbidden
+    const operationalAdminToken = jwtService.sign({
+      sub: 'op-admin-user',
+      rol: 'ADMIN',
+      tenantId,
+    });
+    await request(app.getHttpServer())
+      .post(`/platform/tenants/${tenantId}/invitations`)
+      .set('Authorization', `Bearer ${operationalAdminToken}`)
+      .send({ email: inviteeEmail, name: 'Invited Admin' })
+      .expect(403);
+
+    // 3. Emitir invitación válida como SUPERADMIN
+    const inviteRes = await request(app.getHttpServer())
+      .post(`/platform/tenants/${tenantId}/invitations`)
+      .set('Authorization', `Bearer ${platformToken}`)
+      .send({ email: inviteeEmail, name: 'Invited Admin' })
+      .expect(201);
+
+    expect(inviteRes.body).toEqual(
+      expect.objectContaining({
+        id: expect.any(String),
+        tenantId,
+        email: inviteeEmail,
+        name: 'Invited Admin',
+        status: 'PENDING',
+        invitationToken: expect.any(String),
+      }),
+    );
+    const rawInvitationToken = inviteRes.body.invitationToken as string;
+    const invitationId = inviteRes.body.id as string;
+
+    // 4. Listar invitaciones del tenant
+    const listRes = await request(app.getHttpServer())
+      .get(`/platform/tenants/${tenantId}/invitations`)
+      .set('Authorization', `Bearer ${platformToken}`)
+      .expect(200);
+
+    expect(listRes.body).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: invitationId,
+          email: inviteeEmail,
+          status: 'PENDING',
+        }),
+      ]),
+    );
+
+    // 5. Intentar aceptar con token falso -> 400 Bad Request
+    await request(app.getHttpServer())
+      .post('/platform/auth/accept-invitation')
+      .send({ token: 'token-invalido-o-falso', password: 'PasswordSegura2026!' })
+      .expect(400);
+
+    // 6. Aceptar invitación válida y definir contraseña
+    const acceptRes = await request(app.getHttpServer())
+      .post('/platform/auth/accept-invitation')
+      .send({ token: rawInvitationToken, password: 'PasswordSegura2026!' })
+      .expect(201);
+
+    expect(acceptRes.body).toEqual(
+      expect.objectContaining({
+        success: true,
+        email: inviteeEmail,
+        tenantId,
+      }),
+    );
+
+    // 7. Verificar que el usuario ahora existe en usuarios como ADMIN activo
+    const userRows = await dataSource.query(
+      'SELECT id, email, rol, tenant_id, activo FROM usuarios WHERE email = $1',
+      [inviteeEmail],
+    );
+    expect(userRows).toHaveLength(1);
+    expect(userRows[0].rol).toBe('ADMIN');
+    expect(userRows[0].tenant_id).toBe(tenantId);
+    expect(userRows[0].activo).toBe(true);
+
+    // 8. Intentar reutilizar el token quemado -> 400 Bad Request
+    await request(app.getHttpServer())
+      .post('/platform/auth/accept-invitation')
+      .send({ token: rawInvitationToken, password: 'PasswordSegura2026!' })
+      .expect(400);
+
+    // 9. Probar revocación de invitaciones
+    const secondEmail = 'second-invited@test.local';
+    const secondInviteRes = await request(app.getHttpServer())
+      .post(`/platform/tenants/${tenantId}/invitations`)
+      .set('Authorization', `Bearer ${platformToken}`)
+      .send({ email: secondEmail, name: 'Second Admin' })
+      .expect(201);
+    const secondInviteId = secondInviteRes.body.id as string;
+    const secondRawToken = secondInviteRes.body.invitationToken as string;
+
+    await request(app.getHttpServer())
+      .post(`/platform/invitations/${secondInviteId}/revoke`)
+      .set('Authorization', `Bearer ${platformToken}`)
+      .expect(201);
+
+    // Intentar aceptar la invitación revocada -> 400 Bad Request
+    await request(app.getHttpServer())
+      .post('/platform/auth/accept-invitation')
+      .send({ token: secondRawToken, password: 'PasswordSegura2026!' })
+      .expect(400);
+
+    // Limpieza
+    await dataSource.query('DELETE FROM usuarios WHERE email IN ($1, $2)', [
+      inviteeEmail,
+      secondEmail,
+    ]);
+    await dataSource.query('DELETE FROM tenants WHERE id = $1', [tenantId]);
+  });
 });
 
